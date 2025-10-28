@@ -1,19 +1,8 @@
-source_directory <- function(path) {
-  files <- list.files(
-    path,
-    pattern = "\\.[Rr]$",
-    recursive = TRUE,
-    full.names = TRUE
-  )
-  invisible(lapply(files, source))
-}
+source("R/ui/modules/pages/ui_load_data.R")
+source("R/server/modules/pages/server_load_data.R")
 
-helper_dirs <- c("R/global", "R/utils", "R/ui", "R/server")
-invisible(lapply(helper_dirs, source_directory))
-
-if (!requireNamespace("shinyBS", quietly = TRUE)) {
-  stop("Package 'shinyBS' is required for this app.", call. = FALSE)
-}
+library(shiny)
+library(shinyBS)
 
 app_ui <- shiny::fluidPage(
   shiny::titlePanel("TexAn 2.0"),
