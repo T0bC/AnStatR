@@ -5,7 +5,18 @@ UI_load_data <- function(id) {
     shiny::h4("Load Data"),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
-        shiny::fileInput(ns("data_file"), "Upload dataset"),
+        shiny::fileInput(
+          inputId = ns("data_file"),
+          label = "Upload dataset",
+          multiple = FALSE,
+          accept = c(
+            "text/csv",
+            "text/comma-separated-values,text/plain",
+            ".csv",
+            ".xlsx"
+          )
+        ),
+        shiny::helpText("Accepted formats: CSV or XLSX (single file)."),
         shiny::actionButton(ns("load_btn"), "Load", class = "btn-primary")
       ),
       shiny::mainPanel(
