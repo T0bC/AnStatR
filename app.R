@@ -26,7 +26,7 @@ app_ui <- shiny::fluidPage(
 )
 
 app_server <- function(input, output, session) {
-  shiny::callModule(server_load_data, "load_data_id")
+  server_load_data("load_data_id")
   # TODO: Register additional module servers.
 }
 

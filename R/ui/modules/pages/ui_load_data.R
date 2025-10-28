@@ -24,7 +24,8 @@ UI_load_data <- function(id) {
             title = "CSV settings",
             value = ns("csv_settings_panel"),
             shiny::helpText(
-              "The following settings only apply to CSV uploads. XLSX files ignore these options."
+              "The following settings only apply to CSV uploads.",
+              "XLSX files ignore these options."
             ),
             shiny::checkboxInput(
               inputId = ns("csv_has_header"),
@@ -34,13 +35,21 @@ UI_load_data <- function(id) {
             shiny::radioButtons(
               inputId = ns("csv_delimiter"),
               label = "Delimiter",
-              choices = c(", (comma)" = ",", "; (semicolon)" = ";", "Tab" = "\t"),
+              choices = c(
+                ", (comma)" = ",",
+                "; (semicolon)" = ";",
+                "Tab" = "\t"
+              ),
               selected = ","
             ),
             shiny::radioButtons(
               inputId = ns("csv_quote"),
               label = "Quote character",
-              choices = c("None" = "", "Double quote (\"\")" = '"', "Single quote (')" = "'"),
+              choices = c(
+                "None" = "",
+                "Double quote (\"\")" = '"',
+                "Single quote (')" = "'"
+              ),
               selected = '"'
             )
           )
