@@ -73,6 +73,13 @@ UI_load_data <- function(id) {
             shiny::div(
               shiny::plotOutput(ns("missing_values_plot"), height = "800px")
             )
+          ),
+          shinyBS::bsCollapsePanel(
+            title = "Data Summary",
+            value = ns("data_summary_panel"),
+            shiny::div(
+              shiny::htmlOutput(ns("data_summary"))
+            )
           )
         )
       )
