@@ -3,6 +3,8 @@ source("R/server/modules/pages/server_load_data.R")
 
 library(shiny)
 library(shinyBS)
+library(openxlsx)
+library(DT)
 
 app_ui <- shiny::fluidPage(
   shiny::titlePanel("TexAn 2.0"),

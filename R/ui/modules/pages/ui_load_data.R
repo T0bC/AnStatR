@@ -56,7 +56,17 @@ UI_load_data <- function(id) {
         )
       ),
       shiny::mainPanel(
-        shiny::p("TODO: Display loaded data here.")
+        shinyBS::bsCollapse(
+          id = ns("data_preview_collapse"),
+          shinyBS::bsCollapsePanel(
+            title = "Data preview",
+            value = ns("data_preview_panel"),
+            shiny::div(
+              class = "table-responsive",
+              DT::dataTableOutput(ns("data_preview"))
+            )
+          )
+        )
       )
     )
   )
