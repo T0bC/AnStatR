@@ -15,6 +15,7 @@ library(shiny)
 library(shinyBS)
 library(openxlsx)
 library(DT)
+library(DataExplorer)
 
 # Initialize logging system
 init_logging(

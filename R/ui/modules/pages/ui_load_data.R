@@ -68,17 +68,10 @@ UI_load_data <- function(id) {
             )
           ),
           shinyBS::bsCollapsePanel(
-            title = "Data summary",
-            value = ns("data_summary_panel"),
+            title = "Missing Values",
+            value = ns("missing_values_panel"),
             shiny::div(
-              shiny::p("TODO: Add data summary statistics here"),
-              shiny::p("This will include:"),
-              shiny::tags$ul(
-                shiny::tags$li("Number of rows and columns"),
-                shiny::tags$li("Column types"),
-                shiny::tags$li("Missing values count"),
-                shiny::tags$li("Basic statistics")
-              )
+              shiny::plotOutput(ns("missing_values_plot"), height = "800px")
             )
           )
         )
