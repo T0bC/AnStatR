@@ -138,16 +138,24 @@ handle_app_error <- function(error,
     }
   )
   
-  # Log the error
+  # Log the error with full details
   if (requireNamespace("logger", quietly = TRUE)) {
+    # Log the main error message
     logger::log_error(
       "Error in {context}: {error_msg}",
       context = context,
-      error_msg = error_msg,
-      trace = trace_text,
-      session_token = session_info$session_token,
-      timestamp = timestamp
+      error_msg = error_msg
     )
+    
+    # Log the stack trace on separate lines for better readability
+    logger::log_error("Stack trace:")
+    trace_lines <- strsplit(trace_text, "\n")[[1]]
+    for (line in trace_lines) {
+      logger::log_error("  {line}", line = line)
+    }
+    
+    # Log session info
+    logger::log_error("Session: {token}", token = session_info$session_token)
   } else {
     # Fallback logging to console
     cat(
