@@ -16,8 +16,7 @@ UI_load_data <- function(id) {
             ".xlsx"
           )
         ),
-        shiny::helpText("Accepted formats: CSV or XLSX (single file)."),
-        shiny::actionButton(ns("load_btn"), "Load", class = "btn-primary")
+        shiny::helpText("Accepted formats: CSV or XLSX (single file).")
       ),
       shiny::mainPanel(
         shiny::p("TODO: Display loaded data here.")
