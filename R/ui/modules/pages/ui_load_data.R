@@ -5,6 +5,7 @@ UI_load_data <- function(id) {
     shiny::h4("Load Data"),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
+        shiny::includeMarkdown("docs/load_data/instructions.md"),
         shiny::fileInput(
           inputId = ns("data_file"),
           label = "Upload dataset",
