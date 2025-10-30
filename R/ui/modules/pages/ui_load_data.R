@@ -56,32 +56,7 @@ UI_load_data <- function(id) {
         )
       ),
       shiny::mainPanel(
-        shinyBS::bsCollapse(
-          id = ns("data_preview_collapse"),
-          open = ns("data_preview_panel"),  # Keep Data preview expanded by default
-          shinyBS::bsCollapsePanel(
-            title = "Data preview",
-            value = ns("data_preview_panel"),
-            shiny::div(
-              class = "table-responsive",
-              DT::dataTableOutput(ns("data_preview"))
-            )
-          ),
-          shinyBS::bsCollapsePanel(
-            title = "Missing Values",
-            value = ns("missing_values_panel"),
-            shiny::div(
-              shiny::plotOutput(ns("missing_values_plot"), height = "800px")
-            )
-          ),
-          shinyBS::bsCollapsePanel(
-            title = "Data Summary",
-            value = ns("data_summary_panel"),
-            shiny::div(
-              shiny::htmlOutput(ns("data_summary"))
-            )
-          )
-        )
+        shiny::uiOutput(ns("main_content"))
       )
     )
   )
