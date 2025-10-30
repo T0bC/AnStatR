@@ -54,12 +54,42 @@ server_load_data <- function(id) {
       }
     })
     
-    # Source modular components
-    # All sourced files have access to: input, output, session, loaded_data
+    # Source modular component functions
     source("R/server/modules/pages/load_data/file_upload.R", local = TRUE)
     source("R/server/modules/pages/load_data/data_preview.R", local = TRUE)
     source("R/server/modules/pages/load_data/missing_values_plot.R", local = TRUE)
     source("R/server/modules/pages/load_data/data_summary.R", local = TRUE)
+    
+    # Initialize modular components with explicit parameters
+    # File upload handler - requires file input and CSV settings
+    handle_file_upload(
+      data_file_input = input$data_file,
+      csv_has_header = input$csv_has_header,
+      csv_delimiter = input$csv_delimiter,
+      csv_quote = input$csv_quote,
+      loaded_data = loaded_data
+    )
+    
+    # Data preview renderer - requires output object and loaded data
+    render_data_preview(
+      output = output,
+      output_id = "data_preview",
+      loaded_data = loaded_data
+    )
+    
+    # Missing values plot renderer - requires output object and loaded data
+    render_missing_values_plot(
+      output = output,
+      output_id = "missing_values_plot",
+      loaded_data = loaded_data
+    )
+    
+    # Data summary renderer - requires output object and loaded data
+    render_data_summary(
+      output = output,
+      output_id = "data_summary",
+      loaded_data = loaded_data
+    )
 
     # Return reactive with loaded data
     shiny::reactive({
