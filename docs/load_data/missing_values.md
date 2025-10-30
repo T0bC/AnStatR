@@ -1,0 +1,1 @@
+This plot provides a graphical overview of each column in the dataset and shows how many percent of the values in a column are missing (or NA).

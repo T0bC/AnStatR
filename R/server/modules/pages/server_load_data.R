@@ -28,6 +28,7 @@ server_load_data <- function(id) {
           shinyBS::bsCollapsePanel(
             title = "Data preview",
             value = ns("data_preview_panel"),
+            shiny::includeMarkdown("docs/load_data/data_preview.md"),
             shiny::div(
               class = "table-responsive",
               DT::dataTableOutput(ns("data_preview"))
@@ -36,6 +37,7 @@ server_load_data <- function(id) {
           shinyBS::bsCollapsePanel(
             title = "Missing Values",
             value = ns("missing_values_panel"),
+            shiny::includeMarkdown("docs/load_data/missing_values.md"),
             shiny::div(
               shiny::plotOutput(ns("missing_values_plot"), height = "800px")
             )
@@ -43,6 +45,7 @@ server_load_data <- function(id) {
           shinyBS::bsCollapsePanel(
             title = "Data Summary",
             value = ns("data_summary_panel"),
+            shiny::includeMarkdown("docs/load_data/data_summary.md"),
             shiny::div(
               shiny::htmlOutput(ns("data_summary"))
             )
