@@ -1,0 +1,22 @@
+{
+    // Disable Pyright (Python linter) for R files
+    "python.analysis.exclude": [
+        "**/*.R",
+        "**/R/**"
+    ],
+    // Disable Pylance for R files
+    "python.analysis.ignore": [
+        "**/*.R",
+        "**/R/**"
+    ],
+    // Configure R language settings
+    "r.lsp.enabled": false,
+    "r.lsp.diagnostics": false,
+    // Optional: Configure lintr settings for R
+    "r.lsp.lang": "en",
+    // File associations
+    "files.associations": {
+        "*.R": "r",
+        "*.Rmd": "rmd"
+    }
+}
