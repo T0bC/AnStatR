@@ -2,6 +2,9 @@
 source("R/ui/modules/pages/ui_load_data.R")
 source("R/ui/modules/pages/ui_median.R")
 
+# Source component modules
+source("R/ui/modules/components/settings_modal.R")
+
 # Source server modules
 source("R/server/modules/pages/server_load_data.R")
 source("R/server/modules/pages/server_median.R")
@@ -24,15 +27,23 @@ shiny::addResourcePath("www", "www")
 app_ui <- bslib::page_navbar(
   id = "active_page",
   title = "TexAn 2.0",
-  bg = "#336699",
-  inverse = TRUE,
+  theme = get_default_theme(),
   header = shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css")
   ),
   bslib::nav_panel(title = "Load Data", UI_load_data("load_data_id")),
   bslib::nav_panel(title = "Median Analysis", UI_median("median_id")),
   bslib::nav_panel(title = "Plotting", shiny::p("TODO: Add plotting UI.")),
-  bslib::nav_panel(title = "Reporting", shiny::p("TODO: Add reporting UI."))
+  bslib::nav_panel(title = "Reporting", shiny::p("TODO: Add reporting UI.")),
+  bslib::nav_spacer(),
+  bslib::nav_item(
+    shiny::actionLink(
+      inputId = "settings_btn",
+      label = NULL,
+      icon = shiny::icon("gear"),
+      title = "Settings"
+    )
+  )
 )
 
 app_server <- function(input, output, session) {
@@ -40,7 +51,11 @@ app_server <- function(input, output, session) {
   loaded_data <- server_load_data("load_data_id")
   server_median("median_id", loaded_data = loaded_data)
 
-  # TODO: Register additional module servers.
+  # Initialize settings modal
+  settings_modal_server(input, session)
+
+  # Uncomment the line below during development to enable live theme editor
+  # bslib::bs_themer()
 }
 
 shiny::shinyApp(ui = app_ui, server = app_server)
