@@ -4,3 +4,22 @@
 .bslib-sidebar-layout {
     --_sidebar-width: clamp(320px, 33vw, 450px) !important;
 }
+
+/* Sidebar shadow for visual distinction */
+.bslib-sidebar-layout>.sidebar {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Settings gear icon styling */
+#settings_btn {
+    color: inherit;
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+#settings_btn:hover {
+    opacity: 1;
+    text-decoration: none;
+}
