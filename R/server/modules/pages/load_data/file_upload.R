@@ -1,22 +1,23 @@
 # File upload and validation logic
 # This file defines a function that handles file uploads (CSV and XLSX)
 #
-# @param data_file_input Reactive input from fileInput (input$data_file)
-# @param csv_has_header Reactive input for CSV header setting
-# @param csv_delimiter Reactive input for CSV delimiter
-# @param csv_quote Reactive input for CSV quote character
+# @param input Shiny input object from the parent module (server_load_data).
+#   This object is provided by moduleServer() and contains reactive references
+#   to all UI inputs defined in ui_load_data.R, including:
+#   - input$data_file: The uploaded file from fileInput(ns("data_file"))
+#   - input$csv_has_header: Checkbox for CSV header setting
+#   - input$csv_delimiter: Radio button for CSV delimiter
+#   - input$csv_quote: Radio button for CSV quote character
+#   We pass the entire input object (rather than individual values) because
+#   observeEvent() needs a reactive reference to detect file uploads.
 # @param loaded_data ReactiveVal to store the loaded data
 # @return NULL (side effects: updates loaded_data and shows notifications)
 
-handle_file_upload <- function(data_file_input, 
-                                csv_has_header, 
-                                csv_delimiter, 
-                                csv_quote, 
-                                loaded_data) {
-  shiny::observeEvent(data_file_input, {
-    shiny::req(data_file_input)
+handle_file_upload <- function(input, loaded_data) {
+  shiny::observeEvent(input$data_file, {
+    shiny::req(input$data_file)
 
-    file_info <- data_file_input
+    file_info <- input$data_file
     file_ext <- tolower(tools::file_ext(file_info$name))
 
     # Validate file type
@@ -34,7 +35,7 @@ handle_file_upload <- function(data_file_input,
       {
         if (file_ext == "csv") {
           # Read CSV with user-specified settings
-          quote_char <- csv_quote
+          quote_char <- input$csv_quote
           # Handle "None" option for quote character
           if (is.null(quote_char) || quote_char == "") {
             quote_char <- ""
@@ -42,8 +43,8 @@ handle_file_upload <- function(data_file_input,
           
           read.csv(
             file = file_info$datapath,
-            header = csv_has_header,
-            sep = csv_delimiter,
+            header = input$csv_has_header,
+            sep = input$csv_delimiter,
             quote = quote_char,
             stringsAsFactors = FALSE
           )

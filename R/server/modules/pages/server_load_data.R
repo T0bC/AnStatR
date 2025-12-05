@@ -1,5 +1,36 @@
+# Server module for the "Load Data" tab panel
+#
+# This module handles file uploads (CSV/XLSX) and displays data previews.
+# It serves as the entry point for data into the application.
+#
+# @param id Character string. The module namespace ID, must match the ID used
+#   in the corresponding UI function call (e.g., UI_load_data("load_data_id"))
+#
+# @return A reactive expression containing the loaded data frame, or NULL if
+#   no data is loaded. This reactive is consumed by downstream modules.
+#
+# @details
+# ## Shiny Module Architecture
+# 
+# The `moduleServer()` function provides three implicit objects:
+# - `input`: A reactive list containing all UI inputs namespaced to this module.
+#     For example, `input$data_file` corresponds to the fileInput with
+#     inputId = ns("data_file") defined in `R/ui/modules/pages/ui_load_data.R`.
+# - `output`: A reactive list for rendering outputs (tables, plots, etc.)
+# - `session`: The Shiny session object, used for namespace management via `session$ns`
+#
+# These objects are scoped to this module's namespace, meaning `input$data_file`
+# here only sees the input from UI_load_data(), not from other modules.
+#
+# ## Component Architecture
+# 
+# This module uses explicit dependency injection for its sub-components.
+# Each component function receives the specific objects it needs as parameters,
+# rather than relying on implicit scoping. See `docs/architecture/explicit_dependency_injection.md`.
+#
 server_load_data <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
+    # `input`, `output`, `session` are provided by moduleServer() - see @details above
     ns <- session$ns
 
     # Shared reactive value for loaded data
@@ -60,13 +91,12 @@ server_load_data <- function(id) {
     source("R/server/modules/pages/load_data/missing_values_plot.R", local = TRUE)
     source("R/server/modules/pages/load_data/data_summary.R", local = TRUE)
     
-    # Initialize modular components with explicit parameters
-    # File upload handler - requires file input and CSV settings
+    # Initialize modular components with explicit dependency injection.
+    # We pass the module's `input` object so the component can reactively
+    # access inputs defined in ui_load_data.R (e.g., input$data_file, input$csv_delimiter).
+    # See function documentation in R/server/modules/pages/load_data/file_upload.R
     handle_file_upload(
-      data_file_input = input$data_file,
-      csv_has_header = input$csv_has_header,
-      csv_delimiter = input$csv_delimiter,
-      csv_quote = input$csv_quote,
+      input = input,  # Module input object from moduleServer() above
       loaded_data = loaded_data
     )
     
