@@ -126,13 +126,15 @@ render_median_table <- function(output, output_id, filtered_data, grouping_cols,
         }
 
         # Create DataTable with options
+        # dom: l=length, t=table, i=info, p=pagination (no 'f' = no global search)
         DT::datatable(
             results,
+            filter = "top",  # Column filters at top of each column
             options = list(
                 pageLength = 25,
                 lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "All")),
                 scrollX = TRUE,
-                dom = "Blfrtip"
+                dom = "ltip"  # Removed 'f' (global search) and 'B' (buttons)
             ),
             rownames = FALSE
         )
