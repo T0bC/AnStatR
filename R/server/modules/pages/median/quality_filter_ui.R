@@ -145,8 +145,7 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
                         selected = NULL,
                         multiple = TRUE,
                         options = list(
-                            placeholder = "Select values to exclude...",
-                            plugins = list("remove_button")
+                            placeholder = "Select values to exclude..."
                         )
                     )
                 )
