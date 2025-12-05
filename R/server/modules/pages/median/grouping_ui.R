@@ -15,10 +15,10 @@ source("R/utils/column_utils.R", local = TRUE)
 render_grouping_ui <- function(output, output_id, loaded_data, input, session, selected_grouping_cols) {
     ns <- session$ns
     
-    # Reactive to get descriptive columns
+    # Reactive to get descriptive columns (strict pattern: uppercase + underscores only)
     descriptive_cols <- shiny::reactive({
         shiny::req(loaded_data())
-        get_descriptive_cols_short(loaded_data(), threshold = 20)
+        get_descriptive_cols(loaded_data())
     })
     
     # Render grouping column selection UI

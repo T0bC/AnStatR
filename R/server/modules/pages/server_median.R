@@ -1,4 +1,4 @@
-server_median <- function(id, loaded_data) {
+server_median <- function(id, loaded_data, data_version = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -15,6 +15,24 @@ server_median <- function(id, loaded_data) {
         source("R/server/modules/pages/median/quality_filter_ui.R", local = TRUE)
         source("R/server/modules/pages/median/quality_filter_logic.R", local = TRUE)
         source("R/server/modules/pages/median/median_table.R", local = TRUE)
+
+        # Reset all state when new data is loaded
+        # This prevents stale selections from causing errors with new datasets
+        if (!is.null(data_version)) {
+            shiny::observeEvent(data_version(), {
+                # Reset all reactive values to initial state
+                selected_grouping_cols(NULL)
+                quality_settings(list(enabled = FALSE))
+                filtered_data(NULL)
+                filter_message("New data loaded. Configure grouping and filtering options.")
+                median_results(NULL)
+                
+                # Reset UI inputs using updateSelectizeInput
+                shiny::updateSelectizeInput(session, "grouping_columns", selected = character(0))
+                shiny::updateSelectizeInput(session, "quality_column", selected = "None")
+                shiny::updateSelectizeInput(session, "bad_quality_values", selected = character(0))
+            }, ignoreInit = TRUE)
+        }
 
         # Initialize modular components with explicit parameters
         # Following the explicit dependency injection pattern...

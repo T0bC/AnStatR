@@ -15,10 +15,10 @@ source("R/utils/column_utils.R", local = TRUE)
 render_quality_filter_ui <- function(output, output_id, loaded_data, input, session, quality_settings) {
     ns <- session$ns
     
-    # Reactive to get descriptive columns for quality selection
+    # Reactive to get descriptive columns for quality selection (strict pattern)
     descriptive_cols <- shiny::reactive({
         shiny::req(loaded_data())
-        get_descriptive_cols_short(loaded_data(), threshold = 20)
+        get_descriptive_cols(loaded_data())
     })
     
     # Reactive to analyze selected quality column
@@ -42,22 +42,37 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
             min_val <- min(col_data, na.rm = TRUE)
             max_val <- max(col_data, na.rm = TRUE)
             
-            # Detect percentage type
+            # Check if it's discrete integers with few unique values (like quality grades 1-4)
+            # Treat as categorical if: all integers AND few unique values (≤10)
+            all_integers <- all(col_data == floor(col_data), na.rm = TRUE)
+            
+            if (all_integers && n_unique <= 10) {
+                # Treat as categorical (quality grades like 1, 2, 3, 4)
+                return(list(
+                    type = "categorical",
+                    unique_values = sort(as.character(unique_vals)),
+                    n_unique = n_unique,
+                    hint = paste0("Quality grades detected (", n_unique, " levels): ",
+                                  paste(sort(unique_vals), collapse = ", "), ".")
+                ))
+            }
+            
+            # Continuous numeric - detect percentage type
             if (min_val >= 0 && max_val <= 1) {
                 return(list(
                     type = "percentage_decimal",
                     min = min_val,
                     max = max_val,
-                    hint = paste0("Numeric values (", round(min_val, 2), " - ", round(max_val, 2), 
-                                  "). Looks like decimal percentages (0-1 range).")
+                    hint = paste0("Percentage values (", round(min_val, 2), " - ", round(max_val, 2), 
+                                  ") in decimal format (0-1).")
                 ))
-            } else if (min_val >= 0 && max_val <= 100) {
+            } else if (min_val >= 0 && max_val <= 100 && n_unique > 10) {
                 return(list(
                     type = "percentage_100",
                     min = min_val,
                     max = max_val,
-                    hint = paste0("Numeric values (", round(min_val, 2), " - ", round(max_val, 2), 
-                                  "). Looks like percentages (0-100 range).")
+                    hint = paste0("Percentage values (", round(min_val, 2), " - ", round(max_val, 2), 
+                                  ") in 0-100 format.")
                 ))
             } else {
                 return(list(
@@ -70,12 +85,12 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
             }
         }
         
-        # Categorical
+        # Categorical (non-numeric)
         list(
             type = "categorical",
             unique_values = sort(as.character(unique_vals)),
             n_unique = n_unique,
-            hint = paste0("Categorical column with ", n_unique, " unique values: ",
+            hint = paste0("Categorical values (", n_unique, " levels): ",
                           paste(head(sort(as.character(unique_vals)), 5), collapse = ", "),
                           if (n_unique > 5) "..." else "")
         )

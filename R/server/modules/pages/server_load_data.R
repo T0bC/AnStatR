@@ -35,6 +35,10 @@ server_load_data <- function(id) {
 
     # Shared reactive value for loaded data
     loaded_data <- shiny::reactiveVal(NULL)
+    
+    # Data version counter - increments each time new data is loaded
+    # Downstream modules can observe this to reset their state
+    data_version <- shiny::reactiveVal(0)
 
     # Conditional main content rendering
     output$main_content <- shiny::renderUI({
@@ -100,7 +104,8 @@ server_load_data <- function(id) {
     handle_file_upload(
       input = input,  # Module input object from moduleServer() above
       loaded_data = loaded_data,
-      session = session  # For showing column validation modal
+      session = session,  # For showing column validation modal
+      data_version = data_version  # Increment on new data load
     )
     
     # Data preview renderer - requires output object and loaded data
@@ -124,9 +129,11 @@ server_load_data <- function(id) {
       loaded_data = loaded_data
     )
 
-    # Return reactive with loaded data
-    shiny::reactive({
-      loaded_data()
-    })
+    # Return list with data and version for downstream modules
+    # Modules should observe data_version to reset state on new data load
+    list(
+      data = shiny::reactive({ loaded_data() }),
+      version = shiny::reactive({ data_version() })
+    )
   })
 }

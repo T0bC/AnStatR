@@ -49,15 +49,20 @@ app_ui <- bslib::page_navbar(
 
 app_server <- function(input, output, session) {
   # Register module servers
-  loaded_data <- server_load_data("load_data_id")
-  server_median("median_id", loaded_data = loaded_data)
+  # server_load_data returns list with $data (reactive) and $version (reactive)
+  load_data_result <- server_load_data("load_data_id")
+  
+  # Pass both data and version to downstream modules for state reset on new data
+  server_median("median_id", 
+                loaded_data = load_data_result$data, 
+                data_version = load_data_result$version)
 
   # Initialize settings modal
   settings_modal_server(input, session)
   
   # Hide/show nav panels based on data availability
   shiny::observe({
-    has_data <- !is.null(loaded_data())
+    has_data <- !is.null(load_data_result$data())
     
     # Tabs that require data to be loaded
     data_dependent_tabs <- c("median", "plotting", "reporting")

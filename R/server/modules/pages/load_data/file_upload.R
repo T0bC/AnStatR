@@ -12,12 +12,13 @@
 #   observeEvent() needs a reactive reference to detect file uploads.
 # @param loaded_data ReactiveVal to store the loaded data
 # @param session Shiny session object (optional, for showing modals)
-# @return NULL (side effects: updates loaded_data and shows notifications)
+# @param data_version ReactiveVal to increment when new data is loaded (for downstream reset)
+# @return NULL (side effects: updates loaded_data, increments data_version, shows notifications)
 
 # Source column utilities
 source("R/utils/column_utils.R", local = TRUE)
 
-handle_file_upload <- function(input, loaded_data, session = NULL) {
+handle_file_upload <- function(input, loaded_data, session = NULL, data_version = NULL) {
   shiny::observeEvent(input$data_file, {
     shiny::req(input$data_file)
 
@@ -92,6 +93,11 @@ handle_file_upload <- function(input, loaded_data, session = NULL) {
     if (!validation$valid && !is.null(session)) {
       # Show modal dialog with column naming warnings
       shiny::showModal(create_column_validation_modal(validation, session))
+    }
+
+    # Increment data version to signal downstream modules to reset
+    if (!is.null(data_version)) {
+      data_version(data_version() + 1)
     }
 
     # Update reactive value with result
