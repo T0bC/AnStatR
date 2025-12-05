@@ -30,17 +30,135 @@ UI_plotting <- function(id) {
                 options = list(placeholder = "Select descriptive columns...")
             ),
             
-            # Step 2: Additional column options (rendered dynamically after step 1)
-            shiny::uiOutput(ns("column_options_ui")),
+            # Step 2: Configure Plot Options (hidden until descriptive selected)
+            shiny::div(
+                id = ns("step2_container"),
+                style = "display: none;",
+                shiny::tags$hr(),
+                shiny::h5("2. Configure Plot Options"),
+                shiny::fluidRow(
+                    shiny::column(
+                        6,
+                        shiny::selectizeInput(
+                            inputId = ns("measureVar"),
+                            label = shiny::tags$span(
+                                "Measurement: ",
+                                bslib::tooltip(
+                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                    "Select columns containing measurements to plot."
+                                )
+                            ),
+                            choices = NULL,
+                            multiple = TRUE,
+                            options = list(placeholder = "Select...")
+                        )
+                    ),
+                    shiny::column(
+                        6,
+                        shiny::selectizeInput(
+                            inputId = ns("hideCols"),
+                            label = shiny::tags$span(
+                                "Hide from filter: ",
+                                bslib::tooltip(
+                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                    "Hide columns from filtering but keep for hover info."
+                                )
+                            ),
+                            choices = NULL,
+                            multiple = TRUE,
+                            options = list(placeholder = "Select...")
+                        )
+                    )
+                ),
+                shiny::fluidRow(
+                    shiny::column(
+                        6,
+                        shiny::selectizeInput(
+                            inputId = ns("xAxis"),
+                            label = shiny::tags$span(
+                                "X-Axis: ",
+                                bslib::tooltip(
+                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                    "Select up to 3 columns for the X-Axis. Also used in statistics."
+                                )
+                            ),
+                            choices = NULL,
+                            multiple = TRUE,
+                            options = list(placeholder = "Select...", maxItems = 3)
+                        )
+                    ),
+                    shiny::column(
+                        6,
+                        shiny::selectizeInput(
+                            inputId = ns("tooltip"),
+                            label = shiny::tags$span(
+                                "Tooltip info: ",
+                                bslib::tooltip(
+                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                    "Select columns to display when hovering over plot points."
+                                )
+                            ),
+                            choices = NULL,
+                            multiple = TRUE,
+                            options = list(placeholder = "Select...")
+                        )
+                    )
+                )
+            ),
             
-            # Step 3: Filter Data (rendered dynamically after step 1)
-            shiny::uiOutput(ns("filter_section_ui")),
+            # Step 3: Filter Data (hidden until descriptive selected)
+            shiny::div(
+                id = ns("step3_container"),
+                style = "display: none;",
+                shiny::tags$hr(),
+                shiny::h5("3. Filter Data"),
+                shiny::uiOutput(ns("checkboxes"))
+            ),
 
-            # Step 4: Trimming Section (rendered dynamically after step 1)
-            shiny::uiOutput(ns("trimming_section_ui")),
+            # Step 4: Trimming Section (hidden until descriptive selected)
+            shiny::div(
+                id = ns("step4_container"),
+                style = "display: none;",
+                shiny::tags$hr(),
+                shiny::h5("4. Data Trimming"),
+                shiny::sliderInput(
+                    inputId = ns("trim_slider"),
+                    label = shiny::tags$span(
+                        "Trimming Value: ",
+                        bslib::tooltip(
+                            bsicons::bs_icon("info-circle", class = "text-muted"),
+                            paste0(
+                                "Data trimming removes a percentage of the highest and lowest values ",
+                                "to reduce the impact of outliers."
+                            )
+                        )
+                    ),
+                    min = 0,
+                    max = 100,
+                    value = 0,
+                    step = 1
+                )
+            ),
 
-            # Download Section (rendered dynamically after step 1)
-            shiny::uiOutput(ns("download_section_ui"))
+            # Download Section (hidden until descriptive selected)
+            shiny::div(
+                id = ns("download_container"),
+                style = "display: none;",
+                shiny::tags$hr(),
+                shiny::downloadButton(
+                    outputId = ns("downloadData"),
+                    label = "Download Filtered Data",
+                    class = "btn-primary btn-sm w-100"
+                )
+            ),
+            
+            # Placeholder message when no selection (hidden by default when sections show)
+            shiny::tags$p(
+                id = ns("placeholder_message"),
+                class = "text-muted fst-italic small",
+                style = "display: none;",
+                "Select at least one descriptive column to continue..."
+            )
         ),
 
         # Main content area - plots will be rendered here
