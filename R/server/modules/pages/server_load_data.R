@@ -52,34 +52,35 @@ server_load_data <- function(id) {
           )
         )
       } else {
-        # Data panels when data is loaded
-        shinyBS::bsCollapse(
-          id = ns("data_preview_collapse"),
-          open = ns("data_preview_panel"),
-          shinyBS::bsCollapsePanel(
-            title = "Data preview",
-            value = ns("data_preview_panel"),
+        # Data panels when data is loaded - using collapsible accordion panels
+        # Accordion allows multiple panels to be open/closed independently
+        bslib::accordion(
+          id = ns("data_panels_accordion"),
+          open = "data_preview",
+          multiple = TRUE,
+          bslib::accordion_panel(
+            title = "Data Preview",
+            value = "data_preview",
+            icon = shiny::icon("table"),
             shiny::includeMarkdown("docs/load_data/data_preview.md"),
             shiny::div(
               class = "table-responsive",
               DT::dataTableOutput(ns("data_preview"))
             )
           ),
-          shinyBS::bsCollapsePanel(
+          bslib::accordion_panel(
             title = "Missing Values",
-            value = ns("missing_values_panel"),
+            value = "missing_values",
+            icon = shiny::icon("chart-bar"),
             shiny::includeMarkdown("docs/load_data/missing_values.md"),
-            shiny::div(
-              shiny::plotOutput(ns("missing_values_plot"), height = "800px")
-            )
+            shiny::plotOutput(ns("missing_values_plot"), height = "800px")
           ),
-          shinyBS::bsCollapsePanel(
+          bslib::accordion_panel(
             title = "Data Summary",
-            value = ns("data_summary_panel"),
+            value = "data_summary",
+            icon = shiny::icon("list"),
             shiny::includeMarkdown("docs/load_data/data_summary.md"),
-            shiny::div(
-              shiny::htmlOutput(ns("data_summary"))
-            )
+            shiny::htmlOutput(ns("data_summary"))
           )
         )
       }

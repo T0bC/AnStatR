@@ -8,7 +8,7 @@ source("R/server/modules/pages/server_median.R")
 
 # Load required packages
 library(shiny)
-library(shinyBS)
+library(bslib)
 library(openxlsx)
 library(DT)
 library(DataExplorer)
@@ -18,14 +18,18 @@ library(summarytools)
 # This avoids file clutter when DataExplorer or other packages open a default device
 pdf(NULL)
 
-app_ui <- shiny::fluidPage(
-  shiny::titlePanel("TexAn 2.0"),
-  shiny::tabsetPanel(
-    shiny::tabPanel("Load Data", UI_load_data("load_data_id")),
-    shiny::tabPanel("Median Analysis", UI_median("median_id")),
-    shiny::tabPanel("Plotting", "TODO: Add plotting UI."),
-    shiny::tabPanel("Reporting", "TODO: Add reporting UI.")
-  )
+app_ui <- bslib::page_navbar(
+  id = "active_page",
+  title = "TexAn 2.0",
+  bg = "#336699",
+  inverse = TRUE,
+  header = shiny::tags$head(
+    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "css/styles.css")
+  ),
+  bslib::nav_panel(title = "Load Data", UI_load_data("load_data_id")),
+  bslib::nav_panel(title = "Median Analysis", UI_median("median_id")),
+  bslib::nav_panel(title = "Plotting", shiny::p("TODO: Add plotting UI.")),
+  bslib::nav_panel(title = "Reporting", shiny::p("TODO: Add reporting UI."))
 )
 
 app_server <- function(input, output, session) {

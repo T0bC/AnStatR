@@ -1,14 +1,9 @@
 UI_median <- function(id) {
     ns <- shiny::NS(id)
 
-    shiny::tagList(
-        shiny::sidebarLayout(
-            shiny::sidebarPanel(
-                shiny::tags$style(shiny::HTML("
-          .btn-primary {
-            background-color: #336699;
-          }
-        ")),
+    bslib::layout_sidebar(
+            sidebar = bslib::sidebar(
+                title = "Median Analysis",
                 shiny::actionButton(ns("helpButton"), "Help", class = "btn-primary"),
                 shiny::h4("Filter Data"),
                 shiny::includeMarkdown("docs/median_calculation/MEDIAN_filter.md"),
@@ -17,10 +12,7 @@ UI_median <- function(id) {
                 shiny::h4("Calculate Median"),
                 shiny::includeMarkdown("docs/median_calculation/MEDIAN_instructions.md")
             ),
-            shiny::mainPanel(
-                DT::dataTableOutput(ns("medianTable")),
-                shiny::uiOutput(ns("filteringMessage2"))
-            )
-        )
+        DT::dataTableOutput(ns("medianTable")),
+        shiny::uiOutput(ns("filteringMessage2"))
     )
 }
