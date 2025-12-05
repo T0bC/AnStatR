@@ -1,10 +1,9 @@
 UI_load_data <- function(id) {
   ns <- shiny::NS(id)
 
-  shiny::tagList(
-    shiny::h4("Load Data"),
-    shiny::sidebarLayout(
-      shiny::sidebarPanel(
+  bslib::layout_sidebar(
+      sidebar = bslib::sidebar(
+        title = "Load Data",
         shiny::includeMarkdown("docs/load_data/instructions.md"),
         shiny::fileInput(
           inputId = ns("data_file"),
@@ -18,12 +17,12 @@ UI_load_data <- function(id) {
           )
         ),
         shiny::helpText("Accepted formats: CSV or XLSX (single file)."),
-        shinyBS::bsCollapse(
+        bslib::accordion(
           id = ns("csv_settings_collapse"),
-          open = NULL,
-          shinyBS::bsCollapsePanel(
+          open = FALSE,
+          bslib::accordion_panel(
             title = "CSV settings",
-            value = ns("csv_settings_panel"),
+            value = "csv_settings_panel",
             shiny::helpText(
               "The following settings only apply to CSV uploads.",
               "XLSX files ignore these options."
@@ -56,9 +55,6 @@ UI_load_data <- function(id) {
           )
         )
       ),
-      shiny::mainPanel(
-        shiny::uiOutput(ns("main_content"))
-      )
-    )
+      shiny::uiOutput(ns("main_content"))
   )
 }
