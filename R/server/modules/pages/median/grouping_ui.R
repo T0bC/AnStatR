@@ -47,8 +47,7 @@ render_grouping_ui <- function(output, output_id, loaded_data, input, session, s
                 selected = NULL,
                 multiple = TRUE,
                 options = list(
-                    placeholder = "Select grouping columns...",
-                    plugins = list("remove_button")
+                    placeholder = "Select grouping columns..."
                 )
             ),
             # Dynamic help text based on selection
