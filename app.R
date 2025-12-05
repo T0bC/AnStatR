@@ -1,6 +1,7 @@
 # Source UI modules
 source("R/ui/modules/pages/ui_load_data.R")
 source("R/ui/modules/pages/ui_median.R")
+source("R/ui/modules/pages/ui_plotting.R")
 
 # Source component modules
 source("R/ui/modules/components/settings_modal.R")
@@ -8,6 +9,7 @@ source("R/ui/modules/components/settings_modal.R")
 # Source server modules
 source("R/server/modules/pages/server_load_data.R")
 source("R/server/modules/pages/server_median.R")
+source("R/server/modules/pages/server_plotting.R")
 
 # Load required packages
 library(shiny)
@@ -37,7 +39,7 @@ app_ui <- bslib::page_navbar(
   ),
   bslib::nav_panel(title = "Load Data", value = "load_data", UI_load_data("load_data_id")),
   bslib::nav_panel(title = "Median Analysis", value = "median", UI_median("median_id")),
-  bslib::nav_panel(title = "Plotting", value = "plotting", shiny::p("TODO: Add plotting UI.")),
+  bslib::nav_panel(title = "Plotting", value = "plotting", UI_plotting("plotting_id")),
   bslib::nav_panel(title = "Reporting", value = "reporting", shiny::p("TODO: Add reporting UI.")),
   bslib::nav_spacer(),
   bslib::nav_item(
@@ -55,9 +57,15 @@ app_server <- function(input, output, session) {
   load_data_result <- server_load_data("load_data_id")
   
   # Pass both data and version to downstream modules for state reset on new data
-  server_median("median_id", 
+  median_result <- server_median("median_id", 
                 loaded_data = load_data_result$data, 
                 data_version = load_data_result$version)
+  
+  # Pass median data to plotting module
+  # median_result is a reactive containing the median results
+  server_plotting("plotting_id",
+                  median_data = median_result,
+                  data_version = load_data_result$version)
 
   # Initialize settings modal
   settings_modal_server(input, session)
