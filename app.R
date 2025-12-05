@@ -31,7 +31,9 @@ app_ui <- bslib::page_navbar(
   title = "TexAn 2.0",
   theme = get_default_theme(),
   header = shiny::tags$head(
-    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css")
+    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css"),
+    # Include selectize dependencies to fix DT column filter compatibility issue
+    htmltools::findDependencies(shiny::selectizeInput("__selectize_dep__", NULL, choices = NULL))
   ),
   bslib::nav_panel(title = "Load Data", value = "load_data", UI_load_data("load_data_id")),
   bslib::nav_panel(title = "Median Analysis", value = "median", UI_median("median_id")),
