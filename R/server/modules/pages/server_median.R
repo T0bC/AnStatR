@@ -3,12 +3,17 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         ns <- session$ns
 
         # Shared reactive values
-        selected_grouping_cols <- shiny::reactiveVal(NULL)
+        selected_grouping_cols_raw <- shiny::reactiveVal(NULL)
         quality_settings <- shiny::reactiveVal(list(enabled = FALSE))
         filtered_data <- shiny::reactiveVal(NULL)
         filter_message <- shiny::reactiveVal("No data loaded.")
         median_results <- shiny::reactiveVal(NULL)
         removed_cols <- shiny::reactiveVal(NULL)  # Columns removed due to within-group variation
+        
+        # Debounced grouping columns (500ms delay to avoid glitchy re-renders during selection)
+        selected_grouping_cols <- shiny::reactive({
+            selected_grouping_cols_raw()
+        }) |> shiny::debounce(500)
 
         # Source modular component functions
         source("R/server/modules/pages/median/help_modal.R", local = TRUE)
@@ -22,7 +27,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
                 # Reset all reactive values to initial state
-                selected_grouping_cols(NULL)
+                selected_grouping_cols_raw(NULL)
                 quality_settings(list(enabled = FALSE))
                 filtered_data(NULL)
                 filter_message("New data loaded. Configure grouping and filtering options.")
@@ -45,14 +50,14 @@ server_median <- function(id, loaded_data, data_version = NULL) {
             session = session
         )
 
-        # Grouping UI renderer
+        # Grouping UI renderer (writes to raw value, debounced version used downstream)
         render_grouping_ui(
             output = output,
             output_id = "grouping_ui",
             loaded_data = loaded_data,
             input = input,
             session = session,
-            selected_grouping_cols = selected_grouping_cols
+            selected_grouping_cols = selected_grouping_cols_raw
         )
 
         # Quality filter UI renderer
