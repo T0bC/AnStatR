@@ -23,10 +23,11 @@ server_plotting <- function(id, median_data, data_version) {
             }, ignoreInit = TRUE)
         }
         
-        # Reactive: check if descriptive columns are selected
-        has_descriptive_selection <- shiny::reactive({
+        # Reactive: check if descriptive columns are selected (debounced to prevent flickering)
+        has_descriptive_selection_raw <- shiny::reactive({
             !is.null(input$metaData) && length(input$metaData) > 0
         })
+        has_descriptive_selection <- has_descriptive_selection_raw |> shiny::debounce(300)
         
         # Reactive: get descriptive columns (strict pattern: uppercase + underscores only)
         descriptive_cols <- shiny::reactive({
@@ -50,93 +51,88 @@ server_plotting <- function(id, median_data, data_version) {
             )
         })
         
-        # Render column options UI (Step 2) - only when descriptive columns selected
-        output$column_options_ui <- shiny::renderUI({
-            if (!has_descriptive_selection()) {
-                return(shiny::tags$p(
-                    class = "text-muted fst-italic small",
-                    "Select at least one descriptive column to continue..."
-                ))
-            }
-            
-            shiny::tagList(
-                shiny::tags$hr(),
-                shiny::h5("2. Configure Plot Options"),
-                # Measurement and Hide columns row
-                shiny::fluidRow(
-                    shiny::column(
-                        6,
-                        shiny::selectizeInput(
-                            inputId = ns("measureVar"),
-                            label = shiny::tags$span(
-                                "Measurement: ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Select columns containing measurements to plot."
-                                )
-                            ),
-                            choices = measurement_cols(),
-                            selected = input$measureVar,
-                            multiple = TRUE,
-                            options = list(placeholder = "Select...")
-                        )
-                    ),
-                    shiny::column(
-                        6,
-                        shiny::selectizeInput(
-                            inputId = ns("hideCols"),
-                            label = shiny::tags$span(
-                                "Hide from filter: ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Hide columns from filtering but keep for hover info."
-                                )
-                            ),
-                            choices = input$metaData,
-                            selected = input$hideCols[input$hideCols %in% input$metaData],
-                            multiple = TRUE,
-                            options = list(placeholder = "Select...")
-                        )
-                    )
-                ),
-                # X-Axis and Tooltip row
-                shiny::fluidRow(
-                    shiny::column(
-                        6,
-                        shiny::selectizeInput(
-                            inputId = ns("xAxis"),
-                            label = shiny::tags$span(
-                                "X-Axis: ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Select up to 3 columns for the X-Axis. Also used in statistics."
-                                )
-                            ),
-                            choices = input$metaData,
-                            selected = input$xAxis[input$xAxis %in% input$metaData],
-                            multiple = TRUE,
-                            options = list(placeholder = "Select...", maxItems = 3)
-                        )
-                    ),
-                    shiny::column(
-                        6,
-                        shiny::selectizeInput(
-                            inputId = ns("tooltip"),
-                            label = shiny::tags$span(
-                                "Tooltip info: ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Select columns to display when hovering over plot points."
-                                )
-                            ),
-                            choices = input$metaData,
-                            selected = input$tooltip[input$tooltip %in% input$metaData],
-                            multiple = TRUE,
-                            options = list(placeholder = "Select...")
-                        )
-                    )
-                )
+        # Update measureVar choices when data changes
+        shiny::observe({
+            cols <- measurement_cols()
+            shiny::updateSelectizeInput(
+                session, "measureVar",
+                choices = cols,
+                selected = input$measureVar
             )
+        })
+        
+        # Update hideCols, xAxis, tooltip choices based on selected metaData
+        shiny::observe({
+            selected_meta <- input$metaData
+            if (is.null(selected_meta)) selected_meta <- character(0)
+            
+            # Update hideCols
+            shiny::updateSelectizeInput(
+                session, "hideCols",
+                choices = selected_meta,
+                selected = input$hideCols[input$hideCols %in% selected_meta]
+            )
+            
+            # Update xAxis
+            shiny::updateSelectizeInput(
+                session, "xAxis",
+                choices = selected_meta,
+                selected = input$xAxis[input$xAxis %in% selected_meta]
+            )
+            
+            # Update tooltip
+            shiny::updateSelectizeInput(
+                session, "tooltip",
+                choices = selected_meta,
+                selected = input$tooltip[input$tooltip %in% selected_meta]
+            )
+        })
+        
+        # Show/hide UI sections based on descriptive selection using CSS
+        shiny::observe({
+            has_selection <- has_descriptive_selection()
+            
+            # Remove any existing visibility style first
+            shiny::removeUI(selector = paste0("#", ns("visibility_style")), immediate = TRUE)
+            
+            # Insert appropriate visibility style
+            if (has_selection) {
+                # Show step containers, hide placeholder
+                shiny::insertUI(
+                    selector = "head",
+                    where = "beforeEnd",
+                    ui = shiny::tags$style(
+                        id = ns("visibility_style"),
+                        paste0(
+                            "#", ns("step2_container"), ",",
+                            "#", ns("step3_container"), ",",
+                            "#", ns("step4_container"), ",",
+                            "#", ns("download_container"),
+                            " { display: block !important; }",
+                            "#", ns("placeholder_message"), " { display: none !important; }"
+                        )
+                    ),
+                    immediate = TRUE
+                )
+            } else {
+                # Hide step containers, show placeholder
+                shiny::insertUI(
+                    selector = "head",
+                    where = "beforeEnd",
+                    ui = shiny::tags$style(
+                        id = ns("visibility_style"),
+                        paste0(
+                            "#", ns("step2_container"), ",",
+                            "#", ns("step3_container"), ",",
+                            "#", ns("step4_container"), ",",
+                            "#", ns("download_container"),
+                            " { display: none !important; }",
+                            "#", ns("placeholder_message"), " { display: block !important; }"
+                        )
+                    ),
+                    immediate = TRUE
+                )
+            }
         })
         
         # Reactive: columns to show for filtering (metaData minus hideCols)
@@ -145,24 +141,24 @@ server_plotting <- function(id, median_data, data_version) {
             hidden <- input$hideCols
             if (is.null(selected)) return(character(0))
             selected[!selected %in% hidden]
-        })
+        }) |> shiny::debounce(300)
         
-        # Render filter section UI (Step 3) - only when descriptive columns selected
-        output$filter_section_ui <- shiny::renderUI({
-            if (!has_descriptive_selection()) return(NULL)
-            
+        # Render checkboxes for filtering
+        output$checkboxes <- shiny::renderUI({
             data <- median_data()
             shiny::req(data)
             
             cols <- filter_cols()
             
-            # Build checkboxes
-            checkboxes_ui <- if (length(cols) == 0) {
-                shiny::tags$p(
+            if (length(cols) == 0) {
+                return(shiny::tags$p(
                     class = "text-muted fst-italic small",
-                    "All descriptive columns are hidden from filtering."
-                )
-            } else if (length(cols) > 1) {
+                    "Select descriptive columns or unhide some to see filtering options."
+                ))
+            }
+            
+            # Split columns into two groups for side-by-side layout
+            if (length(cols) > 1) {
                 half <- ceiling(length(cols) / 2)
                 cols1 <- cols[seq_len(half)]
                 cols2 <- cols[-seq_len(half)]
@@ -182,53 +178,6 @@ server_plotting <- function(id, median_data, data_version) {
                 choices <- unique(data[[col]])
                 shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
             }
-            
-            shiny::tagList(
-                shiny::tags$hr(),
-                shiny::h5("3. Filter Data"),
-                checkboxes_ui
-            )
-        })
-        
-        # Render trimming section UI (Step 4) - only when descriptive columns selected
-        output$trimming_section_ui <- shiny::renderUI({
-            if (!has_descriptive_selection()) return(NULL)
-            
-            shiny::tagList(
-                shiny::tags$hr(),
-                shiny::h5("4. Data Trimming"),
-                shiny::sliderInput(
-                    inputId = ns("trim_slider"),
-                    label = shiny::tags$span(
-                        "Trimming Value: ",
-                        bslib::tooltip(
-                            bsicons::bs_icon("info-circle", class = "text-muted"),
-                            paste0(
-                                "Data trimming removes a percentage of the highest and lowest values ",
-                                "to reduce the impact of outliers."
-                            )
-                        )
-                    ),
-                    min = 0,
-                    max = 100,
-                    value = 0,
-                    step = 1
-                )
-            )
-        })
-        
-        # Render download section UI - only when descriptive columns selected
-        output$download_section_ui <- shiny::renderUI({
-            if (!has_descriptive_selection()) return(NULL)
-            
-            shiny::tagList(
-                shiny::tags$hr(),
-                shiny::downloadButton(
-                    outputId = ns("downloadData"),
-                    label = "Download Filtered Data",
-                    class = "btn-primary btn-sm w-100"
-                )
-            )
         })
         
         # Placeholder for plots output
