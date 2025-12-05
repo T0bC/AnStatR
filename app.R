@@ -18,13 +18,16 @@ library(summarytools)
 # This avoids file clutter when DataExplorer or other packages open a default device
 pdf(NULL)
 
+# Register www folder for static resources
+shiny::addResourcePath("www", "www")
+
 app_ui <- bslib::page_navbar(
   id = "active_page",
   title = "TexAn 2.0",
   bg = "#336699",
   inverse = TRUE,
   header = shiny::tags$head(
-    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "css/styles.css")
+    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css")
   ),
   bslib::nav_panel(title = "Load Data", UI_load_data("load_data_id")),
   bslib::nav_panel(title = "Median Analysis", UI_median("median_id")),

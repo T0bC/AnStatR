@@ -1,6 +1,6 @@
 /* TexAn 2.0 Custom Styles */
 
 /* Responsive sidebar width for all bslib sidebar layouts */
-.bslib-sidebar-layout > .sidebar {
-  --_sidebar-width: clamp(320px, 35vw, 450px) !important;
+.bslib-sidebar-layout {
+    --_sidebar-width: clamp(320px, 33vw, 450px) !important;
 }
