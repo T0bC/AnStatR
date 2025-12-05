@@ -14,6 +14,10 @@ library(DT)
 library(DataExplorer)
 library(summarytools)
 
+# Prevent Rplots.pdf creation by setting default PDF device to null
+# This avoids file clutter when DataExplorer or other packages open a default device
+pdf(NULL)
+
 app_ui <- shiny::fluidPage(
   shiny::titlePanel("TexAn 2.0"),
   shiny::tabsetPanel(
