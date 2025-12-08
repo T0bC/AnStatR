@@ -210,6 +210,20 @@ server_plotting <- function(id, median_data, data_version) {
             input$trim_slider %||% 0
         }) |> shiny::debounce(300)
         
+        # Reactive: outlier detection options from Processing tab (debounced)
+        outlier_options <- shiny::reactive({
+            list(
+                enabled = input$enableOutlierDetection %||% FALSE,
+                method = input$detectOutlier %||% "IQR",
+                factor = if (input$detectOutlier %in% c("kde", "isolation_forest", "lof")) {
+                    input$probabilityFactor %||% 0.05
+                } else {
+                    input$standardFactor %||% 1.5
+                },
+                bootstrap_samples = input$bootstrapSamples %||% 1000
+            )
+        }) |> shiny::debounce(300)
+        
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
         setup_plot_outputs(
@@ -223,7 +237,8 @@ server_plotting <- function(id, median_data, data_version) {
             window_size = window_size,
             export_width = export_width,
             export_height = export_height,
-            trim_percent = trim_percent
+            trim_percent = trim_percent,
+            outlier_options = outlier_options
         )
         
         # Render the plots UI container
