@@ -192,6 +192,7 @@ server_plotting <- function(id, median_data, data_version) {
         output$plots <- shiny::renderUI({
             # Check if we have the minimum required selections
             has_data <- !is.null(median_data()) && nrow(median_data()) > 0
+            meta_data <- input$metaData
             measures <- input$measureVar
             x_axis <- input$xAxis
             
@@ -201,22 +202,62 @@ server_plotting <- function(id, median_data, data_version) {
                 ))
             }
             
-            if (is.null(measures) || length(measures) == 0) {
+            # Step 1: Need descriptive columns
+            if (is.null(meta_data) || length(meta_data) == 0) {
                 return(create_placeholder_ui(
                     shiny::tagList(
-                        "Select measurement columns in the ",
-                        shiny::tags$strong("Data"),
-                        " tab to generate plots."
+                        shiny::tags$div(
+                            class = "text-center",
+                            bsicons::bs_icon("1-circle", size = "2em", class = "text-primary mb-2"),
+                            shiny::tags$p(
+                                "Select ", shiny::tags$strong("Descriptive columns"),
+                                " in the sidebar to get started."
+                            ),
+                            shiny::tags$p(
+                                class = "small text-muted",
+                                "These columns describe your data (e.g., sample ID, treatment, group)."
+                            )
+                        )
                     )
                 ))
             }
             
+            # Step 2: Need measurement columns
+            if (is.null(measures) || length(measures) == 0) {
+                return(create_placeholder_ui(
+                    shiny::tagList(
+                        shiny::tags$div(
+                            class = "text-center",
+                            bsicons::bs_icon("2-circle", size = "2em", class = "text-primary mb-2"),
+                            shiny::tags$p(
+                                "Select ", shiny::tags$strong("Measurement columns (Y-Axis)"),
+                                " to define what to plot."
+                            ),
+                            shiny::tags$p(
+                                class = "small text-muted",
+                                "One plot will be generated for each measurement column."
+                            )
+                        )
+                    )
+                ))
+            }
+            
+            # Step 3: Need X-axis
             if (is.null(x_axis) || length(x_axis) == 0) {
                 return(create_placeholder_ui(
                     shiny::tagList(
-                        "Select X-axis column(s) in the ",
-                        shiny::tags$strong("Data"),
-                        " tab to generate plots."
+                        shiny::tags$div(
+                            class = "text-center",
+                            bsicons::bs_icon("3-circle", size = "2em", class = "text-primary mb-2"),
+                            shiny::tags$p(
+                                "Select ", shiny::tags$strong("X-Axis"),
+                                " column(s) to complete the plot configuration."
+                            ),
+                            shiny::tags$p(
+                                class = "small text-muted",
+                                "You can select up to 3 columns for grouping on the X-axis."
+                            )
+                        )
                     )
                 ))
             }

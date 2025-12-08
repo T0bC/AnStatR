@@ -31,7 +31,7 @@ UI_plotting <- function(id) {
                     shiny::tags$div(
                         class = "pt-3",
                         shiny::h6(class = "text-muted mb-3", "Data Selection"),
-                        # Descriptive columns
+                        # Step 1: Descriptive columns (always visible)
                         shiny::selectizeInput(
                             inputId = ns("metaData"),
                             label = shiny::tags$span(
@@ -45,53 +45,61 @@ UI_plotting <- function(id) {
                             multiple = TRUE,
                             options = list(placeholder = "Select descriptive columns...")
                         ),
-                        # Measurement columns
-                        shiny::selectizeInput(
-                            inputId = ns("measureVar"),
-                            label = shiny::tags$span(
-                                "Measurement columns ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Select columns containing measurements to plot. One plot per column."
-                                )
+                        # Step 2: Measurement columns (shown when metaData selected)
+                        shiny::conditionalPanel(
+                            condition = "input.metaData && input.metaData.length > 0",
+                            ns = ns,
+                            shiny::selectizeInput(
+                                inputId = ns("measureVar"),
+                                label = shiny::tags$span(
+                                    "Measurement columns (Y-Axis) ",
+                                    bslib::tooltip(
+                                        bsicons::bs_icon("info-circle", class = "text-muted"),
+                                        "Select columns containing measurements to plot. One plot per column."
+                                    )
+                                ),
+                                choices = NULL,
+                                multiple = TRUE,
+                                options = list(placeholder = "Select measurement columns...")
                             ),
-                            choices = NULL,
-                            multiple = TRUE,
-                            options = list(placeholder = "Select measurement columns...")
-                        ),
-                        shiny::tags$hr(),
-                        # X-Axis and Tooltip in a row
-                        shiny::fluidRow(
-                            shiny::column(
-                                6,
-                                shiny::selectizeInput(
-                                    inputId = ns("xAxis"),
-                                    label = shiny::tags$span(
-                                        "X-Axis ",
-                                        bslib::tooltip(
-                                            bsicons::bs_icon("info-circle", class = "text-muted"),
-                                            "Select up to 3 columns for the X-Axis. Also used in statistics."
+                            # Step 3: X-Axis and Tooltip (shown when measureVar selected)
+                            shiny::conditionalPanel(
+                                condition = "input.measureVar && input.measureVar.length > 0",
+                                ns = ns,
+                                shiny::tags$hr(),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        6,
+                                        shiny::selectizeInput(
+                                            inputId = ns("xAxis"),
+                                            label = shiny::tags$span(
+                                                "X-Axis ",
+                                                bslib::tooltip(
+                                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                                    "Select up to 3 columns for the X-Axis. Also used in statistics."
+                                                )
+                                            ),
+                                            choices = NULL,
+                                            multiple = TRUE,
+                                            options = list(placeholder = "Select...", maxItems = 3)
                                         )
                                     ),
-                                    choices = NULL,
-                                    multiple = TRUE,
-                                    options = list(placeholder = "Select...", maxItems = 3)
-                                )
-                            ),
-                            shiny::column(
-                                6,
-                                shiny::selectizeInput(
-                                    inputId = ns("tooltip"),
-                                    label = shiny::tags$span(
-                                        "Tooltip ",
-                                        bslib::tooltip(
-                                            bsicons::bs_icon("info-circle", class = "text-muted"),
-                                            "Select columns to display when hovering over plot points."
+                                    shiny::column(
+                                        6,
+                                        shiny::selectizeInput(
+                                            inputId = ns("tooltip"),
+                                            label = shiny::tags$span(
+                                                "Tooltip ",
+                                                bslib::tooltip(
+                                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                                    "Select columns to display when hovering over plot points."
+                                                )
+                                            ),
+                                            choices = NULL,
+                                            multiple = TRUE,
+                                            options = list(placeholder = "Select...")
                                         )
-                                    ),
-                                    choices = NULL,
-                                    multiple = TRUE,
-                                    options = list(placeholder = "Select...")
+                                    )
                                 )
                             )
                         )
