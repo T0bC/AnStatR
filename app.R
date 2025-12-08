@@ -21,6 +21,8 @@ library(DT)
 library(DataExplorer)
 library(summarytools)
 library(ggiraph)
+library(colourpicker)
+library(scales)
 
 # Prevent Rplots.pdf creation by setting default PDF device to null
 # This avoids file clutter when DataExplorer or other packages open a default device
