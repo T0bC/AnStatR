@@ -35,9 +35,9 @@ setup_plot_outputs <- function(output,
         win_size <- if (!is.null(window_size) && is.function(window_size)) window_size() else NULL
         
         if (!is.null(win_size) && !is.null(win_size$width)) {
-            width_svg <- round(win_size$width / 100, 0) / 1.5
+            width_svg <- round(win_size$width / 100, 0) / 2.0
         } else {
-            width_svg <- 10 / 1.5
+            width_svg <- 10 / 2.0
         }
         
         # Create a plot output for each measurement
@@ -70,7 +70,7 @@ setup_plot_outputs <- function(output,
                     ggiraph::girafe(
                         ggobj = p,
                         width_svg = local_width,
-                        height_svg = ceiling(650/100) / 1.5,
+                        height_svg = ceiling(650/100) / 2.0,
                         options = list(
                             ggiraph::opts_zoom(max = 5),
                             ggiraph::opts_selection(type = "single"),
