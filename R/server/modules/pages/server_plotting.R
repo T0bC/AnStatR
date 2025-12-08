@@ -20,14 +20,13 @@ server_plotting <- function(id, median_data, data_version) {
                 shiny::updateSelectizeInput(session, "xAxis", selected = character(0))
                 shiny::updateSelectizeInput(session, "tooltip", selected = character(0))
                 shiny::updateSliderInput(session, "trim_slider", value = 0)
+                shiny::updateCheckboxInput(session, "enableOutlierDetection", value = FALSE)
+                shiny::updateRadioButtons(session, "detectOutlier", selected = "IQR")
+                shiny::updateSliderInput(session, "standardFactor", value = 1.5)
+                shiny::updateSliderInput(session, "probabilityFactor", value = 0.05)
+                shiny::updateNumericInput(session, "bootstrapSamples", value = 1000)
             }, ignoreInit = TRUE)
         }
-        
-        # Reactive: check if descriptive columns are selected (debounced to prevent flickering)
-        has_descriptive_selection_raw <- shiny::reactive({
-            !is.null(input$metaData) && length(input$metaData) > 0
-        })
-        has_descriptive_selection <- has_descriptive_selection_raw |> shiny::debounce(300)
         
         # Reactive: get descriptive columns (strict pattern: uppercase + underscores only)
         descriptive_cols <- shiny::reactive({
@@ -88,53 +87,6 @@ server_plotting <- function(id, median_data, data_version) {
             )
         })
         
-        # Show/hide UI sections based on descriptive selection using CSS
-        shiny::observe({
-            has_selection <- has_descriptive_selection()
-            
-            # Remove any existing visibility style first
-            shiny::removeUI(selector = paste0("#", ns("visibility_style")), immediate = TRUE)
-            
-            # Insert appropriate visibility style
-            if (has_selection) {
-                # Show step containers, hide placeholder
-                shiny::insertUI(
-                    selector = "head",
-                    where = "beforeEnd",
-                    ui = shiny::tags$style(
-                        id = ns("visibility_style"),
-                        paste0(
-                            "#", ns("step2_container"), ",",
-                            "#", ns("step3_container"), ",",
-                            "#", ns("step4_container"), ",",
-                            "#", ns("download_container"),
-                            " { display: block !important; }",
-                            "#", ns("placeholder_message"), " { display: none !important; }"
-                        )
-                    ),
-                    immediate = TRUE
-                )
-            } else {
-                # Hide step containers, show placeholder
-                shiny::insertUI(
-                    selector = "head",
-                    where = "beforeEnd",
-                    ui = shiny::tags$style(
-                        id = ns("visibility_style"),
-                        paste0(
-                            "#", ns("step2_container"), ",",
-                            "#", ns("step3_container"), ",",
-                            "#", ns("step4_container"), ",",
-                            "#", ns("download_container"),
-                            " { display: none !important; }",
-                            "#", ns("placeholder_message"), " { display: block !important; }"
-                        )
-                    ),
-                    immediate = TRUE
-                )
-            }
-        })
-        
         # Reactive: columns to show for filtering (metaData minus hideCols)
         filter_cols <- shiny::reactive({
             selected <- input$metaData
@@ -182,20 +134,40 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Placeholder for plots output
         output$plots <- shiny::renderUI({
-            if (!has_descriptive_selection()) {
+            # Check if we have the minimum required selections
+            has_data <- !is.null(median_data()) && nrow(median_data()) > 0
+            has_descriptive <- !is.null(input$metaData) && length(input$metaData) > 0
+            has_measurement <- !is.null(input$measureVar) && length(input$measureVar) > 0
+            
+            if (!has_data) {
                 return(bslib::card(
                     bslib::card_header("Plots"),
                     bslib::card_body(
                         shiny::tags$p(
                             class = "text-muted",
-                            "Select descriptive columns in the sidebar to begin configuring your plots."
+                            "No data available. Please complete the Median Analysis first."
                         )
                     )
                 ))
             }
             
+            if (!has_descriptive || !has_measurement) {
+                return(bslib::card(
+                    bslib::card_header("Plots"),
+                    bslib::card_body(
+                        shiny::tags$p(
+                            class = "text-muted",
+                            "Select descriptive and measurement columns in the ",
+                            shiny::tags$strong("Data"),
+                            " tab to generate plots."
+                        )
+                    )
+                ))
+            }
+            
+            # Placeholder for actual plots
             bslib::card(
-                bslib::card_header("Plots"),
+                bslib::card_header(paste0("Plots (", length(input$measureVar), " measurement columns selected)")),
                 bslib::card_body(
                     shiny::p("Plot output will appear here once server logic is implemented.")
                 )
