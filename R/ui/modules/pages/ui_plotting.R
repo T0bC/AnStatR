@@ -273,9 +273,192 @@ UI_plotting <- function(id) {
                     shiny::tags$div(
                         class = "pt-3",
                         shiny::h6(class = "text-muted mb-3", "Plot Style"),
-                        shiny::tags$p(class = "text-muted small fst-italic", 
-                            "Plot styling options coming soon...")
-                        # Future: titles, legends, colors, etc.
+                        
+                        # Point Settings
+                        bslib::accordion(
+                            id = ns("style_accordion"),
+                            open = "points",
+                            
+                            # === Points Section ===
+                            bslib::accordion_panel(
+                                title = "Points",
+                                value = "points",
+                                icon = bsicons::bs_icon("circle-fill"),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        4,
+                                        shiny::numericInput(
+                                            ns("pointSize"), 
+                                            bslib::tooltip(
+                                                shiny::span("Size ", bsicons::bs_icon("info-circle", class = "text-muted")),
+                                                "Size of the plotted points"
+                                            ),
+                                            value = 4, min = 1, max = 20
+                                        )
+                                    ),
+                                    shiny::column(
+                                        4,
+                                        shiny::numericInput(
+                                            ns("pointSpread"), 
+                                            bslib::tooltip(
+                                                shiny::span("Jitter ", bsicons::bs_icon("info-circle", class = "text-muted")),
+                                                "Amount of horizontal spread (jittering) applied to points"
+                                            ),
+                                            value = 0.15, step = 0.05, min = 0, max = 2
+                                        )
+                                    ),
+                                    shiny::column(
+                                        4,
+                                        shiny::numericInput(
+                                            ns("transparency"), 
+                                            bslib::tooltip(
+                                                shiny::span("Alpha ", bsicons::bs_icon("info-circle", class = "text-muted")),
+                                                "Transparency: 0 = fully transparent, 1 = fully opaque"
+                                            ),
+                                            value = 0.6, step = 0.05, min = 0, max = 1
+                                        )
+                                    )
+                                ),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        6,
+                                        shiny::selectizeInput(
+                                            ns("pointShape"), 
+                                            bslib::tooltip(
+                                                shiny::span("Shape by ", bsicons::bs_icon("info-circle", class = "text-muted")),
+                                                "Column to determine point shapes"
+                                            ),
+                                            choices = NULL,
+                                            multiple = FALSE,
+                                            options = list(placeholder = "None")
+                                        )
+                                    ),
+                                    shiny::column(
+                                        6,
+                                        shiny::selectizeInput(
+                                            ns("pointColor"), 
+                                            bslib::tooltip(
+                                                shiny::span("Color by ", bsicons::bs_icon("info-circle", class = "text-muted")),
+                                                "Column(s) to determine point colors"
+                                            ),
+                                            choices = NULL,
+                                            multiple = TRUE,
+                                            options = list(placeholder = "X-Axis default")
+                                        )
+                                    )
+                                )
+                            ),
+                            
+                            # === Legend & Grid Section ===
+                            bslib::accordion_panel(
+                                title = "Legend & Grid",
+                                value = "legend_grid",
+                                icon = bsicons::bs_icon("grid-3x3"),
+                                shiny::selectInput(
+                                    ns("legendPosition"), 
+                                    "Legend Position",
+                                    choices = c("none", "right", "top", "bottom", "left"),
+                                    selected = "none"
+                                ),
+                                shiny::checkboxGroupInput(
+                                    ns("gridOptions"),
+                                    "Grid Lines",
+                                    choices = c(
+                                        "Horizontal Grid" = "hGrid",
+                                        "Vertical Grid" = "vGrid",
+                                        "Top/Right Borders" = "topRightBorders"
+                                    ),
+                                    selected = c("hGrid", "vGrid", "topRightBorders")
+                                ),
+                                shiny::checkboxGroupInput(
+                                    ns("statOptions"),
+                                    "Statistics",
+                                    choices = c(
+                                        "Show Median" = "showMedian",
+                                        "Show SD" = "showSD",
+                                        "Fixed Aspect Ratio" = "aspectRatio"
+                                    ),
+                                    selected = c("showMedian", "showSD")
+                                )
+                            ),
+                            
+                            # === Median & SD Lines Section ===
+                            bslib::accordion_panel(
+                                title = "Median & SD Lines",
+                                value = "median_sd",
+                                icon = bsicons::bs_icon("dash-lg"),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("medianThickness"), 
+                                            "Median Thickness",
+                                            value = 0.5, min = 0.1, max = 5, step = 0.1
+                                        )
+                                    ),
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("medianWidth"), 
+                                            "Median Width",
+                                            value = 0.15, min = 0.1, max = 1, step = 0.1
+                                        )
+                                    )
+                                ),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("sdThickness"), 
+                                            "SD Thickness",
+                                            value = 0.5, min = 0.1, max = 5, step = 0.1
+                                        )
+                                    ),
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("sdWidth"), 
+                                            "SD Width",
+                                            value = 0.15, min = 0.1, max = 1, step = 0.1
+                                        )
+                                    )
+                                )
+                            ),
+                            
+                            # === Axis Settings Section ===
+                            bslib::accordion_panel(
+                                title = "Axis Settings",
+                                value = "axis",
+                                icon = bsicons::bs_icon("arrows-angle-expand"),
+                                shiny::fluidRow(
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("axisTickLength"), 
+                                            "Tick Length",
+                                            value = 0.15, min = 0.1, max = 1, step = 0.1
+                                        )
+                                    ),
+                                    shiny::column(
+                                        6,
+                                        shiny::numericInput(
+                                            ns("axisLineThickness"), 
+                                            "Line Thickness",
+                                            value = 0.5, min = 0.1, max = 5, step = 0.1
+                                        )
+                                    )
+                                )
+                            ),
+                            
+                            # === Colors Section ===
+                            bslib::accordion_panel(
+                                title = "Custom Colors",
+                                value = "colors",
+                                icon = bsicons::bs_icon("palette"),
+                                # Dynamic color pickers rendered by server
+                                shiny::uiOutput(ns("colorPickers"))
+                            )
+                        )
                     )
                 )
             ),
