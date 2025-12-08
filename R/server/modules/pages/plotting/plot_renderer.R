@@ -18,6 +18,8 @@
 #' @param export_width Reactive returning export width in cm
 #' @param export_height Reactive returning export height in cm
 #' @param trim_percent Reactive returning trim percentage (0-100) from UI slider
+#' @param outlier_options Reactive returning list with outlier detection settings:
+#'   enabled (logical), method (character), factor (numeric), bootstrap_samples (integer)
 #' @return NULL (side effects only - registers plot outputs and download handlers)
 setup_plot_outputs <- function(output, 
                                 ns, 
@@ -29,7 +31,8 @@ setup_plot_outputs <- function(output,
                                 window_size = NULL,
                                 export_width = NULL,
                                 export_height = NULL,
-                                trim_percent = NULL) {
+                                trim_percent = NULL,
+                                outlier_options = NULL) {
     
     # Register dynamic plot outputs for each measurement column
     # Width calculation MUST be outside renderGirafe to trigger re-registration on resize
@@ -67,6 +70,12 @@ setup_plot_outputs <- function(output,
                     } else {
                         0
                     }
+                    # Get outlier options
+                    outlier_opts <- if (!is.null(outlier_options) && is.function(outlier_options)) {
+                        outlier_options()
+                    } else {
+                        list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
+                    }
                     shiny::req(df, x)
                     
                     create_scatter_plot(
@@ -74,7 +83,11 @@ setup_plot_outputs <- function(output,
                         x_col = x,
                         y_col = local_measure,
                         tooltip_cols = tt_cols,
-                        trim_percent = trim_pct
+                        trim_percent = trim_pct,
+                        outlier_detection = outlier_opts$enabled,
+                        outlier_method = outlier_opts$method,
+                        outlier_factor = outlier_opts$factor,
+                        bootstrap_samples = outlier_opts$bootstrap_samples
                     )
                 }
                 
@@ -88,6 +101,12 @@ setup_plot_outputs <- function(output,
                     } else {
                         0
                     }
+                    # Get outlier options
+                    outlier_opts <- if (!is.null(outlier_options) && is.function(outlier_options)) {
+                        outlier_options()
+                    } else {
+                        list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
+                    }
                     
                     shiny::req(df, x)
                     
@@ -97,7 +116,11 @@ setup_plot_outputs <- function(output,
                         x_col = x,
                         y_col = local_measure,
                         tooltip_cols = tt_cols,
-                        trim_percent = trim_pct
+                        trim_percent = trim_pct,
+                        outlier_detection = outlier_opts$enabled,
+                        outlier_method = outlier_opts$method,
+                        outlier_factor = outlier_opts$factor,
+                        bootstrap_samples = outlier_opts$bootstrap_samples
                     )
                     
                     # Convert to girafe interactive plot
