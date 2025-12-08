@@ -69,3 +69,47 @@ img[src*="Beckr_intro_Diamant"] {
     background: none !important;
     background-color: transparent !important;
 }
+
+/* ===== Plotting Sidebar Tab Styles ===== */
+
+/* Position tabs at top of sidebar like a title */
+.plotting-sidebar .nav-tabs {
+    margin: -0.5rem -1rem 0.5rem -1rem;
+    padding: 0.5rem 1rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+}
+
+/* Make tabs distribute evenly */
+.plotting-sidebar .nav-tabs .nav-item {
+    flex: 1;
+    text-align: center;
+}
+
+/* Style the tab links */
+.plotting-sidebar .nav-tabs .nav-link {
+    padding: 0.5rem 0.25rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: var(--bs-secondary);
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Active tab styling */
+.plotting-sidebar .nav-tabs .nav-link.active {
+    background: transparent;
+    border-bottom-color: var(--bs-primary);
+    color: var(--bs-primary);
+}
+
+/* Hover state */
+.plotting-sidebar .nav-tabs .nav-link:hover:not(.active) {
+    border-bottom-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+/* Ensure icons are centered */
+.plotting-sidebar .nav-tabs .nav-link svg {
+    vertical-align: middle;
+}
