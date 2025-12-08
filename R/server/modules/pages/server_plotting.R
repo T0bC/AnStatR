@@ -8,8 +8,10 @@ server_plotting <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
-        # Source column utilities
+        # Source utilities and components
         source("R/utils/column_utils.R", local = TRUE)
+        source("R/server/modules/pages/plotting/plot_scatter.R", local = TRUE)
+        source("R/server/modules/pages/plotting/plot_renderer.R", local = TRUE)
         
         # Reset all inputs when new data is loaded
         if (!is.null(data_version)) {
@@ -132,45 +134,85 @@ server_plotting <- function(id, median_data, data_version) {
             }
         })
         
-        # Placeholder for plots output
+        # Reactive: filtered data based on checkbox selections
+        filtered_data <- shiny::reactive({
+            data <- median_data()
+            shiny::req(data)
+            
+            cols <- filter_cols()
+            if (length(cols) == 0) return(data)
+            
+            # Apply filters from each checkbox group
+            for (col in cols) {
+                selected_values <- input[[col]]
+                if (!is.null(selected_values) && length(selected_values) > 0) {
+                    data <- data[data[[col]] %in% selected_values, , drop = FALSE]
+                }
+            }
+            
+            data
+        }) |> shiny::debounce(300)
+        
+        # Reactive: selected measurement columns
+        selected_measures <- shiny::reactive({
+            input$measureVar
+        })
+        
+        # Reactive: selected X-axis columns
+        selected_x_axis <- shiny::reactive({
+            input$xAxis
+        })
+        
+        # Setup plot outputs using injected component
+        # Following explicit dependency injection pattern
+        setup_plot_outputs(
+            output = output,
+            ns = ns,
+            filtered_data = filtered_data,
+            x_cols = selected_x_axis,
+            measure_cols = selected_measures,
+            create_scatter_plot = create_scatter_plot,
+            plot_height = 350
+        )
+        
+        # Render the plots UI container
         output$plots <- shiny::renderUI({
             # Check if we have the minimum required selections
             has_data <- !is.null(median_data()) && nrow(median_data()) > 0
-            has_descriptive <- !is.null(input$metaData) && length(input$metaData) > 0
-            has_measurement <- !is.null(input$measureVar) && length(input$measureVar) > 0
+            measures <- input$measureVar
+            x_axis <- input$xAxis
             
             if (!has_data) {
-                return(bslib::card(
-                    bslib::card_header("Plots"),
-                    bslib::card_body(
-                        shiny::tags$p(
-                            class = "text-muted",
-                            "No data available. Please complete the Median Analysis first."
-                        )
+                return(create_placeholder_ui(
+                    "No data available. Please complete the Median Analysis first."
+                ))
+            }
+            
+            if (is.null(measures) || length(measures) == 0) {
+                return(create_placeholder_ui(
+                    shiny::tagList(
+                        "Select measurement columns in the ",
+                        shiny::tags$strong("Data"),
+                        " tab to generate plots."
                     )
                 ))
             }
             
-            if (!has_descriptive || !has_measurement) {
-                return(bslib::card(
-                    bslib::card_header("Plots"),
-                    bslib::card_body(
-                        shiny::tags$p(
-                            class = "text-muted",
-                            "Select descriptive and measurement columns in the ",
-                            shiny::tags$strong("Data"),
-                            " tab to generate plots."
-                        )
+            if (is.null(x_axis) || length(x_axis) == 0) {
+                return(create_placeholder_ui(
+                    shiny::tagList(
+                        "Select X-axis column(s) in the ",
+                        shiny::tags$strong("Data"),
+                        " tab to generate plots."
                     )
                 ))
             }
             
-            # Placeholder for actual plots
-            bslib::card(
-                bslib::card_header(paste0("Plots (", length(input$measureVar), " measurement columns selected)")),
-                bslib::card_body(
-                    shiny::p("Plot output will appear here once server logic is implemented.")
-                )
+            # Generate plot grid using injected component
+            generate_plot_grid_ui(
+                ns = ns,
+                measures = measures,
+                plot_height = 350
             )
         })
     })
