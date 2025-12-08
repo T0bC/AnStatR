@@ -170,9 +170,14 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Reactive: window size from JS (for dynamic SVG sizing)
         # Access namespaced input set by plot_resize.js via initializeWindowSize()
+        # Debounce to prevent excessive re-renders during resize dragging
         window_size <- shiny::reactive({
-            input$windowSize
-        })
+            ws <- input$windowSize
+            # DEBUG: Log raw input value
+            message("server_plotting input$windowSize: ", 
+                    if (!is.null(ws)) paste0(ws$width, "x", ws$height) else "NULL")
+            ws
+        }) |> shiny::debounce(250)
         
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
