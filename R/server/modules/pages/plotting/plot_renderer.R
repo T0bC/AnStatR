@@ -31,13 +31,8 @@ setup_plot_outputs <- function(output,
         measures <- measure_cols()
         shiny::req(measures)
         
-        # Calculate width OUTSIDE renderGirafe (like your old working code)
-        # This ensures the observe re-runs when window_size changes
+        # Calculate width OUTSIDE renderGirafe to trigger re-registration on resize
         win_size <- if (!is.null(window_size) && is.function(window_size)) window_size() else NULL
-        
-        # DEBUG: Log when this observe fires
-        message("plot_renderer observe fired, win_size: ", 
-                if (!is.null(win_size)) paste0(win_size$width, "x", win_size$height) else "NULL")
         
         if (!is.null(win_size) && !is.null(win_size$width)) {
             width_svg <- round(win_size$width / 100, 0) / 1.5
