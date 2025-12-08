@@ -172,7 +172,7 @@ server_plotting <- function(id, median_data, data_version) {
             x_cols = selected_x_axis,
             measure_cols = selected_measures,
             create_scatter_plot = create_scatter_plot,
-            plot_height = 350
+            plot_height = 400
         )
         
         # Render the plots UI container
@@ -212,7 +212,7 @@ server_plotting <- function(id, median_data, data_version) {
             generate_plot_grid_ui(
                 ns = ns,
                 measures = measures,
-                plot_height = 350
+                plot_height = "400px"
             )
         })
     })

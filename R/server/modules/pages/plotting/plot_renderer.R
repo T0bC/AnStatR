@@ -51,39 +51,43 @@ setup_plot_outputs <- function(output,
 }
 
 
-#' Generate Plot Grid UI
+#' Generate Plot List UI
 #'
-#' Creates the UI container with plot cards in a responsive grid layout.
-#' This is a pure function that returns UI elements based on current state.
+#' Creates the UI container with plot cards stacked vertically (one per row).
+#' Uses 100% width for responsive resizing.
 #'
 #' @param ns Namespace function from parent module
 #' @param measures Character vector of measurement column names
-#' @param plot_height Height of each plot in pixels
-#' @return A bslib layout_column_wrap containing plot cards, or a placeholder message
-generate_plot_grid_ui <- function(ns, measures, plot_height = 350) {
+#' @param plot_height Height of each plot in pixels (or "auto" for responsive)
+#' @return A div containing vertically stacked plot cards
+generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
     
-    # Generate plot cards for each measurement
+    # Generate plot cards for each measurement - one per row
     plot_cards <- lapply(measures, function(measure) {
         plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", measure))
         
         bslib::card(
+            class = "mb-3",  # margin bottom for spacing between cards
             bslib::card_header(
                 class = "py-2",
                 shiny::tags$span(class = "fw-semibold", measure)
             ),
             bslib::card_body(
                 class = "p-2",
-                shiny::plotOutput(ns(plot_id), height = paste0(plot_height, "px"))
+                # Use 100% width for responsive behavior
+                shiny::plotOutput(
+                    ns(plot_id), 
+                    height = plot_height,
+                    width = "100%"
+                )
             )
         )
     })
     
-    # Responsive grid layout: 1 column if single plot, 2 columns otherwise
-    bslib::layout_column_wrap(
-        width = if (length(measures) == 1) "100%" else 1/min(length(measures), 2),
-        fixed_width = FALSE,
-        heights_equal = "row",
-        !!!plot_cards
+    # Stack cards vertically
+    shiny::tags$div(
+        class = "plot-container",
+        plot_cards
     )
 }
 
