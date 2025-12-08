@@ -10,6 +10,7 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Source utilities and components
         source("R/utils/column_utils.R", local = TRUE)
+        source("R/utils/data_utils.R", local = TRUE)
         source("R/server/modules/pages/plotting/plot_scatter.R", local = TRUE)
         source("R/server/modules/pages/plotting/plot_renderer.R", local = TRUE)
         
@@ -204,6 +205,11 @@ server_plotting <- function(id, median_data, data_version) {
             input$exportHeight %||% 10
         })
         
+        # Reactive: trim percentage from Processing tab (debounced for smooth slider interaction)
+        trim_percent <- shiny::reactive({
+            input$trim_slider %||% 0
+        }) |> shiny::debounce(300)
+        
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
         setup_plot_outputs(
@@ -216,7 +222,8 @@ server_plotting <- function(id, median_data, data_version) {
             create_scatter_plot = create_scatter_plot,
             window_size = window_size,
             export_width = export_width,
-            export_height = export_height
+            export_height = export_height,
+            trim_percent = trim_percent
         )
         
         # Render the plots UI container
