@@ -20,6 +20,7 @@ library(openxlsx)
 library(DT)
 library(DataExplorer)
 library(summarytools)
+library(ggiraph)
 
 # Prevent Rplots.pdf creation by setting default PDF device to null
 # This avoids file clutter when DataExplorer or other packages open a default device
@@ -34,6 +35,7 @@ app_ui <- bslib::page_navbar(
   theme = get_default_theme(),
   header = shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css"),
+    shiny::tags$script(src = "www/js/plot_resize.js"),
     # Include selectize dependencies to fix DT column filter compatibility issue
     htmltools::findDependencies(shiny::selectizeInput("__selectize_dep__", NULL, choices = NULL))
   ),

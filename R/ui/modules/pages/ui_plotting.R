@@ -5,7 +5,14 @@
 UI_plotting <- function(id) {
     ns <- shiny::NS(id)
 
-    bslib::layout_sidebar(
+    shiny::tagList(
+        # Initialize window size reporting with namespaced IDs
+        shiny::tags$script(shiny::HTML(sprintf(
+            "$(document).on('shiny:connected', function() { initializeWindowSize('%s', '%s'); });",
+            ns("plots"),
+            ns("windowSize")
+        ))),
+        bslib::layout_sidebar(
         sidebar = bslib::sidebar(
             title = NULL,  # No title - tabs serve as navigation
             class = "plotting-sidebar",
@@ -276,5 +283,6 @@ UI_plotting <- function(id) {
 
         # Main content area - plots will be rendered here
         shiny::uiOutput(ns("plots"))
+        )
     )
 }

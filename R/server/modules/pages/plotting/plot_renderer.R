@@ -1,6 +1,6 @@
 #' Plot Renderer Component
 #'
-#' Handles rendering of multiple ggplot2 scatter plots in a responsive grid layout.
+#' Handles rendering of multiple interactive ggiraph scatter plots.
 #' Each measurement variable gets its own plot card.
 #'
 #' Following the explicit dependency injection pattern:
@@ -12,16 +12,18 @@
 #' @param filtered_data Reactive returning the filtered data frame
 #' @param x_cols Reactive returning selected X-axis column name(s)
 #' @param measure_cols Reactive returning selected measurement column names
+#' @param tooltip_cols Reactive returning selected tooltip column names
 #' @param create_scatter_plot Function to create scatter plots (injected dependency)
-#' @param plot_height Height of each plot in pixels (default: 350)
+#' @param window_size Reactive returning list with width/height from JS (for dynamic SVG sizing)
 #' @return NULL (side effects only - registers plot outputs)
 setup_plot_outputs <- function(output, 
                                 ns, 
                                 filtered_data, 
                                 x_cols, 
                                 measure_cols,
+                                tooltip_cols,
                                 create_scatter_plot,
-                                plot_height = 350) {
+                                window_size = NULL) {
     
     # Register dynamic plot outputs for each measurement column
     shiny::observe({
@@ -33,19 +35,59 @@ setup_plot_outputs <- function(output,
             # Create safe ID from measure name
             plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", measure))
             
-            # Register the plot output
-            output[[plot_id]] <- shiny::renderPlot({
+            # Register the girafe output for interactive plots
+            output[[plot_id]] <- ggiraph::renderGirafe({
                 df <- filtered_data()
                 x <- x_cols()
+                tt_cols <- tooltip_cols()
+                
+                # Get window size for dynamic SVG dimensions
+                win_size <- if (!is.null(window_size)) window_size() else NULL
+                
+                # Calculate SVG width based on window size
+                # Default to 10 if no window size available yet
+                if (!is.null(win_size) && !is.null(win_size$width)) {
+                    # Scale window width to SVG units (divide by 100 for reasonable SVG size)
+                    width_svg <- win_size$width / 100
+                } else {
+                    width_svg <- 10
+                }
+                # Fixed height for consistent aspect ratio
+                height_svg <- 5
                 
                 shiny::req(df, x)
                 
-                create_scatter_plot(
+                # Create the ggplot with interactive elements
+                p <- create_scatter_plot(
                     data = df,
                     x_col = x,
-                    y_col = measure
+                    y_col = measure,
+                    tooltip_cols = tt_cols
                 )
-            }, height = plot_height)
+                
+                # Convert to girafe interactive plot
+                # Dynamic width_svg based on window size for proper resizing
+                ggiraph::girafe(
+                    ggobj = p,
+                    width_svg = width_svg,
+                    height_svg = height_svg,
+                    options = list(
+                        ggiraph::opts_zoom(max = 5),
+                        ggiraph::opts_selection(type = "single"),
+                        ggiraph::opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                        ggiraph::opts_hover_inv(css = "opacity:0.5;"),
+                        ggiraph::opts_tooltip(
+                            css = "background-color:#333;color:white;padding:8px 12px;border-radius:4px;font-size:12px;",
+                            use_fill = FALSE
+                        ),
+                        ggiraph::opts_toolbar(
+                            saveaspng = TRUE,
+                            position = "top",
+                            hidden = NULL
+                        )
+                    )
+                )
+            })
         })
     })
 }
@@ -54,11 +96,11 @@ setup_plot_outputs <- function(output,
 #' Generate Plot List UI
 #'
 #' Creates the UI container with plot cards stacked vertically (one per row).
-#' Uses 100% width for responsive resizing.
+#' Uses ggiraph::girafeOutput for interactive plots.
 #'
 #' @param ns Namespace function from parent module
 #' @param measures Character vector of measurement column names
-#' @param plot_height Height of each plot in pixels (or "auto" for responsive)
+#' @param plot_height Height of each plot (CSS value, default "400px")
 #' @return A div containing vertically stacked plot cards
 generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
     
@@ -67,18 +109,21 @@ generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
         plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", measure))
         
         bslib::card(
-            class = "mb-3",  # margin bottom for spacing between cards
+            class = "mb-3",
             bslib::card_header(
                 class = "py-2",
                 shiny::tags$span(class = "fw-semibold", measure)
             ),
             bslib::card_body(
                 class = "p-2",
-                # Use 100% width for responsive behavior
-                shiny::plotOutput(
-                    ns(plot_id), 
-                    height = plot_height,
-                    width = "100%"
+                # Use girafeOutput for interactive plots with responsive wrapper
+                shiny::tags$div(
+                    class = "responsive-plot",
+                    ggiraph::girafeOutput(
+                        ns(plot_id), 
+                        height = plot_height,
+                        width = "100%"
+                    )
                 )
             )
         )

@@ -113,3 +113,24 @@ img[src*="Beckr_intro_Diamant"] {
 .plotting-sidebar .nav-tabs .nav-link svg {
     vertical-align: middle;
 }
+
+/* ===== Responsive Plot Styles ===== */
+
+/* Responsive plot container */
+.responsive-plot {
+    width: 100%;
+    max-height: 600px;
+}
+
+/* Ensure ggiraph plots are responsive */
+.responsive-plot .girafe_container_std,
+.girafe_container_std {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+.responsive-plot .girafe_container_std svg,
+.girafe_container_std svg {
+    max-width: 100%;
+    height: auto;
+}

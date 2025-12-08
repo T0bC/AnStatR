@@ -163,6 +163,17 @@ server_plotting <- function(id, median_data, data_version) {
             input$xAxis
         })
         
+        # Reactive: selected tooltip columns
+        selected_tooltip_cols <- shiny::reactive({
+            input$tooltip
+        })
+        
+        # Reactive: window size from JS (for dynamic SVG sizing)
+        # Access namespaced input set by plot_resize.js via initializeWindowSize()
+        window_size <- shiny::reactive({
+            input$windowSize
+        })
+        
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
         setup_plot_outputs(
@@ -171,8 +182,9 @@ server_plotting <- function(id, median_data, data_version) {
             filtered_data = filtered_data,
             x_cols = selected_x_axis,
             measure_cols = selected_measures,
+            tooltip_cols = selected_tooltip_cols,
             create_scatter_plot = create_scatter_plot,
-            plot_height = 400
+            window_size = window_size
         )
         
         # Render the plots UI container
