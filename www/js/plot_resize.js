@@ -25,14 +25,16 @@ function initializeWindowSize(targetId, windowInputId) {
 
     // Function to report window size to Shiny
     var reportWindowSize = function () {
-        // Only report if target is visible (tab is active)
-        if ($(targetSelector).length === 0 || $(targetSelector).is(':visible')) {
-            if (window.Shiny && Shiny.setInputValue) {
-                Shiny.setInputValue(windowInputId, {
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                });
-            }
+        // DEBUG: Log to browser console
+        console.log('reportWindowSize called, Shiny available:', !!window.Shiny, 'windowInputId:', windowInputId);
+
+        if (window.Shiny && Shiny.setInputValue) {
+            // Always report - let R handle visibility logic if needed
+            Shiny.setInputValue(windowInputId, {
+                width: window.innerWidth,
+                height: window.innerHeight
+            }, { priority: "event" });
+            console.log('Sent to Shiny:', windowInputId, window.innerWidth, window.innerHeight);
         }
     };
 

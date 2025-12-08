@@ -26,67 +26,73 @@ setup_plot_outputs <- function(output,
                                 window_size = NULL) {
     
     # Register dynamic plot outputs for each measurement column
+    # Width calculation MUST be outside renderGirafe to trigger re-registration on resize
     shiny::observe({
         measures <- measure_cols()
         shiny::req(measures)
         
+        # Calculate width OUTSIDE renderGirafe (like your old working code)
+        # This ensures the observe re-runs when window_size changes
+        win_size <- if (!is.null(window_size) && is.function(window_size)) window_size() else NULL
+        
+        # DEBUG: Log when this observe fires
+        message("plot_renderer observe fired, win_size: ", 
+                if (!is.null(win_size)) paste0(win_size$width, "x", win_size$height) else "NULL")
+        
+        if (!is.null(win_size) && !is.null(win_size$width)) {
+            width_svg <- round(win_size$width / 100, 0) / 1.5
+        } else {
+            width_svg <- 10 / 1.5
+        }
+        
         # Create a plot output for each measurement
         lapply(measures, function(measure) {
-            # Create safe ID from measure name
-            plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", measure))
-            
-            # Register the girafe output for interactive plots
-            output[[plot_id]] <- ggiraph::renderGirafe({
-                df <- filtered_data()
-                x <- x_cols()
-                tt_cols <- tooltip_cols()
+            # Use local() to ensure proper closure capture for each iteration
+            local({
+                # Capture measure and width in local scope
+                local_measure <- measure
+                local_width <- width_svg
+                # Create safe ID from measure name
+                plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", local_measure))
                 
-                # Get window size for dynamic SVG dimensions
-                win_size <- if (!is.null(window_size)) window_size() else NULL
-                
-                # Calculate SVG width based on window size
-                # Default to 10 if no window size available yet
-                if (!is.null(win_size) && !is.null(win_size$width)) {
-                    # Scale window width to SVG units (divide by 100 for reasonable SVG size)
-                    width_svg <- win_size$width / 100
-                } else {
-                    width_svg <- 10
-                }
-                # Fixed height for consistent aspect ratio
-                height_svg <- 5
-                
-                shiny::req(df, x)
-                
-                # Create the ggplot with interactive elements
-                p <- create_scatter_plot(
-                    data = df,
-                    x_col = x,
-                    y_col = measure,
-                    tooltip_cols = tt_cols
-                )
-                
-                # Convert to girafe interactive plot
-                # Dynamic width_svg based on window size for proper resizing
-                ggiraph::girafe(
-                    ggobj = p,
-                    width_svg = width_svg,
-                    height_svg = height_svg,
-                    options = list(
-                        ggiraph::opts_zoom(max = 5),
-                        ggiraph::opts_selection(type = "single"),
-                        ggiraph::opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
-                        ggiraph::opts_hover_inv(css = "opacity:0.5;"),
-                        ggiraph::opts_tooltip(
-                            css = "background-color:#333;color:white;padding:8px 12px;border-radius:4px;font-size:12px;",
-                            use_fill = FALSE
-                        ),
-                        ggiraph::opts_toolbar(
-                            saveaspng = TRUE,
-                            position = "top",
-                            hidden = NULL
+                # Register the girafe output for interactive plots
+                output[[plot_id]] <- ggiraph::renderGirafe({
+                    df <- filtered_data()
+                    x <- x_cols()
+                    tt_cols <- tooltip_cols()
+                    
+                    shiny::req(df, x)
+                    
+                    # Create the ggplot with interactive elements
+                    p <- create_scatter_plot(
+                        data = df,
+                        x_col = x,
+                        y_col = local_measure,
+                        tooltip_cols = tt_cols
+                    )
+                    
+                    # Convert to girafe interactive plot
+                    ggiraph::girafe(
+                        ggobj = p,
+                        width_svg = local_width,
+                        height_svg = ceiling(650/100) / 1.5,
+                        options = list(
+                            ggiraph::opts_zoom(max = 5),
+                            ggiraph::opts_selection(type = "single"),
+                            ggiraph::opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                            ggiraph::opts_hover_inv(css = "opacity:0.5;"),
+                            ggiraph::opts_tooltip(
+                                css = "background-color:#333;color:white;padding:8px 12px;border-radius:4px;font-size:12px;",
+                                use_fill = FALSE
+                            ),
+                            ggiraph::opts_toolbar(
+                                saveaspng = TRUE,
+                                position = "top",
+                                hidden = NULL
+                            )
                         )
                     )
-                )
+                })
             })
         })
     })
