@@ -269,5 +269,32 @@ server_plotting <- function(id, median_data, data_version) {
                 plot_height = "400px"
             )
         })
+        
+        # Download handler for filtered data (Excel format)
+        output$downloadData <- shiny::downloadHandler(
+            filename = function() {
+                # Create descriptive filename with date and selected X-axis columns
+                x_cols <- input$xAxis
+                x_suffix <- if (!is.null(x_cols) && length(x_cols) > 0) {
+                    paste0("_", paste(x_cols, collapse = "-"))
+                } else {
+                    ""
+                }
+                paste0("filtered_data_", Sys.Date(), x_suffix, ".xlsx")
+            },
+            content = function(file) {
+                data <- filtered_data()
+                if (is.null(data) || nrow(data) == 0) {
+                    # Create empty workbook with message if no data
+                    wb <- openxlsx::createWorkbook()
+                    openxlsx::addWorksheet(wb, "No Data")
+                    openxlsx::writeData(wb, "No Data", "No filtered data available.")
+                    openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+                    return()
+                }
+                # Write data to Excel
+                openxlsx::write.xlsx(data, file, rowNames = FALSE)
+            }
+        )
     })
 }
