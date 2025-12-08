@@ -16,6 +16,7 @@ library(shiny)
 library(bslib)
 library(bsicons)
 
+library(dplyr)
 library(openxlsx)
 library(DT)
 library(DataExplorer)

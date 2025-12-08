@@ -17,6 +17,7 @@
 #' @param window_size Reactive returning list with width/height from JS (for dynamic SVG sizing)
 #' @param export_width Reactive returning export width in cm
 #' @param export_height Reactive returning export height in cm
+#' @param trim_percent Reactive returning trim percentage (0-100) from UI slider
 #' @return NULL (side effects only - registers plot outputs and download handlers)
 setup_plot_outputs <- function(output, 
                                 ns, 
@@ -27,7 +28,8 @@ setup_plot_outputs <- function(output,
                                 create_scatter_plot,
                                 window_size = NULL,
                                 export_width = NULL,
-                                export_height = NULL) {
+                                export_height = NULL,
+                                trim_percent = NULL) {
     
     # Register dynamic plot outputs for each measurement column
     # Width calculation MUST be outside renderGirafe to trigger re-registration on resize
@@ -60,13 +62,19 @@ setup_plot_outputs <- function(output,
                     df <- filtered_data()
                     x <- x_cols()
                     tt_cols <- tooltip_cols()
+                    trim_pct <- if (!is.null(trim_percent) && is.function(trim_percent)) {
+                        trim_percent()
+                    } else {
+                        0
+                    }
                     shiny::req(df, x)
                     
                     create_scatter_plot(
                         data = df,
                         x_col = x,
                         y_col = local_measure,
-                        tooltip_cols = tt_cols
+                        tooltip_cols = tt_cols,
+                        trim_percent = trim_pct
                     )
                 }
                 
@@ -75,6 +83,11 @@ setup_plot_outputs <- function(output,
                     df <- filtered_data()
                     x <- x_cols()
                     tt_cols <- tooltip_cols()
+                    trim_pct <- if (!is.null(trim_percent) && is.function(trim_percent)) {
+                        trim_percent()
+                    } else {
+                        0
+                    }
                     
                     shiny::req(df, x)
                     
@@ -83,7 +96,8 @@ setup_plot_outputs <- function(output,
                         data = df,
                         x_col = x,
                         y_col = local_measure,
-                        tooltip_cols = tt_cols
+                        tooltip_cols = tt_cols,
+                        trim_percent = trim_pct
                     )
                     
                     # Convert to girafe interactive plot
