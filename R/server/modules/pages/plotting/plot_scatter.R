@@ -1,8 +1,8 @@
 #' Create an interactive scatter plot for a single measurement variable
 #'
 #' Uses ggiraph for interactivity with hover tooltips.
-#' Supports data trimming visualization where trimmed points are shown
-#' with gray outline and no fill.
+#' Supports data trimming and outlier detection visualization where
+#' excluded points are shown with gray outline and no fill.
 #'
 #' @param data Data frame containing the data to plot
 #' @param x_col Character vector of column name(s) for X-axis (will be combined if multiple)
@@ -11,6 +11,10 @@
 #' @param point_alpha Numeric, transparency of points (0-1)
 #' @param point_size Numeric, size of points
 #' @param trim_percent Numeric, percentage (0-100) to trim from each end per group (default 0)
+#' @param outlier_detection Logical, whether to detect outliers (default FALSE)
+#' @param outlier_method Character, outlier detection method (default "IQR")
+#' @param outlier_factor Numeric, threshold factor for outlier detection
+#' @param bootstrap_samples Integer, number of bootstrap samples (for bootstrap method)
 #' @return A ggplot2 object with ggiraph interactive layer
 #' @export
 create_scatter_plot <- function(data, 
@@ -19,7 +23,11 @@ create_scatter_plot <- function(data,
                                  tooltip_cols = NULL,
                                  point_alpha = 0.6,
                                  point_size = 2,
-                                 trim_percent = 0) {
+                                 trim_percent = 0,
+                                 outlier_detection = FALSE,
+                                 outlier_method = "IQR",
+                                 outlier_factor = 1.5,
+                                 bootstrap_samples = 1000) {
     
     # Validate inputs
     if (is.null(data) || nrow(data) == 0) {
@@ -44,31 +52,69 @@ create_scatter_plot <- function(data,
         x_label <- x_col
     }
     
-    # Create interaction term for grouping (used for trimming)
+    # Create interaction term for grouping (used for outlier detection and trimming)
     # Source the utility if not already available
     if (!exists("create_interaction", mode = "function")) {
         source("R/utils/data_utils.R", local = TRUE)
     }
     interaction_term <- create_interaction(data, x_col)
     
-    # Mark trimmed data points
+    # STEP 1: Detect outliers first (these are excluded from statistics)
+    if (outlier_detection) {
+        if (!exists("detect_outliers", mode = "function")) {
+            source("R/utils/data_utils.R", local = TRUE)
+        }
+        data <- detect_outliers(
+            data = data,
+            value_col = y_col,
+            group_col = interaction_term,
+            method = outlier_method,
+            factor = outlier_factor,
+            bootstrap_samples = bootstrap_samples
+        )
+    } else {
+        data$.is_outlier <- FALSE
+    }
+    
+    # STEP 2: Mark trimmed data points (only on non-outlier data)
+    # This matches WRS2 behavior: outliers removed first, then trimming applied
     if (!exists("mark_trimmed_data", mode = "function")) {
         source("R/utils/data_utils.R", local = TRUE)
     }
-    data <- mark_trimmed_data(
-        data = data,
-        value_col = y_col,
-        group_col = interaction_term,
-        trim_percent = trim_percent
-    )
     
-    # Build tooltip text
+    # Initialize .is_trimmed for all rows
+    data$.is_trimmed <- FALSE
+    
+    # Only apply trimming to non-outlier data
+    if (trim_percent > 0) {
+        non_outlier_idx <- which(!data$.is_outlier)
+        if (length(non_outlier_idx) > 0) {
+            # Create subset for trimming calculation
+            non_outlier_data <- data[non_outlier_idx, , drop = FALSE]
+            non_outlier_interaction <- interaction_term[non_outlier_idx]
+            
+            # Mark trimmed points within non-outlier subset
+            non_outlier_data <- mark_trimmed_data(
+                data = non_outlier_data,
+                value_col = y_col,
+                group_col = non_outlier_interaction,
+                trim_percent = trim_percent
+            )
+            
+            # Copy trimmed status back to main data
+            data$.is_trimmed[non_outlier_idx] <- non_outlier_data$.is_trimmed
+        }
+    }
+    
+    # Build tooltip text (include trimmed/outlier status)
     data$.tooltip <- build_tooltip_text(
         data = data,
         x_var = x_var,
         x_label = x_label,
         y_col = y_col,
-        tooltip_cols = tooltip_cols
+        tooltip_cols = tooltip_cols,
+        is_trimmed = data$.is_trimmed,
+        is_outlier = data$.is_outlier
     )
     
     # Build the plot with ggiraph interactive points
@@ -76,16 +122,20 @@ create_scatter_plot <- function(data,
     p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x_var]], y = .data[[y_col]]))
     
     # Pre-compute indices to avoid ggplot2 warnings about data$ usage
+    # A point is excluded if it's trimmed OR an outlier
     is_trimmed <- data[[".is_trimmed"]]
-    trimmed_idx <- which(is_trimmed)
-    retained_idx <- which(!is_trimmed)
+    is_outlier <- data[[".is_outlier"]]
+    is_excluded <- is_trimmed | is_outlier
     
-    # Layer 1: Trimmed points (shown with gray outline, no fill)
-    if (length(trimmed_idx) > 0) {
-        trimmed_data <- data[trimmed_idx, , drop = FALSE]
-        trimmed_data$.data_id <- trimmed_idx
+    excluded_idx <- which(is_excluded)
+    retained_idx <- which(!is_excluded)
+    
+    # Layer 1: Excluded points (trimmed or outliers) - shown with gray outline, no fill
+    if (length(excluded_idx) > 0) {
+        excluded_data <- data[excluded_idx, , drop = FALSE]
+        excluded_data$.data_id <- excluded_idx
         p <- p + ggiraph::geom_point_interactive(
-            data = trimmed_data,
+            data = excluded_data,
             ggplot2::aes(
                 tooltip = .data[[".tooltip"]],
                 data_id = .data[[".data_id"]]
@@ -138,8 +188,11 @@ create_scatter_plot <- function(data,
 #' @param x_label Display label for x axis
 #' @param y_col Name of y column
 #' @param tooltip_cols Additional columns to include
+#' @param is_trimmed Logical vector indicating trimmed points
+#' @param is_outlier Logical vector indicating outlier points
 #' @return Character vector of tooltip HTML strings
-build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL) {
+build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL,
+                               is_trimmed = NULL, is_outlier = NULL) {
     
     # Start with x and y values
     tooltip_parts <- paste0(
@@ -161,6 +214,25 @@ build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL)
             })
             tooltip_parts <- paste0(tooltip_parts, "<br/>", extra_info)
         }
+    }
+    
+    # Add status indicators for trimmed/outlier points
+    if (!is.null(is_trimmed) || !is.null(is_outlier)) {
+        status <- sapply(seq_len(nrow(data)), function(i) {
+            flags <- c()
+            if (!is.null(is_trimmed) && is_trimmed[i]) {
+                flags <- c(flags, "<span style='color:#dc3545;'>Trimmed</span>")
+            }
+            if (!is.null(is_outlier) && is_outlier[i]) {
+                flags <- c(flags, "<span style='color:#fd7e14;'>Outlier</span>")
+            }
+            if (length(flags) > 0) {
+                paste0("<br/><em>", paste(flags, collapse = ", "), "</em>")
+            } else {
+                ""
+            }
+        })
+        tooltip_parts <- paste0(tooltip_parts, status)
     }
     
     return(tooltip_parts)
