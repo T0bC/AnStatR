@@ -146,25 +146,8 @@ UI_plotting <- function(id) {
                     shiny::tags$div(
                         class = "pt-3",
                         shiny::h6(class = "text-muted mb-3", "Data Processing"),
-                        # Trimming
-                        shiny::tags$label(class = "small fw-semibold", "Trimming"),
-                        shiny::sliderInput(
-                            inputId = ns("trim_slider"),
-                            label = shiny::tags$span(
-                                "Trim % ",
-                                bslib::tooltip(
-                                    bsicons::bs_icon("info-circle", class = "text-muted"),
-                                    "Remove a percentage of highest and lowest values to reduce outlier impact."
-                                )
-                            ),
-                            min = 0,
-                            max = 100,
-                            value = 0,
-                            step = 1
-                        ),
-                        shiny::tags$hr(),
-                        # Outlier Detection
-                        shiny::tags$label(class = "small fw-semibold", "Outlier Detection"),
+                        # Outlier Detection (first - outliers are excluded before trimming)
+                        shiny::tags$label(class = "small fw-semibold", "1. Outlier Detection"),
                         shiny::checkboxInput(
                             inputId = ns("enableOutlierDetection"),
                             label = shiny::tags$span(
@@ -259,6 +242,23 @@ UI_plotting <- function(id) {
                                     value = 1000, min = 100, max = 10000, step = 100
                                 )
                             )
+                        ),
+                        shiny::tags$hr(),
+                        # Trimming (second - applied to non-outlier data, used by WRS2)
+                        shiny::tags$label(class = "small fw-semibold", "2. Trimming"),
+                        shiny::sliderInput(
+                            inputId = ns("trim_slider"),
+                            label = shiny::tags$span(
+                                "Trim % ",
+                                bslib::tooltip(
+                                    bsicons::bs_icon("info-circle", class = "text-muted"),
+                                    "Percentage trimmed from each end for robust statistics (WRS2). Applied after outlier removal."
+                                )
+                            ),
+                            min = 0,
+                            max = 50,
+                            value = 0,
+                            step = 1
                         )
                     )
                 ),
