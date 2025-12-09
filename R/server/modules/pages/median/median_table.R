@@ -10,9 +10,6 @@
 # @param removed_cols ReactiveVal to store columns removed due to within-group variation
 # @return NULL (side effects: creates output$medianTable and updates median_results)
 
-# Source column utilities
-source("R/utils/column_utils.R", local = TRUE)
-
 render_median_table <- function(output, output_id, filtered_data, grouping_cols, 
                                  quality_col = NULL, median_results, removed_cols = NULL) {
     output[[output_id]] <- DT::renderDataTable({
