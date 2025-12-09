@@ -38,28 +38,33 @@ setup_plot_outputs <- function(output,
                                 color_cols = NULL,
                                 color_map = NULL) {
     
+    # Track which outputs have been registered to avoid re-registration
+    registered_outputs <- shiny::reactiveVal(character(0))
+    
     # Register dynamic plot outputs for each measurement column
-    # Width calculation MUST be outside renderGirafe to trigger re-registration on resize
-    shiny::observe({
+    # Only re-register when measure_cols actually changes (not on other reactive updates)
+    shiny::observeEvent(measure_cols(), ignoreNULL = TRUE, {
         measures <- measure_cols()
         shiny::req(measures)
         
-        # Calculate width OUTSIDE renderGirafe to trigger re-registration on resize
-        win_size <- if (!is.null(window_size) && is.function(window_size)) window_size() else NULL
+        # Check which measures need new output registration
+        already_registered <- registered_outputs()
+        new_measures <- setdiff(measures, already_registered)
         
-        if (!is.null(win_size) && !is.null(win_size$width)) {
-            width_svg <- round(win_size$width / 100, 0) / 2.0
-        } else {
-            width_svg <- 10 / 2.0
+        # Only register outputs for new measures
+        if (length(new_measures) == 0 && length(measures) == length(already_registered)) {
+            return()  # No changes needed
         }
+        
+        # Update registered list
+        registered_outputs(measures)
         
         # Create a plot output for each measurement
         lapply(measures, function(measure) {
             # Use local() to ensure proper closure capture for each iteration
             local({
-                # Capture measure and width in local scope
+                # Capture measure in local scope
                 local_measure <- measure
-                local_width <- width_svg
                 # Create safe ID from measure name
                 plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", local_measure))
                 download_id <- paste0("download_", plot_id)
@@ -136,6 +141,17 @@ setup_plot_outputs <- function(output,
                         NULL
                     }
                     
+                    # Calculate SVG width based on window size (isolated to not trigger on resize)
+                    # Window resize is handled by CSS, this just sets initial size
+                    win_size <- shiny::isolate({
+                        if (!is.null(window_size) && is.function(window_size)) window_size() else NULL
+                    })
+                    width_svg <- if (!is.null(win_size) && !is.null(win_size$width)) {
+                        round(win_size$width / 100, 0) / 2.0
+                    } else {
+                        5.0  # Default width
+                    }
+                    
                     shiny::req(df, x)
                     
                     # Create the ggplot with interactive elements
@@ -156,7 +172,7 @@ setup_plot_outputs <- function(output,
                     # Convert to girafe interactive plot
                     ggiraph::girafe(
                         ggobj = p,
-                        width_svg = local_width,
+                        width_svg = width_svg,
                         height_svg = ceiling(650/100) / 2.0,
                         options = list(
                             ggiraph::opts_zoom(max = 5),
