@@ -9,9 +9,6 @@
 # @param quality_settings ReactiveVal to store quality filter settings
 # @return NULL (side effects: creates output and updates quality_settings)
 
-# Source column utilities
-source("R/utils/column_utils.R", local = TRUE)
-
 render_quality_filter_ui <- function(output, output_id, loaded_data, input, session, quality_settings) {
     ns <- session$ns
     
