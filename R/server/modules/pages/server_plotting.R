@@ -271,6 +271,49 @@ server_plotting <- function(id, median_data, data_version) {
             }
         }
         
+        # Reactive: point styling options from Plot Style accordion
+        point_style <- shiny::reactive({
+            list(
+                size = input$pointSize %||% 4,
+                spread = input$pointSpread %||% 0.15,
+                alpha = input$transparency %||% 0.6,
+                shape_col = input$pointShape  # Can be NULL for no shape mapping
+            )
+        })
+        
+        # Reactive: grid and legend options from Legend & Grid accordion
+        grid_legend_options <- shiny::reactive({
+            grid_opts <- input$gridOptions %||% c("hGrid", "vGrid", "topRightBorders")
+            stat_opts <- input$statOptions %||% c("showMedian", "showSD")
+            list(
+                legend_position = input$legendPosition %||% "none",
+                h_grid = "hGrid" %in% grid_opts,
+                v_grid = "vGrid" %in% grid_opts,
+                top_right_borders = "topRightBorders" %in% grid_opts,
+                show_median = "showMedian" %in% stat_opts,
+                show_sd = "showSD" %in% stat_opts,
+                aspect_ratio = "aspectRatio" %in% stat_opts
+            )
+        })
+        
+        # Reactive: median and SD line styling
+        stat_line_style <- shiny::reactive({
+            list(
+                median_thickness = input$medianThickness %||% 0.5,
+                median_width = input$medianWidth %||% 0.15,
+                sd_thickness = input$sdThickness %||% 0.5,
+                sd_width = input$sdWidth %||% 0.15
+            )
+        })
+        
+        # Reactive: axis styling options
+        axis_style <- shiny::reactive({
+            list(
+                tick_length = input$axisTickLength %||% 0.15,
+                line_thickness = input$axisLineThickness %||% 0.5
+            )
+        })
+        
         # Consolidated plot parameters - bundles all plot-affecting reactives
         # Uses caching to prevent re-renders when values haven't actually changed
         
@@ -291,6 +334,27 @@ server_plotting <- function(id, median_data, data_version) {
                 paste(names(params$color_map), params$color_map, collapse = ":"),
                 params$window_size$width,
                 params$window_size$height,
+                # Point style fingerprint
+                params$point_style$size,
+                params$point_style$spread,
+                params$point_style$alpha,
+                params$point_style$shape_col %||% "none",
+                # Grid/legend fingerprint
+                params$grid_legend$legend_position,
+                params$grid_legend$h_grid,
+                params$grid_legend$v_grid,
+                params$grid_legend$top_right_borders,
+                params$grid_legend$show_median,
+                params$grid_legend$show_sd,
+                params$grid_legend$aspect_ratio,
+                # Stat line style fingerprint
+                params$stat_line_style$median_thickness,
+                params$stat_line_style$median_width,
+                params$stat_line_style$sd_thickness,
+                params$stat_line_style$sd_width,
+                # Axis style fingerprint
+                params$axis_style$tick_length,
+                params$axis_style$line_thickness,
                 sep = "|"
             )
         }
@@ -306,6 +370,10 @@ server_plotting <- function(id, median_data, data_version) {
             color_cols_val <- selected_color_cols()
             color_map_val <- custom_color_map()
             win_val <- window_size()
+            point_style_val <- point_style()
+            grid_legend_val <- grid_legend_options()
+            stat_line_val <- stat_line_style()
+            axis_style_val <- axis_style()
             
             new_params <- list(
                 data = data_val,
@@ -315,7 +383,11 @@ server_plotting <- function(id, median_data, data_version) {
                 outlier_options = outlier_val,
                 color_cols = color_cols_val,
                 color_map = color_map_val,
-                window_size = win_val
+                window_size = win_val,
+                point_style = point_style_val,
+                grid_legend = grid_legend_val,
+                stat_line_style = stat_line_val,
+                axis_style = axis_style_val
             )
             
             # Compare fingerprints to detect actual changes
