@@ -9,9 +9,6 @@
 # @param selected_grouping_cols ReactiveVal to store selected grouping columns
 # @return NULL (side effects: creates output and updates selected_grouping_cols)
 
-# Source column utilities
-source("R/utils/column_utils.R", local = TRUE)
-
 render_grouping_ui <- function(output, output_id, loaded_data, input, session, selected_grouping_cols) {
     ns <- session$ns
     
