@@ -326,11 +326,11 @@ UI_plotting <- function(id) {
                                             ns("pointShape"), 
                                             bslib::tooltip(
                                                 shiny::span("Shape by ", bsicons::bs_icon("info-circle", class = "text-muted")),
-                                                "Column to determine point shapes"
+                                                "Column(s) to determine point shapes (max 6 unique combinations)"
                                             ),
                                             choices = NULL,
-                                            multiple = FALSE,
-                                            options = list(placeholder = "None")
+                                            multiple = TRUE,
+                                            options = list(placeholder = "None", maxItems = 3)
                                         )
                                     ),
                                     shiny::column(
