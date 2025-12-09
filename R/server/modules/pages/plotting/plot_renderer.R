@@ -82,13 +82,17 @@ setup_plot_outputs <- function(output,
                         x_col = params$x_cols,
                         y_col = local_measure,
                         tooltip_cols = params$tooltip_cols,
+                        point_style = params$point_style,
                         trim_percent = params$trim_percent %||% 0,
                         outlier_detection = outlier_opts$enabled,
                         outlier_method = outlier_opts$method,
                         outlier_factor = outlier_opts$factor,
                         bootstrap_samples = outlier_opts$bootstrap_samples,
                         color_cols = params$color_cols,
-                        color_map = params$color_map
+                        color_map = params$color_map,
+                        grid_legend = params$grid_legend,
+                        stat_line_style = params$stat_line_style,
+                        axis_style = params$axis_style
                     )
                 }
                 
@@ -122,13 +126,17 @@ setup_plot_outputs <- function(output,
                         x_col = params$x_cols,
                         y_col = local_measure,
                         tooltip_cols = params$tooltip_cols,
+                        point_style = params$point_style,
                         trim_percent = params$trim_percent %||% 0,
                         outlier_detection = outlier_opts$enabled,
                         outlier_method = outlier_opts$method,
                         outlier_factor = outlier_opts$factor,
                         bootstrap_samples = outlier_opts$bootstrap_samples,
                         color_cols = params$color_cols,
-                        color_map = params$color_map
+                        color_map = params$color_map,
+                        grid_legend = params$grid_legend,
+                        stat_line_style = params$stat_line_style,
+                        axis_style = params$axis_style
                     )
                     
                     # Convert to girafe interactive plot
