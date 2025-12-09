@@ -89,11 +89,11 @@ server_plotting <- function(id, median_data, data_version) {
                 selected = input$tooltip[input$tooltip %in% selected_meta]
             )
             
-            # Update pointShape choices (metaData columns + "none")
+            # Update pointShape choices (all metaData columns - user can shape by any descriptive column)
             shiny::updateSelectizeInput(
                 session, "pointShape",
-                choices = c("none" = "", selected_meta),
-                selected = input$pointShape
+                choices = selected_meta,
+                selected = input$pointShape[input$pointShape %in% selected_meta]
             )
         })
         
@@ -273,18 +273,23 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Reactive: point styling options from Plot Style accordion
         point_style <- shiny::reactive({
+            # shape_cols can be NULL, single column, or multiple columns
+            shape_cols <- input$pointShape
+            if (length(shape_cols) == 0) shape_cols <- NULL
+            
             list(
                 size = input$pointSize %||% 4,
                 spread = input$pointSpread %||% 0.15,
                 alpha = input$transparency %||% 0.6,
-                shape_col = input$pointShape  # Can be NULL for no shape mapping
+                shape_cols = shape_cols  # Character vector of column(s) for shape mapping
             )
         })
         
         # Reactive: grid and legend options from Legend & Grid accordion
         grid_legend_options <- shiny::reactive({
-            grid_opts <- input$gridOptions %||% c("hGrid", "vGrid", "topRightBorders")
-            stat_opts <- input$statOptions %||% c("showMedian", "showSD")
+            # Use character(0) as default when NULL (all unchecked) - not the full set
+            grid_opts <- input$gridOptions %||% character(0)
+            stat_opts <- input$statOptions %||% character(0)
             list(
                 legend_position = input$legendPosition %||% "none",
                 h_grid = "hGrid" %in% grid_opts,
@@ -338,7 +343,7 @@ server_plotting <- function(id, median_data, data_version) {
                 params$point_style$size,
                 params$point_style$spread,
                 params$point_style$alpha,
-                params$point_style$shape_col %||% "none",
+                paste(params$point_style$shape_cols %||% "none", collapse = ":"),
                 # Grid/legend fingerprint
                 params$grid_legend$legend_position,
                 params$grid_legend$h_grid,
