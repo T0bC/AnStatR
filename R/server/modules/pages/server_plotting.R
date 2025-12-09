@@ -205,15 +205,27 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Reactive: window size from JS (for dynamic SVG sizing)
         # Access namespaced input set by plot_resize.js via initializeWindowSize()
-        # No debounce here - consolidated in plot_params
-        window_size <- shiny::reactive({
+        # Use reactiveVal to cache and only update when values actually change
+        cached_window_size <- shiny::reactiveVal(list(width = 800, height = 600))
+        
+        shiny::observe({
             ws <- input$windowSize
-            # Debug log only when DEBUG_REACTIVES is defined and TRUE
-            if (exists("DEBUG_REACTIVES") && DEBUG_REACTIVES) {
-                message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] window_size changed: ", 
-                              ws$width, "x", ws$height))
+            if (!is.null(ws)) {
+                current <- cached_window_size()
+                # Only update if values actually changed
+                if (is.null(current) || ws$width != current$width || ws$height != current$height) {
+                    if (exists("DEBUG_REACTIVES") && DEBUG_REACTIVES) {
+                        message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] window_size CHANGED: ", 
+                                      ws$width, "x", ws$height))
+                    }
+                    cached_window_size(ws)
+                }
             }
-            ws
+        })
+        
+        # Expose as reactive for downstream use
+        window_size <- shiny::reactive({
+            cached_window_size()
         })
         
         # Reactive: export dimensions from Plot Style tab
@@ -246,7 +258,7 @@ server_plotting <- function(id, median_data, data_version) {
         })
         
         # ===== DEBUG: Toggle this to enable/disable debug logging =====
-        DEBUG_REACTIVES <- TRUE
+        DEBUG_REACTIVES <- FALSE
         
         debug_log <- function(source, details = NULL) {
             if (DEBUG_REACTIVES) {
@@ -260,26 +272,74 @@ server_plotting <- function(id, median_data, data_version) {
         }
         
         # Consolidated plot parameters - bundles all plot-affecting reactives
-        # Single debounce point to prevent multiple re-renders from cascading changes
-        plot_params <- shiny::reactive({
-            # Debug: log which inputs triggered this
-            debug_log("plot_params EVALUATING", paste0(
-                "data_rows=", nrow(filtered_data()), 
-                ", x_cols=", paste(selected_x_axis(), collapse=","),
-                ", window_width=", window_size()$width
-            ))
-            
-            list(
-                data = filtered_data(),
-                x_cols = selected_x_axis(),
-                tooltip_cols = selected_tooltip_cols(),
-                trim_percent = trim_percent(),
-                outlier_options = outlier_options(),
-                color_cols = selected_color_cols(),
-                color_map = custom_color_map(),
-                window_size = window_size()
+        # Uses caching to prevent re-renders when values haven't actually changed
+        
+        # Cache for plot parameters - only updates when values actually differ
+        cached_plot_params <- shiny::reactiveVal(NULL)
+        
+        # Helper to create a fingerprint for comparison (excludes data content, uses row count)
+        make_fingerprint <- function(params) {
+            paste(
+                nrow(params$data),
+                paste(params$x_cols, collapse = ":"),
+                paste(params$tooltip_cols, collapse = ":"),
+                params$trim_percent,
+                params$outlier_options$enabled,
+                params$outlier_options$method,
+                params$outlier_options$factor,
+                paste(params$color_cols, collapse = ":"),
+                paste(names(params$color_map), params$color_map, collapse = ":"),
+                params$window_size$width,
+                params$window_size$height,
+                sep = "|"
             )
-        }) |> shiny::debounce(350)  # Single debounce after all inputs settle
+        }
+        
+        # Observer that updates cache only when values change
+        shiny::observe({
+            # Capture all values
+            data_val <- filtered_data()
+            x_val <- selected_x_axis()
+            tt_val <- selected_tooltip_cols()
+            trim_val <- trim_percent()
+            outlier_val <- outlier_options()
+            color_cols_val <- selected_color_cols()
+            color_map_val <- custom_color_map()
+            win_val <- window_size()
+            
+            new_params <- list(
+                data = data_val,
+                x_cols = x_val,
+                tooltip_cols = tt_val,
+                trim_percent = trim_val,
+                outlier_options = outlier_val,
+                color_cols = color_cols_val,
+                color_map = color_map_val,
+                window_size = win_val
+            )
+            
+            # Compare fingerprints to detect actual changes
+            current <- cached_plot_params()
+            new_fp <- make_fingerprint(new_params)
+            old_fp <- if (!is.null(current)) make_fingerprint(current) else ""
+            
+            if (new_fp != old_fp) {
+                debug_log("plot_params CHANGED", paste0(
+                    "data_rows=", nrow(data_val), 
+                    ", x_cols=", paste(x_val, collapse=","),
+                    ", trim=", trim_val,
+                    ", outlier_enabled=", outlier_val$enabled,
+                    ", color_map_len=", length(color_map_val),
+                    ", window_width=", win_val$width
+                ))
+                cached_plot_params(new_params)
+            }
+        }) |> shiny::debounce(350)  # Debounce the observer, not the reactive
+        
+        # Expose cached params as reactive
+        plot_params <- shiny::reactive({
+            cached_plot_params()
+        })
         
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
