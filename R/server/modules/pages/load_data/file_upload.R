@@ -15,9 +15,6 @@
 # @param data_version ReactiveVal to increment when new data is loaded (for downstream reset)
 # @return NULL (side effects: updates loaded_data, increments data_version, shows notifications)
 
-# Source column utilities
-source("R/utils/column_utils.R", local = TRUE)
-
 handle_file_upload <- function(input, loaded_data, session = NULL, data_version = NULL) {
   shiny::observeEvent(input$data_file, {
     shiny::req(input$data_file)
