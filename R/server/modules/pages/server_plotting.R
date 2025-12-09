@@ -190,6 +190,16 @@ server_plotting <- function(id, median_data, data_version) {
             input$tooltip
         })
         
+        # Reactive: selected color columns (for interaction-based coloring)
+        selected_color_cols <- shiny::reactive({
+            color_cols <- input$pointColor
+            # Default to x-axis if no color columns selected
+            if (is.null(color_cols) || length(color_cols) == 0) {
+                return(input$xAxis)
+            }
+            color_cols
+        })
+        
         # Reactive: window size from JS (for dynamic SVG sizing)
         # Access namespaced input set by plot_resize.js via initializeWindowSize()
         # Debounce to prevent excessive re-renders during resize dragging
@@ -238,7 +248,9 @@ server_plotting <- function(id, median_data, data_version) {
             export_width = export_width,
             export_height = export_height,
             trim_percent = trim_percent,
-            outlier_options = outlier_options
+            outlier_options = outlier_options,
+            color_cols = selected_color_cols,
+            color_map = custom_color_map
         )
         
         # Render the plots UI container
@@ -323,33 +335,76 @@ server_plotting <- function(id, median_data, data_version) {
             )
         })
         
+        # Reactive: get unique color groups based on interaction of selected color columns
+        color_groups <- shiny::reactive({
+            data <- filtered_data()
+            color_cols <- selected_color_cols()
+            
+            if (is.null(data) || nrow(data) == 0 || is.null(color_cols) || length(color_cols) == 0) {
+                return(character(0))
+            }
+            
+            # Use create_interaction to get unique group levels
+            interaction_factor <- create_interaction(data, color_cols)
+            sort(as.character(unique(interaction_factor)))
+        })
+        
+        # Reactive: collect custom colors from dynamic color picker inputs
+        custom_color_map <- shiny::reactive({
+            groups <- color_groups()
+            if (length(groups) == 0) return(NULL)
+            
+            # Build named vector of colors from inputs
+            colors <- sapply(groups, function(group) {
+                input_id <- paste0("color_", gsub("[^[:alnum:]]", "_", group))
+                color <- input[[input_id]]
+                if (is.null(color)) {
+                    # Return default if input not yet created
+                    NA_character_
+                } else {
+                    color
+                }
+            })
+            names(colors) <- groups
+            
+            # Fill in NA values with default palette
+            na_idx <- is.na(colors)
+            if (any(na_idx)) {
+                n_na <- sum(na_idx)
+                default_colors <- if (length(groups) <= 8) {
+                    scales::hue_pal()(length(groups))
+                } else {
+                    grDevices::colorRampPalette(c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", 
+                                                  "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"))(length(groups))
+                }
+                colors[na_idx] <- default_colors[na_idx]
+            }
+            
+            colors
+        })
+        
         # Render dynamic color pickers for unique groups in the data
         output$colorPickers <- shiny::renderUI({
             data <- filtered_data()
-            color_cols <- input$pointColor
+            color_cols <- selected_color_cols()
             
             # Need data and color column selection
-            if (is.null(data) || is.null(color_cols) || length(color_cols) == 0) {
+            if (is.null(data) || nrow(data) == 0 || is.null(color_cols) || length(color_cols) == 0) {
                 return(shiny::tags$p(
                     class = "text-muted small fst-italic",
-                    "Select X-Axis and Color columns to customize group colors."
+                    "Select X-Axis columns to customize group colors."
                 ))
             }
             
-            # Get unique groups from the color columns
-            if (length(color_cols) == 1) {
-                groups <- unique(data[[color_cols]])
-            } else {
-                # Combine multiple columns into group labels
-                groups <- unique(apply(data[, color_cols, drop = FALSE], 1, paste, collapse = " : "))
-            }
-            groups <- sort(as.character(groups))
+            # Get unique groups using the reactive
+            groups <- color_groups()
             
             if (length(groups) == 0) {
                 return(shiny::tags$p(class = "text-muted small", "No groups found."))
             }
             
-            # Generate a default color palette
+            # Generate a default color palette (or use existing custom colors)
+            existing_colors <- custom_color_map()
             default_colors <- if (length(groups) <= 8) {
                 scales::hue_pal()(length(groups))
             } else {
@@ -365,12 +420,19 @@ server_plotting <- function(id, median_data, data_version) {
                 group <- groups[i]
                 input_id <- paste0("color_", gsub("[^[:alnum:]]", "_", group))
                 
+                # Use existing color if available, otherwise default
+                current_color <- if (!is.null(existing_colors) && group %in% names(existing_colors)) {
+                    existing_colors[[group]]
+                } else {
+                    default_colors[i]
+                }
+                
                 shiny::column(
                     width = col_width,
                     colourpicker::colourInput(
                         inputId = ns(input_id),
                         label = group,
-                        value = default_colors[i],
+                        value = current_color,
                         showColour = "background"
                     )
                 )
