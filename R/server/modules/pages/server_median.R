@@ -15,13 +15,6 @@ server_median <- function(id, loaded_data, data_version = NULL) {
             selected_grouping_cols_raw()
         }) |> shiny::debounce(500)
 
-        # Source modular component functions
-        source("R/server/modules/pages/median/help_modal.R", local = TRUE)
-        source("R/server/modules/pages/median/grouping_ui.R", local = TRUE)
-        source("R/server/modules/pages/median/quality_filter_ui.R", local = TRUE)
-        source("R/server/modules/pages/median/quality_filter_logic.R", local = TRUE)
-        source("R/server/modules/pages/median/median_table.R", local = TRUE)
-
         # Reset all state when new data is loaded
         # This prevents stale selections from causing errors with new datasets
         if (!is.null(data_version)) {
