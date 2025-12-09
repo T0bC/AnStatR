@@ -61,11 +61,6 @@ create_scatter_plot <- function(data,
         return(create_empty_plot(paste("Column", y_col, "not found")))
     }
     
-    # Source utility functions if not already available
-    if (!exists("create_interaction", mode = "function")) {
-        source("R/utils/data_utils.R", local = TRUE)
-    }
-    
     # Create interaction term for grouping (used for outlier detection, trimming)
     # This uses original column order for consistent grouping behavior
     interaction_term <- create_interaction(data, x_col)
@@ -118,9 +113,6 @@ create_scatter_plot <- function(data,
     
     # STEP 1: Detect outliers first (these are excluded from statistics)
     if (outlier_detection) {
-        if (!exists("detect_outliers", mode = "function")) {
-            source("R/utils/data_utils.R", local = TRUE)
-        }
         data <- detect_outliers(
             data = data,
             value_col = y_col,
@@ -135,10 +127,6 @@ create_scatter_plot <- function(data,
     
     # STEP 2: Mark trimmed data points (only on non-outlier data)
     # This matches WRS2 behavior: outliers removed first, then trimming applied
-    if (!exists("mark_trimmed_data", mode = "function")) {
-        source("R/utils/data_utils.R", local = TRUE)
-    }
-    
     # Initialize .is_trimmed for all rows
     data$.is_trimmed <- FALSE
     
