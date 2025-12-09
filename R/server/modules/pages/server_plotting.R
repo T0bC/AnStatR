@@ -8,12 +8,6 @@ server_plotting <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
-        # Source utilities and components
-        source("R/utils/column_utils.R", local = TRUE)
-        source("R/utils/data_utils.R", local = TRUE)
-        source("R/server/modules/pages/plotting/plot_scatter.R", local = TRUE)
-        source("R/server/modules/pages/plotting/plot_renderer.R", local = TRUE)
-        
         # Reset all inputs when new data is loaded
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
