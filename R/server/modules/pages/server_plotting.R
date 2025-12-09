@@ -350,6 +350,7 @@ server_plotting <- function(id, median_data, data_version) {
         })
         
         # Reactive: collect custom colors from dynamic color picker inputs
+        # Debounced to prevent excessive plot re-renders during color picking
         custom_color_map <- shiny::reactive({
             groups <- color_groups()
             if (length(groups) == 0) return(NULL)
@@ -381,7 +382,7 @@ server_plotting <- function(id, median_data, data_version) {
             }
             
             colors
-        })
+        }) |> shiny::debounce(500)  # Wait 500ms after last color change before updating plot
         
         # Render dynamic color pickers for unique groups in the data
         output$colorPickers <- shiny::renderUI({
