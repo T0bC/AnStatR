@@ -207,7 +207,13 @@ server_plotting <- function(id, median_data, data_version) {
         # Access namespaced input set by plot_resize.js via initializeWindowSize()
         # No debounce here - consolidated in plot_params
         window_size <- shiny::reactive({
-            input$windowSize
+            ws <- input$windowSize
+            # Debug log only when DEBUG_REACTIVES is defined and TRUE
+            if (exists("DEBUG_REACTIVES") && DEBUG_REACTIVES) {
+                message(paste0("[", format(Sys.time(), "%H:%M:%S"), "] window_size changed: ", 
+                              ws$width, "x", ws$height))
+            }
+            ws
         })
         
         # Reactive: export dimensions from Plot Style tab
@@ -239,9 +245,30 @@ server_plotting <- function(id, median_data, data_version) {
             )
         })
         
+        # ===== DEBUG: Toggle this to enable/disable debug logging =====
+        DEBUG_REACTIVES <- TRUE
+        
+        debug_log <- function(source, details = NULL) {
+            if (DEBUG_REACTIVES) {
+                timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")
+                msg <- paste0("[", timestamp, "] REACTIVE: ", source)
+                if (!is.null(details)) {
+                    msg <- paste0(msg, " | ", details)
+                }
+                message(msg)
+            }
+        }
+        
         # Consolidated plot parameters - bundles all plot-affecting reactives
         # Single debounce point to prevent multiple re-renders from cascading changes
         plot_params <- shiny::reactive({
+            # Debug: log which inputs triggered this
+            debug_log("plot_params EVALUATING", paste0(
+                "data_rows=", nrow(filtered_data()), 
+                ", x_cols=", paste(selected_x_axis(), collapse=","),
+                ", window_width=", window_size()$width
+            ))
+            
             list(
                 data = filtered_data(),
                 x_cols = selected_x_axis(),
@@ -268,6 +295,12 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Render the plots UI container
         output$plots <- shiny::renderUI({
+            debug_log("output$plots renderUI EXECUTING", paste0(
+                "metaData=", length(input$metaData),
+                ", measures=", length(input$measureVar),
+                ", xAxis=", length(input$xAxis)
+            ))
+            
             # Check if we have the minimum required selections
             has_data <- !is.null(median_data()) && nrow(median_data()) > 0
             meta_data <- input$metaData

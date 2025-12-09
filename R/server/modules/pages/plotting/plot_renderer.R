@@ -33,14 +33,21 @@ setup_plot_outputs <- function(output,
         measures <- measure_cols()
         shiny::req(measures)
         
+        message(paste0("[", format(Sys.time(), "%H:%M:%S"), 
+                      "] observeEvent(measure_cols) TRIGGERED: ", 
+                      paste(measures, collapse=", ")))
+        
         # Check which measures need new output registration
         already_registered <- registered_outputs()
         new_measures <- setdiff(measures, already_registered)
         
         # Only register outputs for new measures
         if (length(new_measures) == 0 && length(measures) == length(already_registered)) {
+            message("  -> No new measures, skipping re-registration")
             return()  # No changes needed
         }
+        
+        message(paste0("  -> Registering outputs for: ", paste(measures, collapse=", ")))
         
         # Update registered list
         registered_outputs(measures)
@@ -81,6 +88,10 @@ setup_plot_outputs <- function(output,
                 # Register the girafe output for interactive plots
                 # Uses consolidated plot_params for single-debounce reactivity
                 output[[plot_id]] <- ggiraph::renderGirafe({
+                    # Debug logging
+                    message(paste0("[", format(Sys.time(), "%H:%M:%S.%OS3"), 
+                                  "] renderGirafe EXECUTING for: ", local_measure))
+                    
                     # Get all parameters from consolidated reactive (single dependency)
                     params <- plot_params()
                     shiny::req(params$data, params$x_cols)
