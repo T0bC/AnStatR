@@ -246,12 +246,17 @@ generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
             bslib::card_body(
                 class = "p-2",
                 # Use girafeOutput for interactive plots with responsive wrapper
+                # Wrapped in withSpinner for loading indicator during plot updates
                 shiny::tags$div(
                     class = "responsive-plot",
-                    ggiraph::girafeOutput(
-                        ns(plot_id), 
-                        height = plot_height,
-                        width = "100%"
+                    shinycssloaders::withSpinner(
+                        ggiraph::girafeOutput(
+                            ns(plot_id), 
+                            height = plot_height,
+                            width = "100%"
+                        ),
+                        type = 6,        # Spinner style (1-8)
+                        color = "#0d6efd" # Bootstrap primary color
                     )
                 )
             )
