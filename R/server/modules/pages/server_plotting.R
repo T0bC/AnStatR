@@ -433,7 +433,9 @@ server_plotting <- function(id, median_data, data_version) {
                         inputId = ns(input_id),
                         label = group,
                         value = current_color,
-                        showColour = "background"
+                        showColour = "both",      # Show color swatch AND hex text input
+                        allowTransparent = FALSE,
+                        closeOnClick = TRUE
                     )
                 )
             })
