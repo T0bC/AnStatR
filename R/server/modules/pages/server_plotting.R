@@ -202,10 +202,10 @@ server_plotting <- function(id, median_data, data_version) {
         
         # Reactive: window size from JS (for dynamic SVG sizing)
         # Access namespaced input set by plot_resize.js via initializeWindowSize()
-        # Debounce to prevent excessive re-renders during resize dragging
+        # No debounce here - consolidated in plot_params
         window_size <- shiny::reactive({
             input$windowSize
-        }) |> shiny::debounce(250)
+        })
         
         # Reactive: export dimensions from Plot Style tab
         export_width <- shiny::reactive({
@@ -215,12 +215,14 @@ server_plotting <- function(id, median_data, data_version) {
             input$exportHeight %||% 10
         })
         
-        # Reactive: trim percentage from Processing tab (debounced for smooth slider interaction)
+        # Reactive: trim percentage from Processing tab
+        # No debounce here - consolidated in plot_params
         trim_percent <- shiny::reactive({
             input$trim_slider %||% 0
-        }) |> shiny::debounce(300)
+        })
         
-        # Reactive: outlier detection options from Processing tab (debounced)
+        # Reactive: outlier detection options from Processing tab
+        # No debounce here - consolidated in plot_params
         outlier_options <- shiny::reactive({
             list(
                 enabled = input$enableOutlierDetection %||% FALSE,
@@ -232,25 +234,33 @@ server_plotting <- function(id, median_data, data_version) {
                 },
                 bootstrap_samples = input$bootstrapSamples %||% 1000
             )
-        }) |> shiny::debounce(300)
+        })
+        
+        # Consolidated plot parameters - bundles all plot-affecting reactives
+        # Single debounce point to prevent multiple re-renders from cascading changes
+        plot_params <- shiny::reactive({
+            list(
+                data = filtered_data(),
+                x_cols = selected_x_axis(),
+                tooltip_cols = selected_tooltip_cols(),
+                trim_percent = trim_percent(),
+                outlier_options = outlier_options(),
+                color_cols = selected_color_cols(),
+                color_map = custom_color_map(),
+                window_size = window_size()
+            )
+        }) |> shiny::debounce(350)  # Single debounce after all inputs settle
         
         # Setup plot outputs using injected component
         # Following explicit dependency injection pattern
         setup_plot_outputs(
             output = output,
             ns = ns,
-            filtered_data = filtered_data,
-            x_cols = selected_x_axis,
+            plot_params = plot_params,
             measure_cols = selected_measures,
-            tooltip_cols = selected_tooltip_cols,
             create_scatter_plot = create_scatter_plot,
-            window_size = window_size,
             export_width = export_width,
-            export_height = export_height,
-            trim_percent = trim_percent,
-            outlier_options = outlier_options,
-            color_cols = selected_color_cols,
-            color_map = custom_color_map
+            export_height = export_height
         )
         
         # Render the plots UI container
@@ -382,7 +392,7 @@ server_plotting <- function(id, median_data, data_version) {
             }
             
             colors
-        }) |> shiny::debounce(500)  # Wait 500ms after last color change before updating plot
+        })  # Debouncing handled by consolidated plot_params reactive
         
         # Render dynamic color pickers for unique groups in the data
         output$colorPickers <- shiny::renderUI({
