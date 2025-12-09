@@ -134,3 +134,34 @@ img[src*="Beckr_intro_Diamant"] {
     max-width: 100%;
     height: auto;
 }
+
+/* ===== Color Picker Styles ===== */
+
+/* Prevent sidebar and all ancestors from clipping color picker popup */
+.plotting-sidebar,
+.plotting-sidebar .accordion,
+.plotting-sidebar .accordion-item,
+.plotting-sidebar .accordion-body,
+.plotting-sidebar .accordion-collapse,
+.plotting-sidebar .tab-content,
+.plotting-sidebar .tab-pane,
+.bslib-sidebar-layout>.sidebar,
+.bslib-sidebar-layout>.sidebar>.sidebar-content,
+.sidebar-content,
+.colourpicker-input-container {
+    overflow: visible !important;
+}
+
+/* Color picker panel - reposition to avoid right-side clipping */
+.colourpicker-panel {
+    z-index: 1050 !important;
+    /* Shift popup leftward ~33% to balance between left and right clipping */
+    margin-left: -50px !important;
+}
+
+/* Alternative: for very narrow sidebars, shift even more */
+@media (max-width: 400px) {
+    .colourpicker-panel {
+        margin-left: -120px !important;
+    }
+}
