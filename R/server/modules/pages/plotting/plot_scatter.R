@@ -8,8 +8,7 @@
 #' @param x_col Character vector of column name(s) for X-axis (will be combined if multiple)
 #' @param y_col Character string of column name for Y-axis (measurement)
 #' @param tooltip_cols Character vector of additional column names to show in tooltip (optional)
-#' @param point_alpha Numeric, transparency of points (0-1)
-#' @param point_size Numeric, size of points
+#' @param point_style List with point styling: size, spread (jitter), alpha, shape_col
 #' @param trim_percent Numeric, percentage (0-100) to trim from each end per group (default 0)
 #' @param outlier_detection Logical, whether to detect outliers (default FALSE)
 #' @param outlier_method Character, outlier detection method (default "IQR")
@@ -17,21 +16,37 @@
 #' @param bootstrap_samples Integer, number of bootstrap samples (for bootstrap method)
 #' @param color_cols Character vector of column name(s) for color grouping (interaction-based)
 #' @param color_map Named character vector mapping group names to hex colors
+#' @param grid_legend List with grid/legend options: legend_position, h_grid, v_grid, 
+#'   top_right_borders, show_median, show_sd, aspect_ratio
+#' @param stat_line_style List with stat line styling: median_thickness, median_width,
+#'   sd_thickness, sd_width
+#' @param axis_style List with axis styling: tick_length, line_thickness
 #' @return A ggplot2 object with ggiraph interactive layer
 #' @export
 create_scatter_plot <- function(data, 
                                  x_col, 
                                  y_col,
                                  tooltip_cols = NULL,
-                                 point_alpha = 0.6,
-                                 point_size = 2,
+                                 point_style = list(size = 4, spread = 0.15, alpha = 0.6, shape_col = NULL),
                                  trim_percent = 0,
                                  outlier_detection = FALSE,
                                  outlier_method = "IQR",
                                  outlier_factor = 1.5,
                                  bootstrap_samples = 1000,
                                  color_cols = NULL,
-                                 color_map = NULL) {
+                                 color_map = NULL,
+                                 grid_legend = list(legend_position = "none", h_grid = TRUE, v_grid = TRUE,
+                                                    top_right_borders = TRUE, show_median = TRUE, 
+                                                    show_sd = TRUE, aspect_ratio = FALSE),
+                                 stat_line_style = list(median_thickness = 0.5, median_width = 0.15,
+                                                        sd_thickness = 0.5, sd_width = 0.15),
+                                 axis_style = list(tick_length = 0.15, line_thickness = 0.5)) {
+    
+    # Extract point style with defaults
+    point_size <- point_style$size %||% 4
+    point_spread <- point_style$spread %||% 0.15
+    point_alpha <- point_style$alpha %||% 0.6
+    shape_col <- point_style$shape_col
     
     # Validate inputs
     if (is.null(data) || nrow(data) == 0) {
@@ -46,22 +61,25 @@ create_scatter_plot <- function(data,
         return(create_empty_plot(paste("Column", y_col, "not found")))
     }
     
-    # Create combined X-axis if multiple columns selected
+    # Source utility functions if not already available
+    if (!exists("create_interaction", mode = "function")) {
+        source("R/utils/data_utils.R", local = TRUE)
+    }
+    
+    # Create interaction term for grouping (used for x-axis, outlier detection, trimming)
+    # create_interaction() uses "." separator which matches guide_axis_nested default
+    interaction_term <- create_interaction(data, x_col)
+    
+    # Set up x-axis variable
     if (length(x_col) > 1) {
-        data$.x_combined <- apply(data[, x_col, drop = FALSE], 1, paste, collapse = " | ")
-        x_var <- ".x_combined"
+        # Multiple columns: use interaction term for nested axis
+        data$.x_nested <- interaction_term
+        x_var <- ".x_nested"
         x_label <- paste(x_col, collapse = " | ")
     } else {
         x_var <- x_col
         x_label <- x_col
     }
-    
-    # Create interaction term for grouping (used for outlier detection and trimming)
-    # Source the utility if not already available
-    if (!exists("create_interaction", mode = "function")) {
-        source("R/utils/data_utils.R", local = TRUE)
-    }
-    interaction_term <- create_interaction(data, x_col)
     
     # Create color interaction term (may differ from x-axis grouping)
     # Default to x_col if no color_cols specified
@@ -130,93 +148,192 @@ create_scatter_plot <- function(data,
     )
     
     # Build the plot with ggiraph interactive points
-    # Use two layers: trimmed points (gray outline, no fill) and retained points (colored)
+    # Three layers: retained (colored), trimmed (gray/white), outliers (gray with X)
     p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x_var]], y = .data[[y_col]]))
     
-    # Pre-compute indices to avoid ggplot2 warnings about data$ usage
-    # A point is excluded if it's trimmed OR an outlier
+    # Pre-compute indices for each point category
     is_trimmed <- data[[".is_trimmed"]]
     is_outlier <- data[[".is_outlier"]]
-    is_excluded <- is_trimmed | is_outlier
     
-    excluded_idx <- which(is_excluded)
-    retained_idx <- which(!is_excluded)
+    # Indices for each layer
+    retained_idx <- which(!is_trimmed & !is_outlier)
+    trimmed_idx <- which(is_trimmed & !is_outlier)
+    outlier_idx <- which(is_outlier)
     
-    # Layer 1: Excluded points (trimmed or outliers) - shown with gray outline, no fill
-    if (length(excluded_idx) > 0) {
-        excluded_data <- data[excluded_idx, , drop = FALSE]
-        excluded_data$.data_id <- excluded_idx
-        p <- p + ggiraph::geom_point_interactive(
-            data = excluded_data,
+    # Color legend title
+    color_legend_title <- if (!is.null(color_cols) && length(color_cols) > 0) {
+        paste(color_cols, collapse = " | ")
+    } else {
+        paste(x_col, collapse = " | ")
+    }
+    
+    # Layer 1: Retained points (colored by group) - using geom_jitter_interactive
+    if (length(retained_idx) > 0) {
+        retained_data <- data[retained_idx, , drop = FALSE]
+        retained_data$.data_id <- retained_idx
+        
+        p <- p + ggiraph::geom_jitter_interactive(
+            data = retained_data,
+            ggplot2::aes(
+                tooltip = .data[[".tooltip"]],
+                data_id = .data[[".data_id"]],
+                color = .data[[".color_group"]],
+                fill = .data[[".color_group"]]
+            ),
+            hover_nearest = TRUE,
+            width = point_spread,
+            height = 0,
+            alpha = point_alpha,
+            size = point_size
+        )
+    }
+    
+    # Layer 2: Trimmed points (gray outline, white fill) - shown but excluded from stats
+    if (length(trimmed_idx) > 0) {
+        trimmed_data <- data[trimmed_idx, , drop = FALSE]
+        trimmed_data$.data_id <- trimmed_idx
+        
+        p <- p + ggiraph::geom_jitter_interactive(
+            data = trimmed_data,
             ggplot2::aes(
                 tooltip = .data[[".tooltip"]],
                 data_id = .data[[".data_id"]]
             ),
             shape = 21,  # Circle with outline
-            fill = NA,   # No fill (transparent)
             color = "gray40",
-            alpha = point_alpha * 0.7,
-            size = point_size,
-            stroke = 0.8
+            fill = "white",
+            hover_nearest = TRUE,
+            width = point_spread,
+            height = 0,
+            alpha = point_alpha,
+            size = point_size
         )
     }
     
-    # Layer 2: Retained points (colored by group, filled)
-    if (length(retained_idx) > 0) {
-        retained_data <- data[retained_idx, , drop = FALSE]
-        retained_data$.data_id <- retained_idx
+    # Layer 3: Outlier points (gray with X shape)
+    if (length(outlier_idx) > 0) {
+        outlier_data <- data[outlier_idx, , drop = FALSE]
+        outlier_data$.data_id <- outlier_idx
         
-        # Determine if we have a custom color map
-        if (!is.null(color_map) && length(color_map) > 0) {
-            # Map colors to each point based on their group
-            retained_data$.point_color <- color_map[retained_data$.color_group]
-            # Fill any unmapped groups with default
-            unmapped <- is.na(retained_data$.point_color)
-            if (any(unmapped)) {
-                retained_data$.point_color[unmapped] <- "#0d6efd"
-            }
-            
-            p <- p + ggiraph::geom_point_interactive(
-                data = retained_data,
-                ggplot2::aes(
-                    tooltip = .data[[".tooltip"]],
-                    data_id = .data[[".data_id"]],
-                    color = .data[[".color_group"]]
-                ),
-                alpha = point_alpha,
-                size = point_size
-            ) +
-            ggplot2::scale_color_manual(
-                values = color_map,
-                name = paste(color_cols, collapse = " : ")
-            )
-        } else {
-            # No custom colors - use default ggplot2 color scale
-            p <- p + ggiraph::geom_point_interactive(
-                data = retained_data,
-                ggplot2::aes(
-                    tooltip = .data[[".tooltip"]],
-                    data_id = .data[[".data_id"]],
-                    color = .data[[".color_group"]]
-                ),
-                alpha = point_alpha,
-                size = point_size
-            ) +
-            ggplot2::scale_color_discrete(name = paste(color_cols, collapse = " : "))
-        }
+        p <- p + ggiraph::geom_jitter_interactive(
+            data = outlier_data,
+            ggplot2::aes(
+                tooltip = .data[[".tooltip"]],
+                data_id = .data[[".data_id"]]
+            ),
+            shape = 4,  # X shape for outliers
+            color = "gray40",
+            hover_nearest = TRUE,
+            width = point_spread,
+            height = 0,
+            alpha = point_alpha,
+            size = point_size
+        )
     }
     
+    # Add color scales
+    if (!is.null(color_map) && length(color_map) > 0) {
+        p <- p +
+            ggplot2::scale_color_manual(values = color_map, name = color_legend_title) +
+            ggplot2::scale_fill_manual(values = color_map, name = color_legend_title)
+    } else {
+        p <- p +
+            ggplot2::scale_color_discrete(name = color_legend_title) +
+            ggplot2::scale_fill_discrete(name = color_legend_title)
+    }
+    
+    # Extract grid/legend options with defaults
+    legend_pos <- grid_legend$legend_position %||% "none"
+    h_grid <- grid_legend$h_grid %||% TRUE
+    v_grid <- grid_legend$v_grid %||% TRUE
+    top_right_borders <- grid_legend$top_right_borders %||% TRUE
+    show_median <- grid_legend$show_median %||% TRUE
+    show_sd <- grid_legend$show_sd %||% TRUE
+    aspect_ratio <- grid_legend$aspect_ratio %||% FALSE
+    
+    # Extract stat line style with defaults
+    median_thickness <- stat_line_style$median_thickness %||% 0.5
+    median_width <- stat_line_style$median_width %||% 0.15
+    sd_thickness <- stat_line_style$sd_thickness %||% 0.5
+    sd_width <- stat_line_style$sd_width %||% 0.15
+    
+    # Extract axis style with defaults
+    tick_length <- axis_style$tick_length %||% 0.15
+    line_thickness <- axis_style$line_thickness %||% 0.5
+    
+    # Add median crossbar (only on retained data)
+    if (show_median && length(retained_idx) > 0) {
+        retained_data <- data[retained_idx, , drop = FALSE]
+        p <- p + ggplot2::stat_summary(
+            data = retained_data,
+            fun = median,
+            geom = "crossbar",
+            width = median_width,
+            color = "black",
+            linewidth = median_thickness
+        )
+    }
+    
+    # Add SD error bars (only on retained data)
+    if (show_sd && length(retained_idx) > 0) {
+        retained_data <- data[retained_idx, , drop = FALSE]
+        p <- p + ggplot2::stat_summary(
+            data = retained_data,
+            fun.data = ggplot2::mean_sdl,
+            fun.args = list(mult = 1),
+            geom = "errorbar",
+            width = sd_width,
+            color = "black",
+            linewidth = sd_thickness
+        )
+    }
+    
+    # Labels
+    p <- p + ggplot2::labs(
+        x = paste(x_col, collapse = " | "),
+        y = y_col,
+        color = color_legend_title,
+        fill = color_legend_title
+    )
+    
+    # Theme with grid and border options
     p <- p +
-        ggplot2::labs(
-            x = x_label,
-            y = y_col
-        ) +
-        ggplot2::theme_minimal(base_size = 11) +
+        ggplot2::theme_bw() +
         ggplot2::theme(
-            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1),
-            panel.grid.minor = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_text(
+                angle = if (length(x_col) == 1) 45 else 0, 
+                hjust = 1
+            ),
+            panel.grid.major.x = if (!v_grid) ggplot2::element_blank() else ggplot2::element_line(color = "gray90"),
+            panel.grid.minor.x = if (!v_grid) ggplot2::element_blank() else ggplot2::element_line(color = "gray90"),
+            panel.grid.major.y = if (!h_grid) ggplot2::element_blank() else ggplot2::element_line(color = "gray90"),
+            panel.grid.minor.y = if (!h_grid) ggplot2::element_blank() else ggplot2::element_line(color = "gray90"),
+            axis.ticks.length = ggplot2::unit(tick_length, "cm"),
+            axis.line = ggplot2::element_line(colour = "black", linewidth = line_thickness),
+            panel.border = if (!top_right_borders) ggplot2::element_blank() else ggplot2::element_rect(
+                color = "black", 
+                linewidth = line_thickness
+            ),
+            legend.position = legend_pos,
             plot.margin = ggplot2::margin(10, 10, 10, 10)
         )
+    
+    # Add aspect ratio if requested
+    if (aspect_ratio) {
+        p <- p + ggplot2::theme(aspect.ratio = 1)
+    }
+    
+    # Add nested axis support using ggh4x if multiple x columns
+    # guide_axis_nested parses the interaction labels by delimiter to create hierarchy
+    if (length(x_col) > 1) {
+        if (requireNamespace("ggh4x", quietly = TRUE)) {
+            p <- p + 
+                ggplot2::scale_x_discrete(guide = ggh4x::guide_axis_nested(delim = ".")) +
+                ggplot2::theme(
+                    ggh4x.axis.nestline.x = ggplot2::element_line(linewidth = 0.5)
+                )
+        }
+    }
     
     return(p)
 }
