@@ -1,3 +1,7 @@
+# Source utility functions (used across multiple modules)
+source("R/utils/column_utils.R")
+source("R/utils/data_utils.R")
+
 # Source UI modules
 source("R/ui/modules/pages/ui_load_data.R")
 source("R/ui/modules/pages/ui_median.R")
@@ -10,6 +14,23 @@ source("R/ui/modules/components/settings_modal.R")
 source("R/server/modules/pages/server_load_data.R")
 source("R/server/modules/pages/server_median.R")
 source("R/server/modules/pages/server_plotting.R")
+
+# Source server sub-modules: Load Data
+source("R/server/modules/pages/load_data/file_upload.R")
+source("R/server/modules/pages/load_data/data_preview.R")
+source("R/server/modules/pages/load_data/missing_values_plot.R")
+source("R/server/modules/pages/load_data/data_summary.R")
+
+# Source server sub-modules: Median
+source("R/server/modules/pages/median/help_modal.R")
+source("R/server/modules/pages/median/grouping_ui.R")
+source("R/server/modules/pages/median/quality_filter_ui.R")
+source("R/server/modules/pages/median/quality_filter_logic.R")
+source("R/server/modules/pages/median/median_table.R")
+
+# Source server sub-modules: Plotting
+source("R/server/modules/pages/plotting/plot_scatter.R")
+source("R/server/modules/pages/plotting/plot_renderer.R")
 
 # Load required packages
 library(shiny)
