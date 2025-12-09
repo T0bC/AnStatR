@@ -22,28 +22,44 @@ function debounce(func, wait, immediate) {
 // windowInputId: the namespaced input ID to send window size to
 function initializeWindowSize(targetId, windowInputId) {
 
-    // Function to report window size to Shiny
+    // Track last reported size to avoid duplicate updates
+    var lastWidth = null;
+    var lastHeight = null;
+
+    // Function to report window size to Shiny (only if changed)
     var reportWindowSize = function () {
         if (window.Shiny && Shiny.setInputValue) {
-            Shiny.setInputValue(windowInputId, {
-                width: window.innerWidth,
-                height: window.innerHeight
-            }, { priority: "event" });
+            var currentWidth = window.innerWidth;
+            var currentHeight = window.innerHeight;
+
+            // Only send if values actually changed
+            if (currentWidth !== lastWidth || currentHeight !== lastHeight) {
+                lastWidth = currentWidth;
+                lastHeight = currentHeight;
+
+                Shiny.setInputValue(windowInputId, {
+                    width: currentWidth,
+                    height: currentHeight
+                });  // No priority: "event" - let Shiny deduplicate
+            }
         }
     };
 
-    // Debounced version (100ms delay)
-    var debouncedReportWindowSize = debounce(reportWindowSize, 100);
+    // Debounced version (250ms delay for resize dragging)
+    var debouncedReportWindowSize = debounce(reportWindowSize, 250);
 
-    // Update on window resize
+    // Update on window resize only
     $(window).on('resize', debouncedReportWindowSize);
 
-    // Report when hidden outputs become visible (tab switches)
-    $(document).on('shiny:visualchange', debouncedReportWindowSize);
+    // Report on tab switches (but not on every visual change)
+    // shown.bs.tab fires when Bootstrap tabs become visible
+    $(document).on('shown.bs.tab', function () {
+        // Small delay to let layout settle
+        setTimeout(reportWindowSize, 50);
+    });
 
-    // Report when Bootstrap tabs are shown (for bslib nav panels)
-    $(document).on('shown.bs.tab', debouncedReportWindowSize);
-
-    // Initial report
-    debouncedReportWindowSize();
+    // Initial report after page load
+    $(document).on('shiny:connected', function () {
+        setTimeout(reportWindowSize, 100);
+    });
 }
