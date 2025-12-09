@@ -112,12 +112,13 @@ server_plotting <- function(id, median_data, data_version) {
         })
         
         # Reactive: columns to show for filtering (metaData minus hideCols)
+        # No debounce - feeds into filtered_data which feeds into plot_params (global debounce)
         filter_cols <- shiny::reactive({
             selected <- input$metaData
             hidden <- input$hideCols
             if (is.null(selected)) return(character(0))
             selected[!selected %in% hidden]
-        }) |> shiny::debounce(300)
+        })
         
         # Render checkboxes for filtering
         output$checkboxes <- shiny::renderUI({
@@ -157,6 +158,8 @@ server_plotting <- function(id, median_data, data_version) {
         })
         
         # Reactive: filtered data based on checkbox selections
+        # No debounce here - plot_params handles the global debounce for plot rendering
+        # colorPickers UI will update immediately (which is fine for UI responsiveness)
         filtered_data <- shiny::reactive({
             data <- median_data()
             shiny::req(data)
@@ -173,7 +176,7 @@ server_plotting <- function(id, median_data, data_version) {
             }
             
             data
-        }) |> shiny::debounce(300)
+        })
         
         # Reactive: selected measurement columns
         selected_measures <- shiny::reactive({
@@ -360,7 +363,7 @@ server_plotting <- function(id, median_data, data_version) {
         })
         
         # Reactive: collect custom colors from dynamic color picker inputs
-        # Debounced to prevent excessive plot re-renders during color picking
+        # No debounce here - consolidated in plot_params (global debounce)
         custom_color_map <- shiny::reactive({
             groups <- color_groups()
             if (length(groups) == 0) return(NULL)
