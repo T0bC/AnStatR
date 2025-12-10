@@ -7,10 +7,8 @@
 #' @param median_data Reactive containing the median-processed data from server_median
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return List with reactives for downstream modules:
-#'   - filtered_data: Group-filtered data
+#'   - processed_data: Data with {col}_outlier and {col}_trimmed flags for each selected measure
 #'   - selected_measures: Selected measurement columns
-#'   - trim_percent: Current trim percentage (0-100)
-#'   - outlier_options: List with enabled, method, factor, bootstrap_samples
 server_plotting <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
@@ -25,6 +23,7 @@ server_plotting <- function(id, median_data, data_version) {
         source("R/server/modules/pages/plotting/color_pickers.R", local = TRUE)
         source("R/server/modules/pages/plotting/plots_ui.R", local = TRUE)
         source("R/server/modules/pages/plotting/download_handler.R", local = TRUE)
+        source("R/server/modules/pages/plotting/data_processing.R", local = TRUE)
         
         # ----- 1. Column Reactives -----
         column_reactives <- create_column_reactives(median_data)
@@ -105,13 +104,21 @@ server_plotting <- function(id, median_data, data_version) {
         # ----- 12. Download Handler -----
         setup_download_handler(output, input, filtered_data)
         
-        # ----- 13. Return values for downstream modules -----
-        # Plotting tab is the source of truth for filtered/processed data
-        list(
+        # ----- 13. Processed Data for Downstream Modules -----
+        # Creates {col}_outlier and {col}_trimmed columns for each selected measurement
+        processed_data <- create_processed_data_reactive(
             filtered_data = filtered_data,
             selected_measures = selection_reactives$measures,
+            x_axis = selection_reactives$x_axis,
             trim_percent = processing_reactives$trim_percent,
             outlier_options = processing_reactives$outlier_options
+        )
+        
+        # ----- 14. Return values for downstream modules -----
+        # Plotting tab is the source of truth for filtered/processed data
+        list(
+            processed_data = processed_data,
+            selected_measures = selection_reactives$measures
         )
     })
 }
