@@ -6,10 +6,9 @@
 # @param loaded_data Reactive containing the loaded data
 # @param input Shiny input object
 # @param session Shiny session object
-# @param quality_settings ReactiveVal to store quality filter settings
-# @return NULL (side effects: creates output and updates quality_settings)
+# @return Reactive returning quality column info (used by median_params for unified debouncing)
 
-render_quality_filter_ui <- function(output, output_id, loaded_data, input, session, quality_settings) {
+render_quality_filter_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
     
     # Reactive to get descriptive columns for quality selection (strict pattern)
@@ -170,30 +169,7 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
         )
     })
     
-    # Update quality settings reactive when inputs change
-    shiny::observe({
-        info <- quality_col_info()
-        
-        if (is.null(input$quality_column) || input$quality_column == "None") {
-            quality_settings(list(
-                enabled = FALSE,
-                column = NULL,
-                type = "none"
-            ))
-        } else if (info$type == "categorical") {
-            quality_settings(list(
-                enabled = TRUE,
-                column = input$quality_column,
-                type = "categorical",
-                bad_values = input$bad_quality_values
-            ))
-        } else {
-            quality_settings(list(
-                enabled = TRUE,
-                column = input$quality_column,
-                type = info$type,
-                threshold = input$quality_threshold
-            ))
-        }
-    })
+    # Return quality_col_info reactive for use by median_params
+    # Quality settings are now built in median_params.R for unified debouncing
+    quality_col_info
 }

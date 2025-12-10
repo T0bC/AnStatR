@@ -29,6 +29,7 @@ source("R/server/modules/pages/median/grouping_ui.R")
 source("R/server/modules/pages/median/quality_filter_ui.R")
 source("R/server/modules/pages/median/quality_filter_logic.R")
 source("R/server/modules/pages/median/median_table.R")
+source("R/server/modules/pages/median/median_params.R")
 
 # Source server sub-modules: Plotting
 source("R/server/modules/pages/plotting/plot_scatter.R")
