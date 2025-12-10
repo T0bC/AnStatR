@@ -1,16 +1,17 @@
 #' Create summary dataframes reactive
 #'
 #' Computes summary statistics based on current sorting/filtering options.
+#' Data is expected to have {col}_outlier and {col}_trimmed columns for each
+#' measurement, created by the plotting module.
 #'
 #' @param input Shiny input object from the parent module
-#' @param median_data Reactive containing the median-processed data
+#' @param median_data Reactive containing processed data with outlier/trimmed flags
 #' @param measurement_cols Reactive returning measurement column names
 #' @param descriptive_cols Reactive returning descriptive column names
 #' @param x_axis_col Reactive returning the default X-axis column name
-#' @param trim_value Reactive returning the trim percentage (0-100)
 #' @return Reactive returning list of summary dataframes
 create_summary_dfs_reactive <- function(input, median_data, measurement_cols,
-                                         descriptive_cols, x_axis_col, trim_value) {
+                                         descriptive_cols, x_axis_col) {
     
     shiny::reactive({
         shiny::req(input$sorting_options, median_data())
@@ -49,26 +50,18 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols,
             }
         }
         
-        # Get trim value (convert from percentage to proportion)
-        trim_prop <- if (!is.null(trim_value())) {
-            trim_value() / 100
-        } else {
-            0
-        }
-        
-        # Summarize the data
+        # Summarize the data (uses {col}_outlier and {col}_trimmed columns)
         summary_df <- summarize_data(
             data = data,
             grouping_vars = grouping_vars,
             measure_vars = measure_cols,
             exclude_vars = desc_cols,
-            shapiro_test = input$shapiro,
-            trim_value = trim_prop
+            shapiro_test = input$shapiro
         )
         
         if (is_measurement_mode) {
-            # Split by measurement
-            select_rows <- measure_cols[!grepl("_outlier", measure_cols)]
+            # Split by measurement - exclude helper columns
+            select_rows <- measure_cols[!grepl("_outlier|_trimmed", measure_cols)]
             
             lapply(select_rows, function(measurement) {
                 df <- summary_df %>%
