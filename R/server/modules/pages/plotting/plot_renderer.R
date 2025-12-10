@@ -112,21 +112,26 @@ setup_plot_outputs <- function(output,
                     outlier_opts <- params$outlier_options %||% 
                         list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
                     
-                    # Calculate SVG dimensions from container width
-                    # Width: dynamic based on container, Height: fixed for consistent card size
+                    # Get SVG dimensions from window size (measured by JS)
+                    # Height is measured from actual card body, width from main content
+                    # This keeps text/point sizes consistent across different window sizes
                     win_size <- params$window_size
                     
-                    # Get container width, default to 800px
+                    # Get container width (JS measures main content area)
                     container_width <- if (!is.null(win_size) && !is.null(win_size$width) && win_size$width > 0) {
                         win_size$width
                     } else {
-                        800
+                        800  # Default fallback
                     }
                     
-                    # Fixed height for consistent plot cards (400px)
-                    container_height <- 600
+                    # Get container height (JS measures actual card body height)
+                    container_height <- if (!is.null(win_size) && !is.null(win_size$height) && win_size$height > 0) {
+                        win_size$height
+                    } else {
+                        400  # Default fallback
+                    }
                     
-                    # Convert to SVG inches (divide by 100 for scaling)
+                    # Convert pixels to SVG inches (100 pixels per inch)
                     width_svg <- container_width / 100
                     height_svg <- container_height / 100
                     
