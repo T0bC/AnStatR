@@ -41,6 +41,16 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
                 dplyr::select(-Measurement) %>%  # Remove Measurement column (redundant in per-table view)
                 dplyr::mutate(dplyr::across(where(is.numeric), ~round(., 3)))
             
+            # Remove n_outliers column if all zeros
+            if ("n_outliers" %in% names(df) && all(df$n_outliers == 0, na.rm = TRUE)) {
+                df <- df %>% dplyr::select(-n_outliers)
+            }
+            
+            # Remove n_trimmed column if all zeros
+            if ("n_trimmed" %in% names(df) && all(df$n_trimmed == 0, na.rm = TRUE)) {
+                df <- df %>% dplyr::select(-n_trimmed)
+            }
+            
             list(
                 col = measurement,
                 df = df
@@ -74,12 +84,24 @@ setup_summary_table_outputs <- function(output, session, summary_dfs) {
             
             # Render the table
             output[[table_name]] <- DT::renderDataTable({
+                n_rows <- nrow(summary_df)
+                
+                # Determine dom string: hide pagination if only one page
+                # 't' = table, 'p' = pagination, 'i' = info
+                dom_string <- if (n_rows <= 10) "t" else "tip"
+                
                 DT::datatable(
                     summary_df,
                     options = list(
                         pageLength = 10,
                         scrollX = TRUE,
-                        dom = 'Bfrtip'
+                        dom = dom_string,
+                        language = list(
+                            paginate = list(
+                                previous = "Previous",
+                                `next` = "Next"
+                            )
+                        )
                     ),
                     rownames = FALSE
                 )
