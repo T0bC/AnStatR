@@ -116,37 +116,43 @@ img[src*="Beckr_intro_Diamant"] {
 
 /* ===== Responsive Plot Styles ===== */
 
-/* Plot card - fills available width */
+/* Plot card - fixed height to prevent resize jitter */
 .plot-card {
     width: 100%;
+    height: 650px;
+    /* Fixed height: 600px plot + ~50px header */
+    overflow: hidden;
 }
 
-/* Plot card body - minimal padding to maximize plot area */
+/* Plot card body - minimal padding, fixed height */
 .plot-card-body {
     padding: 0.5rem !important;
+    height: calc(100% - 45px);
+    /* Full height minus header */
+    overflow: hidden;
 }
 
-/* Responsive plot container - fills card body */
+/* Responsive plot container - fixed dimensions */
 .responsive-plot {
     width: 100%;
-    min-height: 300px;
-    /* Minimum height before container is measured */
+    height: 600px;
+    overflow: hidden;
 }
 
-/* Ensure ggiraph container fills available width */
+/* ggiraph container - don't scale during resize */
 .responsive-plot .girafe_container_std,
 .girafe_container_std {
-    width: 100% !important;
     max-width: 100%;
+    overflow: hidden;
 }
 
-/* SVG fills container - dimensions set server-side based on actual container size */
+/* SVG keeps its rendered size - no CSS scaling during drag */
+/* Server re-renders with correct size after resize completes */
 .responsive-plot .girafe_container_std svg,
 .girafe_container_std svg {
-    width: 100% !important;
-    height: auto !important;
     max-width: 100%;
     display: block;
+    /* No width: 100% - let SVG use its intrinsic size */
 }
 
 /* ===== Recalculating State ===== */
