@@ -224,3 +224,37 @@ img[src*="Beckr_intro_Diamant"] {
         margin-left: -120px !important;
     }
 }
+
+/* ===== Summary Statistics Sidebar Styles ===== */
+
+/* Summary stats sidebar - content at top */
+.summary-stats-sidebar {
+    padding-top: 0.5rem !important;
+}
+
+/* Ensure sidebar content starts at top */
+.summary-stats-sidebar .sidebar-content {
+    padding-top: 0.25rem !important;
+}
+
+/* Style section headers in sidebar */
+.summary-stats-sidebar h6 {
+    font-weight: 600;
+    color: var(--bs-body-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Compact form controls */
+.summary-stats-sidebar .form-group {
+    margin-bottom: 0.75rem;
+}
+
+/* Style the checkbox label */
+.summary-stats-sidebar .form-check-label {
+    font-size: 0.9rem;
+}
+
+/* Ensure selectize inputs are properly styled */
+.summary-stats-sidebar .selectize-input {
+    min-height: 36px;
+}
