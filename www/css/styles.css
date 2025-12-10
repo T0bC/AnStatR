@@ -120,7 +120,7 @@ img[src*="Beckr_intro_Diamant"] {
 .plot-card {
     width: 100%;
     /* Height = 50% of (viewport - navbar ~56px) */
-    height: calc((100vh - 56px) * 0.50);
+    height: calc((100vh - 56px) * 0.42);
     min-height: 300px;
     max-height: 800px;
     display: flex;
