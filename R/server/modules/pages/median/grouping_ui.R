@@ -6,10 +6,9 @@
 # @param loaded_data Reactive containing the loaded data
 # @param input Shiny input object
 # @param session Shiny session object
-# @param selected_grouping_cols ReactiveVal to store selected grouping columns
-# @return NULL (side effects: creates output and updates selected_grouping_cols)
+# @return NULL (side effects: creates output; input$grouping_columns used by median_params)
 
-render_grouping_ui <- function(output, output_id, loaded_data, input, session, selected_grouping_cols) {
+render_grouping_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
     
     # Reactive to get descriptive columns (strict pattern: uppercase + underscores only)
@@ -82,8 +81,4 @@ render_grouping_ui <- function(output, output_id, loaded_data, input, session, s
         )
     })
     
-    # Update reactive value when selection changes
-    shiny::observe({
-        selected_grouping_cols(input$grouping_columns)
-    })
 }

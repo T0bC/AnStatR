@@ -3,25 +3,16 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         ns <- session$ns
 
         # Shared reactive values
-        selected_grouping_cols_raw <- shiny::reactiveVal(NULL)
-        quality_settings <- shiny::reactiveVal(list(enabled = FALSE))
         filtered_data <- shiny::reactiveVal(NULL)
         filter_message <- shiny::reactiveVal("No data loaded.")
         median_results <- shiny::reactiveVal(NULL)
         removed_cols <- shiny::reactiveVal(NULL)  # Columns removed due to within-group variation
-        
-        # Debounced grouping columns (500ms delay to avoid glitchy re-renders during selection)
-        selected_grouping_cols <- shiny::reactive({
-            selected_grouping_cols_raw()
-        }) |> shiny::debounce(500)
 
         # Reset all state when new data is loaded
         # This prevents stale selections from causing errors with new datasets
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
                 # Reset all reactive values to initial state
-                selected_grouping_cols_raw(NULL)
-                quality_settings(list(enabled = FALSE))
                 filtered_data(NULL)
                 filter_message("New data loaded. Configure grouping and filtering options.")
                 median_results(NULL)
@@ -43,36 +34,56 @@ server_median <- function(id, loaded_data, data_version = NULL) {
             session = session
         )
 
-        # Grouping UI renderer (writes to raw value, debounced version used downstream)
+        # Grouping UI renderer (no longer updates a separate reactiveVal)
         render_grouping_ui(
             output = output,
             output_id = "grouping_ui",
             loaded_data = loaded_data,
             input = input,
-            session = session,
-            selected_grouping_cols = selected_grouping_cols_raw
+            session = session
         )
 
-        # Quality filter UI renderer
-        render_quality_filter_ui(
+        # Quality filter UI renderer (returns quality_col_info reactive)
+        quality_col_info <- render_quality_filter_ui(
             output = output,
             output_id = "quality_filter_ui",
             loaded_data = loaded_data,
             input = input,
-            session = session,
-            quality_settings = quality_settings
+            session = session
         )
 
-        # Apply quality filtering when inputs change
+        # ----- Unified Debounced Parameters -----
+        # Consolidates grouping and quality inputs with single debounce
+        # Prevents double-renders when multiple inputs change
+        median_params <- create_median_params(
+            loaded_data = loaded_data,
+            input = input,
+            quality_col_info = quality_col_info,
+            debounce_ms = 400
+        )
+        
+        # Extract individual values from unified params for downstream use
+        selected_grouping_cols <- shiny::reactive({
+            params <- median_params()
+            if (is.null(params)) return(NULL)
+            params$grouping_cols
+        })
+        
+        quality_settings <- shiny::reactive({
+            params <- median_params()
+            if (is.null(params)) return(list(enabled = FALSE, column = NULL, type = "none"))
+            params$quality_settings
+        })
+
+        # Apply quality filtering when unified params change
         shiny::observe({
-            shiny::req(loaded_data())
+            shiny::req(loaded_data(), median_params())
             
             data <- loaded_data()
-            settings <- quality_settings()
-            grouping <- selected_grouping_cols()
+            params <- median_params()
             
             # Apply quality filter
-            result <- apply_quality_filter(data, settings, grouping)
+            result <- apply_quality_filter(data, params$quality_settings, params$grouping_cols)
             
             filtered_data(result$data)
             filter_message(result$message)
