@@ -53,13 +53,50 @@ summarize_data <- function(data,
         return(rep(FALSE, nrow(env)))
     }
     
+    # Helper to count trimmed samples (excluding outliers first)
+    count_trimmed <- function(x, outliers, trim) {
+        # First filter out outliers
+        valid_indices <- which(!outliers)
+        filtered_data <- x[valid_indices]
+        n <- length(filtered_data)
+        k <- floor(n * trim)
+        # Trimmed = 2*k (k from each end)
+        if (k == 0 || n <= 2 * k) return(0L)
+        return(as.integer(2 * k))
+    }
+    
     # Calculate summary statistics for specified measurement columns
     summary_stats <- data %>%
         dplyr::group_by(dplyr::across(dplyr::all_of(grouping_vars))) %>%
         dplyr::summarize(dplyr::across(
             dplyr::all_of(measure_vars),
             list(
+                n_total = ~{
+                    # Total non-NA values before any exclusion
+                    sum(!is.na(.))
+                },
+                n_outliers = ~{
+                    # Count of outliers excluded
+                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
+                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
+                        dplyr::pick(dplyr::everything())[[outlier_col]]
+                    } else {
+                        rep(FALSE, length(.))
+                    }
+                    sum(outliers & !is.na(.), na.rm = TRUE)
+                },
+                n_trimmed = ~{
+                    # Count of trimmed values (after outlier removal)
+                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
+                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
+                        dplyr::pick(dplyr::everything())[[outlier_col]]
+                    } else {
+                        rep(FALSE, length(.))
+                    }
+                    count_trimmed(., outliers, trim_value)
+                },
                 n = ~{
+                    # Final count used for statistics (after outlier + trim exclusion)
                     outlier_col <- paste0(dplyr::cur_column(), "_outlier")
                     outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
                         dplyr::pick(dplyr::everything())[[outlier_col]]
