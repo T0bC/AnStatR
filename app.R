@@ -98,18 +98,17 @@ app_server <- function(input, output, session) {
                 data_version = load_data_result$version)
   
   # Pass median data to plotting module
-  # plotting_result contains filtered_data, trim_percent, outlier_options
-  # Plotting tab is the source of truth for downstream modules
+  # plotting_result contains processed_data (with {col}_outlier and {col}_trimmed flags)
+  # and selected_measures - Plotting tab is the source of truth for downstream modules
   plotting_result <- server_plotting("plotting_id",
                                      median_data = median_result,
                                      data_version = load_data_result$version)
   
-  # Pass plotting-filtered data to summary stats module
-  # This ensures summary stats use the same filtered/trimmed/outlier-excluded data as plots
+  # Pass plotting-processed data to summary stats module
+  # processed_data has {col}_outlier and {col}_trimmed columns for each selected measurement
   server_summary_stats("summary_stats_id",
-                       plotting_data = plotting_result$filtered_data,
-                       trim_percent = plotting_result$trim_percent,
-                       outlier_options = plotting_result$outlier_options,
+                       processed_data = plotting_result$processed_data,
+                       selected_measures = plotting_result$selected_measures,
                        data_version = load_data_result$version)
 
   # Initialize settings modal
