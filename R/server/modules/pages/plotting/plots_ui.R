@@ -115,11 +115,10 @@ setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE)
             ))
         }
         
-        # Generate plot grid
+        # Generate plot grid - height is determined dynamically by container size
         generate_plot_grid_ui(
             ns = ns,
-            measures = measures,
-            plot_height = "400px"
+            measures = measures
         )
     })
 }
