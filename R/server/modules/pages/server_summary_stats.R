@@ -5,14 +5,15 @@
 #'
 #' Uses data from the Plotting tab as source of truth - this ensures summary statistics
 #' are calculated on the same filtered/trimmed/outlier-excluded data shown in plots.
+#' The processed_data contains {col}_outlier and {col}_trimmed columns for each
+#' selected measurement.
 #'
 #' @param id Module namespace ID
-#' @param plotting_data Reactive containing filtered data from plotting module
-#' @param trim_percent Reactive returning the trim percentage (0-100) from plotting
-#' @param outlier_options Reactive returning outlier detection settings from plotting
+#' @param processed_data Reactive containing data with {col}_outlier and {col}_trimmed flags
+#' @param selected_measures Reactive returning selected measurement columns from plotting
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only)
-server_summary_stats <- function(id, plotting_data, trim_percent, outlier_options, data_version) {
+server_summary_stats <- function(id, processed_data, selected_measures, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
@@ -22,17 +23,22 @@ server_summary_stats <- function(id, plotting_data, trim_percent, outlier_option
         source("R/server/modules/pages/summary_stats/summary_tables.R", local = TRUE)
         
         # ----- 1. Column Reactives -----
-        # Use plotting_data as source (already filtered by group selections)
+        # Use only the selected measurements from plotting (already have _outlier/_trimmed flags)
         measurement_cols <- shiny::reactive({
-            shiny::req(plotting_data())
-            cols <- get_measurement_cols(plotting_data())
-            # Exclude outlier columns from display
-            cols[!grepl("_outlier", cols)]
+            measures <- selected_measures()
+            if (is.null(measures) || length(measures) == 0) {
+                # Fallback to all measurement cols if none selected
+                shiny::req(processed_data())
+                cols <- get_measurement_cols(processed_data())
+                cols[!grepl("_outlier|_trimmed", cols)]
+            } else {
+                measures
+            }
         })
         
         descriptive_cols <- shiny::reactive({
-            shiny::req(plotting_data())
-            get_descriptive_cols(plotting_data())
+            shiny::req(processed_data())
+            get_descriptive_cols(processed_data())
         })
         
         # X-axis column (first descriptive column as default)
@@ -62,19 +68,19 @@ server_summary_stats <- function(id, plotting_data, trim_percent, outlier_option
             input = input,
             output = output,
             session = session,
-            median_data = plotting_data,
+            median_data = processed_data,
             descriptive_cols = descriptive_cols,
             x_axis_col = x_axis_col
         )
         
         # ----- 4. Summary DataFrames -----
+        # No trim_value needed - data already has {col}_trimmed columns
         summary_dfs <- create_summary_dfs_reactive(
             input = input,
-            median_data = plotting_data,
+            median_data = processed_data,
             measurement_cols = measurement_cols,
             descriptive_cols = descriptive_cols,
-            x_axis_col = x_axis_col,
-            trim_value = trim_percent
+            x_axis_col = x_axis_col
         )
         
         # ----- 5. Table Outputs -----
@@ -89,7 +95,7 @@ server_summary_stats <- function(id, plotting_data, trim_percent, outlier_option
             output = output,
             ns = ns,
             summary_dfs = summary_dfs,
-            median_data = plotting_data
+            median_data = processed_data
         )
         
         # ----- 7. Download All Handler -----
