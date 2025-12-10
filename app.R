@@ -109,6 +109,7 @@ app_server <- function(input, output, session) {
   server_summary_stats("summary_stats_id",
                        processed_data = plotting_result$processed_data,
                        selected_measures = plotting_result$selected_measures,
+                       x_axis = plotting_result$x_axis,
                        data_version = load_data_result$version)
 
   # Initialize settings modal

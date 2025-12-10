@@ -11,9 +11,10 @@
 #' @param id Module namespace ID
 #' @param processed_data Reactive containing data with {col}_outlier and {col}_trimmed flags
 #' @param selected_measures Reactive returning selected measurement columns from plotting
+#' @param x_axis Reactive returning X-axis columns from plotting (used as default grouping)
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only)
-server_summary_stats <- function(id, processed_data, selected_measures, data_version) {
+server_summary_stats <- function(id, processed_data, selected_measures, x_axis, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
@@ -41,20 +42,9 @@ server_summary_stats <- function(id, processed_data, selected_measures, data_ver
             get_descriptive_cols(processed_data())
         })
         
-        # X-axis column (first descriptive column as default)
-        x_axis_col <- shiny::reactive({
-            desc_cols <- descriptive_cols()
-            if (length(desc_cols) > 0) desc_cols[1] else NULL
-        })
-        
         # ----- 2. Reset state on new data -----
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
-                shiny::updateSelectizeInput(
-                    session = session,
-                    inputId = "sorting_options",
-                    selected = "Measurement"
-                )
                 shiny::updateCheckboxInput(
                     session = session,
                     inputId = "shapiro",
@@ -64,23 +54,22 @@ server_summary_stats <- function(id, processed_data, selected_measures, data_ver
         }
         
         # ----- 3. Sidebar Logic -----
+        # Pass x_axis from plotting as default for filter options
         setup_sidebar_logic(
             input = input,
             output = output,
             session = session,
-            median_data = processed_data,
             descriptive_cols = descriptive_cols,
-            x_axis_col = x_axis_col
+            x_axis = x_axis
         )
         
         # ----- 4. Summary DataFrames -----
         # No trim_value needed - data already has {col}_trimmed columns
+        # Always uses "Measurement" mode with filter_options_select as grouping
         summary_dfs <- create_summary_dfs_reactive(
             input = input,
             median_data = processed_data,
-            measurement_cols = measurement_cols,
-            descriptive_cols = descriptive_cols,
-            x_axis_col = x_axis_col
+            measurement_cols = measurement_cols
         )
         
         # ----- 5. Table Outputs -----

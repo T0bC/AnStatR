@@ -1,82 +1,51 @@
 #' Create summary dataframes reactive
 #'
-#' Computes summary statistics based on current sorting/filtering options.
+#' Computes summary statistics for each measurement column.
 #' Data is expected to have {col}_outlier and {col}_trimmed columns for each
 #' measurement, created by the plotting module.
+#' Always uses "Measurement" mode - one table per measurement column.
 #'
 #' @param input Shiny input object from the parent module
+#'   - input$filter_options_select: Grouping columns
+#'   - input$shapiro: Whether to include Shapiro-Wilk test
 #' @param median_data Reactive containing processed data with outlier/trimmed flags
 #' @param measurement_cols Reactive returning measurement column names
-#' @param descriptive_cols Reactive returning descriptive column names
-#' @param x_axis_col Reactive returning the default X-axis column name
-#' @return Reactive returning list of summary dataframes
-create_summary_dfs_reactive <- function(input, median_data, measurement_cols,
-                                         descriptive_cols, x_axis_col) {
+#' @return Reactive returning list of summary dataframes (one per measurement)
+create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
     
     shiny::reactive({
-        shiny::req(input$sorting_options, median_data())
-        
-        # Validate: can't select other columns if "Measurement" is selected
-        shiny::validate(
-            shiny::need(
-                !(length(input$sorting_options) > 1 && "Measurement" %in% input$sorting_options),
-                "Cannot select other columns when 'Measurement' is selected."
-            )
-        )
-        
-        is_measurement_mode <- length(input$sorting_options) == 1 && 
-            input$sorting_options == "Measurement"
-        
-        if (is_measurement_mode) {
-            shiny::req(input$filter_options_select)
-        }
+        shiny::req(input$filter_options_select, median_data())
         
         data <- median_data()
         measure_cols <- measurement_cols()
-        desc_cols <- descriptive_cols()
         
-        # Determine grouping variables
-        grouping_vars <- if (is_measurement_mode) {
-            input$filter_options_select
-        } else {
-            # Use X-axis column as default grouping when sorting by descriptive cols
-            x_col <- x_axis_col()
-            if (!is.null(x_col) && x_col %in% names(data)) {
-                x_col
-            } else if (length(desc_cols) > 0) {
-                desc_cols[1]
-            } else {
-                character(0)
-            }
-        }
+        # Filter out helper columns
+        measure_cols <- measure_cols[!grepl("_outlier|_trimmed", measure_cols)]
+        shiny::req(length(measure_cols) > 0)
+        
+        # Grouping variables from filter options
+        grouping_vars <- input$filter_options_select
         
         # Summarize the data (uses {col}_outlier and {col}_trimmed columns)
         summary_df <- summarize_data(
             data = data,
             grouping_vars = grouping_vars,
             measure_vars = measure_cols,
-            exclude_vars = desc_cols,
             shapiro_test = input$shapiro
         )
         
-        if (is_measurement_mode) {
-            # Split by measurement - exclude helper columns
-            select_rows <- measure_cols[!grepl("_outlier|_trimmed", measure_cols)]
+        # Split by measurement - one table per measurement column
+        lapply(measure_cols, function(measurement) {
+            df <- summary_df %>%
+                dplyr::filter(Measurement == measurement) %>%
+                dplyr::select(-Measurement) %>%  # Remove Measurement column (redundant in per-table view)
+                dplyr::mutate(dplyr::across(where(is.numeric), ~round(., 3)))
             
-            lapply(select_rows, function(measurement) {
-                df <- summary_df %>%
-                    dplyr::filter(Measurement == measurement) %>%
-                    dplyr::mutate(dplyr::across(where(is.numeric), ~round(., 3)))
-                
-                list(
-                    col = measurement,
-                    df = df
-                )
-            })
-        } else {
-            # Filter by selected columns
-            filter_by_columns(summary_df, input$sorting_options)
-        }
+            list(
+                col = measurement,
+                df = df
+            )
+        })
     })
 }
 

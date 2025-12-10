@@ -9,6 +9,7 @@
 #' @return List with reactives for downstream modules:
 #'   - processed_data: Data with {col}_outlier and {col}_trimmed flags for each selected measure
 #'   - selected_measures: Selected measurement columns
+#'   - x_axis: Selected X-axis columns for grouping
 server_plotting <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
@@ -118,7 +119,8 @@ server_plotting <- function(id, median_data, data_version) {
         # Plotting tab is the source of truth for filtered/processed data
         list(
             processed_data = processed_data,
-            selected_measures = selection_reactives$measures
+            selected_measures = selection_reactives$measures,
+            x_axis = selection_reactives$x_axis
         )
     })
 }
