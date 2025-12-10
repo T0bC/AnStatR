@@ -112,14 +112,23 @@ setup_plot_outputs <- function(output,
                     outlier_opts <- params$outlier_options %||% 
                         list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
                     
-                    # Calculate SVG width from container size
-                    # The formula produces a reasonable SVG size in inches
+                    # Calculate SVG dimensions from container width
+                    # Width: dynamic based on container, Height: fixed for consistent card size
                     win_size <- params$window_size
-                    width_svg <- if (!is.null(win_size) && !is.null(win_size$width)) {
-                        round(win_size$width / 100, 0) / 2.0
+                    
+                    # Get container width, default to 800px
+                    container_width <- if (!is.null(win_size) && !is.null(win_size$width) && win_size$width > 0) {
+                        win_size$width
                     } else {
-                        5.0  # Default width
+                        800
                     }
+                    
+                    # Fixed height for consistent plot cards (400px)
+                    container_height <- 600
+                    
+                    # Convert to SVG inches (divide by 100 for scaling)
+                    width_svg <- container_width / 100
+                    height_svg <- container_height / 100
                     
                     # Create the ggplot with interactive elements
                     p <- create_scatter_plot(
@@ -144,7 +153,7 @@ setup_plot_outputs <- function(output,
                     ggiraph::girafe(
                         ggobj = p,
                         width_svg = width_svg,
-                        height_svg = ceiling(650/100) / 2.0,
+                        height_svg = height_svg,
                         options = list(
                             ggiraph::opts_zoom(max = 5),
                             ggiraph::opts_selection(type = "single"),
@@ -208,9 +217,8 @@ setup_plot_outputs <- function(output,
 #'
 #' @param ns Namespace function from parent module
 #' @param measures Character vector of measurement column names
-#' @param plot_height Height of each plot (CSS value, default "400px")
 #' @return A div containing vertically stacked plot cards
-generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
+generate_plot_grid_ui <- function(ns, measures) {
     
     # Generate plot cards for each measurement - one per row
     plot_cards <- lapply(measures, function(measure) {
@@ -218,7 +226,7 @@ generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
         download_id <- paste0("download_", plot_id)
         
         bslib::card(
-            class = "mb-3",
+            class = "mb-3 plot-card",
             bslib::card_header(
                 class = "py-2 d-flex justify-content-between align-items-center",
                 shiny::tags$span(class = "fw-semibold", measure),
@@ -231,15 +239,15 @@ generate_plot_grid_ui <- function(ns, measures, plot_height = "400px") {
                 )
             ),
             bslib::card_body(
-                class = "p-2",
+                class = "p-2 plot-card-body",
                 # Use girafeOutput for interactive plots with responsive wrapper
-                # Wrapped in withSpinner for loading indicator during plot updates
+                # Height is "auto" - actual size determined by SVG dimensions from server
                 shiny::tags$div(
                     class = "responsive-plot",
                     shinycssloaders::withSpinner(
                         ggiraph::girafeOutput(
                             ns(plot_id), 
-                            height = plot_height,
+                            height = "auto",
                             width = "100%"
                         ),
                         type = 6,        # Spinner style (1-8)
