@@ -154,6 +154,7 @@ setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
             
             bslib::card(
                 class = "mb-3",
+                fill = FALSE,  # Don't fill available space, use natural height
                 bslib::card_header(
                     class = "d-flex justify-content-between align-items-center",
                     shiny::tags$span(
@@ -169,6 +170,7 @@ setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
                     )
                 ),
                 bslib::card_body(
+                    fillable = FALSE,  # Don't constrain content height
                     class = "p-2",
                     DT::dataTableOutput(ns(table_name))
                 )
