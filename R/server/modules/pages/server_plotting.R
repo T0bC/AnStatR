@@ -6,7 +6,10 @@
 #' @param id Module namespace ID
 #' @param median_data Reactive containing the median-processed data from server_median
 #' @param data_version Reactive integer that increments when new data is loaded
-#' @return NULL (side effects only)
+#' @return List with reactives for downstream modules:
+#'   - filtered_data: Group-filtered data
+#'   - trim_percent: Current trim percentage (0-100)
+#'   - outlier_options: List with enabled, method, factor, bootstrap_samples
 server_plotting <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
@@ -100,5 +103,13 @@ server_plotting <- function(id, median_data, data_version) {
         
         # ----- 12. Download Handler -----
         setup_download_handler(output, input, filtered_data)
+        
+        # ----- 13. Return values for downstream modules -----
+        # Plotting tab is the source of truth for filtered/processed data
+        list(
+            filtered_data = filtered_data,
+            trim_percent = processing_reactives$trim_percent,
+            outlier_options = processing_reactives$outlier_options
+        )
     })
 }
