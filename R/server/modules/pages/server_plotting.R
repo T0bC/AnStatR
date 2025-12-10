@@ -8,6 +8,7 @@
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return List with reactives for downstream modules:
 #'   - filtered_data: Group-filtered data
+#'   - selected_measures: Selected measurement columns
 #'   - trim_percent: Current trim percentage (0-100)
 #'   - outlier_options: List with enabled, method, factor, bootstrap_samples
 server_plotting <- function(id, median_data, data_version) {
@@ -108,6 +109,7 @@ server_plotting <- function(id, median_data, data_version) {
         # Plotting tab is the source of truth for filtered/processed data
         list(
             filtered_data = filtered_data,
+            selected_measures = selection_reactives$measures,
             trim_percent = processing_reactives$trim_percent,
             outlier_options = processing_reactives$outlier_options
         )
