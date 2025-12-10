@@ -1,68 +1,31 @@
 #' Summarize data with various statistics
 #'
-#' Calculates summary statistics (n, mean, median, var, sd, sm, sr) for measurement
+#' Calculates summary statistics (n, mean, median, var, sd, sem, cv) for measurement
 #' columns, optionally including Shapiro-Wilk normality test results.
+#' 
+#' Uses {col}_outlier and {col}_trimmed columns from the data to exclude
+#' outliers and trimmed values from statistics calculation.
 #'
-#' @param data Data frame containing the data
+#' @param data Data frame containing the data with {col}_outlier and {col}_trimmed columns
 #' @param grouping_vars Character vector of column names to group by
 #' @param measure_vars Character vector of measurement column names
 #' @param exclude_vars Character vector of columns to exclude from results
 #' @param shapiro_test Logical, whether to include Shapiro-Wilk test
-#' @param trim_value Numeric, trim proportion (0-1) for trimmed statistics
 #' @return Data frame in long format with summary statistics
 summarize_data <- function(data,
                            grouping_vars,
                            measure_vars,
                            exclude_vars = NULL,
-                           shapiro_test = FALSE,
-                           trim_value = 0) {
+                           shapiro_test = FALSE) {
     
-    # Filter measure_vars to exclude those containing "_outlier"
-    measure_vars <- measure_vars[!grepl("_outlier", measure_vars)]
+    # Filter measure_vars to exclude helper columns
+    measure_vars <- measure_vars[!grepl("_outlier|_trimmed", measure_vars)]
     
-    # Function to get trimmed indices
-    get_trimmed_indices <- function(x, trim) {
-        n <- length(x)
-        k <- floor(n * trim)
-        if (k == 0 || n <= 2 * k) return(seq_along(x))
-        order_x <- order(x)
-        trimmed_indices <- order_x[(k + 1):(n - k)]
-        return(trimmed_indices)
-    }
-    
-    # Function to filter outliers and get trimmed data
-    get_filtered_trimmed_data <- function(x, outliers, trim) {
-        # First filter out outliers
-        valid_indices <- which(!outliers)
-        filtered_data <- x[valid_indices]
-        # Then apply trimming
-        if (length(filtered_data) > 0) {
-            trimmed_indices <- get_trimmed_indices(filtered_data, trim)
-            return(filtered_data[trimmed_indices])
-        }
-        return(filtered_data)
-    }
-    
-    # Helper to safely get outlier column
-    safe_get_outlier <- function(col_name, env) {
-        outlier_col <- paste0(col_name, "_outlier")
-        if (outlier_col %in% names(env)) {
-            return(env[[outlier_col]])
-        }
-        # Return FALSE vector if no outlier column exists
-        return(rep(FALSE, nrow(env)))
-    }
-    
-    # Helper to count trimmed samples (excluding outliers first)
-    count_trimmed <- function(x, outliers, trim) {
-        # First filter out outliers
-        valid_indices <- which(!outliers)
-        filtered_data <- x[valid_indices]
-        n <- length(filtered_data)
-        k <- floor(n * trim)
-        # Trimmed = 2*k (k from each end)
-        if (k == 0 || n <= 2 * k) return(0L)
-        return(as.integer(2 * k))
+    # Helper to get filtered data (excluding outliers and trimmed values)
+    get_filtered_data <- function(values, outliers, trimmed) {
+        # Exclude both outliers and trimmed values
+        keep_idx <- which(!outliers & !trimmed & !is.na(values))
+        values[keep_idx]
     }
     
     # Calculate summary statistics for specified measurement columns
@@ -71,115 +34,121 @@ summarize_data <- function(data,
         dplyr::summarize(dplyr::across(
             dplyr::all_of(measure_vars),
             list(
-                n_total = ~{
-                    # Total non-NA values before any exclusion
-                    sum(!is.na(.))
-                },
-                n_outliers = ~{
-                    # Count of outliers excluded
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    sum(outliers & !is.na(.), na.rm = TRUE)
-                },
-                n_trimmed = ~{
-                    # Count of trimmed values (after outlier removal)
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    count_trimmed(., outliers, trim_value)
-                },
                 n = ~{
-                    # Final count used for statistics (after outlier + trim exclusion)
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    sum(!is.na(filtered_trimmed_data))
+                    # Get outlier and trimmed columns for this measurement
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    length(get_filtered_data(., outliers, trimmed))
                 },
                 mean = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    mean(filtered_trimmed_data, na.rm = TRUE)
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    mean(get_filtered_data(., outliers, trimmed), na.rm = TRUE)
                 },
                 median = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    stats::median(filtered_trimmed_data, na.rm = TRUE)
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    stats::median(get_filtered_data(., outliers, trimmed), na.rm = TRUE)
                 },
                 var = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    stats::var(filtered_trimmed_data, na.rm = TRUE)
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    stats::var(get_filtered_data(., outliers, trimmed), na.rm = TRUE)
                 },
                 sd = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    stats::sd(filtered_trimmed_data, na.rm = TRUE)
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    stats::sd(get_filtered_data(., outliers, trimmed), na.rm = TRUE)
                 },
                 sem = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    n_valid <- sum(!is.na(filtered_trimmed_data))
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    filtered <- get_filtered_data(., outliers, trimmed)
+                    n_valid <- length(filtered)
                     if (n_valid > 1) {
-                        stats::sd(filtered_trimmed_data, na.rm = TRUE) / sqrt(n_valid)
+                        stats::sd(filtered, na.rm = TRUE) / sqrt(n_valid)
                     } else {
                         NA_real_
                     }
                 },
                 cv = ~{
-                    outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                    outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                        dplyr::pick(dplyr::everything())[[outlier_col]]
-                    } else {
-                        rep(FALSE, length(.))
-                    }
-                    filtered_trimmed_data <- get_filtered_trimmed_data(., outliers, trim_value)
-                    n_valid <- sum(!is.na(filtered_trimmed_data))
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    
+                    filtered <- get_filtered_data(., outliers, trimmed)
+                    n_valid <- length(filtered)
                     if (n_valid > 1) {
-                        stats::sd(filtered_trimmed_data, na.rm = TRUE) / mean(filtered_trimmed_data, na.rm = TRUE)
+                        stats::sd(filtered, na.rm = TRUE) / mean(filtered, na.rm = TRUE)
                     } else {
                         NA_real_
                     }
+                },
+                n_outliers = ~{
+                    # Count of outliers excluded (at end of table)
+                    col_name <- dplyr::cur_column()
+                    outlier_col <- paste0(col_name, "_outlier")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    sum(outliers & !is.na(.), na.rm = TRUE)
+                },
+                n_trimmed = ~{
+                    # Count of trimmed values excluded (at end of table)
+                    col_name <- dplyr::cur_column()
+                    trimmed_col <- paste0(col_name, "_trimmed")
+                    outlier_col <- paste0(col_name, "_outlier")
+                    all_cols <- dplyr::pick(dplyr::everything())
+                    
+                    # Only count trimmed that are not also outliers
+                    outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                    trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                    sum(trimmed & !outliers & !is.na(.), na.rm = TRUE)
                 }
             )
         ), .groups = "drop")
     
-    # New function to check if all values are identical
+    # Helper to check if all values are identical
     all_identical <- function(x) {
         length(unique(x)) == 1
     }
@@ -191,54 +160,60 @@ summarize_data <- function(data,
                 dplyr::all_of(measure_vars),
                 list(
                     shapiro_p = ~{
-                        outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                        outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                            dplyr::pick(dplyr::everything())[[outlier_col]]
-                        } else {
-                            rep(FALSE, length(.))
-                        }
-                        filtered_trimmed_data <- stats::na.omit(get_filtered_trimmed_data(., outliers, trim_value))
-                        if (length(filtered_trimmed_data) >= 3 && length(filtered_trimmed_data) <= 5000) {
-                            if (all_identical(filtered_trimmed_data)) {
+                        col_name <- dplyr::cur_column()
+                        outlier_col <- paste0(col_name, "_outlier")
+                        trimmed_col <- paste0(col_name, "_trimmed")
+                        all_cols <- dplyr::pick(dplyr::everything())
+                        
+                        outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                        trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                        
+                        filtered <- get_filtered_data(., outliers, trimmed)
+                        if (length(filtered) >= 3 && length(filtered) <= 5000) {
+                            if (all_identical(filtered)) {
                                 NA_real_
                             } else {
-                                stats::shapiro.test(filtered_trimmed_data)$p.value
+                                stats::shapiro.test(filtered)$p.value
                             }
                         } else {
                             NA_real_
                         }
                     },
                     shapiro_W = ~{
-                        outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                        outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                            dplyr::pick(dplyr::everything())[[outlier_col]]
-                        } else {
-                            rep(FALSE, length(.))
-                        }
-                        filtered_trimmed_data <- stats::na.omit(get_filtered_trimmed_data(., outliers, trim_value))
-                        if (length(filtered_trimmed_data) >= 3 && length(filtered_trimmed_data) <= 5000) {
-                            if (all_identical(filtered_trimmed_data)) {
+                        col_name <- dplyr::cur_column()
+                        outlier_col <- paste0(col_name, "_outlier")
+                        trimmed_col <- paste0(col_name, "_trimmed")
+                        all_cols <- dplyr::pick(dplyr::everything())
+                        
+                        outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                        trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                        
+                        filtered <- get_filtered_data(., outliers, trimmed)
+                        if (length(filtered) >= 3 && length(filtered) <= 5000) {
+                            if (all_identical(filtered)) {
                                 NA_real_
                             } else {
-                                stats::shapiro.test(filtered_trimmed_data)$statistic
+                                stats::shapiro.test(filtered)$statistic
                             }
                         } else {
                             NA_real_
                         }
                     },
                     normal = ~{
-                        outlier_col <- paste0(dplyr::cur_column(), "_outlier")
-                        outliers <- if (outlier_col %in% names(dplyr::pick(dplyr::everything()))) {
-                            dplyr::pick(dplyr::everything())[[outlier_col]]
-                        } else {
-                            rep(FALSE, length(.))
-                        }
-                        filtered_trimmed_data <- stats::na.omit(get_filtered_trimmed_data(., outliers, trim_value))
-                        if (length(filtered_trimmed_data) >= 3 && length(filtered_trimmed_data) <= 5000) {
-                            if (all_identical(filtered_trimmed_data)) {
+                        col_name <- dplyr::cur_column()
+                        outlier_col <- paste0(col_name, "_outlier")
+                        trimmed_col <- paste0(col_name, "_trimmed")
+                        all_cols <- dplyr::pick(dplyr::everything())
+                        
+                        outliers <- if (outlier_col %in% names(all_cols)) all_cols[[outlier_col]] else rep(FALSE, length(.))
+                        trimmed <- if (trimmed_col %in% names(all_cols)) all_cols[[trimmed_col]] else rep(FALSE, length(.))
+                        
+                        filtered <- get_filtered_data(., outliers, trimmed)
+                        if (length(filtered) >= 3 && length(filtered) <= 5000) {
+                            if (all_identical(filtered)) {
                                 "identical values"
                             } else {
-                                ifelse(stats::shapiro.test(filtered_trimmed_data)$p.value > 0.05, "yes", "no")
+                                ifelse(stats::shapiro.test(filtered)$p.value > 0.05, "yes", "no")
                             }
                         } else {
                             NA_character_
@@ -257,10 +232,20 @@ summarize_data <- function(data,
             dplyr::select(dplyr::all_of(grouping_vars), dplyr::starts_with(paste0(x, "_"))) %>%
             dplyr::rename_with(~gsub(paste0(x, "_"), "", .x), dplyr::starts_with(paste0(x, "_"))) %>%
             dplyr::mutate(Measurement = x)
-    })) %>%
-        dplyr::select(Measurement, dplyr::everything())
+    }))
     
-    # Remove rows (basically columns in the orig df) which may not hold measurements
+    # Reorder columns: Measurement first, then grouping, then stats, then shapiro (if present), then n_outliers/n_trimmed last
+    base_cols <- c("Measurement", grouping_vars, "n", "mean", "median", "var", "sd", "sem", "cv")
+    shapiro_cols <- if (shapiro_test) c("shapiro_p", "shapiro_W", "normal") else character(0)
+    exclusion_cols <- c("n_outliers", "n_trimmed")
+    
+    col_order <- c(base_cols, shapiro_cols, exclusion_cols)
+    col_order <- col_order[col_order %in% names(summary_long)]
+    
+    summary_long <- summary_long %>%
+        dplyr::select(dplyr::all_of(col_order))
+    
+    # Remove rows which may not hold measurements
     if (!is.null(exclude_vars)) {
         summary_long <- summary_long %>% dplyr::filter(!Measurement %in% exclude_vars)
     }
