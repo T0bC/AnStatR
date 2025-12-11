@@ -19,8 +19,14 @@ create_interaction <- function(df, cols) {
         stop("At least one column must be provided.")
     }
     
-    # Convert specified columns to factors
-    factor_cols <- lapply(cols, function(col) as.factor(df[[col]]))
+    # Convert specified columns to factors, replacing NA with "NA" string to preserve rows
+    # This ensures data points with missing descriptive values are still plotted
+    factor_cols <- lapply(cols, function(col) {
+        values <- df[[col]]
+        # Replace NA with "NA" string before converting to factor
+        values[is.na(values)] <- "NA"
+        as.factor(values)
+    })
     
     # Single column: return as factor
     if (length(cols) == 1) {

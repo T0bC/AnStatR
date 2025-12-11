@@ -47,7 +47,21 @@ create_filtered_data_reactive <- function(input, median_data, filter_cols) {
         for (col in cols) {
             selected_values <- input[[col]]
             if (!is.null(selected_values) && length(selected_values) > 0) {
-                data <- data[data[[col]] %in% selected_values, , drop = FALSE]
+                # Handle "NA" marker: it represents NA values in the data
+                col_values <- data[[col]]
+                include_na <- "NA" %in% selected_values
+                # Remove "NA" from selected_values for %in% comparison
+                selected_values <- selected_values[selected_values != "NA"]
+                
+                # Match non-NA values
+                matches <- col_values %in% selected_values
+                # %in% returns NA for NA values, set to FALSE initially
+                matches[is.na(matches)] <- FALSE
+                # Include NA rows if "NA" was selected
+                if (include_na) {
+                    matches[is.na(col_values)] <- TRUE
+                }
+                data <- data[matches, , drop = FALSE]
             }
         }
         
@@ -79,6 +93,21 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols)
             ))
         }
         
+        # Helper to get choices with NA displayed as "NA"
+        get_choices_with_na_label <- function(values) {
+            choices <- unique(values)
+            # Create named vector: names are display labels, values are actual values
+            # NA values need special handling for checkbox display
+            has_na <- any(is.na(choices))
+            choices <- choices[!is.na(choices)]  # Remove NA from choices
+            if (has_na) {
+                # Add "NA" as a choice that maps to NA values
+                # Use a special marker that we'll handle in filtering
+                choices <- c(choices, "NA")
+            }
+            choices
+        }
+        
         # Split columns into two groups for side-by-side layout
         if (length(cols) > 1) {
             half <- ceiling(length(cols) / 2)
@@ -87,17 +116,17 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols)
             
             shiny::fluidRow(
                 shiny::column(6, lapply(cols1, function(col) {
-                    choices <- unique(data[[col]])
+                    choices <- get_choices_with_na_label(data[[col]])
                     shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
                 })),
                 shiny::column(6, lapply(cols2, function(col) {
-                    choices <- unique(data[[col]])
+                    choices <- get_choices_with_na_label(data[[col]])
                     shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
                 }))
             )
         } else {
             col <- cols[1]
-            choices <- unique(data[[col]])
+            choices <- get_choices_with_na_label(data[[col]])
             shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
         }
     })
