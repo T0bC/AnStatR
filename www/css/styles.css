@@ -70,10 +70,11 @@ img[src*="Beckr_intro_Diamant"] {
     background-color: transparent !important;
 }
 
-/* ===== Plotting Sidebar Tab Styles ===== */
+/* ===== Sidebar Tab Styles (Plotting & Statistics) ===== */
 
 /* Position tabs at top of sidebar like a title */
-.plotting-sidebar .nav-tabs {
+.plotting-sidebar .nav-tabs,
+.statistics-sidebar .nav-tabs {
     margin: -0.5rem -1rem 0.5rem -1rem;
     padding: 0.5rem 1rem 0;
     border-bottom: 1px solid var(--bs-border-color);
@@ -81,13 +82,15 @@ img[src*="Beckr_intro_Diamant"] {
 }
 
 /* Make tabs distribute evenly */
-.plotting-sidebar .nav-tabs .nav-item {
+.plotting-sidebar .nav-tabs .nav-item,
+.statistics-sidebar .nav-tabs .nav-item {
     flex: 1;
     text-align: center;
 }
 
 /* Style the tab links */
-.plotting-sidebar .nav-tabs .nav-link {
+.plotting-sidebar .nav-tabs .nav-link,
+.statistics-sidebar .nav-tabs .nav-link {
     padding: 0.5rem 0.25rem;
     border: none;
     border-bottom: 2px solid transparent;
@@ -97,20 +100,23 @@ img[src*="Beckr_intro_Diamant"] {
 }
 
 /* Active tab styling */
-.plotting-sidebar .nav-tabs .nav-link.active {
+.plotting-sidebar .nav-tabs .nav-link.active,
+.statistics-sidebar .nav-tabs .nav-link.active {
     background: transparent;
     border-bottom-color: var(--bs-primary);
     color: var(--bs-primary);
 }
 
 /* Hover state */
-.plotting-sidebar .nav-tabs .nav-link:hover:not(.active) {
+.plotting-sidebar .nav-tabs .nav-link:hover:not(.active),
+.statistics-sidebar .nav-tabs .nav-link:hover:not(.active) {
     border-bottom-color: var(--bs-border-color);
     color: var(--bs-body-color);
 }
 
 /* Ensure icons are centered */
-.plotting-sidebar .nav-tabs .nav-link svg {
+.plotting-sidebar .nav-tabs .nav-link svg,
+.statistics-sidebar .nav-tabs .nav-link svg {
     vertical-align: middle;
 }
 
@@ -257,4 +263,26 @@ img[src*="Beckr_intro_Diamant"] {
 /* Ensure selectize inputs are properly styled */
 .summary-stats-sidebar .selectize-input {
     min-height: 36px;
+}
+
+/* ===== Statistics Tab Disabled State ===== */
+
+/* Disabled tab styling - grayed out appearance */
+.nav-link.disabled-tab {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    color: var(--bs-secondary) !important;
+}
+
+/* Add visual indicator (lock icon via pseudo-element) */
+.nav-link.disabled-tab::after {
+    content: " 🔒";
+    font-size: 0.7em;
+    vertical-align: super;
+}
+
+/* Prevent hover effects on disabled tab */
+.nav-link.disabled-tab:hover {
+    background-color: transparent !important;
+    color: var(--bs-secondary) !important;
 }
