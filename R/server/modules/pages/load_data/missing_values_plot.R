@@ -13,6 +13,6 @@ render_missing_values_plot <- function(output, output_id, loaded_data) {
     data <- loaded_data()
     
     # Generate the missing values plot
-    DataExplorer::plot_missing(data)
+    DataExplorer::plot_missing(data, ggtheme = theme_classic(base_size = 16)) 
   })
 }
