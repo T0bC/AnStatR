@@ -7,6 +7,7 @@ source("R/ui/modules/pages/ui_load_data.R")
 source("R/ui/modules/pages/ui_median.R")
 source("R/ui/modules/pages/ui_plotting.R")
 source("R/ui/modules/pages/ui_summary_stats.R")
+source("R/ui/modules/pages/ui_statistics.R")
 
 # Source component modules
 source("R/ui/modules/components/settings_modal.R")
@@ -16,6 +17,7 @@ source("R/server/modules/pages/server_load_data.R")
 source("R/server/modules/pages/server_median.R")
 source("R/server/modules/pages/server_plotting.R")
 source("R/server/modules/pages/server_summary_stats.R")
+source("R/server/modules/pages/server_statistics.R")
 
 # Source server sub-modules: Load Data
 source("R/server/modules/pages/load_data/file_upload.R")
@@ -37,6 +39,10 @@ source("R/server/modules/pages/plotting/plot_renderer.R")
 
 # Source server sub-modules: Summary Stats
 source("R/server/modules/pages/summary_stats/summary_utils.R")
+
+# Source server sub-modules: Statistics
+source("R/server/modules/pages/statistics/sidebar_logic.R")
+source("R/server/modules/pages/statistics/statistics_output.R")
 
 # Load required packages
 library(shiny)
@@ -70,14 +76,40 @@ app_ui <- bslib::page_navbar(
   header = shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css"),
     shiny::tags$script(src = "www/js/plot_resize.js"),
+    shiny::tags$script(src = "www/js/statistics_tab.js"),
     # Include selectize dependencies to fix DT column filter compatibility issue
     htmltools::findDependencies(shiny::selectizeInput("__selectize_dep__", NULL, choices = NULL))
   ),
-  bslib::nav_panel(title = "Load Data", value = "load_data", UI_load_data("load_data_id")),
-  bslib::nav_panel(title = "Median Analysis", value = "median", UI_median("median_id")),
-  bslib::nav_panel(title = "Plotting", value = "plotting", UI_plotting("plotting_id")),
-  bslib::nav_panel(title = "Summary Stats", value = "summary_stats", UI_summary_stats("summary_stats_id")),
-  bslib::nav_panel(title = "Reporting", value = "reporting", shiny::p("TODO: Add reporting UI.")),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("upload"), "Load Data"),
+    value = "load_data",
+    UI_load_data("load_data_id")
+  ),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("calculator"), "Median"),
+    value = "median",
+    UI_median("median_id")
+  ),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("graph-up"), "Plotting"),
+    value = "plotting",
+    UI_plotting("plotting_id")
+  ),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("table"), "Summary Stats"),
+    value = "summary_stats",
+    UI_summary_stats("summary_stats_id")
+  ),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("bar-chart-line"), "Statistics"),
+    value = "statistics",
+    UI_statistics("statistics_id")
+  ),
+  bslib::nav_panel(
+    title = shiny::tagList(bsicons::bs_icon("file-earmark-text"), "Reporting"),
+    value = "reporting",
+    shiny::p("TODO: Add reporting UI.")
+  ),
   bslib::nav_spacer(),
   bslib::nav_item(
     shiny::actionLink(
@@ -112,6 +144,14 @@ app_server <- function(input, output, session) {
                        selected_measures = plotting_result$selected_measures,
                        x_axis = plotting_result$x_axis,
                        data_version = load_data_result$version)
+  
+  # Pass plotting-processed data to statistics module
+  server_statistics("statistics_id",
+                    processed_data = plotting_result$processed_data,
+                    selected_measures = plotting_result$selected_measures,
+                    x_axis = plotting_result$x_axis,
+                    trim_percent = plotting_result$trim_percent,
+                    data_version = load_data_result$version)
 
   # Initialize settings modal
   settings_modal_server(input, session)
@@ -120,7 +160,7 @@ app_server <- function(input, output, session) {
   shiny::observe({
     has_data <- !is.null(load_data_result$data())
     
-    # Tabs that require data to be loaded
+    # Tabs that require data to be loaded (hide completely)
     data_dependent_tabs <- c("median", "plotting", "summary_stats", "reporting")
     
     for (tab in data_dependent_tabs) {
@@ -130,6 +170,26 @@ app_server <- function(input, output, session) {
         bslib::nav_hide("active_page", target = tab)
       }
     }
+    
+    # Statistics tab: show/hide based on data (will be disabled separately based on selections)
+    if (has_data) {
+      bslib::nav_show("active_page", target = "statistics")
+    } else {
+      bslib::nav_hide("active_page", target = "statistics")
+    }
+  })
+  
+  # Statistics tab: disable/enable based on plotting selections
+  shiny::observe({
+    measures <- plotting_result$selected_measures()
+    x_axis <- plotting_result$x_axis()
+    
+    has_selections <- length(measures) > 0 && length(x_axis) > 0
+    
+    # Send state to JavaScript for tab styling
+    session$sendCustomMessage("statistics_tab_state", list(
+      enabled = has_selections
+    ))
   })
 
   # Uncomment the line below during development to enable live theme editor
