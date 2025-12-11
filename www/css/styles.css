@@ -92,19 +92,20 @@ img[src*="Beckr_intro_Diamant"] {
 .plotting-sidebar .nav-tabs .nav-link,
 .statistics-sidebar .nav-tabs .nav-link {
     padding: 0.5rem 0.25rem;
-    border: none;
-    border-bottom: 2px solid transparent;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
     border-radius: 0;
-    color: var(--bs-secondary);
+    color: var(--bs-secondary) !important;
+    background: transparent !important;
     transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 /* Active tab styling */
 .plotting-sidebar .nav-tabs .nav-link.active,
 .statistics-sidebar .nav-tabs .nav-link.active {
-    background: transparent;
-    border-bottom-color: var(--bs-primary);
-    color: var(--bs-primary);
+    background: transparent !important;
+    border-bottom-color: var(--bs-primary) !important;
+    color: var(--bs-primary) !important;
 }
 
 /* Hover state */
