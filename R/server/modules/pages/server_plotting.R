@@ -120,7 +120,8 @@ server_plotting <- function(id, median_data, data_version) {
         list(
             processed_data = processed_data,
             selected_measures = selection_reactives$measures,
-            x_axis = selection_reactives$x_axis
+            x_axis = selection_reactives$x_axis,
+            trim_percent = processing_reactives$trim_percent
         )
     })
 }
