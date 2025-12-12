@@ -453,3 +453,98 @@ img[src*="Beckr_intro_Diamant"] {
 .stat-trace-wrapper {
     margin-top: 0;
 }
+
+/* ===== Global App Error Display Styles ===== */
+
+/* Container for app error with stack trace */
+.app-error-container {
+    width: 100%;
+}
+
+/* Error message - always visible */
+.app-error-message {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* Expandable details section */
+.app-error-details {
+    margin-top: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    background: var(--bs-tertiary-bg);
+}
+
+/* Summary (clickable header) */
+.app-error-details summary {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--bs-secondary);
+    user-select: none;
+}
+
+.app-error-details summary:hover {
+    color: var(--bs-body-color);
+    background: var(--bs-secondary-bg);
+}
+
+/* Details content area */
+.app-error-details-content {
+    padding: 0.75rem;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    max-height: 300px;
+    overflow: auto;
+}
+
+/* Context info section */
+.app-error-context-info {
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.app-error-context-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--bs-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.app-error-context-item {
+    font-size: 0.8rem !important;
+    padding: 0.15rem 0 !important;
+    margin-left: 1rem !important;
+    display: flex !important;
+    gap: 0.5rem;
+}
+
+.app-error-context-key {
+    color: var(--bs-secondary) !important;
+    min-width: 130px !important;
+    flex-shrink: 0;
+}
+
+.app-error-context-value {
+    font-family: var(--bs-font-monospace) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Stack trace wrapper */
+.app-error-trace-wrapper {
+    margin-top: 0;
+}
+
+/* Pre-formatted trace output */
+.app-error-trace-pre {
+    margin: 0;
+    padding: 0;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: transparent;
+}
