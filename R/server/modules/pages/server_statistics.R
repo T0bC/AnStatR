@@ -9,9 +9,10 @@
 #' @param selected_measures Reactive containing selected measurement columns from plotting
 #' @param x_axis Reactive containing selected X-axis columns from plotting
 #' @param trim_percent Reactive containing the trim percentage from plotting
+#' @param cached_plot_objects Reactive containing cached ggplot objects from plotting tab
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only - renders outputs)
-server_statistics <- function(id, processed_data, selected_measures, x_axis, trim_percent, data_version) {
+server_statistics <- function(id, processed_data, selected_measures, x_axis, trim_percent, cached_plot_objects, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
@@ -40,7 +41,7 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
         )
         
         # ----- 3. Statistics Output -----
-        # Setup the main output area
+        # Setup the main output area with plots from plotting tab
         setup_statistics_output(
             input = input,
             output = output,
@@ -50,6 +51,7 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
             x_axis = x_axis,
             trim_percent = trim_percent,
             stats_params = stats_params,
+            cached_plot_objects = cached_plot_objects,
             debug = DEBUG_REACTIVES
         )
     })
