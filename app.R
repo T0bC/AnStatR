@@ -3,6 +3,7 @@
 options(shiny.fullstacktrace = TRUE, keep.source = TRUE)
 
 # Source utility functions (used across multiple modules)
+source("R/utils/error_handling.R")
 source("R/utils/column_utils.R")
 source("R/utils/data_utils.R")
 source("R/utils/statistics_utils.R")
@@ -16,6 +17,7 @@ source("R/ui/modules/pages/ui_statistics.R")
 
 # Source component modules
 source("R/ui/modules/components/settings_modal.R")
+source("R/ui/modules/components/error_display.R")
 
 # Source server modules
 source("R/server/modules/pages/server_load_data.R")
@@ -89,7 +91,7 @@ app_ui <- bslib::page_navbar(
     htmltools::findDependencies(shiny::selectizeInput("__selectize_dep__", NULL, choices = NULL))
   ),
   bslib::nav_panel(
-    title = shiny::tagList(bsicons::bs_icon("upload"), "Load Data"),
+    title = shiny::tagList(bsicons::bs_icon("file-earmark-arrow-up"), "Load Data"),
     value = "load_data",
     UI_load_data("load_data_id")
   ),
