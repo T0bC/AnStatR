@@ -6,6 +6,7 @@ options(shiny.fullstacktrace = TRUE, keep.source = TRUE)
 source("R/utils/error_handling.R")
 source("R/utils/column_utils.R")
 source("R/utils/data_utils.R")
+source("R/utils/Rallfun-v43.R")
 source("R/utils/statistics_utils.R")
 
 # Source UI modules
