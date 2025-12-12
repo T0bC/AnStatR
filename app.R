@@ -1,6 +1,7 @@
 # Source utility functions (used across multiple modules)
 source("R/utils/column_utils.R")
 source("R/utils/data_utils.R")
+source("R/utils/statistics_utils.R")
 
 # Source UI modules
 source("R/ui/modules/pages/ui_load_data.R")
@@ -61,6 +62,7 @@ library(scales)
 library(shinycssloaders)
 library(purrr)
 library(rlang)
+library(WRS2)
 
 # Prevent Rplots.pdf creation by setting default PDF device to null
 # This avoids file clutter when DataExplorer or other packages open a default device
