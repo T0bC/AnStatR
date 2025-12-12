@@ -127,12 +127,14 @@ server_plotting <- function(id, median_data, data_version) {
         # ----- 15. Return values for downstream modules -----
         # Plotting tab is the source of truth for filtered/processed data
         # cached_plot_objects allows statistics tab to reuse plots without recomputation
+        # plot_params includes window_size for consistent plot sizing across tabs
         list(
             processed_data = processed_data,
             selected_measures = selection_reactives$measures,
             x_axis = selection_reactives$x_axis,
             trim_percent = processing_reactives$trim_percent,
-            cached_plot_objects = cached_plot_objects
+            cached_plot_objects = cached_plot_objects,
+            plot_params = plot_params
         )
     })
 }
