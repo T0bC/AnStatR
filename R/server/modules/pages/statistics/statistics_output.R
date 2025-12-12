@@ -433,15 +433,116 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     }
                 }
                 
-                # Combined results placeholder
-                combined_ui <- shiny::tags$div(
-                    class = "mt-3",
-                    shiny::tags$h6("Pairwise Comparisons (Linear Contrasts + Cliff's Delta)"),
-                    shiny::tags$div(
-                        class = "alert alert-secondary",
-                        shiny::tags$small("Results tables will be rendered here once tests are implemented.")
-                    )
-                )
+                # Linear Contrasts (lincon) results
+                lincon_ui <- NULL
+                if (!is.null(res$result_lincon)) {
+                    if (is_stat_error(res$result_lincon)) {
+                        lincon_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$div(
+                                class = "alert alert-danger",
+                                render_stat_error(res$result_lincon)
+                            )
+                        )
+                    } else if (is.data.frame(res$result_lincon) && "Error" %in% names(res$result_lincon)) {
+                        lincon_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$div(
+                                class = "alert alert-danger",
+                                shiny::HTML(paste(res$result_lincon$Error, collapse = "<br>"))
+                            )
+                        )
+                    } else if (is.data.frame(res$result_lincon) && nrow(res$result_lincon) > 0) {
+                        lincon_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$div(
+                                class = "table-responsive",
+                                render_stats_table(res$result_lincon)
+                            )
+                        )
+                    }
+                }
+                
+                # Cliff's Delta results
+                cliff_ui <- NULL
+                if (!is.null(res$result_cliff)) {
+                    if (is_stat_error(res$result_cliff)) {
+                        cliff_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$div(
+                                class = "alert alert-danger",
+                                render_stat_error(res$result_cliff)
+                            )
+                        )
+                    } else if (is.data.frame(res$result_cliff) && "Error" %in% names(res$result_cliff)) {
+                        cliff_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$div(
+                                class = "alert alert-danger",
+                                shiny::HTML(paste(res$result_cliff$Error, collapse = "<br>"))
+                            )
+                        )
+                    } else if (is.data.frame(res$result_cliff) && nrow(res$result_cliff) > 0) {
+                        cliff_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$div(
+                                class = "table-responsive",
+                                render_stats_table(res$result_cliff)
+                            )
+                        )
+                    }
+                }
+                
+                # Combined results table
+                combined_ui <- NULL
+                if (!is.null(res$result_combined)) {
+                    if (is_stat_error(res$result_combined)) {
+                        combined_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6(
+                                class = "text-primary",
+                                bsicons::bs_icon("table", class = "me-1"),
+                                "Combined Pairwise Comparisons"
+                            ),
+                            shiny::tags$div(
+                                class = "alert alert-danger",
+                                render_stat_error(res$result_combined)
+                            )
+                        )
+                    } else if (is.data.frame(res$result_combined) && "Error" %in% names(res$result_combined)) {
+                        combined_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6(
+                                class = "text-primary",
+                                bsicons::bs_icon("table", class = "me-1"),
+                                "Combined Pairwise Comparisons"
+                            ),
+                            shiny::tags$div(
+                                class = "alert alert-warning",
+                                shiny::HTML(paste(res$result_combined$Error, collapse = "<br>"))
+                            )
+                        )
+                    } else if (is.data.frame(res$result_combined) && nrow(res$result_combined) > 0) {
+                        combined_ui <- shiny::tags$div(
+                            class = "mt-3",
+                            shiny::tags$h6(
+                                class = "text-primary",
+                                bsicons::bs_icon("table", class = "me-1"),
+                                "Combined Pairwise Comparisons"
+                            ),
+                            shiny::tags$div(
+                                class = "table-responsive",
+                                render_stats_table(res$result_combined)
+                            )
+                        )
+                    }
+                }
                 
                 # Plot UI - reuses cached plot from plotting tab (interactive ggiraph)
                 plot_id <- paste0("stat_plot_", gsub("[^a-zA-Z0-9]", "_", res$measure))
@@ -457,6 +558,8 @@ setup_statistics_output <- function(input, output, session, processed_data,
                         plot_ui,
                         error_ui,
                         tway_ui,
+                        lincon_ui,
+                        cliff_ui,
                         combined_ui
                     )
                 )
