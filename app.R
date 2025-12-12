@@ -156,11 +156,13 @@ app_server <- function(input, output, session) {
                        data_version = load_data_result$version)
   
   # Pass plotting-processed data to statistics module
+  # cached_plot_objects allows statistics tab to display the same plots without recomputation
   server_statistics("statistics_id",
                     processed_data = plotting_result$processed_data,
                     selected_measures = plotting_result$selected_measures,
                     x_axis = plotting_result$x_axis,
                     trim_percent = plotting_result$trim_percent,
+                    cached_plot_objects = plotting_result$cached_plot_objects,
                     data_version = load_data_result$version)
 
   # Initialize settings modal
