@@ -60,15 +60,47 @@ render_stats_table <- function(df) {
 #' @param x_axis Reactive containing selected X-axis columns
 #' @param trim_percent Reactive containing the trim percentage from plotting
 #' @param stats_params Reactive containing all statistics parameters
+#' @param cached_plot_objects Reactive containing cached ggplot objects from plotting tab
 #' @param debug Logical, whether to enable debug logging
 setup_statistics_output <- function(input, output, session, processed_data, 
                                      selected_measures, x_axis, trim_percent,
-                                     stats_params, debug = FALSE) {
+                                     stats_params, cached_plot_objects, debug = FALSE) {
     ns <- session$ns
     
     # Store computation results
     computation_results <- shiny::reactiveVal(NULL)
     computation_status <- shiny::reactiveVal("idle")  # idle, computing, done, error
+    
+    # Track registered plot outputs to avoid re-registration
+    registered_stat_plots <- shiny::reactiveVal(character(0))
+    
+    # Register plot outputs for each measurement (reuses cached plots from plotting tab)
+    shiny::observeEvent(selected_measures(), ignoreNULL = TRUE, {
+        measures <- selected_measures()
+        shiny::req(measures)
+        
+        already_registered <- registered_stat_plots()
+        new_measures <- setdiff(measures, already_registered)
+        
+        if (length(new_measures) == 0 && length(measures) == length(already_registered)) {
+            return()
+        }
+        
+        registered_stat_plots(measures)
+        
+        lapply(measures, function(measure) {
+            local({
+                local_measure <- measure
+                plot_id <- paste0("stat_plot_", gsub("[^a-zA-Z0-9]", "_", local_measure))
+                
+                output[[plot_id]] <- shiny::renderPlot({
+                    plots <- cached_plot_objects()
+                    shiny::req(plots, local_measure %in% names(plots))
+                    plots[[local_measure]]
+                }, height = 250)
+            })
+        })
+    })
     
     # Handle compute button click
     shiny::observeEvent(input$compute_button, {
@@ -348,10 +380,18 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     )
                 )
                 
+                # Plot UI - reuses cached plot from plotting tab
+                plot_id <- paste0("stat_plot_", gsub("[^a-zA-Z0-9]", "_", res$measure))
+                plot_ui <- shiny::tags$div(
+                    class = "mb-3 border-bottom pb-3",
+                    shiny::plotOutput(ns(plot_id), height = "250px")
+                )
+                
                 bslib::card(
                     class = "mb-3",
                     bslib::card_header(header_content),
                     bslib::card_body(
+                        plot_ui,
                         error_ui,
                         tway_ui,
                         combined_ui
