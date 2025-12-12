@@ -6,13 +6,73 @@
 #' Following the explicit dependency injection pattern:
 #' - All dependencies (output, ns, reactives) are passed as explicit parameters
 #' - No implicit scoping or global state access
+
+
+#' Create Cached Plot Objects Reactive
 #'
+#' Creates a reactive that returns a named list of ggplot objects for each measurement.
+#' Uses bindCache to cache plots based on all plot-affecting parameters.
+#' This allows sharing plot objects between plotting and statistics tabs.
+#'
+#' @param plot_params Reactive returning consolidated list of plot parameters
+#' @param measure_cols Reactive returning selected measurement column names
+#' @param create_scatter_plot Function to create scatter plots (injected dependency)
+#' @return Reactive returning named list of ggplot objects (keyed by measure name)
+create_cached_plot_objects <- function(plot_params, measure_cols, create_scatter_plot) {
+    shiny::reactive({
+        params <- plot_params()
+        measures <- measure_cols()
+        shiny::req(params$data, params$x_cols, measures)
+        
+        outlier_opts <- params$outlier_options %||% 
+            list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
+        
+        plots <- lapply(measures, function(measure) {
+            create_scatter_plot(
+                data = params$data,
+                x_col = params$x_cols,
+                y_col = measure,
+                tooltip_cols = params$tooltip_cols,
+                point_style = params$point_style,
+                trim_percent = params$trim_percent %||% 0,
+                outlier_detection = outlier_opts$enabled,
+                outlier_method = outlier_opts$method,
+                outlier_factor = outlier_opts$factor,
+                bootstrap_samples = outlier_opts$bootstrap_samples,
+                color_cols = params$color_cols,
+                color_map = params$color_map,
+                grid_legend = params$grid_legend,
+                stat_line_style = params$stat_line_style,
+                axis_style = params$axis_style
+            )
+        })
+        names(plots) <- measures
+        plots
+    }) |> shiny::bindCache(
+        measure_cols(),
+        plot_params()$x_cols,
+        plot_params()$trim_percent,
+        plot_params()$outlier_options$enabled,
+        plot_params()$outlier_options$method,
+        plot_params()$outlier_options$factor,
+        plot_params()$color_cols,
+        plot_params()$color_map,
+        plot_params()$point_style,
+        plot_params()$grid_legend,
+        plot_params()$stat_line_style,
+        plot_params()$axis_style,
+        nrow(plot_params()$data)
+    )
+}
+
+
 #' @param output Shiny output object from parent module
 #' @param ns Namespace function from parent module (session$ns)
 #' @param plot_params Reactive returning consolidated list of plot parameters:
 #'   data, x_cols, tooltip_cols, trim_percent, outlier_options, color_cols, color_map, window_size
 #' @param measure_cols Reactive returning selected measurement column names
 #' @param create_scatter_plot Function to create scatter plots (injected dependency)
+#' @param cached_plot_objects Reactive returning cached ggplot objects (from create_cached_plot_objects)
 #' @param export_width Reactive returning export width in cm
 #' @param export_height Reactive returning export height in cm
 #' @return NULL (side effects only - registers plot outputs and download handlers)
@@ -21,6 +81,7 @@ setup_plot_outputs <- function(output,
                                 plot_params,
                                 measure_cols,
                                 create_scatter_plot,
+                                cached_plot_objects,
                                 export_width = NULL,
                                 export_height = NULL) {
     
@@ -69,35 +130,15 @@ setup_plot_outputs <- function(output,
                 plot_id <- paste0("plot_", gsub("[^a-zA-Z0-9]", "_", local_measure))
                 download_id <- paste0("download_", plot_id)
                 
-                # Helper function to create the ggplot (shared between render and download)
-                create_plot <- function() {
-                    params <- plot_params()
-                    shiny::req(params$data, params$x_cols)
-                    
-                    outlier_opts <- params$outlier_options %||% 
-                        list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
-                    
-                    create_scatter_plot(
-                        data = params$data,
-                        x_col = params$x_cols,
-                        y_col = local_measure,
-                        tooltip_cols = params$tooltip_cols,
-                        point_style = params$point_style,
-                        trim_percent = params$trim_percent %||% 0,
-                        outlier_detection = outlier_opts$enabled,
-                        outlier_method = outlier_opts$method,
-                        outlier_factor = outlier_opts$factor,
-                        bootstrap_samples = outlier_opts$bootstrap_samples,
-                        color_cols = params$color_cols,
-                        color_map = params$color_map,
-                        grid_legend = params$grid_legend,
-                        stat_line_style = params$stat_line_style,
-                        axis_style = params$axis_style
-                    )
+                # Helper function to get the cached ggplot (shared between render and download)
+                get_plot <- function() {
+                    plots <- cached_plot_objects()
+                    shiny::req(plots, local_measure %in% names(plots))
+                    plots[[local_measure]]
                 }
                 
                 # Register the girafe output for interactive plots
-                # Uses consolidated plot_params for single-debounce reactivity
+                # Uses cached_plot_objects for efficient rendering
                 output[[plot_id]] <- ggiraph::renderGirafe({
                     # Debug logging (conditional)
                     if (DEBUG_PLOT_RENDERER) {
@@ -105,16 +146,11 @@ setup_plot_outputs <- function(output,
                                       "] renderGirafe EXECUTING for: ", local_measure))
                     }
                     
-                    # Get all parameters from consolidated reactive (single dependency)
-                    params <- plot_params()
-                    shiny::req(params$data, params$x_cols)
-                    
-                    outlier_opts <- params$outlier_options %||% 
-                        list(enabled = FALSE, method = "IQR", factor = 1.5, bootstrap_samples = 1000)
+                    # Get the cached ggplot object
+                    p <- get_plot()
                     
                     # Get SVG dimensions from window size (measured by JS)
-                    # Height is measured from actual card body, width from main content
-                    # This keeps text/point sizes consistent across different window sizes
+                    params <- plot_params()
                     win_size <- params$window_size
                     
                     # Get container width (JS measures main content area)
@@ -134,25 +170,6 @@ setup_plot_outputs <- function(output,
                     # Convert pixels to SVG inches (100 pixels per inch)
                     width_svg <- container_width / 100
                     height_svg <- container_height / 100
-                    
-                    # Create the ggplot with interactive elements
-                    p <- create_scatter_plot(
-                        data = params$data,
-                        x_col = params$x_cols,
-                        y_col = local_measure,
-                        tooltip_cols = params$tooltip_cols,
-                        point_style = params$point_style,
-                        trim_percent = params$trim_percent %||% 0,
-                        outlier_detection = outlier_opts$enabled,
-                        outlier_method = outlier_opts$method,
-                        outlier_factor = outlier_opts$factor,
-                        bootstrap_samples = outlier_opts$bootstrap_samples,
-                        color_cols = params$color_cols,
-                        color_map = params$color_map,
-                        grid_legend = params$grid_legend,
-                        stat_line_style = params$stat_line_style,
-                        axis_style = params$axis_style
-                    )
                     
                     # Convert to girafe interactive plot
                     ggiraph::girafe(
@@ -199,8 +216,8 @@ setup_plot_outputs <- function(output,
                         width_in <- width_cm / 2.54
                         height_in <- height_cm / 2.54
                         
-                        # Create the plot
-                        p <- create_plot()
+                        # Get the cached plot
+                        p <- get_plot()
                         
                         # Save as SVG
                         grDevices::svg(file, width = width_in, height = height_in)
