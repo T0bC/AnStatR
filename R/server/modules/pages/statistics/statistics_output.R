@@ -1,17 +1,47 @@
 #' Statistics Output Logic
 #'
 #' Handles the main output area for statistics results.
+
+
+#' Render a data frame as an HTML table
 #'
+#' @param df Data frame to render
+#' @return Shiny tags object with HTML table
+render_stats_table <- function(df) {
+    # Build header row
+    header_cells <- lapply(names(df), function(col) {
+        shiny::tags$th(col)
+    })
+    header_row <- shiny::tags$tr(header_cells)
+    
+    # Build body rows
+    body_rows <- lapply(seq_len(nrow(df)), function(i) {
+        cells <- lapply(seq_len(ncol(df)), function(j) {
+            shiny::tags$td(as.character(df[i, j]))
+        })
+        shiny::tags$tr(cells)
+    })
+    
+    shiny::tags$table(
+        class = "table table-sm table-striped table-bordered",
+        shiny::tags$thead(header_row),
+        shiny::tags$tbody(body_rows)
+    )
+}
+
+
 #' @param input Shiny input object from the parent module
 #' @param output Shiny output object from the parent module
 #' @param session Shiny session object from the parent module
 #' @param processed_data Reactive containing the processed data from plotting
 #' @param selected_measures Reactive containing selected measurement columns
 #' @param x_axis Reactive containing selected X-axis columns
+#' @param trim_percent Reactive containing the trim percentage from plotting
 #' @param stats_params Reactive containing all statistics parameters
 #' @param debug Logical, whether to enable debug logging
 setup_statistics_output <- function(input, output, session, processed_data, 
-                                     selected_measures, x_axis, stats_params, debug = FALSE) {
+                                     selected_measures, x_axis, trim_percent,
+                                     stats_params, debug = FALSE) {
     ns <- session$ns
     
     # Store computation results
@@ -44,6 +74,47 @@ setup_statistics_output <- function(input, output, session, processed_data,
             return()
         }
         
+        # Check level consistency for multi-way designs (two-way, three-way)
+        # This warns users that Welch-Yuen is not robust against level discrepancies
+        if (length(x_cols) > 1) {
+            # For each measurement, get filtered data and check consistency
+            level_discrepancies <- character(0)
+            
+            for (measure in measures) {
+                filtered_df <- get_filtered_measurement_data(data, measure)
+                discrepancy <- check_level_consistency(
+                    df = filtered_df,
+                    primary_group = x_cols[1],
+                    secondary_groups = x_cols[2:length(x_cols)]
+                )
+                if (!is.null(discrepancy)) {
+                    level_discrepancies <- c(
+                        level_discrepancies,
+                        paste0("<b>", measure, ":</b>"),
+                        discrepancy
+                    )
+                }
+            }
+            
+            if (length(level_discrepancies) > 0) {
+                shiny::showModal(
+                    shiny::modalDialog(
+                        title = "Level Discrepancy Detected",
+                        shiny::HTML(
+                            paste0(
+                                paste(level_discrepancies, collapse = "<br>"),
+                                "<br><br>The <b>Welch-Yuen</b> test is not robust against <b>level discrepancies</b>.<br>",
+                                "Please ensure that the <b>levels</b> of the groups are <b>consistent</b> across all selected columns.<br>",
+                                "Cliff's <b>Delta</b> and <b>Linear Contrast</b> tests are still computed..."
+                            )
+                        ),
+                        easyClose = TRUE,
+                        footer = shiny::modalButton("Continue")
+                    )
+                )
+            }
+        }
+        
         # Set status to computing
         computation_status("computing")
         
@@ -54,10 +125,52 @@ setup_statistics_output <- function(input, output, session, processed_data,
             message("[Statistics] Bootstrap: ", params$use_bootstrap)
         }
         
-        # TODO: Implement actual statistical computation
-        # For now, store placeholder results
+        # Compute statistics for each measurement with progress indicator
+        tr_value <- (trim_percent() %||% 0) / 100
+        n_measures <- length(measures)
+        
+        results_list <- shiny::withProgress(
+            message = "Computing Statistics",
+            detail = "This might take a while...",
+            value = 0,
+            {
+                lapply(seq_along(measures), function(i) {
+                    measure <- measures[i]
+                    
+                    shiny::incProgress(
+                        1 / n_measures,
+                        detail = paste("Computing statistics for", measure)
+                    )
+                    
+                    # Get filtered data for this measurement (excludes outliers/trimmed)
+                    filtered_df <- get_filtered_measurement_data(data, measure)
+                    
+                    # Check level consistency for this measurement (multi-way only)
+                    level_discrepancy <- NULL
+                    if (length(x_cols) > 1) {
+                        level_discrepancy <- check_level_consistency(
+                            df = filtered_df,
+                            primary_group = x_cols[1],
+                            secondary_groups = x_cols[2:length(x_cols)]
+                        )
+                    }
+                    
+                    # Compute all statistics for this measurement
+                    compute_measurement_statistics(
+                        df = filtered_df,
+                        x_axis = x_cols,
+                        measure_col = measure,
+                        tr_value = tr_value,
+                        params = params,
+                        level_discrepancy = level_discrepancy
+                    )
+                })
+            }
+        )
+        
+        # Store results
         computation_results(list(
-            data = data,
+            results = results_list,
             measures = measures,
             x_axis = x_cols,
             params = params,
@@ -145,35 +258,105 @@ setup_statistics_output <- function(input, output, session, processed_data,
             )
         }
         
-        # Results state - placeholder for now
+        # Results state - render per-measurement results
         if (status == "done") {
-            return(
+            # Build UI for each measurement result
+            measurement_cards <- lapply(results$results, function(res) {
+                # Header with design type
+                header_content <- shiny::tags$div(
+                    class = "d-flex justify-content-between align-items-center",
+                    shiny::tags$span(
+                        bsicons::bs_icon("graph-up", class = "me-2"),
+                        res$measure
+                    ),
+                    shiny::tags$span(
+                        class = "badge bg-secondary",
+                        res$design_type
+                    )
+                )
+                
+                # Error display if any
+                error_ui <- NULL
+                if (length(res$errors) > 0) {
+                    error_ui <- shiny::tags$div(
+                        class = "alert alert-warning",
+                        shiny::icon("exclamation-triangle"),
+                        " ",
+                        paste(unlist(res$errors), collapse = "; ")
+                    )
+                }
+                
+                # T-way result (ANOVA)
+                tway_ui <- NULL
+                if (!is.null(res$result_t_way)) {
+                    if (is.data.frame(res$result_t_way) && "Error" %in% names(res$result_t_way)) {
+                        # Error result
+                        tway_ui <- shiny::tags$div(
+                            class = "alert alert-danger",
+                            shiny::HTML(paste(res$result_t_way$Error, collapse = "<br>"))
+                        )
+                    } else if (is.data.frame(res$result_t_way)) {
+                        # Valid results - render as HTML table
+                        tway_ui <- shiny::tags$div(
+                            shiny::tags$h6(
+                                class = "mb-2",
+                                res$header
+                            ),
+                            shiny::tags$div(
+                                class = "table-responsive",
+                                render_stats_table(res$result_t_way)
+                            )
+                        )
+                    }
+                }
+                
+                # Combined results placeholder
+                combined_ui <- shiny::tags$div(
+                    class = "mt-3",
+                    shiny::tags$h6("Pairwise Comparisons (Linear Contrasts + Cliff's Delta)"),
+                    shiny::tags$div(
+                        class = "alert alert-secondary",
+                        shiny::tags$small("Results tables will be rendered here once tests are implemented.")
+                    )
+                )
+                
                 bslib::card(
-                    bslib::card_header(
-                        shiny::tags$div(
-                            class = "d-flex justify-content-between align-items-center",
-                            "Statistical Test Results",
-                            shiny::tags$small(
-                                class = "text-muted",
-                                paste("Computed:", format(results$timestamp, "%H:%M:%S"))
+                    class = "mb-3",
+                    bslib::card_header(header_content),
+                    bslib::card_body(
+                        error_ui,
+                        tway_ui,
+                        combined_ui
+                    )
+                )
+            })
+            
+            return(
+                shiny::tagList(
+                    shiny::tags$div(
+                        class = "d-flex justify-content-between align-items-center mb-3",
+                        shiny::tags$h5(
+                            class = "mb-0",
+                            "Statistical Test Results"
+                        ),
+                        shiny::tags$small(
+                            class = "text-muted",
+                            paste("Computed:", format(results$timestamp, "%H:%M:%S"))
+                        )
+                    ),
+                    shiny::tags$div(
+                        class = "alert alert-info py-2",
+                        shiny::tags$small(
+                            shiny::tags$strong("Configuration: "),
+                            paste0(
+                                length(results$measures), " measurement(s), ",
+                                length(results$x_axis), "-way design, ",
+                                "Bootstrap: ", ifelse(results$params$use_bootstrap, "Yes", "No"), ", ",
+                                "P-adjustment: ", results$params$p_val_cor_method
                             )
                         )
                     ),
-                    bslib::card_body(
-                        shiny::tags$div(
-                            class = "alert alert-info",
-                            shiny::tags$strong("Placeholder: "),
-                            "Statistical computation logic will be implemented here."
-                        ),
-                        shiny::tags$h6("Configuration Summary:"),
-                        shiny::tags$ul(
-                            shiny::tags$li(paste("Measurements:", paste(results$measures, collapse = ", "))),
-                            shiny::tags$li(paste("X-axis:", paste(results$x_axis, collapse = ", "))),
-                            shiny::tags$li(paste("Bootstrap:", results$params$use_bootstrap)),
-                            shiny::tags$li(paste("P-value adjustment:", results$params$p_val_cor_method)),
-                            shiny::tags$li(paste("Filter significant:", results$params$filter_p_values))
-                        )
-                    )
+                    measurement_cards
                 )
             )
         }
