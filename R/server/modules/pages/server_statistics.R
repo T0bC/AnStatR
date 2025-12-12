@@ -48,6 +48,7 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
             processed_data = processed_data,
             selected_measures = selected_measures,
             x_axis = x_axis,
+            trim_percent = trim_percent,
             stats_params = stats_params,
             debug = DEBUG_REACTIVES
         )
