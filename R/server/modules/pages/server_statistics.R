@@ -23,6 +23,7 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
         # Source component files
         source("R/server/modules/pages/statistics/sidebar_logic.R", local = TRUE)
         source("R/server/modules/pages/statistics/statistics_output.R", local = TRUE)
+        source("R/server/modules/pages/statistics/statistics_report.R", local = TRUE)
         
         # ----- 1. Sidebar Logic -----
         # Setup dynamic UI elements in sidebar
@@ -43,7 +44,8 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
         
         # ----- 3. Statistics Output -----
         # Setup the main output area with plots from plotting tab
-        setup_statistics_output(
+        # Returns computation_results reactive for download handlers
+        computation_results <- setup_statistics_output(
             input = input,
             output = output,
             session = session,
@@ -55,6 +57,16 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
             cached_plot_objects = cached_plot_objects,
             plot_params = plot_params,
             debug = DEBUG_REACTIVES
+        )
+        
+        # ----- 4. Download Handlers -----
+        # Setup download handlers for statistics reports
+        setup_statistics_download_handlers(
+            input = input,
+            output = output,
+            session = session,
+            computation_results = computation_results,
+            cached_plot_objects = cached_plot_objects
         )
     })
 }
