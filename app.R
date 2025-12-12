@@ -1,62 +1,53 @@
-# Enable full stack traces for better error debugging in statistics module
-# Source: https://shiny.posit.co/r/reference/shiny/0.14/stacktrace.html
-options(shiny.fullstacktrace = TRUE)
-
-# Keep source references (file:line info) when sourcing files
-# This is required for stack traces to show file names and line numbers
-options(keep.source = TRUE)
-
-# Helper function to source with keep.source = TRUE
-source_with_refs <- function(file) {
-    source(file, keep.source = TRUE, local = FALSE)
-}
+# Enable full stack traces and source references for error debugging
+# Source refs allow stack traces to show file names and line numbers
+options(shiny.fullstacktrace = TRUE, keep.source = TRUE)
 
 # Source utility functions (used across multiple modules)
-source_with_refs("R/utils/column_utils.R")
-source_with_refs("R/utils/data_utils.R")
-source_with_refs("R/utils/statistics_utils.R")
+source("R/utils/column_utils.R")
+source("R/utils/data_utils.R")
+source("R/utils/statistics_utils.R")
 
 # Source UI modules
-source_with_refs("R/ui/modules/pages/ui_load_data.R")
-source_with_refs("R/ui/modules/pages/ui_median.R")
-source_with_refs("R/ui/modules/pages/ui_plotting.R")
-source_with_refs("R/ui/modules/pages/ui_summary_stats.R")
-source_with_refs("R/ui/modules/pages/ui_statistics.R")
+source("R/ui/modules/pages/ui_load_data.R")
+source("R/ui/modules/pages/ui_median.R")
+source("R/ui/modules/pages/ui_plotting.R")
+source("R/ui/modules/pages/ui_summary_stats.R")
+source("R/ui/modules/pages/ui_statistics.R")
 
 # Source component modules
-source_with_refs("R/ui/modules/components/settings_modal.R")
+source("R/ui/modules/components/settings_modal.R")
 
 # Source server modules
-source_with_refs("R/server/modules/pages/server_load_data.R")
-source_with_refs("R/server/modules/pages/server_median.R")
-source_with_refs("R/server/modules/pages/server_plotting.R")
-source_with_refs("R/server/modules/pages/server_summary_stats.R")
-source_with_refs("R/server/modules/pages/server_statistics.R")
+source("R/server/modules/pages/server_load_data.R")
+source("R/server/modules/pages/server_median.R")
+source("R/server/modules/pages/server_plotting.R")
+source("R/server/modules/pages/server_summary_stats.R")
+source("R/server/modules/pages/server_statistics.R")
 
 # Source server sub-modules: Load Data
-source_with_refs("R/server/modules/pages/load_data/file_upload.R")
-source_with_refs("R/server/modules/pages/load_data/data_preview.R")
-source_with_refs("R/server/modules/pages/load_data/missing_values_plot.R")
-source_with_refs("R/server/modules/pages/load_data/data_summary.R")
+source("R/server/modules/pages/load_data/file_upload.R")
+source("R/server/modules/pages/load_data/data_preview.R")
+source("R/server/modules/pages/load_data/missing_values_plot.R")
+source("R/server/modules/pages/load_data/data_summary.R")
 
 # Source server sub-modules: Median
-source_with_refs("R/server/modules/pages/median/help_modal.R")
-source_with_refs("R/server/modules/pages/median/grouping_ui.R")
-source_with_refs("R/server/modules/pages/median/quality_filter_ui.R")
-source_with_refs("R/server/modules/pages/median/quality_filter_logic.R")
-source_with_refs("R/server/modules/pages/median/median_table.R")
-source_with_refs("R/server/modules/pages/median/median_params.R")
+source("R/server/modules/pages/median/help_modal.R")
+source("R/server/modules/pages/median/grouping_ui.R")
+source("R/server/modules/pages/median/quality_filter_ui.R")
+source("R/server/modules/pages/median/quality_filter_logic.R")
+source("R/server/modules/pages/median/median_table.R")
+source("R/server/modules/pages/median/median_params.R")
 
 # Source server sub-modules: Plotting
-source_with_refs("R/server/modules/pages/plotting/plot_scatter.R")
-source_with_refs("R/server/modules/pages/plotting/plot_renderer.R")
+source("R/server/modules/pages/plotting/plot_scatter.R")
+source("R/server/modules/pages/plotting/plot_renderer.R")
 
 # Source server sub-modules: Summary Stats
-source_with_refs("R/server/modules/pages/summary_stats/summary_utils.R")
+source("R/server/modules/pages/summary_stats/summary_utils.R")
 
 # Source server sub-modules: Statistics
-source_with_refs("R/server/modules/pages/statistics/sidebar_logic.R")
-source_with_refs("R/server/modules/pages/statistics/statistics_output.R")
+source("R/server/modules/pages/statistics/sidebar_logic.R")
+source("R/server/modules/pages/statistics/statistics_output.R")
 
 # Load required packages
 library(shiny)
