@@ -299,3 +299,117 @@ img[src*="Beckr_intro_Diamant"] {
     background-color: transparent !important;
     color: var(--bs-secondary) !important;
 }
+
+/* ===== Statistics Error with Stack Trace Styles ===== */
+
+/* Container for error with stack trace */
+.stat-error-container {
+    width: 100%;
+}
+
+/* Error message - always visible */
+.stat-error-message {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* Expandable details section */
+.stat-error-details {
+    margin-top: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    background: var(--bs-tertiary-bg);
+}
+
+/* Summary (clickable header) */
+.stat-error-details summary {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--bs-secondary);
+    user-select: none;
+}
+
+.stat-error-details summary:hover {
+    color: var(--bs-body-color);
+    background: var(--bs-secondary-bg);
+}
+
+/* Stack trace content */
+.stat-error-stacktrace {
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    max-height: 300px;
+    overflow: auto;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Raw error message styling */
+.stat-error-raw {
+    font-size: 0.85rem;
+}
+
+/* Stack trace comparison sections container */
+.stat-error-traces {
+    border-top: 1px solid var(--bs-border-color);
+    padding-top: 0.75rem;
+}
+
+/* Individual trace section (details element) */
+.stat-trace-section {
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    background: var(--bs-tertiary-bg);
+}
+
+/* Trace section summary (clickable header) */
+.stat-trace-section summary {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bs-secondary);
+    user-select: none;
+    list-style: inside;
+}
+
+.stat-trace-section summary:hover {
+    color: var(--bs-body-color);
+    background: var(--bs-secondary-bg);
+}
+
+/* Trace content area */
+.stat-trace-content {
+    padding: 0.75rem;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    max-height: 250px;
+    overflow: auto;
+}
+
+/* Pre-formatted trace output */
+.stat-trace-pre {
+    margin: 0;
+    padding: 0;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: transparent;
+}
+
+/* Table inside trace section */
+.stat-trace-content .table {
+    font-size: 0.75rem;
+}
+
+.stat-trace-content .table td,
+.stat-trace-content .table th {
+    padding: 0.25rem 0.5rem;
+}
