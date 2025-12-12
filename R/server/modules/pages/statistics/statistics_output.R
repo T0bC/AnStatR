@@ -379,12 +379,15 @@ setup_statistics_output <- function(input, output, session, processed_data,
                             class = "badge bg-secondary",
                             res$design_type
                         ),
-                        shiny::downloadButton(
-                            outputId = ns(download_id),
-                            label = "",
-                            icon = shiny::icon("file-arrow-down"),
-                            class = "btn-sm btn-outline-primary",
-                            title = "Download report (HTML)"
+                        shiny::tags$a(
+                            id = ns(download_id),
+                            class = "shiny-download-link text-primary",
+                            href = "",
+                            target = "_blank",
+                            download = NA,
+                            title = "Download report (HTML)",
+                            style = "font-size: 1.2rem;",
+                            bsicons::bs_icon("box-arrow-down")
                         )
                     )
                 )

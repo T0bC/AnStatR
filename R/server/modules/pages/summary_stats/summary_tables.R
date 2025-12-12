@@ -184,11 +184,15 @@ setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
                         " ",
                         col
                     ),
-                    shiny::downloadButton(
-                        outputId = ns(download_name),
-                        label = "",
-                        icon = shiny::icon("download"),
-                        class = "btn-sm btn-outline-primary"
+                    shiny::tags$a(
+                        id = ns(download_name),
+                        class = "shiny-download-link text-primary",
+                        href = "",
+                        target = "_blank",
+                        download = NA,
+                        title = "Download table (XLSX)",
+                        style = "font-size: 1.2rem;",
+                        bsicons::bs_icon("box-arrow-down")
                     )
                 ),
                 bslib::card_body(

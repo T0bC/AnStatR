@@ -252,12 +252,15 @@ generate_plot_grid_ui <- function(ns, measures) {
             bslib::card_header(
                 class = "py-2 d-flex justify-content-between align-items-center",
                 shiny::tags$span(class = "fw-semibold", measure),
-                shiny::downloadButton(
-                    outputId = ns(download_id),
-                    label = NULL,
-                    icon = shiny::icon("download"),
-                    class = "btn-sm btn-outline-secondary",
-                    title = "Download as SVG"
+                shiny::tags$a(
+                    id = ns(download_id),
+                    class = "shiny-download-link text-primary",
+                    href = "",
+                    target = "_blank",
+                    download = NA,
+                    title = "Download plot (PNG)",
+                    style = "font-size: 1.2rem;",
+                    bsicons::bs_icon("box-arrow-down")
                 )
             ),
             bslib::card_body(
