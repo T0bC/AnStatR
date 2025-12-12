@@ -413,3 +413,34 @@ img[src*="Beckr_intro_Diamant"] {
 .stat-trace-content .table th {
     padding: 0.25rem 0.5rem;
 }
+
+/* Context info section */
+.stat-context-info {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.stat-context-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--bs-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-context-item {
+    font-size: 0.75rem;
+    padding: 0.1rem 0;
+}
+
+.stat-context-key {
+    color: var(--bs-secondary);
+}
+
+.stat-context-value {
+    font-family: var(--bs-font-monospace);
+}
+
+/* Stack trace wrapper */
+.stat-trace-wrapper {
+    margin-top: 0.5rem;
+}
