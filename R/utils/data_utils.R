@@ -307,3 +307,73 @@ detect_outliers <- function(data, value_col, group_col,
     
     return(data)
 }
+
+
+#' Get filtered data for a specific measurement
+#'
+#' Extracts rows for a specific measurement column, excluding outliers and trimmed values.
+#' Uses the {col}_outlier and {col}_trimmed columns created by the plotting module.
+#'
+#' @param data Data frame with {col}_outlier and {col}_trimmed columns
+#' @param measure_col Character, name of the measurement column
+#' @return Data frame with only valid (non-outlier, non-trimmed) rows for this measurement
+get_filtered_measurement_data <- function(data, measure_col) {
+    outlier_col <- paste0(measure_col, "_outlier")
+    trimmed_col <- paste0(measure_col, "_trimmed")
+    
+    # Get exclusion flags (default to FALSE if columns don't exist)
+    is_outlier <- if (outlier_col %in% names(data)) data[[outlier_col]] else rep(FALSE, nrow(data))
+    is_trimmed <- if (trimmed_col %in% names(data)) data[[trimmed_col]] else rep(FALSE, nrow(data))
+    
+    # Filter: keep rows that are not outliers, not trimmed, and have valid measurement values
+    keep_idx <- !is_outlier & !is_trimmed & !is.na(data[[measure_col]])
+    
+    data[keep_idx, , drop = FALSE]
+}
+
+
+#' Check level consistency across groups in multi-way designs
+#'
+#' For multi-way designs (two-way, three-way), checks if all combinations of the
+#' primary grouping variable have the same levels of secondary grouping variables.
+#' This is important for Welch-Yuen tests which are not robust against level discrepancies.
+#'
+#' @param df Data frame containing the data
+#' @param primary_group Character, the primary grouping column (first X-axis variable)
+#' @param secondary_groups Character vector, secondary grouping columns to check for consistency
+#' @return NULL if consistent, otherwise character vector of discrepancy messages
+check_level_consistency <- function(df, primary_group, secondary_groups) {
+    if (length(secondary_groups) == 0) return(NULL)
+    
+    # Get all unique levels of the primary group
+    primary_levels <- unique(df[[primary_group]])
+    
+    # For each secondary group, get expected levels (all unique values in full dataset)
+    expected_levels <- lapply(secondary_groups, function(col) unique(df[[col]]))
+    names(expected_levels) <- secondary_groups
+    
+    discrepancies <- character(0)
+    
+    # Check each primary group level
+    for (level in primary_levels) {
+        df_subset <- df[df[[primary_group]] == level, , drop = FALSE]
+        
+        # Check each secondary group
+        for (sec_col in secondary_groups) {
+            actual_levels <- unique(df_subset[[sec_col]])
+            expected <- expected_levels[[sec_col]]
+            
+            if (length(actual_levels) != length(expected)) {
+                msg <- sprintf(
+                    "In %s='%s': found %d level(s) of '%s' instead of %d expected.",
+                    primary_group, level, 
+                    length(actual_levels), sec_col, 
+                    length(expected)
+                )
+                discrepancies <- c(discrepancies, msg)
+            }
+        }
+    }
+    
+    if (length(discrepancies) == 0) NULL else discrepancies
+}
