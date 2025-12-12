@@ -82,18 +82,27 @@ server_plotting <- function(id, median_data, data_version) {
             debug = DEBUG_REACTIVES
         )
         
-        # ----- 10. Plot Outputs -----
+        # ----- 10. Cached Plot Objects -----
+        # Create cached ggplot objects that can be shared with statistics tab
+        cached_plot_objects <- create_cached_plot_objects(
+            plot_params = plot_params,
+            measure_cols = selection_reactives$measures,
+            create_scatter_plot = create_scatter_plot
+        )
+        
+        # ----- 11. Plot Outputs -----
         setup_plot_outputs(
             output = output,
             ns = ns,
             plot_params = plot_params,
             measure_cols = selection_reactives$measures,
             create_scatter_plot = create_scatter_plot,
+            cached_plot_objects = cached_plot_objects,
             export_width = export_dims$export_width,
             export_height = export_dims$export_height
         )
         
-        # ----- 11. Plots UI Container -----
+        # ----- 12. Plots UI Container -----
         setup_plots_ui_output(
             output = output,
             ns = ns,
@@ -102,10 +111,10 @@ server_plotting <- function(id, median_data, data_version) {
             debug = DEBUG_REACTIVES
         )
         
-        # ----- 12. Download Handler -----
+        # ----- 13. Download Handler -----
         setup_download_handler(output, input, filtered_data)
         
-        # ----- 13. Processed Data for Downstream Modules -----
+        # ----- 14. Processed Data for Downstream Modules -----
         # Creates {col}_outlier and {col}_trimmed columns for each selected measurement
         processed_data <- create_processed_data_reactive(
             filtered_data = filtered_data,
@@ -115,13 +124,15 @@ server_plotting <- function(id, median_data, data_version) {
             outlier_options = processing_reactives$outlier_options
         )
         
-        # ----- 14. Return values for downstream modules -----
+        # ----- 15. Return values for downstream modules -----
         # Plotting tab is the source of truth for filtered/processed data
+        # cached_plot_objects allows statistics tab to reuse plots without recomputation
         list(
             processed_data = processed_data,
             selected_measures = selection_reactives$measures,
             x_axis = selection_reactives$x_axis,
-            trim_percent = processing_reactives$trim_percent
+            trim_percent = processing_reactives$trim_percent,
+            cached_plot_objects = cached_plot_objects
         )
     })
 }
