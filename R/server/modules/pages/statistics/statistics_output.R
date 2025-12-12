@@ -61,10 +61,11 @@ render_stats_table <- function(df) {
 #' @param trim_percent Reactive containing the trim percentage from plotting
 #' @param stats_params Reactive containing all statistics parameters
 #' @param cached_plot_objects Reactive containing cached ggplot objects from plotting tab
+#' @param plot_params Reactive containing plot parameters including window_size from plotting tab
 #' @param debug Logical, whether to enable debug logging
 setup_statistics_output <- function(input, output, session, processed_data, 
                                      selected_measures, x_axis, trim_percent,
-                                     stats_params, cached_plot_objects, debug = FALSE) {
+                                     stats_params, cached_plot_objects, plot_params, debug = FALSE) {
     ns <- session$ns
     
     # Store computation results
@@ -93,11 +94,55 @@ setup_statistics_output <- function(input, output, session, processed_data,
                 local_measure <- measure
                 plot_id <- paste0("stat_plot_", gsub("[^a-zA-Z0-9]", "_", local_measure))
                 
-                output[[plot_id]] <- shiny::renderPlot({
+                output[[plot_id]] <- ggiraph::renderGirafe({
                     plots <- cached_plot_objects()
                     shiny::req(plots, local_measure %in% names(plots))
-                    plots[[local_measure]]
-                }, height = 250)
+                    p <- plots[[local_measure]]
+                    
+                    # Get SVG dimensions from window size (same as plotting tab)
+                    params <- plot_params()
+                    win_size <- params$window_size
+                    
+                    # Get container width (JS measures main content area)
+                    container_width <- if (!is.null(win_size) && !is.null(win_size$width) && win_size$width > 0) {
+                        win_size$width
+                    } else {
+                        800  # Default fallback
+                    }
+                    
+                    # For statistics tab, use a fixed height ratio (smaller than plotting tab)
+                    # since we show multiple cards with results below the plot
+                    container_height <- if (!is.null(win_size) && !is.null(win_size$height) && win_size$height > 0) {
+                        min(win_size$height * 0.6, 300)  # 60% of plotting height, max 300px
+                    } else {
+                        250  # Default fallback
+                    }
+                    
+                    # Convert pixels to SVG inches (100 pixels per inch)
+                    width_svg <- container_width / 100
+                    height_svg <- container_height / 100
+                    
+                    ggiraph::girafe(
+                        ggobj = p,
+                        width_svg = width_svg,
+                        height_svg = height_svg,
+                        options = list(
+                            ggiraph::opts_zoom(max = 5),
+                            ggiraph::opts_selection(type = "single"),
+                            ggiraph::opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                            ggiraph::opts_hover_inv(css = "opacity:0.5;"),
+                            ggiraph::opts_tooltip(
+                                css = "background-color:#333;color:white;padding:8px 12px;border-radius:4px;font-size:12px;",
+                                use_fill = FALSE
+                            ),
+                            ggiraph::opts_toolbar(
+                                saveaspng = TRUE,
+                                position = "top",
+                                hidden = NULL
+                            )
+                        )
+                    )
+                })
             })
         })
     })
@@ -380,11 +425,11 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     )
                 )
                 
-                # Plot UI - reuses cached plot from plotting tab
+                # Plot UI - reuses cached plot from plotting tab (interactive ggiraph)
                 plot_id <- paste0("stat_plot_", gsub("[^a-zA-Z0-9]", "_", res$measure))
                 plot_ui <- shiny::tags$div(
                     class = "mb-3 border-bottom pb-3",
-                    shiny::plotOutput(ns(plot_id), height = "250px")
+                    ggiraph::girafeOutput(ns(plot_id), height = "250px", width = "100%")
                 )
                 
                 bslib::card(
