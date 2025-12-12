@@ -15,7 +15,7 @@ is_stat_error <- function(obj) {
 #' Render structured error with expandable stack trace
 #'
 #' Creates HTML output showing the error message with an expandable
-#' details section showing the stack trace (hidden by default).
+#' details section showing context and stack trace (hidden by default).
 #'
 #' @param error_obj Structured error object from create_stat_error()
 #' @return Shiny tags object with error display
@@ -26,10 +26,46 @@ render_stat_error <- function(error_obj) {
         shiny::tags$strong(error_obj$message)
     )
     
-    # Stack trace section (filtered to app code only, hidden by default)
+    # Build context info if available
+    context_section <- NULL
+    if (!is.null(error_obj$context) && length(error_obj$context) > 0) {
+        context_items <- lapply(names(error_obj$context), function(key) {
+            value <- error_obj$context[[key]]
+            # Format value nicely
+            formatted_value <- if (is.logical(value)) {
+                ifelse(value, "Yes", "No")
+            } else if (is.numeric(value)) {
+                as.character(value)
+            } else {
+                as.character(value)
+            }
+            shiny::tags$div(
+                class = "stat-context-item",
+                shiny::tags$span(class = "stat-context-key", paste0(key, ": ")),
+                shiny::tags$span(class = "stat-context-value", formatted_value)
+            )
+        })
+        context_section <- shiny::tags$div(
+            class = "stat-context-info mb-2",
+            shiny::tags$div(class = "stat-context-title", "Parameters:"),
+            context_items
+        )
+    }
+    
+    # Stack trace section (filtered to app code only)
     trace_section <- NULL
     if (!is.null(error_obj$traces$stack_trace) && nchar(error_obj$traces$stack_trace) > 0) {
-        trace_section <- shiny::tags$details(
+        trace_section <- shiny::tags$div(
+            class = "stat-trace-wrapper",
+            shiny::tags$div(class = "stat-context-title", "Stack Trace:"),
+            shiny::tags$pre(class = "stat-trace-pre", shiny::HTML(error_obj$traces$stack_trace))
+        )
+    }
+    
+    # Combine context and trace into expandable details
+    details_content <- NULL
+    if (!is.null(context_section) || !is.null(trace_section)) {
+        details_content <- shiny::tags$details(
             class = "stat-trace-section mt-2",
             shiny::tags$summary(
                 bsicons::bs_icon("code-square"),
@@ -37,7 +73,8 @@ render_stat_error <- function(error_obj) {
             ),
             shiny::tags$div(
                 class = "stat-trace-content",
-                shiny::tags$pre(class = "stat-trace-pre", shiny::HTML(error_obj$traces$stack_trace))
+                context_section,
+                trace_section
             )
         )
     }
@@ -46,7 +83,7 @@ render_stat_error <- function(error_obj) {
     shiny::tags$div(
         class = "stat-error-container",
         error_header,
-        trace_section
+        details_content
     )
 }
 
