@@ -3,6 +3,54 @@
 #' Handles the main output area for statistics results.
 
 
+#' Check if an object is a structured error from safe_stat_test
+#'
+#' @param obj Object to check
+#' @return Logical, TRUE if obj is a structured error
+is_stat_error <- function(obj) {
+    is.list(obj) && isTRUE(obj$is_error)
+}
+
+
+#' Render structured error with expandable stack trace
+#'
+#' Creates HTML output showing the error message with an expandable
+#' details section showing the stack trace (hidden by default).
+#'
+#' @param error_obj Structured error object from create_stat_error()
+#' @return Shiny tags object with error display
+render_stat_error <- function(error_obj) {
+    # Main error message
+    error_header <- shiny::tags$div(
+        class = "stat-error-message",
+        shiny::tags$strong(error_obj$message)
+    )
+    
+    # Stack trace section (filtered to app code only, hidden by default)
+    trace_section <- NULL
+    if (!is.null(error_obj$traces$stack_trace) && nchar(error_obj$traces$stack_trace) > 0) {
+        trace_section <- shiny::tags$details(
+            class = "stat-trace-section mt-2",
+            shiny::tags$summary(
+                bsicons::bs_icon("code-square"),
+                " Details"
+            ),
+            shiny::tags$div(
+                class = "stat-trace-content",
+                shiny::tags$pre(class = "stat-trace-pre", shiny::HTML(error_obj$traces$stack_trace))
+            )
+        )
+    }
+    
+    # Combine all sections
+    shiny::tags$div(
+        class = "stat-error-container",
+        error_header,
+        trace_section
+    )
+}
+
+
 #' Render a data frame as an HTML table
 #'
 #' @param df Data frame to render
@@ -289,8 +337,14 @@ setup_statistics_output <- function(input, output, session, processed_data,
                 # T-way result (ANOVA)
                 tway_ui <- NULL
                 if (!is.null(res$result_t_way)) {
-                    if (is.data.frame(res$result_t_way) && "Error" %in% names(res$result_t_way)) {
-                        # Error result
+                    if (is_stat_error(res$result_t_way)) {
+                        # Structured error with stack traces
+                        tway_ui <- shiny::tags$div(
+                            class = "alert alert-danger",
+                            render_stat_error(res$result_t_way)
+                        )
+                    } else if (is.data.frame(res$result_t_way) && "Error" %in% names(res$result_t_way)) {
+                        # Legacy error format (data frame with Error column)
                         tway_ui <- shiny::tags$div(
                             class = "alert alert-danger",
                             shiny::HTML(paste(res$result_t_way$Error, collapse = "<br>"))
