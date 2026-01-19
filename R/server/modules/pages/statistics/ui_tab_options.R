@@ -55,6 +55,29 @@ create_options_tab <- function(ns) {
             
             shiny::tags$hr(),
             
+            # Statistical approach selection
+            shiny::radioButtons(
+                inputId = ns("test_approach"),
+                label = "Statistical Approach:",
+                choices = list(
+                    "Robust Tests" = "robust",
+                    "Parametric Tests" = "parametric"
+                ),
+                selected = "robust"
+            ),
+            
+            # Accordion with detailed information
+            bslib::accordion(
+                id = ns("test_approach_accordion"),
+                bslib::accordion_panel(
+                    title = "When to use which approach?",
+                    value = "test_approach_info",
+                    shiny::uiOutput(ns("approach_details"))
+                )
+            ),
+            
+            shiny::tags$hr(),
+            
             # Filter significant p-values
             shiny::checkboxInput(
                 inputId = ns("filter_p_values"),
