@@ -128,7 +128,7 @@ format_cliff_bootstrap <- function(results_list, p_adjust_method) {
             ci.lower = format_col("ci.lower"),
             ci.upper = format_col("ci.upper"),
             p.value = format_col("p.value"),
-            p.adjusted = format_col("p.adjusted"),
+            p.crit = format_col("p.crit"),
             stringsAsFactors = FALSE
         )
     })
@@ -139,11 +139,11 @@ format_cliff_bootstrap <- function(results_list, p_adjust_method) {
 #' Format cliff single-run results
 #'
 #' @param result_df Data frame from single cliff run
-#' @param p_adjust_method P-value adjustment method (not used, p.adjusted comes from cidmulv2)
+#' @param p_adjust_method P-value adjustment method (not used, p.crit comes from cidmulv2)
 #' @return Data frame with formatted results
 format_cliff_single <- function(result_df, p_adjust_method) {
     # Round numeric columns
-    numeric_cols <- c("psihat", "ci.lower", "ci.upper", "p.value", "p.adjusted")
+    numeric_cols <- c("psihat", "ci.lower", "ci.upper", "p.value", "p.crit")
     result_df[numeric_cols] <- lapply(result_df[numeric_cols], function(x) signif(x, 3))
     
     result_df
