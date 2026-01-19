@@ -52,6 +52,37 @@ setup_sidebar_ui <- function(input, output, session, x_axis, trim_percent) {
             )
         }
     })
+    
+    # Approach details panel
+    output$approach_details <- shiny::renderUI({
+        approach <- input$test_approach %||% "robust"
+        
+        details <- switch(approach,
+            "robust" = shiny::tags$div(
+                shiny::tags$h6("Robust Tests (Welch-Yuen)"),
+                shiny::tags$p("Use when:"),
+                shiny::tags$ul(
+                    shiny::tags$li("Data has outliers"),
+                    shiny::tags$li("Non-normal distributions"),
+                    shiny::tags$li("Unequal variances between groups"),
+                    shiny::tags$li("Small sample sizes")
+                ),
+                shiny::tags$p("Tests: Welch-Yuen ANOVA, Cliff's Delta, Linear Contrasts")
+            ),
+            "parametric" = shiny::tags$div(
+                shiny::tags$h6("Parametric Tests (Classical ANOVA)"),
+                shiny::tags$p("Use when:"),
+                shiny::tags$ul(
+                    shiny::tags$li("Normally distributed data"),
+                    shiny::tags$li("Equal variances between groups"),
+                    shiny::tags$li("Large sample sizes"),
+                    shiny::tags$li("No significant outliers")
+                ),
+                shiny::tags$p("Tests: Classical ANOVA, Tukey HSD")
+            )
+        )
+        details
+    })
 }
 
 
@@ -68,6 +99,7 @@ create_statistics_params <- function(input, x_axis) {
     shiny::reactive({
         list(
             # Options tab
+            test_approach = input$test_approach %||% "robust",
             show_additional_output = input$show_additional_output %||% FALSE,
             use_scientific_notation = input$use_scientific_notation %||% FALSE,
             filter_p_values = input$filter_p_values %||% FALSE,
