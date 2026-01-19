@@ -2,14 +2,14 @@
 #'
 #' Shared helpers and dispatcher for statistical tests.
 #' Individual test implementations are in R/utils/statistics/:
-#' - tests_anova.R: t1way, t2way, t3way (Welch-Yuen family)
+#' - tests_robust_anova.R: t1way, t2way, t3way (Welch-Yuen family)
 #' - tests_contrasts.R: lincon (linear contrasts)
 #' - tests_effect_size.R: Cliff's Delta
 #' - tests_combined_results.R: Result formatting
 
 
 # Source test implementation files
-source("R/utils/statistics/tests_anova.R", local = TRUE)
+source("R/utils/statistics/tests_robust_anova.R", local = TRUE)
 source("R/utils/statistics/tests_contrasts.R", local = TRUE)
 source("R/utils/statistics/tests_effect_size.R", local = TRUE)
 source("R/utils/statistics/tests_combined_results.R", local = TRUE)
