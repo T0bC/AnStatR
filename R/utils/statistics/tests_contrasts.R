@@ -17,7 +17,7 @@
 validate_lincon <- function(df, x_axis) {
     # Create combined groups for multi-factor designs
     if (length(x_axis) > 1) {
-        combined_groups <- do.call(paste, c(df[x_axis], sep = "_"))
+        combined_groups <- do.call(paste, c(df[x_axis], sep = "."))
     } else {
         combined_groups <- df[[x_axis[1]]]
     }
@@ -42,7 +42,7 @@ validate_lincon <- function(df, x_axis) {
 #' @return List with context information
 build_lincon_context <- function(df, x_axis, measure_col, tr_value, use_bootstrap) {
     if (length(x_axis) > 1) {
-        combined_groups <- do.call(paste, c(df[x_axis], sep = "_"))
+        combined_groups <- do.call(paste, c(df[x_axis], sep = "."))
     } else {
         combined_groups <- df[[x_axis[1]]]
     }
@@ -67,7 +67,7 @@ build_lincon_context <- function(df, x_axis, measure_col, tr_value, use_bootstra
 run_lincon_iteration <- function(sample_data, x_axis, measure_col, tr_value) {
     # Combine groups for multi-factor designs
     if (length(x_axis) > 1) {
-        sample_data$combinedGroups <- do.call(paste, c(sample_data[x_axis], sep = "_"))
+        sample_data$combinedGroups <- do.call(paste, c(sample_data[x_axis], sep = "."))
     } else {
         sample_data$combinedGroups <- sample_data[[x_axis[1]]]
     }
