@@ -118,6 +118,10 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
         # Remove residuals row if present
         result_df <- result_df[result_df$Effect != "Residuals", ]
         
+        # Apply rounding to match robust ANOVA format (3 significant figures)
+        numeric_cols <- sapply(result_df, is.numeric)
+        result_df[numeric_cols] <- lapply(result_df[numeric_cols], function(x) signif(x, 3))
+        
         # Store model for post-hoc tests
         attr(result_df, "model") <- model
         
