@@ -130,10 +130,11 @@ create_combined_results <- function(result_lincon, result_cliff, measure_col,
     result <- safe_execute({
         # Normalize interaction strings for consistent matching
         lincon_norm <- normalize_interaction(result_lincon) %>%
-            dplyr::select("InteractionKey", "psihat", "p.value") %>%
+            dplyr::select("InteractionKey", "psihat", "p.value", "p.adjusted") %>%
             dplyr::rename(
                 `Lincon: p.hat` = "psihat",
-                `Lincon: p.value` = "p.value"
+                `Lincon: p.raw` = "p.value",
+                `Lincon: adj.p.value` = "p.adjusted"
             )
         
         cliff_norm <- normalize_interaction(result_cliff) %>%
@@ -149,7 +150,8 @@ create_combined_results <- function(result_lincon, result_cliff, measure_col,
             dplyr::select(
                 "Interaction",
                 "Lincon: p.hat",
-                "Lincon: p.value",
+                "Lincon: p.raw",
+                "Lincon: adj.p.value",
                 "Cliff: p.hat",
                 "Cliff: p.value"
             )
@@ -160,37 +162,36 @@ create_combined_results <- function(result_lincon, result_cliff, measure_col,
         }
         
         # Apply p-value adjustment (only for non-bootstrap numeric values)
-        lincon_p <- combined$`Lincon: p.value`
-        cliff_p <- combined$`Cliff: p.value`
+        # Lincon already has adjusted p-values, only adjust Cliff if needed
+        cliff_p_raw <- combined$`Cliff: p.value`
         
         # Check if values are numeric (not bootstrap CI strings)
-        if (is.numeric(lincon_p)) {
-            combined$`Lincon: p.value` <- stats::p.adjust(lincon_p, method = p_adjust_method)
-        }
-        if (is.numeric(cliff_p)) {
-            combined$`Cliff: p.value` <- stats::p.adjust(cliff_p, method = p_adjust_method)
+        if (is.numeric(cliff_p_raw)) {
+            combined$`Cliff: adj.p.value` <- stats::p.adjust(cliff_p_raw, method = p_adjust_method)
         }
         
         # Filter for significance if requested
         if (filter_p_values) {
-            if (is.numeric(combined$`Lincon: p.value`) && is.numeric(combined$`Cliff: p.value`)) {
+            if (is.numeric(combined$`Lincon: adj.p.value`) && is.numeric(combined$`Cliff: adj.p.value`)) {
                 combined <- combined %>%
                     dplyr::filter(
-                        .data$`Lincon: p.value` < 0.07 | .data$`Cliff: p.value` < 0.07
+                        .data$`Lincon: adj.p.value` < 0.07 | .data$`Cliff: adj.p.value` < 0.07
                     )
             }
         }
         
         # Format output
-        if (use_scientific && is.numeric(combined$`Lincon: p.value`)) {
+        if (use_scientific && is.numeric(combined$`Lincon: p.raw`)) {
             combined <- combined %>%
                 dplyr::mutate(
-                    `Lincon: p.value` = formatC(.data$`Lincon: p.value`, format = "e", digits = 2),
+                    `Lincon: p.raw` = formatC(.data$`Lincon: p.raw`, format = "e", digits = 2),
+                    `Lincon: adj.p.value` = formatC(.data$`Lincon: adj.p.value`, format = "e", digits = 2),
                     `Cliff: p.value` = formatC(.data$`Cliff: p.value`, format = "e", digits = 2),
+                    `Cliff: adj.p.value` = formatC(.data$`Cliff: adj.p.value`, format = "e", digits = 2),
                     `Lincon: p.hat` = round(.data$`Lincon: p.hat`, 4),
                     `Cliff: p.hat` = round(.data$`Cliff: p.hat`, 4)
                 )
-        } else if (is.numeric(combined$`Lincon: p.value`)) {
+        } else if (is.numeric(combined$`Lincon: p.raw`)) {
             combined <- combined %>%
                 dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ round(.x, 3)))
         }
