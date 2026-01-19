@@ -3,6 +3,7 @@
 #' Shared helpers and dispatcher for statistical tests.
 #' Individual test implementations are in R/utils/statistics/:
 #' - tests_robust_anova.R: t1way, t2way, t3way (Welch-Yuen family)
+#' - tests_parametric_anova.R: Classical ANOVA, Tukey HSD, Cohen's d
 #' - tests_contrasts.R: lincon (linear contrasts)
 #' - tests_effect_size.R: Cliff's Delta
 #' - tests_combined_results.R: Result formatting
@@ -10,6 +11,7 @@
 
 # Source test implementation files
 source("R/utils/statistics/tests_robust_anova.R", local = TRUE)
+source("R/utils/statistics/tests_parametric_anova.R", local = TRUE)
 source("R/utils/statistics/tests_contrasts.R", local = TRUE)
 source("R/utils/statistics/tests_effect_size.R", local = TRUE)
 source("R/utils/statistics/tests_combined_results.R", local = TRUE)
@@ -117,30 +119,65 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
     n_groups <- length(x_axis)
     errors <- list()
     
-    # Determine design type and header
-    design_info <- switch(
-        as.character(n_groups),
-        "1" = list(
-            type = "one-way",
-            header = "Robust One-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-            test_fn = perform_t1way
-        ),
-        "2" = list(
-            type = "two-way", 
-            header = "Robust Two-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-            test_fn = perform_t2way
-        ),
-        "3" = list(
-            type = "three-way",
-            header = "Robust Three-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-            test_fn = perform_t3way
-        ),
-        list(
+    # Determine test approach (default to robust if not specified)
+    test_approach <- params$test_approach %||% "robust"
+    
+    # Determine design type and header based on test approach
+    if (test_approach == "robust") {
+        design_info <- switch(
+            as.character(n_groups),
+            "1" = list(
+                type = "one-way",
+                header = "Robust One-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
+                test_fn = perform_t1way
+            ),
+            "2" = list(
+                type = "two-way", 
+                header = "Robust Two-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
+                test_fn = perform_t2way
+            ),
+            "3" = list(
+                type = "three-way",
+                header = "Robust Three-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
+                test_fn = perform_t3way
+            ),
+            list(
+                type = "error",
+                header = "Selection Error",
+                test_fn = NULL
+            )
+        )
+    } else if (test_approach == "parametric") {
+        design_info <- switch(
+            as.character(n_groups),
+            "1" = list(
+                type = "one-way",
+                header = "Classical One-Way ANOVA - Parametric Test",
+                test_fn = perform_parametric_anova
+            ),
+            "2" = list(
+                type = "two-way", 
+                header = "Classical Two-Way ANOVA - Parametric Test",
+                test_fn = perform_parametric_anova
+            ),
+            "3" = list(
+                type = "three-way",
+                header = "Classical Three-Way ANOVA - Parametric Test",
+                test_fn = perform_parametric_anova
+            ),
+            list(
+                type = "error",
+                header = "Selection Error",
+                test_fn = NULL
+            )
+        )
+    } else {
+        design_info <- list(
             type = "error",
             header = "Selection Error",
             test_fn = NULL
         )
-    )
+    }
     
     # Validate group counts for multi-way designs
     if (n_groups >= 2) {
@@ -187,41 +224,85 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         )
     }
     
-    # Linear contrasts (always computed)
-    result_lincon <- perform_lincon(
-        df = df,
-        x_axis = x_axis,
-        measure_col = measure_col,
-        tr_value = tr_value,
-        use_bootstrap = params$use_bootstrap,
-        boot_samples = params$boot_samples,
-        boot_sample_size = params$boot_sample_size,
-        p_adjust_method = params$p_val_cor_method
-    )
+    # Post-hoc tests (based on test approach)
+    if (test_approach == "robust") {
+        # Linear contrasts for robust tests
+        result_lincon <- perform_lincon(
+            df = df,
+            x_axis = x_axis,
+            measure_col = measure_col,
+            tr_value = tr_value,
+            use_bootstrap = params$use_bootstrap,
+            boot_samples = params$boot_samples,
+            boot_sample_size = params$boot_sample_size,
+            p_adjust_method = params$p_val_cor_method
+        )
+    } else {
+        # Tukey HSD for parametric tests
+        result_lincon <- perform_tukey_hsd(
+            df = df,
+            x_axis = x_axis,
+            measure_col = measure_col,
+            tr_value = tr_value,
+            use_bootstrap = params$use_bootstrap,
+            boot_samples = params$boot_samples,
+            boot_sample_size = params$boot_sample_size,
+            p_adjust_method = params$p_val_cor_method
+        )
+    }
     
-    # Cliff's Delta (always computed)
-    result_cliff <- perform_cliff(
-        df = df,
-        x_axis = x_axis,
-        measure_col = measure_col,
-        tr_value = tr_value,
-        use_bootstrap = params$use_bootstrap,
-        boot_samples = params$boot_samples,
-        boot_sample_size = params$boot_sample_size,
-        p_adjust_method = params$p_val_cor_method
-    )
+    # Effect size (based on test approach)
+    if (test_approach == "robust") {
+        # Cliff's Delta for robust tests
+        result_cliff <- perform_cliff(
+            df = df,
+            x_axis = x_axis,
+            measure_col = measure_col,
+            tr_value = tr_value,
+            use_bootstrap = params$use_bootstrap,
+            boot_samples = params$boot_samples,
+            boot_sample_size = params$boot_sample_size,
+            p_adjust_method = params$p_val_cor_method
+        )
+    } else {
+        # Cohen's d for parametric tests
+        result_cliff <- perform_cohens_d(
+            df = df,
+            x_axis = x_axis,
+            measure_col = measure_col,
+            tr_value = tr_value,
+            use_bootstrap = params$use_bootstrap,
+            boot_samples = params$boot_samples,
+            boot_sample_size = params$boot_sample_size,
+            p_adjust_method = params$p_val_cor_method
+        )
+    }
     
     # Combined results table
-    result_combined <- create_combined_results(
-        result_lincon = result_lincon,
-        result_cliff = result_cliff,
-        measure_col = measure_col,
-        valid_comparisons = params$valid_comparisons,
-        filter_p_values = params$filter_p_values,
-        p_adjust_method = params$p_val_cor_method,
-        x_axis = x_axis,
-        use_scientific = params$use_scientific_notation
-    )
+    if (test_approach == "robust") {
+        result_combined <- create_robust_combined_results(
+            result_lincon = result_lincon,
+            result_cliff = result_cliff,
+            measure_col = measure_col,
+            valid_comparisons = params$valid_comparisons,
+            filter_p_values = params$filter_p_values,
+            p_adjust_method = params$p_val_cor_method,
+            x_axis = x_axis,
+            use_scientific = params$use_scientific_notation
+        )
+    } else {
+        # Use parametric combined results function
+        result_combined <- create_parametric_combined_results(
+            result_tukey = result_lincon,  # Note: result_lincon contains Tukey results for parametric
+            result_cohen = result_cliff,    # Note: result_cliff contains Cohen's d for parametric
+            measure_col = measure_col,
+            valid_comparisons = params$valid_comparisons,
+            filter_p_values = params$filter_p_values,
+            p_adjust_method = params$p_val_cor_method,
+            x_axis = x_axis,
+            use_scientific = params$use_scientific_notation
+        )
+    }
     
     list(
         measure = measure_col,
