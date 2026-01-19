@@ -435,11 +435,11 @@ setup_statistics_output <- function(input, output, session, processed_data,
                 
                 # Linear Contrasts (lincon) results
                 lincon_ui <- NULL
-                if (!is.null(res$result_lincon)) {
+                if (!is.null(res$result_lincon) && stats_params()$show_additional_output) {
                     if (is_stat_error(res$result_lincon)) {
                         lincon_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$h6("Linear Contrasts"),
                             shiny::tags$div(
                                 class = "alert alert-danger",
                                 render_stat_error(res$result_lincon)
@@ -448,7 +448,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     } else if (is.data.frame(res$result_lincon) && "Error" %in% names(res$result_lincon)) {
                         lincon_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$h6("Linear Contrasts"),
                             shiny::tags$div(
                                 class = "alert alert-danger",
                                 shiny::HTML(paste(res$result_lincon$Error, collapse = "<br>"))
@@ -457,7 +457,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     } else if (is.data.frame(res$result_lincon) && nrow(res$result_lincon) > 0) {
                         lincon_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Linear Contrasts (Trimmed Means)"),
+                            shiny::tags$h6("Linear Contrasts"),
                             shiny::tags$div(
                                 class = "table-responsive",
                                 render_stats_table(res$result_lincon)
@@ -468,11 +468,11 @@ setup_statistics_output <- function(input, output, session, processed_data,
                 
                 # Cliff's Delta results
                 cliff_ui <- NULL
-                if (!is.null(res$result_cliff)) {
+                if (!is.null(res$result_cliff) && stats_params()$show_additional_output) {
                     if (is_stat_error(res$result_cliff)) {
                         cliff_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$h6("Cliff's Delta + Effect Size"),
                             shiny::tags$div(
                                 class = "alert alert-danger",
                                 render_stat_error(res$result_cliff)
@@ -481,7 +481,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     } else if (is.data.frame(res$result_cliff) && "Error" %in% names(res$result_cliff)) {
                         cliff_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$h6("Cliff's Delta + Effect Size"),
                             shiny::tags$div(
                                 class = "alert alert-danger",
                                 shiny::HTML(paste(res$result_cliff$Error, collapse = "<br>"))
@@ -490,7 +490,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     } else if (is.data.frame(res$result_cliff) && nrow(res$result_cliff) > 0) {
                         cliff_ui <- shiny::tags$div(
                             class = "mt-3",
-                            shiny::tags$h6("Cliff's Delta (Effect Size)"),
+                            shiny::tags$h6("Cliff's Delta + Effect Size"),
                             shiny::tags$div(
                                 class = "table-responsive",
                                 render_stats_table(res$result_cliff)
