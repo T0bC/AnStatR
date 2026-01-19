@@ -89,7 +89,7 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
         ci.lower = test_df$p.ci.lower,
         ci.upper = test_df$p.ci.upper,
         p.value = test_df$p.value,
-        p.adjusted = test_df$p.crit,
+        p.crit = test_df$p.crit,
         stringsAsFactors = FALSE
     )
 }
@@ -158,7 +158,7 @@ format_cliff_single <- function(result_df, p_adjust_method) {
 #'
 #' Performs pairwise Cliff's Delta effect size calculations for all group pairs.
 #' For multi-factor designs, groups are combined into a single factor.
-#' Uses cidmulv2_labelled from Rallfun-v43.R with Hochberg's method for FWE control.
+#' Uses cidmulv2_labelled from Rallfun-v43.R with bonferroni's method for FWE control.
 #'
 #' @param df Data frame containing the data (already filtered for outliers/trimmed)
 #' @param x_axis Character vector of grouping column(s)
