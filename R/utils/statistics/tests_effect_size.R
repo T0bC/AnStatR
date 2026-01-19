@@ -17,7 +17,7 @@
 validate_cliff <- function(df, x_axis) {
     # Create combined groups for multi-factor designs
     if (length(x_axis) > 1) {
-        combined_groups <- do.call(paste, c(df[x_axis], sep = "_"))
+        combined_groups <- do.call(paste, c(df[x_axis], sep = "."))
     } else {
         combined_groups <- df[[x_axis[1]]]
     }
@@ -41,7 +41,7 @@ validate_cliff <- function(df, x_axis) {
 #' @return List with context information
 build_cliff_context <- function(df, x_axis, measure_col, use_bootstrap) {
     if (length(x_axis) > 1) {
-        combined_groups <- do.call(paste, c(df[x_axis], sep = "_"))
+        combined_groups <- do.call(paste, c(df[x_axis], sep = "."))
     } else {
         combined_groups <- df[[x_axis[1]]]
     }
@@ -64,7 +64,7 @@ build_cliff_context <- function(df, x_axis, measure_col, use_bootstrap) {
 run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
     # Combine groups for multi-factor designs
     if (length(x_axis) > 1) {
-        sample_data$combinedGroups <- do.call(paste, c(sample_data[x_axis], sep = "_"))
+        sample_data$combinedGroups <- do.call(paste, c(sample_data[x_axis], sep = "."))
     } else {
         sample_data$combinedGroups <- sample_data[[x_axis[1]]]
     }
