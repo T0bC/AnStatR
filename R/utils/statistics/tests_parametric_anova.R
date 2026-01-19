@@ -263,7 +263,7 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
     
     # For multi-way designs, create interaction variable
     if (length(x_axis) > 1) {
-        df$interaction_group <- interaction(df[x_axis], sep = "_")
+        df$interaction_group <- interaction(df[x_axis], sep = ".")
         group_var <- "interaction_group"
     } else {
         group_var <- x_axis[1]
