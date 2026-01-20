@@ -248,21 +248,13 @@ create_robust_combined_results <- function(result_lincon, result_cliff, measure_
             }
         }
         
-        # Format output
-        if (use_scientific && is.numeric(combined$`Lincon: p.raw`)) {
-            combined <- combined %>%
-                dplyr::mutate(
-                    `Lincon: p.raw` = formatC(.data$`Lincon: p.raw`, format = "e", digits = 2),
-                    `Lincon: adj.p.value` = formatC(.data$`Lincon: adj.p.value`, format = "e", digits = 2),
-                    `Cliff: p.raw` = formatC(.data$`Cliff: p.raw`, format = "e", digits = 2),
-                    `Cliff: adj.p.value` = formatC(.data$`Cliff: adj.p.value`, format = "e", digits = 2),
-                    `Lincon: p.hat` = round(.data$`Lincon: p.hat`, 4),
-                    `Cliff: p.hat` = round(.data$`Cliff: p.hat`, 4)
-                )
-        } else if (is.numeric(combined$`Lincon: p.raw`)) {
-            combined <- combined %>%
-                dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ round(.x, 3)))
-        }
+        # Format output with proper scientific notation control
+        old_scipen <- getOption("scipen")
+        on.exit(options(scipen = old_scipen))
+        options(scipen = if (use_scientific) 0 else 999)
+        
+        combined <- combined %>%
+            dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ signif(.x, 3)))
         
         combined
     }, operation_name = "robust_combined_results", context = error_context)
@@ -282,7 +274,7 @@ create_robust_combined_results <- function(result_lincon, result_cliff, measure_
 #' Create Combined Results Table for Parametric Tests
 #'
 #' Combines Tukey HSD and Cohen's d results with specific column naming for parametric tests.
-#' Column naming: Tukey: posthoc, Tukey: p.raw, Tukey: adj.p.value,
+#' Column naming: Difference, Tukey: p.raw, Tukey: adj.p.value,
 #'                Cohen: effect, Cohen: p.raw, Cohen: adj.p.value
 #'
 #' @inheritParams create_unified_combined_results
@@ -335,13 +327,30 @@ create_parametric_combined_results <- function(result_tukey, result_cohen, measu
     
     # Wrap in safe_execute for error handling
     result <- safe_execute({
+        # Add Interaction column to Tukey results for compatibility
+        if (!"Interaction" %in% names(result_tukey)) {
+            result_tukey$Interaction <- paste(result_tukey$Group1, "vs.", result_tukey$Group2)
+        }
+        
         # Normalize interaction strings for consistent matching
-        tukey_norm <- normalize_interaction(result_tukey) %>%
-            dplyr::select("InteractionKey", "psihat", "p.value") %>%
-            dplyr::rename(
-                `Tukey: posthoc` = "psihat",  # Mean difference from Tukey
-                `Tukey: p.raw` = "p.value"     # Already adjusted by Tukey
-            )
+        # Handle different column naming based on design type
+        design_type <- attr(result_tukey, "design_type")
+        
+        if (is.null(design_type) || design_type == "single_factor") {
+            # Single factor: use P_Value (Tukey-adjusted)
+            tukey_norm <- normalize_interaction(result_tukey) %>%
+                dplyr::select("InteractionKey", "Difference", "P_Value") %>%
+                dplyr::rename(
+                    `Tukey: p.raw` = "P_Value"          # Tukey-adjusted p-value
+                )
+        } else {
+            # Multi factor: use P_Value_Raw (unadjusted)
+            tukey_norm <- normalize_interaction(result_tukey) %>%
+                dplyr::select("InteractionKey", "Difference", "P_Value_Raw") %>%
+                dplyr::rename(
+                    `Tukey: p.raw` = "P_Value_Raw"       # Raw p-value (unadjusted)
+                )
+        }
         
         cohen_norm <- normalize_interaction(result_cohen) %>%
             dplyr::select("InteractionKey", "psihat", "p.value") %>%
@@ -360,8 +369,18 @@ create_parametric_combined_results <- function(result_tukey, result_cohen, measu
         }
         
         # Add adjusted p-values
-        # Tukey p-values are already adjusted, so adj = raw
-        combined$`Tukey: adj.p.value` <- combined$`Tukey: p.raw`
+        # Handle p-value adjustment based on design type
+        if (is.null(design_type) || design_type == "single_factor") {
+            # Single factor: Tukey p-values are already adjusted, so adj = raw
+            combined$`Tukey: adj.p.value` <- combined$`Tukey: p.raw`
+        } else {
+            # Multi factor: Raw p-values need adjustment
+            if (is.numeric(combined$`Tukey: p.raw`)) {
+                combined$`Tukey: adj.p.value` <- stats::p.adjust(combined$`Tukey: p.raw`, method = p_adjust_method)
+            } else {
+                combined$`Tukey: adj.p.value` <- combined$`Tukey: p.raw`
+            }
+        }
         
         # Apply p-value adjustment for Cohen's d
         cohen_p_raw <- combined$`Cohen: p.raw`
@@ -375,7 +394,7 @@ create_parametric_combined_results <- function(result_tukey, result_cohen, measu
         combined <- combined %>%
             dplyr::select(
                 "Interaction",
-                "Tukey: posthoc",
+                "Difference",
                 "Tukey: p.raw",
                 "Tukey: adj.p.value",
                 "Cohen: effect",
@@ -393,21 +412,13 @@ create_parametric_combined_results <- function(result_tukey, result_cohen, measu
             }
         }
         
-        # Format output
-        if (use_scientific && is.numeric(combined$`Tukey: p.raw`)) {
-            combined <- combined %>%
-                dplyr::mutate(
-                    `Tukey: p.raw` = formatC(.data$`Tukey: p.raw`, format = "e", digits = 2),
-                    `Tukey: adj.p.value` = formatC(.data$`Tukey: adj.p.value`, format = "e", digits = 2),
-                    `Cohen: p.raw` = formatC(.data$`Cohen: p.raw`, format = "e", digits = 2),
-                    `Cohen: adj.p.value` = formatC(.data$`Cohen: adj.p.value`, format = "e", digits = 2),
-                    `Tukey: posthoc` = round(.data$`Tukey: posthoc`, 4),
-                    `Cohen: effect` = round(.data$`Cohen: effect`, 4)
-                )
-        } else if (is.numeric(combined$`Tukey: p.raw`)) {
-            combined <- combined %>%
-                dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ round(.x, 3)))
-        }
+        # Format output with proper scientific notation control
+        old_scipen <- getOption("scipen")
+        on.exit(options(scipen = old_scipen))
+        options(scipen = if (use_scientific) 0 else 999)
+        
+        combined <- combined %>%
+            dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ signif(.x, 3)))
         
         combined
     }, operation_name = "parametric_combined_results", context = error_context)
