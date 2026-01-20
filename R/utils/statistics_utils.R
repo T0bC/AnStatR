@@ -281,14 +281,40 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
     
     # Combined results table
     if (test_approach == "robust") {
-        result_combined <- create_robust_combined_results(
-            result_lincon = result_lincon,
-            result_cliff = result_cliff,
-            measure_col = measure_col,
-            valid_comparisons = params$valid_comparisons,
-            filter_p_values = params$filter_p_values,
-            p_adjust_method = params$p_val_cor_method,
+        # Determine available columns in lincon results
+        available_lincon_cols <- names(result_lincon)
+        
+        # Choose the best available p-value column
+        p_col <- if ("p.adjusted" %in% available_lincon_cols) {
+            "p.adjusted"
+        } else if ("Lincon: p.value" %in% available_lincon_cols) {
+            "Lincon: p.value"
+        } else {
+            NULL
+        }
+        
+        # Choose the best available psihat column
+        psihat_col <- if ("Lincon: psihat" %in% available_lincon_cols) {
+            "Lincon: psihat"
+        } else {
+            NULL
+        }
+        
+        # Build df1ColNames based on available columns
+        df1ColNames <- c("Interaction")
+        if (!is.null(psihat_col)) df1ColNames <- c(df1ColNames, psihat_col)
+        if (!is.null(p_col)) df1ColNames <- c(df1ColNames, p_col)
+        
+        # Use generic combined results function for robust tests
+        result_combined <- create_combined_results(
+            df1 = result_lincon,  # lincon results
+            df2 = result_cliff,   # cliff results
+            df1ColNames = df1ColNames,
+            df2ColNames = c("Interaction", "Cliff: psihat", "Cliff: p.value"),
+            merge_key = "Interaction",
             x_axis = x_axis,
+            filter_valid = params$valid_comparisons,
+            p_adjust_method = params$p_val_cor_method,
             use_scientific = params$use_scientific_notation
         )
     } else {
