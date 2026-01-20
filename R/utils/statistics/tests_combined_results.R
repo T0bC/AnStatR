@@ -87,23 +87,61 @@ filter_valid_comparisons <- function(df, x_axis) {
 #' @param use_scientific Logical, use scientific notation for numeric output (default: FALSE)
 #' @return Merged data frame with selected columns from both tables
 create_combined_results <- function(df1, df2, df1ColNames, df2ColNames, 
-                                   merge_key = "Interaction", x_axis = NULL,
-                                   filter_valid = FALSE, p_adjust_method = "bonferroni",
-                                   use_scientific = FALSE) {
+                                    merge_key = "Interaction", x_axis = NULL,
+                                    filter_valid = FALSE, p_adjust_method = "bonferroni",
+                                    use_scientific = FALSE) {
+    
+    # Check if either dataframe is an error dataframe (has 'Error' column)
+    if ("Error" %in% names(df1) || "Error" %in% names(df2)) {
+        # Return the error from whichever dataframe has it, prioritizing df1
+        if ("Error" %in% names(df1)) {
+            return(df1)
+        } else {
+            return(df2)
+        }
+    }
+    
+    # Check if either dataframe is empty or has no rows
+    if (nrow(df1) == 0 || nrow(df2) == 0) {
+        # Return a meaningful error or empty result
+        return(data.frame(
+            Error = "Unable to create combined results: one or both input tables are empty.",
+            stringsAsFactors = FALSE
+        ))
+    }
     
     # Validate inputs
     if (!merge_key %in% names(df1) || !merge_key %in% names(df2)) {
-        stop("Merge key '", merge_key, "' not found in both data frames")
+        return(data.frame(
+            Error = paste("Merge key '", merge_key, "' not found in both data frames"),
+            stringsAsFactors = FALSE
+        ))
     }
     
-    if (!all(df1ColNames %in% names(df1))) {
-        missing_cols <- setdiff(df1ColNames, names(df1))
-        stop("Columns not found in df1: ", paste(missing_cols, collapse = ", "))
+    # Check for missing columns and adjust expectations
+    missing_df1_cols <- setdiff(df1ColNames, names(df1))
+    missing_df2_cols <- setdiff(df2ColNames, names(df2))
+    
+    if (length(missing_df1_cols) > 0) {
+        # Adjust df1ColNames to only include existing columns
+        df1ColNames <- intersect(df1ColNames, names(df1))
+        if (length(df1ColNames) <= 1) {  # Only merge_key might remain
+            return(data.frame(
+                Error = paste("Insufficient valid columns in df1. Missing:", paste(missing_df1_cols, collapse = ", ")),
+                stringsAsFactors = FALSE
+            ))
+        }
     }
     
-    if (!all(df2ColNames %in% names(df2))) {
-        missing_cols <- setdiff(df2ColNames, names(df2))
-        stop("Columns not found in df2: ", paste(missing_cols, collapse = ", "))
+    if (length(missing_df2_cols) > 0) {
+        # Adjust df2ColNames to only include existing columns
+        df2ColNames <- intersect(df2ColNames, names(df2))
+        if (length(df2ColNames) <= 1) {  # Only merge_key might remain
+            return(data.frame(
+                Error = paste("Insufficient valid columns in df2. Missing:", paste(missing_df2_cols, collapse = ", ")),
+                stringsAsFactors = FALSE
+            ))
+        }
     }
     
     # Create copies to avoid modifying originals
@@ -122,13 +160,26 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
         df2_processed <- filter_valid_comparisons(df2_processed, x_axis)
     }
     
-    # Select specified columns (exclude merge_key from df2ColNames to avoid duplicates)
-    df1_selected <- df1_processed[, c(merge_key, df1ColNames), drop = FALSE]
-    df2_cols_for_merge <- setdiff(df2ColNames, merge_key)  # Remove merge_key to avoid duplicates
-    df2_selected <- df2_processed[, c(merge_key, df2_cols_for_merge), drop = FALSE]
-    
     # Determine merge key based on whether we normalized interactions
     actual_merge_key <- if (merge_key == "Interaction") "InteractionKey" else merge_key
+    
+    # Select specified columns (handle merge_key specially to avoid duplicates)
+    df1_cols_for_select <- df1ColNames
+    df2_cols_for_select <- setdiff(df2ColNames, merge_key)  # Remove merge_key from df2
+    
+    # Select columns
+    df1_selected <- df1_processed[, df1_cols_for_select, drop = FALSE]
+    df2_selected <- df2_processed[, df2_cols_for_select, drop = FALSE]
+    
+    # Add the actual merge key column to both dataframes
+    df1_selected[[actual_merge_key]] <- df1_processed[[actual_merge_key]]
+    df2_selected[[actual_merge_key]] <- df2_processed[[actual_merge_key]]
+    
+    # If using InteractionKey, also preserve original Interaction for display
+    if (actual_merge_key == "InteractionKey" && merge_key == "Interaction") {
+        df1_selected[["Interaction"]] <- df1_processed[["Interaction"]]
+        df2_selected[["Interaction"]] <- df2_processed[["Interaction"]]
+    }
     
     # Merge the data frames
     merged_df <- dplyr::inner_join(df1_selected, df2_selected, 
@@ -155,7 +206,7 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
     
     # Put df1 columns first, then df2 columns (excluding the merge key)
     df1_other_cols <- setdiff(df1ColNames, merge_key)
-    df2_other_cols <- df2_cols_for_merge  # Already excludes merge_key
+    df2_other_cols <- df2_cols_for_select  # Already excludes merge_key
     
     final_order <- c(interaction_col, 
                     intersect(names(merged_df), df1_other_cols),
@@ -164,15 +215,15 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
     
     merged_df <- merged_df[, final_order, drop = FALSE]
     
+    # Apply consistent formatting to all numeric columns (always apply signif)
+    numeric_cols <- sapply(merged_df, is.numeric)
+    merged_df[numeric_cols] <- lapply(merged_df[numeric_cols], function(x) signif(x, 3))
+    
     # Apply scientific notation formatting if requested
     if (use_scientific) {
         old_scipen <- getOption("scipen")
         on.exit(options(scipen = old_scipen))
         options(scipen = 0)
-        
-        # Apply scientific notation to numeric columns
-        numeric_cols <- sapply(merged_df, is.numeric)
-        merged_df[numeric_cols] <- lapply(merged_df[numeric_cols], function(x) signif(x, 3))
     }
     
     return(merged_df)
