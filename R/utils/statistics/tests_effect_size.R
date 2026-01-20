@@ -85,11 +85,11 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
     
     data.frame(
         Interaction = paste(test_df$Group.A, test_df$Group.B, sep = " vs. "),
-        psihat = test_df$p.hat,
-        ci.lower = test_df$p.ci.lower,
-        ci.upper = test_df$p.ci.upper,
-        p.value = test_df$p.value,
-        p.crit = test_df$p.crit,
+        `Cliff: psihat` = test_df$p.hat,
+        `Cliff: ci.lower` = test_df$p.ci.lower,
+        `Cliff: ci.upper` = test_df$p.ci.upper,
+        `Cliff: p.value` = test_df$p.value,
+        `Cliff: p.crit` = test_df$p.crit,
         stringsAsFactors = FALSE
     )
 }
@@ -102,12 +102,35 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
 #' @param p_adjust_method P-value adjustment method (not used, kept for consistency)
 #' @return Data frame with formatted results
 format_cliff_bootstrap <- function(results_list, p_adjust_method) {
+    # Check if results list is valid
+    if (length(results_list) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
+    
     # Get unique interactions across all iterations
-    unique_interactions <- unique(unlist(lapply(results_list, function(x) x$Interaction)))
+    unique_interactions <- unique(unlist(lapply(results_list, function(x) {
+        if ("Interaction" %in% names(x) && nrow(x) > 0) x$Interaction else character(0)
+    })))
+    
+    if (length(unique_interactions) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
     
     result_rows <- lapply(unique_interactions, function(interaction) {
         # Subset all iterations for this interaction
-        subset_dfs <- lapply(results_list, function(x) x[x$Interaction == interaction, ])
+        subset_dfs <- lapply(results_list, function(x) {
+            if ("Interaction" %in% names(x) && nrow(x) > 0) {
+                x[x$Interaction == interaction, ]
+            } else {
+                NULL
+            }
+        })
+        subset_dfs <- subset_dfs[!sapply(subset_dfs, is.null)]
+        
+        if (length(subset_dfs) == 0) {
+            return(NULL)
+        }
+        
         combined <- dplyr::bind_rows(subset_dfs)
         
         # Calculate CI bounds
@@ -115,23 +138,37 @@ format_cliff_bootstrap <- function(results_list, p_adjust_method) {
         ci_upper_fn <- function(x) stats::quantile(x, probs = 0.975, na.rm = TRUE)
         
         format_col <- function(col_name) {
-            vals <- combined[[col_name]]
-            mean_val <- signif(mean(vals, na.rm = TRUE), 3)
-            lower <- signif(ci_lower_fn(vals), 3)
-            upper <- signif(ci_upper_fn(vals), 3)
-            paste0(mean_val, " [", lower, " - ", upper, "]")
+            if (col_name %in% names(combined)) {
+                vals <- combined[[col_name]]
+                if (length(vals) > 0 && any(!is.na(vals))) {
+                    mean_val <- signif(mean(vals, na.rm = TRUE), 3)
+                    lower <- signif(ci_lower_fn(vals), 3)
+                    upper <- signif(ci_upper_fn(vals), 3)
+                    paste0(mean_val, " [", lower, " - ", upper, "]")
+                } else {
+                    NA_character_
+                }
+            } else {
+                NA_character_
+            }
         }
         
         data.frame(
             Interaction = interaction,
-            psihat = format_col("psihat"),
-            ci.lower = format_col("ci.lower"),
-            ci.upper = format_col("ci.upper"),
-            p.value = format_col("p.value"),
-            p.crit = format_col("p.crit"),
+            `Cliff: psihat` = format_col("Cliff: psihat"),
+            `Cliff: ci.lower` = format_col("Cliff: ci.lower"),
+            `Cliff: ci.upper` = format_col("Cliff: ci.upper"),
+            `Cliff: p.value` = format_col("Cliff: p.value"),
             stringsAsFactors = FALSE
         )
     })
+    
+    # Remove NULL results
+    result_rows <- result_rows[!sapply(result_rows, is.null)]
+    
+    if (length(result_rows) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
     
     dplyr::bind_rows(result_rows)
 }
@@ -142,9 +179,18 @@ format_cliff_bootstrap <- function(results_list, p_adjust_method) {
 #' @param p_adjust_method P-value adjustment method (not used, p.crit comes from cidmulv2)
 #' @return Data frame with formatted results
 format_cliff_single <- function(result_df, p_adjust_method) {
-    # Round numeric columns
-    numeric_cols <- c("psihat", "ci.lower", "ci.upper", "p.value", "p.crit")
-    result_df[numeric_cols] <- lapply(result_df[numeric_cols], function(x) signif(x, 3))
+    # Check if result_df is valid and has data
+    if (nrow(result_df) == 0) {
+        return(result_df)
+    }
+    
+    # Round numeric columns that actually exist
+    numeric_cols <- c("Cliff: psihat", "Cliff: ci.lower", "Cliff: ci.upper", "Cliff: p.value", "Cliff: p.crit")
+    available_cols <- intersect(numeric_cols, names(result_df))
+    
+    if (length(available_cols) > 0) {
+        result_df[available_cols] <- lapply(result_df[available_cols], function(x) signif(x, 3))
+    }
     
     result_df
 }
