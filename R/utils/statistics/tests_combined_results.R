@@ -84,10 +84,12 @@ filter_valid_comparisons <- function(df, x_axis) {
 #' @param x_axis Character vector of grouping columns (for valid comparisons filtering)
 #' @param filter_valid Logical, whether to filter for valid comparisons in multi-factor designs
 #' @param p_adjust_method Character, p-value adjustment method (default: "bonferroni")
+#' @param use_scientific Logical, use scientific notation for numeric output (default: FALSE)
 #' @return Merged data frame with selected columns from both tables
 create_combined_results <- function(df1, df2, df1ColNames, df2ColNames, 
                                    merge_key = "Interaction", x_axis = NULL,
-                                   filter_valid = FALSE, p_adjust_method = "bonferroni") {
+                                   filter_valid = FALSE, p_adjust_method = "bonferroni",
+                                   use_scientific = FALSE) {
     
     # Validate inputs
     if (!merge_key %in% names(df1) || !merge_key %in% names(df2)) {
@@ -120,9 +122,10 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
         df2_processed <- filter_valid_comparisons(df2_processed, x_axis)
     }
     
-    # Select specified columns
+    # Select specified columns (exclude merge_key from df2ColNames to avoid duplicates)
     df1_selected <- df1_processed[, c(merge_key, df1ColNames), drop = FALSE]
-    df2_selected <- df2_processed[, c(merge_key, df2ColNames), drop = FALSE]
+    df2_cols_for_merge <- setdiff(df2ColNames, merge_key)  # Remove merge_key to avoid duplicates
+    df2_selected <- df2_processed[, c(merge_key, df2_cols_for_merge), drop = FALSE]
     
     # Determine merge key based on whether we normalized interactions
     actual_merge_key <- if (merge_key == "Interaction") "InteractionKey" else merge_key
@@ -152,7 +155,7 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
     
     # Put df1 columns first, then df2 columns (excluding the merge key)
     df1_other_cols <- setdiff(df1ColNames, merge_key)
-    df2_other_cols <- setdiff(df2ColNames, merge_key)
+    df2_other_cols <- df2_cols_for_merge  # Already excludes merge_key
     
     final_order <- c(interaction_col, 
                     intersect(names(merged_df), df1_other_cols),
@@ -160,6 +163,17 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
                     setdiff(other_cols, c(df1_other_cols, df2_other_cols)))
     
     merged_df <- merged_df[, final_order, drop = FALSE]
+    
+    # Apply scientific notation formatting if requested
+    if (use_scientific) {
+        old_scipen <- getOption("scipen")
+        on.exit(options(scipen = old_scipen))
+        options(scipen = 0)
+        
+        # Apply scientific notation to numeric columns
+        numeric_cols <- sapply(merged_df, is.numeric)
+        merged_df[numeric_cols] <- lapply(merged_df[numeric_cols], function(x) signif(x, 3))
+    }
     
     return(merged_df)
 }
