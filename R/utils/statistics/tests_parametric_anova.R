@@ -146,6 +146,19 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
 #' Conducts Tukey's Honestly Significant Difference test for pairwise comparisons.
 #' Output format matches lincon from robust tests.
 #'
+#' @details
+#' For single-factor designs, returns standard Tukey HSD results with 
+#' family-wise error rate controlled p-values.
+#' 
+#' For multi-factor designs, returns raw (unadjusted) p-values and confidence
+#' intervals for downstream filtering and multiple comparison corrections.
+#'
+#' @return Data frame with pairwise comparisons. Structure differs by design:
+#' \itemize{
+#'   \item Single-factor: Tukey-adjusted p-values and CIs
+#'   \item Multi-factor: Raw p-values, raw CIs, and statistical details
+#' }
+#'
 #' @param df Data frame containing the data
 #' @param x_axis Character vector of grouping columns
 #' @param measure_col Character, measurement column name
@@ -154,12 +167,13 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
 #' @param boot_samples Integer, ignored for parametric tests
 #' @param boot_sample_size Integer, ignored for parametric tests
 #' @param p_adjust_method Character, ignored (Tukey has its own adjustment)
+#' @param use_scientific Logical, use scientific notation for results
 #' @return Data frame with pairwise comparisons or structured error
 perform_tukey_hsd <- function(df, x_axis, measure_col, tr_value = 0,
                              use_bootstrap = FALSE, boot_samples = 599,
-                             boot_sample_size = NULL, p_adjust_method = "bonferroni") {
+                             boot_sample_size = NULL, p_adjust_method = "bonferroni",
+                             use_scientific = FALSE) {
     
-    # Build error context
     error_context <- list(
         measure = measure_col,
         factors = x_axis,
@@ -167,63 +181,41 @@ perform_tukey_hsd <- function(df, x_axis, measure_col, tr_value = 0,
         test_type = "tukey_hsd"
     )
     
-    # Build formula
-    if (length(x_axis) == 1) {
-        formula_str <- paste0("`", measure_col, "` ~ `", x_axis[1], "`")
-    } else {
-        # For multi-way designs, create interaction term
-        interaction_term <- paste0("interaction(", 
-                                 paste0("`", x_axis, "`", collapse = ", "), 
-                                 ")")
-        formula_str <- paste0("`", measure_col, "` ~ ", interaction_term)
-    }
-    formula_obj <- stats::as.formula(formula_str)
+    is_single_factor <- length(x_axis) == 1
     
     # Convert grouping variables to factors
     for (var in x_axis) {
         df[[var]] <- as.factor(df[[var]])
     }
     
+    # Build formula and get group sizes
+    formula_obj <- build_tukey_formula(measure_col, x_axis)
+    group_sizes <- get_group_sizes(df, x_axis, measure_col)
+    
     # Run Tukey HSD with error handling
     tukey_result <- safe_stat_test({
-        # Fit the model
         model <- stats::aov(formula_obj, data = df)
+        tukey_out <- stats::TukeyHSD(model, conf.level = 0.95)
         
-        # Run Tukey HSD
-        tukey_out <- stats::TukeyHSD(model)
+        # Extract model statistics (needed for both paths)
+        model_stats <- extract_model_stats(model)
         
-        # Extract results and format to match lincon output
-        if (length(x_axis) == 1) {
-            tukey_df <- as.data.frame(tukey_out[[x_axis[1]]])
-            comparisons <- rownames(tukey_df)
+        # Extract and format results
+        tukey_df <- extract_tukey_results(tukey_out, x_axis)
+        comparisons <- rownames(tukey_df)
+        
+        # Build base result dataframe
+        result_df <- build_base_results(comparisons, tukey_df, use_scientific)
+        
+        # Add path-specific columns
+        if (is_single_factor) {
+            result_df <- add_single_factor_columns(result_df, tukey_df, group_sizes, model_stats, use_scientific)
         } else {
-            # For interaction terms
-            tukey_df <- as.data.frame(tukey_out[[1]])
-            comparisons <- rownames(tukey_df)
+            result_df <- add_multi_factor_columns(result_df, comparisons, group_sizes, model_stats, use_scientific)
         }
         
-        # Create output matching lincon format
-        result_df <- data.frame(
-            Group1 = sapply(strsplit(comparisons, "-"), `[`, 1),
-            Group2 = sapply(strsplit(comparisons, "-"), `[`, 2),
-            psihat = tukey_df$diff,           # Difference in means
-            ci.lower = tukey_df$lwr,          # Lower CI bound
-            ci.upper = tukey_df$upr,          # Upper CI bound
-            p.value = tukey_df$`p adj`,       # Adjusted p-value
-            stringsAsFactors = FALSE
-        )
-        
-        # Clean group names (remove spaces)
-        result_df$Group1 <- trimws(result_df$Group1)
-        result_df$Group2 <- trimws(result_df$Group2)
-        
-        # Add Interaction column to match lincon format
-        result_df$Interaction <- paste(result_df$Group1, "vs.", result_df$Group2)
-        
-        # Add p.adjusted column (same as p.value since Tukey already adjusts)
-        result_df$p.adjusted <- result_df$p.value
-        
-        result_df
+        # Add metadata attributes
+        add_result_attributes(result_df, is_single_factor, x_axis, model_stats, group_sizes)
         
     }, test_name = "tukey_hsd", context = error_context)
     
@@ -232,6 +224,195 @@ perform_tukey_hsd <- function(df, x_axis, measure_col, tr_value = 0,
     }
     
     tukey_result$result
+}
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+#' Build formula for Tukey test
+build_tukey_formula <- function(measure_col, x_axis) {
+    if (length(x_axis) == 1) {
+        formula_str <- paste0("`", measure_col, "` ~ `", x_axis[1], "`")
+    } else {
+        interaction_term <- paste0("interaction(", 
+                                  paste0("`", x_axis, "`", collapse = ", "), 
+                                  ")")
+        formula_str <- paste0("`", measure_col, "` ~ ", interaction_term)
+    }
+    stats::as.formula(formula_str)
+}
+
+#' Get group sizes
+get_group_sizes <- function(df, x_axis, measure_col) {
+    if (length(x_axis) == 1) {
+        tapply(df[[measure_col]], df[[x_axis[1]]], function(x) sum(!is.na(x)))
+    } else {
+        interaction_groups <- interaction(df[x_axis], sep = ".")
+        tapply(df[[measure_col]], interaction_groups, function(x) sum(!is.na(x)))
+    }
+}
+
+#' Extract model statistics
+extract_model_stats <- function(model) {
+    summary_table <- summary(model)[[1]]
+    list(
+        mse = summary_table["Residuals", "Mean Sq"],
+        df_residual = summary_table["Residuals", "Df"]
+    )
+}
+
+#' Extract Tukey results
+extract_tukey_results <- function(tukey_out, x_axis) {
+    if (length(x_axis) == 1) {
+        as.data.frame(tukey_out[[x_axis[1]]])
+    } else {
+        as.data.frame(tukey_out[[1]])
+    }
+}
+
+#' Build base result dataframe (common to both paths)
+build_base_results <- function(comparisons, tukey_df, use_scientific = FALSE) {
+    # Store original scipen and set based on preference
+    old_scipen <- getOption("scipen")
+    on.exit(options(scipen = old_scipen))
+    options(scipen = if (use_scientific) 0 else 999)
+    
+    result_df <- data.frame(
+        Group1 = trimws(sapply(strsplit(comparisons, "-"), `[`, 1)),
+        Group2 = trimws(sapply(strsplit(comparisons, "-"), `[`, 2)),
+        Difference = signif(tukey_df$diff, 3),
+        stringsAsFactors = FALSE
+    )
+    result_df
+}
+
+#' Calculate raw p-values from differences
+#' Used by both single and multi-factor paths
+calculate_raw_pvalues <- function(differences, group_pairs, group_sizes, model_stats) {
+    vapply(seq_along(differences), function(i) {
+        g1 <- group_pairs$Group1[i]
+        g2 <- group_pairs$Group2[i]
+        
+        n1 <- group_sizes[g1]
+        n2 <- group_sizes[g2]
+        
+        if (is.na(n1) || is.na(n2)) {
+            return(NA_real_)
+        }
+        
+        se_diff <- sqrt(model_stats$mse * (1/n1 + 1/n2))
+        t_stat <- differences[i] / se_diff
+        2 * pt(abs(t_stat), df = model_stats$df_residual, lower.tail = FALSE)
+    }, numeric(1))
+}
+
+#' Add single-factor specific columns
+add_single_factor_columns <- function(result_df, tukey_df, group_sizes, model_stats, use_scientific = FALSE) {
+    # Store original scipen and set based on preference
+    old_scipen <- getOption("scipen")
+    on.exit(options(scipen = old_scipen))
+    options(scipen = if (use_scientific) 0 else 999)
+    
+    result_df$CI_Lower <- signif(tukey_df$lwr, 3)
+    result_df$CI_Upper <- signif(tukey_df$upr, 3)
+    result_df$P_Value <- signif(tukey_df$`p adj`, 3)
+    result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
+        result_df$Difference,
+        result_df,
+        group_sizes,
+        model_stats
+    ), 3)
+    result_df
+}
+
+#' Add multi-factor specific columns
+add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_stats, use_scientific = FALSE) {
+    # Store original scipen and set based on preference
+    old_scipen <- getOption("scipen")
+    on.exit(options(scipen = old_scipen))
+    options(scipen = if (use_scientific) 0 else 999)
+    
+    n_comparisons <- nrow(result_df)
+    
+    # Pre-allocate vectors
+    se_values <- numeric(n_comparisons)
+    t_values <- numeric(n_comparisons)
+    raw_ci_lower <- numeric(n_comparisons)
+    raw_ci_upper <- numeric(n_comparisons)
+    
+    for (i in seq_len(n_comparisons)) {
+        group_pair <- parse_comparison_groups(comparisons[i])
+        n1 <- group_sizes[group_pair$g1]
+        n2 <- group_sizes[group_pair$g2]
+        
+        if (is.na(n1) || is.na(n2)) {
+            warning(paste("Could not find group sizes for:", group_pair$g1, "vs", group_pair$g2))
+            se_values[i] <- t_values[i] <- raw_ci_lower[i] <- raw_ci_upper[i] <- NA
+            next
+        }
+        
+        se_values[i] <- sqrt(model_stats$mse * (1/n1 + 1/n2))
+        t_values[i] <- result_df$Difference[i] / se_values[i]
+        
+        margin <- qt(0.975, df = model_stats$df_residual) * se_values[i]
+        raw_ci_lower[i] <- result_df$Difference[i] - margin
+        raw_ci_upper[i] <- result_df$Difference[i] + margin
+    }
+    
+    result_df$SE <- signif(se_values, 3)
+    result_df$t_value <- signif(t_values, 3)
+    result_df$df_residual <- model_stats$df_residual
+    result_df$CI_Lower_Raw <- signif(raw_ci_lower, 3)
+    result_df$CI_Upper_Raw <- signif(raw_ci_upper, 3)
+    result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
+        result_df$Difference,
+        result_df,
+        group_sizes,
+        model_stats
+    ), 3)
+    
+    result_df
+}
+
+#' Parse comparison string into group names
+#' Handles group names that may contain hyphens
+parse_comparison_groups <- function(comparison) {
+    # Try regex split first
+    parts <- strsplit(comparison, "\\s*-\\s*|(?<![^\\s])-(?=[^\\s])", perl = TRUE)[[1]]
+    
+    if (length(parts) != 2) {
+        # Fallback: simple split and recombine
+        parts <- strsplit(comparison, "-")[[1]]
+        if (length(parts) > 2) {
+            g1 <- paste(parts[-length(parts)], collapse = "-")
+            g2 <- parts[length(parts)]
+        } else {
+            g1 <- parts[1]
+            g2 <- parts[2]
+        }
+    } else {
+        g1 <- parts[1]
+        g2 <- parts[2]
+    }
+    
+    list(g1 = trimws(g1), g2 = trimws(g2))
+}
+
+#' Add metadata attributes to result
+add_result_attributes <- function(result_df, is_single_factor, x_axis, 
+                                 model_stats, group_sizes) {
+    attr(result_df, "design_type") <- if (is_single_factor) "single_factor" else "multi_factor"
+    attr(result_df, "n_factors") <- length(x_axis)
+    attr(result_df, "factors") <- x_axis
+    
+    if (!is_single_factor) {
+        attr(result_df, "mse") <- model_stats$mse
+        attr(result_df, "df_residual") <- model_stats$df_residual
+        attr(result_df, "group_sizes") <- group_sizes
+    }
+    
+    result_df
 }
 
 
