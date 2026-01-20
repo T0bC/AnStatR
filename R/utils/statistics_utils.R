@@ -247,7 +247,8 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
             use_bootstrap = params$use_bootstrap,
             boot_samples = params$boot_samples,
             boot_sample_size = params$boot_sample_size,
-            p_adjust_method = params$p_val_cor_method
+            p_adjust_method = params$p_val_cor_method,
+            use_scientific = params$use_scientific_notation
         )
     }
     
