@@ -96,10 +96,10 @@ run_lincon_iteration <- function(sample_data, x_axis, measure_col, tr_value) {
     
     data.frame(
         Interaction = interaction_labels,
-        psihat = comp_df$psihat,
-        ci.lower = comp_df$ci.lower,
-        ci.upper = comp_df$ci.upper,
-        p.value = comp_df$p.value,
+        `Lincon: psihat` = comp_df$psihat,
+        `Lincon: ci.lower` = comp_df$ci.lower,
+        `Lincon: ci.upper` = comp_df$ci.upper,
+        `Lincon: p.value` = comp_df$p.value,
         stringsAsFactors = FALSE
     )
 }
@@ -112,39 +112,87 @@ run_lincon_iteration <- function(sample_data, x_axis, measure_col, tr_value) {
 #' @param p_adjust_method P-value adjustment method
 #' @return Data frame with formatted results
 format_lincon_bootstrap <- function(results_list, p_adjust_method) {
+    # Check if results list is valid
+    if (length(results_list) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
+    
     # Get unique interactions across all iterations
-    unique_interactions <- unique(unlist(lapply(results_list, function(x) x$Interaction)))
+    unique_interactions <- unique(unlist(lapply(results_list, function(x) {
+        if ("Interaction" %in% names(x) && nrow(x) > 0) x$Interaction else character(0)
+    })))
+    
+    if (length(unique_interactions) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
     
     result_rows <- lapply(unique_interactions, function(interaction) {
         # Subset all iterations for this interaction
-        subset_dfs <- lapply(results_list, function(x) x[x$Interaction == interaction, ])
+        subset_dfs <- lapply(results_list, function(x) {
+            if ("Interaction" %in% names(x) && nrow(x) > 0) {
+                x[x$Interaction == interaction, ]
+            } else {
+                NULL
+            }
+        })
+        subset_dfs <- subset_dfs[!sapply(subset_dfs, is.null)]
+        
+        if (length(subset_dfs) == 0) {
+            return(NULL)
+        }
+        
         combined <- dplyr::bind_rows(subset_dfs)
         
         # Calculate CI bounds
         ci_lower_fn <- function(x) stats::quantile(x, probs = 0.025, na.rm = TRUE)
         ci_upper_fn <- function(x) stats::quantile(x, probs = 0.975, na.rm = TRUE)
         
-        numeric_cols <- c("psihat", "ci.lower", "ci.upper", "p.value")
+        numeric_cols <- c("Lincon: psihat", "Lincon: ci.lower", "Lincon: ci.upper", "Lincon: p.value")
+        available_cols <- intersect(numeric_cols, names(combined))
         
         format_col <- function(col_name) {
-            vals <- combined[[col_name]]
-            mean_val <- signif(mean(vals, na.rm = TRUE), 3)
-            lower <- signif(ci_lower_fn(vals), 3)
-            upper <- signif(ci_upper_fn(vals), 3)
-            paste0(mean_val, " [", lower, " - ", upper, "]")
+            if (col_name %in% names(combined)) {
+                vals <- combined[[col_name]]
+                if (length(vals) > 0 && any(!is.na(vals))) {
+                    mean_val <- signif(mean(vals, na.rm = TRUE), 3)
+                    lower <- signif(ci_lower_fn(vals), 3)
+                    upper <- signif(ci_upper_fn(vals), 3)
+                    paste0(mean_val, " [", lower, " - ", upper, "]")
+                } else {
+                    NA_character_
+                }
+            } else {
+                NA_character_
+            }
         }
         
+        # For bootstrap, we don't adjust p-values individually, just show the bootstrap distribution
         data.frame(
             Interaction = interaction,
-            psihat = format_col("psihat"),
-            ci.lower = format_col("ci.lower"),
-            ci.upper = format_col("ci.upper"),
-            p.value = format_col("p.value"),
+            `Lincon: psihat` = format_col("Lincon: psihat"),
+            `Lincon: ci.lower` = format_col("Lincon: ci.lower"),
+            `Lincon: ci.upper` = format_col("Lincon: ci.upper"),
+            `Lincon: p.value` = format_col("Lincon: p.value"),
             stringsAsFactors = FALSE
         )
     })
     
-    dplyr::bind_rows(result_rows)
+    # Remove NULL results
+    result_rows <- result_rows[!sapply(result_rows, is.null)]
+    
+    if (length(result_rows) == 0) {
+        return(data.frame(stringsAsFactors = FALSE))
+    }
+    
+    final_df <- dplyr::bind_rows(result_rows)
+    
+    # Add p.adjusted column for consistency with single-run results
+    # For bootstrap, we'll use the same values as the original p-values
+    if ("Lincon: p.value" %in% names(final_df)) {
+        final_df$p.adjusted <- final_df$`Lincon: p.value`
+    }
+    
+    final_df
 }
 
 #' Format lincon single-run results
@@ -153,11 +201,23 @@ format_lincon_bootstrap <- function(results_list, p_adjust_method) {
 #' @param p_adjust_method P-value adjustment method
 #' @return Data frame with formatted results
 format_lincon_single <- function(result_df, p_adjust_method) {
-    result_df$p.adjusted <- stats::p.adjust(result_df$p.value, method = p_adjust_method)
+    # Check if the required column exists and has data
+    if (!"Lincon: p.value" %in% names(result_df) || nrow(result_df) == 0) {
+        return(result_df)
+    }
+    
+    # Apply p-value adjustment only if there are valid p-values
+    p_values <- result_df$`Lincon: p.value`
+    if (length(p_values) > 0 && any(!is.na(p_values))) {
+        result_df$p.adjusted <- stats::p.adjust(p_values, method = p_adjust_method)
+    } else {
+        result_df$p.adjusted <- rep(NA, nrow(result_df))
+    }
     
     # Round numeric columns
-    numeric_cols <- c("psihat", "ci.lower", "ci.upper", "p.value", "p.adjusted")
-    result_df[numeric_cols] <- lapply(result_df[numeric_cols], function(x) signif(x, 3))
+    numeric_cols <- c("Lincon: psihat", "Lincon: ci.lower", "Lincon: ci.upper", "Lincon: p.value", "p.adjusted")
+    available_cols <- intersect(numeric_cols, names(result_df))
+    result_df[available_cols] <- lapply(result_df[available_cols], function(x) signif(x, 3))
     
     result_df
 }
