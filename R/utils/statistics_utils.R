@@ -292,15 +292,16 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
             use_scientific = params$use_scientific_notation
         )
     } else {
-        # Use parametric combined results function
-        result_combined <- create_parametric_combined_results(
-            result_tukey = result_lincon,  # Note: result_lincon contains Tukey results for parametric
-            result_cohen = result_cliff,    # Note: result_cliff contains Cohen's d for parametric
-            measure_col = measure_col,
-            valid_comparisons = params$valid_comparisons,
-            filter_p_values = params$filter_p_values,
-            p_adjust_method = params$p_val_cor_method,
+        # Use generic combined results function for parametric tests
+        result_combined <- create_combined_results(
+            df1 = result_lincon,  # Tukey HSD results
+            df2 = result_cliff,   # Cohen's d results
+            df1ColNames = c("Interaction", "Difference", "P_Value_Raw"),
+            df2ColNames = c("Interaction", "Cohen's d", "p.value"),
+            merge_key = "Interaction",
             x_axis = x_axis,
+            filter_valid = params$valid_comparisons,
+            p_adjust_method = params$p_val_cor_method,
             use_scientific = params$use_scientific_notation
         )
     }
