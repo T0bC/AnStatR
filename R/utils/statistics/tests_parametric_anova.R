@@ -278,12 +278,25 @@ build_base_results <- function(comparisons, tukey_df, use_scientific = FALSE) {
     on.exit(options(scipen = old_scipen))
     options(scipen = if (use_scientific) 0 else 999)
     
+    # Parse groups in reverse order to match Cohen's d ordering
+    group_pairs <- lapply(comparisons, function(comp) {
+        parts <- strsplit(comp, "-")[[1]]
+        if (length(parts) > 2) {
+            g1 <- paste(parts[-length(parts)], collapse = "-")
+            g2 <- parts[length(parts)]
+        } else {
+            g1 <- parts[1]
+            g2 <- parts[2]
+        }
+        list(g1 = trimws(g2), g2 = trimws(g1))  # Reverse to match Cohen's d
+    })
+    
     result_df <- data.frame(
-        Group1 = trimws(sapply(strsplit(comparisons, "-"), `[`, 1)),
-        Group2 = trimws(sapply(strsplit(comparisons, "-"), `[`, 2)),
+        Interaction = paste(sapply(group_pairs, `[[`, "g1"), "vs.", sapply(group_pairs, `[[`, "g2")),
         Difference = signif(tukey_df$diff, 3),
         stringsAsFactors = FALSE
     )
+    
     result_df
 }
 
@@ -319,7 +332,11 @@ add_single_factor_columns <- function(result_df, tukey_df, group_sizes, model_st
     result_df$P_Value <- signif(tukey_df$`p adj`, 3)
     result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
         result_df$Difference,
-        result_df,
+        # Extract Group1 and Group2 from Interaction for p-value calculation
+        data.frame(
+            Group1 = sapply(strsplit(result_df$Interaction, " vs. "), `[`, 1),
+            Group2 = sapply(strsplit(result_df$Interaction, " vs. "), `[`, 2)
+        ),
         group_sizes,
         model_stats
     ), 3)
@@ -333,6 +350,12 @@ add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_
     on.exit(options(scipen = old_scipen))
     options(scipen = if (use_scientific) 0 else 999)
     
+    # Extract Group1 and Group2 from Interaction for calculations
+    group_pairs <- data.frame(
+        Group1 = sapply(strsplit(result_df$Interaction, " vs. "), `[`, 1),
+        Group2 = sapply(strsplit(result_df$Interaction, " vs. "), `[`, 2)
+    )
+    
     n_comparisons <- nrow(result_df)
     
     # Pre-allocate vectors
@@ -342,12 +365,13 @@ add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_
     raw_ci_upper <- numeric(n_comparisons)
     
     for (i in seq_len(n_comparisons)) {
-        group_pair <- parse_comparison_groups(comparisons[i])
-        n1 <- group_sizes[group_pair$g1]
-        n2 <- group_sizes[group_pair$g2]
+        g1 <- group_pairs$Group1[i]
+        g2 <- group_pairs$Group2[i]
+        n1 <- group_sizes[g1]
+        n2 <- group_sizes[g2]
         
         if (is.na(n1) || is.na(n2)) {
-            warning(paste("Could not find group sizes for:", group_pair$g1, "vs", group_pair$g2))
+            warning(paste("Could not find group sizes for:", g1, "vs", g2))
             se_values[i] <- t_values[i] <- raw_ci_lower[i] <- raw_ci_upper[i] <- NA
             next
         }
@@ -367,7 +391,7 @@ add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_
     result_df$CI_Upper_Raw <- signif(raw_ci_upper, 3)
     result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
         result_df$Difference,
-        result_df,
+        group_pairs,
         group_sizes,
         model_stats
     ), 3)
@@ -454,8 +478,12 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
         group_var <- x_axis[1]
     }
     
-    # Get unique groups
-    groups <- unique(df[[group_var]])
+    # Get unique groups - use factor levels for consistent ordering with Tukey HSD
+    if (length(x_axis) > 1) {
+        groups <- levels(df$interaction_group)
+    } else {
+        groups <- levels(df[[x_axis[1]]])
+    }
     n_groups <- length(groups)
     
     if (n_groups < 2) {
@@ -502,8 +530,7 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
                 t_test <- stats::t.test(group1_data, group2_data, var.equal = TRUE)
                 
                 results[[length(results) + 1]] <- data.frame(
-                    Group1 = as.character(groups[i]),
-                    Group2 = as.character(groups[j]),
+                    Interaction = paste(as.character(groups[i]), "vs.", as.character(groups[j])),
                     n1 = n1,
                     n2 = n2,
                     d = d,
@@ -521,18 +548,12 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
         # Apply p-value adjustment
         result_df$p.adjusted <- stats::p.adjust(result_df$p.value, method = p_adjust_method)
         
-        # Add Interaction column to match Cliff's Delta format
-        result_df$Interaction <- paste(result_df$Group1, "vs.", result_df$Group2)
-        
         # Rename to match Cliff's Delta output format
-        names(result_df)[names(result_df) == "d"] <- "delta"
+        names(result_df)[names(result_df) == "d"] <- "Cohen's d"
         names(result_df)[names(result_df) == "p.adjusted"] <- "p.value"
         
-        # Also rename delta to psihat to match expected format
-        names(result_df)[names(result_df) == "delta"] <- "psihat"
-        
-        # Select columns to match Cliff's Delta output
-        result_df[, c("Group1", "Group2", "n1", "n2", "psihat", "ci.lower", "ci.upper", "p.value", "Interaction")]
+        # Select columns - Interaction first, no Group1/Group2
+        result_df[, c("Interaction", "n1", "n2", "Cohen's d", "ci.lower", "ci.upper", "p.value")]
         
     }, test_name = "cohens_d", context = error_context)
     
