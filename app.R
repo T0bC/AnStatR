@@ -136,6 +136,10 @@ app_ui <- bslib::page_navbar(
 )
 
 app_server <- function(input, output, session) {
+  # Track if median tab has been activated (visited at least once)
+  # Downstream tabs (plotting, summary_stats, statistics, pca) are hidden until median is visited
+  median_tab_activated <- shiny::reactiveVal(FALSE)
+  
   # Register module servers
   # server_load_data returns list with $data (reactive) and $version (reactive)
   load_data_result <- server_load_data("load_data_id")
@@ -180,26 +184,39 @@ app_server <- function(input, output, session) {
   # Initialize settings modal
   settings_modal_server(input, session)
   
-  # Hide/show nav panels based on data availability
+  # Reset median_tab_activated when new data is loaded
+  shiny::observeEvent(load_data_result$version(), {
+    median_tab_activated(FALSE)
+  }, ignoreInit = TRUE)
+  
+  # Track when median tab is visited
+  shiny::observeEvent(input$active_page, {
+    if (identical(input$active_page, "median")) {
+      median_tab_activated(TRUE)
+    }
+  })
+  
+  # Hide/show nav panels based on data availability and median tab activation
   shiny::observe({
     has_data <- !is.null(load_data_result$data())
+    median_visited <- median_tab_activated()
     
-    # Tabs that require data to be loaded (hide completely)
-    data_dependent_tabs <- c("median", "plotting", "summary_stats", "pca")
+    # Median tab: show when data is loaded
+    if (has_data) {
+      bslib::nav_show("active_page", target = "median")
+    } else {
+      bslib::nav_hide("active_page", target = "median")
+    }
     
-    for (tab in data_dependent_tabs) {
-      if (has_data) {
+    # Downstream tabs: require both data AND median tab to have been visited
+    downstream_tabs <- c("plotting", "summary_stats", "statistics", "pca")
+    
+    for (tab in downstream_tabs) {
+      if (has_data && median_visited) {
         bslib::nav_show("active_page", target = tab)
       } else {
         bslib::nav_hide("active_page", target = tab)
       }
-    }
-    
-    # Statistics tab: show/hide based on data (will be disabled separately based on selections)
-    if (has_data) {
-      bslib::nav_show("active_page", target = "statistics")
-    } else {
-      bslib::nav_hide("active_page", target = "statistics")
     }
   })
   
