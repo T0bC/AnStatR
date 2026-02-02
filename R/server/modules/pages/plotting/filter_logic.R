@@ -73,13 +73,15 @@ create_filtered_data_reactive <- function(input, median_data, filter_cols) {
 #' Render Filter Checkboxes UI
 #'
 #' Creates dynamic checkbox groups for filtering based on selected columns.
+#' Restores previously selected filter values when columns persist across median recalculations.
 #'
 #' @param output Shiny output object from parent module
 #' @param ns Namespace function from parent module (session$ns)
 #' @param median_data Reactive containing the median-processed data
 #' @param filter_cols Reactive returning columns to show for filtering
+#' @param saved_filter_state ReactiveVal containing saved filter selections (list of column -> selected values)
 #' @return NULL (side effects only - registers output)
-setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols) {
+setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols, saved_filter_state = NULL) {
     output$checkboxes <- shiny::renderUI({
         data <- median_data()
         shiny::req(data)
@@ -93,18 +95,26 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols)
             ))
         }
         
+        # Get saved state (isolate to prevent re-render loops)
+        saved_state <- if (!is.null(saved_filter_state)) shiny::isolate(saved_filter_state()) else list()
+        
         # Helper to get choices with NA displayed as "NA"
         get_choices_with_na_label <- function(values) {
             choices <- unique(values)
-            # Create named vector: names are display labels, values are actual values
-            # NA values need special handling for checkbox display
             has_na <- any(is.na(choices))
-            choices <- choices[!is.na(choices)]  # Remove NA from choices
-            if (has_na) {
-                # Add "NA" as a choice that maps to NA values
-                # Use a special marker that we'll handle in filtering
-                choices <- c(choices, "NA")
+            choices <- choices[!is.na(choices)]
+            if (has_na) choices <- c(choices, "NA")
+            choices
+        }
+        
+        # Helper to determine selected values for a column
+        get_selected_values <- function(col, choices) {
+            if (!is.null(saved_state[[col]])) {
+                # Intersect saved selections with available choices
+                valid_selections <- intersect(saved_state[[col]], choices)
+                if (length(valid_selections) > 0) return(valid_selections)
             }
+            # Default: select all
             choices
         }
         
@@ -117,17 +127,20 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols)
             shiny::fluidRow(
                 shiny::column(6, lapply(cols1, function(col) {
                     choices <- get_choices_with_na_label(data[[col]])
-                    shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
+                    selected <- get_selected_values(col, choices)
+                    shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = selected)
                 })),
                 shiny::column(6, lapply(cols2, function(col) {
                     choices <- get_choices_with_na_label(data[[col]])
-                    shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
+                    selected <- get_selected_values(col, choices)
+                    shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = selected)
                 }))
             )
         } else {
             col <- cols[1]
             choices <- get_choices_with_na_label(data[[col]])
-            shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = choices)
+            selected <- get_selected_values(col, choices)
+            shiny::checkboxGroupInput(ns(col), label = col, choices = choices, selected = selected)
         }
     })
 }
