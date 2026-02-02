@@ -136,12 +136,20 @@ server_pca <- function(id, median_data, data_version) {
             # Success - render KMO results and correlation plot
             shiny::tagList(
                 render_kmo_results(kmo),
-                shiny::tags$hr(),
-                shiny::tags$h5(
-                    bsicons::bs_icon("grid-3x3", class = "me-2"),
-                    "Correlation Matrix"
-                ),
-                ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
+                
+                # Correlation Matrix accordion (new, closed by default)
+                bslib::accordion(
+                    id = "correlation_accordion",
+                    open = FALSE,
+                    bslib::accordion_panel(
+                        title = shiny::tags$span(
+                            bsicons::bs_icon("grid-3x3", class = "me-2"),
+                            "Correlation Matrix"
+                        ),
+                        value = "correlation_matrix",
+                        ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
+                    )
+                )
             )
         })
         
