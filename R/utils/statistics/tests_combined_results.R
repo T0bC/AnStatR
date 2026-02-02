@@ -91,6 +91,26 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
                                     filter_valid = FALSE, p_adjust_method = "bonferroni",
                                     use_scientific = FALSE) {
     
+    # Check if either input is a structured error object
+    if (is_app_error(df1)) {
+        return(df1)
+    }
+    if (is_app_error(df2)) {
+        return(df2)
+    }
+    
+    # Validate that inputs are data frames
+    if (!is.data.frame(df1) || !is.data.frame(df2)) {
+        return(simple_error(
+            message = "Invalid input: both df1 and df2 must be data frames.",
+            operation_name = "create_combined_results",
+            context = list(
+                df1_type = class(df1),
+                df2_type = class(df2)
+            )
+        ))
+    }
+    
     # Check if either dataframe is an error dataframe (has 'Error' column)
     if ("Error" %in% names(df1) || "Error" %in% names(df2)) {
         # Return the error from whichever dataframe has it, prioritizing df1
@@ -195,9 +215,9 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
         }
     }
     
-    # Compute adjusted p-values if P_Value_Raw is present
-    if ("P_Value_Raw" %in% names(merged_df)) {
-        merged_df$P_Value_Adjusted <- stats::p.adjust(merged_df$P_Value_Raw, method = p_adjust_method)
+    # Compute adjusted p-values if p.value.raw is present
+    if ("p.value.raw" %in% names(merged_df)) {
+        merged_df$p.value.adjusted <- stats::p.adjust(merged_df$p.value.raw, method = p_adjust_method)
     }
     
     # Reorder columns to put Interaction first, then df1 columns, then df2 columns
