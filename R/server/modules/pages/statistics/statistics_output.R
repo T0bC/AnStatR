@@ -63,10 +63,12 @@ render_stats_table <- function(df) {
 #' @param cached_plot_objects Reactive containing cached ggplot objects from plotting tab
 #' @param plot_params Reactive containing plot parameters including window_size from plotting tab
 #' @param debug Logical, whether to enable debug logging
+#' @param data_version Reactive integer that increments when new data is loaded (optional)
 #' @return Reactive containing computation results (for use by download handlers)
 setup_statistics_output <- function(input, output, session, processed_data, 
                                      selected_measures, x_axis, trim_percent,
-                                     stats_params, cached_plot_objects, plot_params, debug = FALSE) {
+                                     stats_params, cached_plot_objects, plot_params, 
+                                     debug = FALSE, data_version = NULL) {
     ns <- session$ns
     
     # Store computation results
@@ -75,6 +77,15 @@ setup_statistics_output <- function(input, output, session, processed_data,
     
     # Track registered plot outputs to avoid re-registration
     registered_stat_plots <- shiny::reactiveVal(character(0))
+    
+    # Reset computation state when data changes (prevents stale results with large datasets)
+    if (!is.null(data_version)) {
+        shiny::observeEvent(data_version(), {
+            computation_results(NULL)
+            computation_status("idle")
+            registered_stat_plots(character(0))
+        }, ignoreInit = TRUE)
+    }
     
     # Register plot outputs for each measurement (reuses cached plots from plotting tab)
     shiny::observeEvent(selected_measures(), ignoreNULL = TRUE, {
