@@ -18,6 +18,7 @@ server_pca <- function(id, median_data, data_version) {
         source("R/server/modules/pages/pca/kmo_computation.R", local = TRUE)
         source("R/server/modules/pages/pca/pca_computation.R", local = TRUE)
         source("R/server/modules/pages/pca/correlation_plot.R", local = TRUE)
+        source("R/server/modules/pages/pca/pca_results.R", local = TRUE)
         
         # Reactive values for PCA state
         pca_state <- shiny::reactiveValues(
@@ -147,22 +148,70 @@ server_pca <- function(id, median_data, data_version) {
                 ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
             }
             
-            # Success - render KMO results and correlation plot/error
+            # Check PCA result
+            pca <- pca_state$pca_result
+            pca_content <- NULL
+            
+            if (!is.null(pca)) {
+                if (is_app_error(pca)) {
+                    pca_content <- error_alert_structured(pca, type = "danger")
+                } else {
+                    pca_content <- render_pca_results(pca, ns)
+                }
+            }
+            
+            # Success - render results with visual grouping
             shiny::tagList(
-                render_kmo_results(kmo),
+                # Section 1: Data Info (rows removed message)
+                shiny::tags$div(
+                    class = "mb-2",
+                    # Extract and show rows removed info from KMO result
+                    if (!is.null(kmo$rows_removed) && kmo$rows_removed > 0) {
+                        shiny::tags$div(
+                            class = "alert alert-info d-flex align-items-center",
+                            role = "alert",
+                            bsicons::bs_icon("info-circle-fill", class = "me-1"),
+                            sprintf(
+                                "%d of %d rows were excluded due to missing values in selected columns.",
+                                kmo$rows_removed,
+                                kmo$original_rows
+                            )
+                        )
+                    }
+                ),
                 
-                # Correlation Matrix accordion (new, closed by default)
-                bslib::accordion(
-                    id = "correlation_accordion",
-                    open = FALSE,
-                    bslib::accordion_panel(
-                        title = shiny::tags$span(
-                            bsicons::bs_icon("grid-3x3", class = "me-2"),
-                            "Correlation Matrix"
-                        ),
-                        value = "correlation_matrix",
-                        corr_content
+                # Section 2: Correlation Matrix
+                shiny::tags$div(
+                    class = "mb-2",
+                    bslib::accordion(
+                        id = "correlation_accordion",
+                        open = FALSE,
+                        bslib::accordion_panel(
+                            title = shiny::tags$span(
+                                bsicons::bs_icon("grid-3x3", class = "me-1"),
+                                "Correlation Matrix"
+                            ),
+                            value = "correlation_matrix",
+                            corr_content
+                        )
                     )
+                ),
+                
+                # Section 3: KMO Results
+                shiny::tags$div(
+                    class = "mb-2",
+                    render_kmo_results(kmo)
+                ),
+                
+                # Section 4: PCA Results (grouped)
+                shiny::tags$div(
+                    class = "mb-2",
+                    shiny::tags$h5(
+                        class = "text-muted mb-2",
+                        bsicons::bs_icon("bar-chart-line", class = "me-1"),
+                        "PCA Results"
+                    ),
+                    pca_content
                 )
             )
         })
@@ -214,6 +263,32 @@ server_pca <- function(id, median_data, data_version) {
             # This should not fail since all validation happened in compute_correlation_data
             render_correlation_girafe(result$result)
         })
+        
+        # Download handler for Excel export
+        output$download_pca_excel <- shiny::downloadHandler(
+            filename = function() {
+                paste0("pca_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx")
+            },
+            content = function(file) {
+                pca <- pca_state$pca_result
+                shiny::req(pca)
+                shiny::req(!is_app_error(pca))
+                createPCAExcelOutput(pca, file)
+            }
+        )
+        
+        # Download handler for RDA export (PCA object for later use)
+        output$download_pca_rda <- shiny::downloadHandler(
+            filename = function() {
+                paste0("pca_object_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rda")
+            },
+            content = function(file) {
+                pca <- pca_state$pca_result
+                shiny::req(pca)
+                shiny::req(!is_app_error(pca))
+                saveRDS(pca, file)
+            }
+        )
         
         # Return NULL - no outputs needed for downstream modules yet
         invisible(NULL)
