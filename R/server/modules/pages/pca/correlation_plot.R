@@ -2,14 +2,21 @@
 #'
 #' Creates an interactive correlation heatmap using ggplot2 and ggiraph.
 #' Mimics createPCAHeatmapCorrDendroPlot but with ggiraph interactivity.
+#'
+#' Architecture: Separates computation from rendering to enable proper error handling.
+#' - compute_correlation_data(): Validates data and computes correlation matrix (may fail)
+#' - render_correlation_girafe(): Renders pre-computed data as ggiraph (should not fail)
 
-#' Create an interactive correlation plot
+#' Compute correlation data for plotting
+#'
+#' Validates inputs and computes the correlation matrix with hierarchical clustering.
+#' Returns prepared data for rendering or throws an error for invalid inputs.
 #'
 #' @param data Data frame containing the measurement columns
 #' @param measurement_cols Character vector of column names to include in correlation
-#' @return ggiraph interactive plot object
-#' @export
-create_correlation_plot <- function(data, measurement_cols) {
+#' @return List with cor_long (data frame for plotting) and ordered_cols (clustered order)
+#' @keywords internal
+compute_correlation_data <- function(data, measurement_cols) {
     # Validate inputs
     if (is.null(data) || nrow(data) == 0) {
         stop("Data is NULL or empty")
@@ -19,11 +26,51 @@ create_correlation_plot <- function(data, measurement_cols) {
         stop("At least 2 measurement columns are required")
     }
     
+    # Check if all columns exist
+    missing_cols <- setdiff(measurement_cols, names(data))
+    if (length(missing_cols) > 0) {
+        stop(paste("Columns not found in data:", paste(missing_cols, collapse = ", ")))
+    }
+    
     # Subset to measurement columns only
     cor_data <- data[, measurement_cols, drop = FALSE]
     
+    # Check if all columns are numeric
+    non_numeric_cols <- names(cor_data)[!sapply(cor_data, is.numeric)]
+    if (length(non_numeric_cols) > 0) {
+        stop(paste("All columns must be numeric. Non-numeric columns:", paste(non_numeric_cols, collapse = ", ")))
+    }
+    
+    # Check for constant columns (zero variance) - handle NA in variance calculation
+    constant_cols <- names(cor_data)[sapply(cor_data, function(x) {
+        v <- var(x, na.rm = TRUE)
+        is.na(v) || v == 0
+    })]
+    if (length(constant_cols) > 0) {
+        stop(paste("Cannot compute correlations - constant or all-NA columns found:", paste(constant_cols, collapse = ", ")))
+    }
+    
+    # Check if we have enough complete observations
+    complete_rows <- complete.cases(cor_data)
+    if (sum(complete_rows) < 2) {
+        stop("Not enough complete observations (need at least 2) to compute correlations")
+    }
+    
     # Calculate correlation matrix (use pairwise complete observations for NA handling)
     cor_matrix <- stats::cor(cor_data, use = "pairwise.complete.obs")
+    
+    # Check if correlation matrix contains valid values
+    if (any(is.na(cor_matrix))) {
+        # Try with complete observations only as fallback
+        if (sum(complete_rows) >= 2) {
+            cor_matrix <- stats::cor(cor_data[complete_rows, ], use = "everything")
+            if (any(is.na(cor_matrix))) {
+                stop("Unable to compute correlations due to missing values")
+            }
+        } else {
+            stop("Unable to compute correlations - insufficient complete data")
+        }
+    }
     
     # Hierarchical clustering to reorder variables
     dist_matrix <- stats::as.dist(1 - cor_matrix)
@@ -45,16 +92,34 @@ create_correlation_plot <- function(data, measurement_cols) {
     cor_long$Var1 <- factor(cor_long$Var1, levels = ordered_cols)
     cor_long$Var2 <- factor(cor_long$Var2, levels = ordered_cols)
     
-    # Create tooltip text
+    # Create tooltip text - ensure all values are valid strings
     cor_long$tooltip <- sprintf(
         "<b>%s</b> vs <b>%s</b><br/>r = %.3f",
-        cor_long$Var1,
-        cor_long$Var2,
+        as.character(cor_long$Var1),
+        as.character(cor_long$Var2),
         cor_long$correlation
     )
     
     # Create data_id for ggiraph interactivity
-    cor_long$data_id <- paste(cor_long$Var1, cor_long$Var2, sep = "_")
+    cor_long$data_id <- paste(as.character(cor_long$Var1), as.character(cor_long$Var2), sep = "_")
+    
+    list(
+        cor_long = cor_long,
+        ordered_cols = ordered_cols
+    )
+}
+
+
+#' Render correlation plot as ggiraph
+#'
+#' Takes pre-computed correlation data and renders it as an interactive ggiraph.
+#' This function should not fail if compute_correlation_data() succeeded.
+#'
+#' @param cor_data List returned by compute_correlation_data()
+#' @return ggiraph interactive plot object
+#' @keywords internal
+render_correlation_girafe <- function(cor_data) {
+    cor_long <- cor_data$cor_long
     
     # Build ggplot with ggiraph interactive elements
     p <- ggplot2::ggplot(cor_long, ggplot2::aes(x = Var1, y = Var2, fill = correlation)) +
@@ -72,7 +137,7 @@ create_correlation_plot <- function(data, measurement_cols) {
             limits = c(-1, 1),
             name = "Correlation"
         ) +
-        # Add correlation coefficient text
+        # Add correlation coefficient text with pre-computed colors
         ggplot2::geom_text(
             ggplot2::aes(label = sprintf("%.2f", correlation)),
             color = ifelse(abs(cor_long$correlation) > 0.5, "white", "black"),
@@ -104,6 +169,22 @@ create_correlation_plot <- function(data, measurement_cols) {
             ggiraph::opts_selection(type = "none")
         )
     )
+}
+
+
+#' Create an interactive correlation plot
+#'
+#' Main entry point that combines computation and rendering.
+#' For error handling, prefer using compute_correlation_data() with safe_execute()
+#' followed by render_correlation_girafe().
+#'
+#' @param data Data frame containing the measurement columns
+#' @param measurement_cols Character vector of column names to include in correlation
+#' @return ggiraph interactive plot object
+#' @export
+create_correlation_plot <- function(data, measurement_cols) {
+    cor_data <- compute_correlation_data(data, measurement_cols)
+    render_correlation_girafe(cor_data)
 }
 
 
