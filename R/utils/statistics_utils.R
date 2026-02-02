@@ -82,14 +82,38 @@ calculate_smallest_group <- function(df, x_axis) {
 #' @param digits Integer, number of significant digits
 #' @return Data frame with mean [CI lower - CI upper] format
 format_bootstrap_results <- function(boot_results, digits = 3) {
+    # Validate input
+    if (is.null(boot_results) || nrow(boot_results) == 0) {
+        return(data.frame(Error = "No bootstrap results available.", stringsAsFactors = FALSE))
+    }
+    
+    # Check for columns with all NA values
+    all_na_cols <- sapply(boot_results, function(x) all(is.na(x)))
+    if (all(all_na_cols)) {
+        return(data.frame(Error = "All bootstrap iterations returned NA values.", stringsAsFactors = FALSE))
+    }
+    
+    # Calculate CI bounds with validation
     ci_bounds <- apply(boot_results, 2, function(x) {
-        stats::quantile(x, c(0.025, 0.975), na.rm = TRUE)
+        valid_x <- x[!is.na(x)]
+        if (length(valid_x) < 2) {
+            return(c(NA_real_, NA_real_))
+        }
+        stats::quantile(valid_x, c(0.025, 0.975), na.rm = TRUE)
     })
     
     formatted <- lapply(names(boot_results), function(col) {
-        mean_val <- mean(boot_results[[col]], na.rm = TRUE)
+        col_data <- boot_results[[col]]
+        valid_data <- col_data[!is.na(col_data)]
+        
+        if (length(valid_data) == 0) {
+            return("NA [NA - NA]")
+        }
+        
+        mean_val <- mean(valid_data, na.rm = TRUE)
         lower <- ci_bounds[1, col]
         upper <- ci_bounds[2, col]
+        
         paste0(
             signif(mean_val, digits), " [",
             signif(lower, digits), " - ",
