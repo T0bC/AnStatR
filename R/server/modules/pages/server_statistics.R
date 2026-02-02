@@ -17,8 +17,8 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
-        # ===== DEBUG: Toggle to enable/disable debug logging =====
-        DEBUG_REACTIVES <- FALSE
+        # Debug flag from environment variable (set TEXAN_DEBUG_REACTIVES=true to enable)
+        DEBUG_REACTIVES <- tolower(Sys.getenv("TEXAN_DEBUG_REACTIVES", "false")) == "true"
         
         # Source component files
         source("R/server/modules/pages/statistics/sidebar_logic.R", local = TRUE)
@@ -56,7 +56,8 @@ server_statistics <- function(id, processed_data, selected_measures, x_axis, tri
             stats_params = stats_params,
             cached_plot_objects = cached_plot_objects,
             plot_params = plot_params,
-            debug = DEBUG_REACTIVES
+            debug = DEBUG_REACTIVES,
+            data_version = data_version
         )
         
         # ----- 4. Download Handlers -----
