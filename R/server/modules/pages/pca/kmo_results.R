@@ -10,24 +10,7 @@ render_kmo_results <- function(kmo_result) {
     overall_kmo <- kmo_result$overall
     individual_kmo <- kmo_result$individual
     
-    # Info banner if rows were removed due to NA
-    na_info <- NULL
-    if (!is.null(kmo_result$rows_removed) && kmo_result$rows_removed > 0) {
-        na_info <- shiny::tags$div(
-            class = "alert alert-info d-flex align-items-center mb-3",
-            role = "alert",
-            bsicons::bs_icon("info-circle-fill", class = "me-2"),
-            sprintf(
-                "%d of %d rows were excluded due to missing values in selected columns.",
-                kmo_result$rows_removed,
-                kmo_result$original_rows
-            )
-        )
-    }
-    
-    shiny::tagList(
-        na_info,
-        bslib::accordion(
+    bslib::accordion(
         id = "kmo_accordion",
         open = "overall_kmo",
         bslib::accordion_panel(
@@ -56,7 +39,7 @@ render_kmo_results <- function(kmo_result) {
             value = "individual_kmo",
             render_kmo_table(individual_kmo)
         )
-    ))
+    )
 }
 
 #' Get badge class based on KMO value
