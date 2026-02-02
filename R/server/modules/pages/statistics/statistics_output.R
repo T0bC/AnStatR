@@ -93,9 +93,9 @@ setup_statistics_output <- function(input, output, session, processed_data,
         shiny::req(measures)
         
         already_registered <- registered_stat_plots()
-        new_measures <- setdiff(measures, already_registered)
         
-        if (length(new_measures) == 0 && length(measures) == length(already_registered)) {
+        # Check if measures are identical (both content and length)
+        if (setequal(measures, already_registered)) {
             return()
         }
         
