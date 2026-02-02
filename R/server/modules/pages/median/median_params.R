@@ -70,8 +70,9 @@ create_median_params <- function(loaded_data, input, quality_col_info, debounce_
         }
     }
     
-    # Observer that updates cache only when values change
-    shiny::observe({
+    # Create debounced reactive that collects all inputs
+    # Note: debounce() works on reactive expressions, not observers
+    debounced_inputs <- shiny::reactive({
         # Require data to be loaded
         shiny::req(loaded_data())
         
@@ -80,10 +81,16 @@ create_median_params <- function(loaded_data, input, quality_col_info, debounce_
         info <- quality_col_info()
         quality_val <- build_quality_settings(info)
         
-        new_params <- list(
+        list(
             grouping_cols = grouping_val,
             quality_settings = quality_val
         )
+    }) |> shiny::debounce(debounce_ms)
+    
+    # Observer that updates cache only when debounced values change
+    shiny::observe({
+        new_params <- debounced_inputs()
+        shiny::req(new_params)
         
         # Compare fingerprints
         current <- cached_params()
@@ -93,7 +100,7 @@ create_median_params <- function(loaded_data, input, quality_col_info, debounce_
         if (new_fp != old_fp) {
             cached_params(new_params)
         }
-    }) |> shiny::debounce(debounce_ms)
+    })
     
     # Expose cached params as reactive
     shiny::reactive({ cached_params() })
