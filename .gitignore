@@ -16,3 +16,4 @@ logs/
 .DS_Store
 Thumbs.db
 Rplots.pdf
+.vscode/settings.json
