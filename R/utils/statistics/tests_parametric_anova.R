@@ -327,10 +327,10 @@ add_single_factor_columns <- function(result_df, tukey_df, group_sizes, model_st
     on.exit(options(scipen = old_scipen))
     options(scipen = if (use_scientific) 0 else 999)
     
-    result_df$CI_Lower <- signif(tukey_df$lwr, 3)
-    result_df$CI_Upper <- signif(tukey_df$upr, 3)
-    result_df$P_Value <- signif(tukey_df$`p adj`, 3)
-    result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
+    result_df$ci.lower <- signif(tukey_df$lwr, 3)
+    result_df$ci.upper <- signif(tukey_df$upr, 3)
+    result_df$p.value <- signif(tukey_df$`p adj`, 3)
+    result_df$p.value.raw <- signif(calculate_raw_pvalues(
         result_df$Difference,
         # Extract Group1 and Group2 from Interaction for p-value calculation
         data.frame(
@@ -385,11 +385,11 @@ add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_
     }
     
     result_df$SE <- signif(se_values, 3)
-    result_df$t_value <- signif(t_values, 3)
-    result_df$df_residual <- model_stats$df_residual
-    result_df$CI_Lower_Raw <- signif(raw_ci_lower, 3)
-    result_df$CI_Upper_Raw <- signif(raw_ci_upper, 3)
-    result_df$P_Value_Raw <- signif(calculate_raw_pvalues(
+    result_df$t.value <- signif(t_values, 3)
+    result_df$df.residual <- model_stats$df_residual
+    result_df$ci.lower.raw <- signif(raw_ci_lower, 3)
+    result_df$ci.upper.raw <- signif(raw_ci_upper, 3)
+    result_df$p.value.raw <- signif(calculate_raw_pvalues(
         result_df$Difference,
         group_pairs,
         group_sizes,
@@ -470,6 +470,11 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
         test_type = "cohens_d"
     )
     
+    # Convert grouping variables to factors
+    for (var in x_axis) {
+        df[[var]] <- as.factor(df[[var]])
+    }
+    
     # For multi-way designs, create interaction variable
     if (length(x_axis) > 1) {
         df$interaction_group <- interaction(df[x_axis], sep = ".")
@@ -481,8 +486,16 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
     # Get unique groups - use factor levels for consistent ordering with Tukey HSD
     if (length(x_axis) > 1) {
         groups <- levels(df$interaction_group)
+        # Fallback if interaction_group is not a factor
+        if (is.null(groups)) {
+            groups <- unique(df$interaction_group)
+        }
     } else {
         groups <- levels(df[[x_axis[1]]])
+        # Fallback if column is not a factor
+        if (is.null(groups)) {
+            groups <- unique(df[[x_axis[1]]])
+        }
     }
     n_groups <- length(groups)
     
@@ -533,7 +546,7 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
                     Interaction = paste(as.character(groups[i]), "vs.", as.character(groups[j])),
                     n1 = n1,
                     n2 = n2,
-                    d = d,
+                    Cohen.d = d,
                     ci.lower = ci_lower,
                     ci.upper = ci_upper,
                     p.value = t_test$p.value,
@@ -546,14 +559,14 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
         result_df <- do.call(rbind, results)
         
         # Apply p-value adjustment
-        result_df$p.adjusted <- stats::p.adjust(result_df$p.value, method = p_adjust_method)
+        result_df$p.value.adjusted <- stats::p.adjust(result_df$p.value, method = p_adjust_method)
         
         # Rename to match Cliff's Delta output format
-        names(result_df)[names(result_df) == "d"] <- "Cohen's d"
-        names(result_df)[names(result_df) == "p.adjusted"] <- "p.value"
+        names(result_df)[names(result_df) == "Cohen.d"] <- "Cohen.d"
+        names(result_df)[names(result_df) == "p.value.adjusted"] <- "p.value"
         
         # Select columns - Interaction first, no Group1/Group2
-        result_df[, c("Interaction", "n1", "n2", "Cohen's d", "ci.lower", "ci.upper", "p.value")]
+        result_df[, c("Interaction", "n1", "n2", "Cohen.d", "ci.lower", "ci.upper", "p.value")]
         
     }, test_name = "cohens_d", context = error_context)
     
