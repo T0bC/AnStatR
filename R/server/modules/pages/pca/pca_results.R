@@ -285,12 +285,12 @@ render_download_buttons <- function(ns) {
             target = "_blank",
             download = NA,
             bsicons::bs_icon("file-earmark-code", class = "me-2"),
-            "Download RDA (PCA Object)"
+            "Download RDS (PCA Object)"
         ),
         
         shiny::tags$small(
             class = "text-muted mt-2",
-            "The RDA file contains the full PCA object for use in R (e.g., for predictions)."
+            "The RDS file contains the full PCA object for use in R (load with readRDS())."
         )
     )
 }
