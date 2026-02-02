@@ -25,6 +25,7 @@ server_pca <- function(id, median_data, data_version) {
             pca_result = NULL,
             kmo_result = NULL,
             prepared_data = NULL,
+            correlation_result = NULL,
             last_computation = NULL
         )
         
@@ -85,6 +86,7 @@ server_pca <- function(id, median_data, data_version) {
             pca_state$pca_result <- NULL
             pca_state$kmo_result <- NULL
             pca_state$prepared_data <- NULL
+            pca_state$correlation_result <- NULL
             pca_state$last_computation <- NULL
         }, ignoreInit = TRUE)
         
@@ -216,34 +218,10 @@ server_pca <- function(id, median_data, data_version) {
             )
         })
         
-        # Reactive to store correlation data computation result or error
-        # This separates computation (which may fail) from rendering (which should not fail)
-        # Note: prepared_data is already cleaned (NA rows removed) and contains only measurement columns
+        # Reactive to access pre-computed correlation data from pca_state
+        # Computation now happens in handle_pca_computation with unified progress
         correlation_plot_result <- shiny::reactive({
-            prepared <- pca_state$prepared_data
-            
-            if (is.null(prepared) || ncol(prepared) < 2) {
-                return(NULL)
-            }
-            
-            # Use column names from prepared data (already subset to measurement cols)
-            measure_cols <- names(prepared)
-            
-            error_context <- list(
-                n_variables = length(measure_cols),
-                variables = paste(measure_cols, collapse = ", "),
-                n_observations = nrow(prepared)
-            )
-            
-            # Wrap only the computation in safe_execute - rendering happens separately
-            result <- safe_execute(
-                expr = compute_correlation_data(prepared, measure_cols),
-                operation_name = "Correlation Plot",
-                context = error_context,
-                error_parser = correlation_error_parser
-            )
-            
-            return(result)
+            pca_state$correlation_result
         })
         
         # Render correlation plot - only renders if computation succeeded
