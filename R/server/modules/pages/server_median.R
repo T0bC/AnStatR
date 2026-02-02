@@ -76,18 +76,21 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         })
 
         # Apply quality filtering when unified params change
-        shiny::observe({
-            shiny::req(loaded_data(), median_params())
-            
-            data <- loaded_data()
+        # Uses observeEvent on median_params() to prevent race conditions
+        shiny::observeEvent(median_params(), {
             params <- median_params()
+            shiny::req(params)
+            
+            # Isolate loaded_data to prevent double-triggering
+            data <- shiny::isolate(loaded_data())
+            shiny::req(data)
             
             # Apply quality filter
             result <- apply_quality_filter(data, params$quality_settings, params$grouping_cols)
             
             filtered_data(result$data)
             filter_message(result$message)
-        })
+        }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
         # Render filtering message
         output$filteringMessage <- shiny::renderUI({
