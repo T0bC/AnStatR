@@ -18,5 +18,20 @@
     "files.associations": {
         "*.R": "r",
         "*.Rmd": "rmd"
+    },
+    // Terminal configuration
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "path": "powershell.exe",
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": "cmd.exe",
+            "icon": "terminal-cmd"
+        }
+    },
+    "terminal.integrated.env.windows": {
+        "PYTHONIOENCODING": "utf-8"
     }
 }
