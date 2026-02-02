@@ -10,9 +10,18 @@ server_pca <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
+        # Source components
+        source("R/utils/pca_utils.R", local = TRUE)
+        source("R/utils/error_handling.R", local = TRUE)
+        source("R/ui/modules/components/error_display.R", local = TRUE)
+        source("R/ui/modules/components/kmo_results.R", local = TRUE)
+        source("R/server/modules/pages/pca/pca_computation.R", local = TRUE)
+        
         # Reactive values for PCA state
         pca_state <- shiny::reactiveValues(
             pca_result = NULL,
+            kmo_result = NULL,
+            prepared_data = NULL,
             last_computation = NULL
         )
         
@@ -71,17 +80,17 @@ server_pca <- function(id, median_data, data_version) {
         # Reset state when data version changes
         shiny::observeEvent(data_version(), {
             pca_state$pca_result <- NULL
+            pca_state$kmo_result <- NULL
+            pca_state$prepared_data <- NULL
             pca_state$last_computation <- NULL
         }, ignoreInit = TRUE)
         
-        # Placeholder for PCA computation (logic to be implemented later)
-        shiny::observeEvent(input$compute_pca_button, {
-            shiny::showNotification(
-                "PCA computation will be implemented in a future update.",
-                type = "message",
-                duration = 3
-            )
-        })
+        # PCA computation handler
+        handle_pca_computation(
+            input = input,
+            median_data = median_data,
+            pca_state = pca_state
+        )
         
         # Placeholder for help button
         shiny::observeEvent(input$helpButton, {
@@ -97,21 +106,34 @@ server_pca <- function(id, median_data, data_version) {
             ))
         })
         
-        # Render placeholder for PCA results
+        # Render PCA results
         output$pca_results <- shiny::renderUI({
-            shiny::div(
-                class = "d-flex align-items-center justify-content-center h-100",
-                style = "min-height: 400px;",
-                shiny::div(
-                    class = "text-center text-muted",
-                    shiny::h4("PCA Results"),
-                    shiny::p("Select data columns and click 'Compute PCA' to generate results."),
-                    shiny::p(
-                        class = "small",
-                        "Results will include biplots, scree plots, and contribution charts."
+            kmo <- pca_state$kmo_result
+            
+            # No computation yet
+            if (is.null(kmo)) {
+                return(shiny::div(
+                    class = "d-flex align-items-center justify-content-center h-100",
+                    style = "min-height: 400px;",
+                    shiny::div(
+                        class = "text-center text-muted",
+                        shiny::h4("PCA Results"),
+                        shiny::p("Select data columns and click 'Compute PCA' to generate results."),
+                        shiny::p(
+                            class = "small",
+                            "Results will include KMO measures, biplots, scree plots, and contribution charts."
+                        )
                     )
-                )
-            )
+                ))
+            }
+            
+            # Error case
+            if (is_app_error(kmo)) {
+                return(error_alert_structured(kmo, type = "danger"))
+            }
+            
+            # Success - render KMO results
+            render_kmo_results(kmo)
         })
         
         # Return NULL - no outputs needed for downstream modules yet
