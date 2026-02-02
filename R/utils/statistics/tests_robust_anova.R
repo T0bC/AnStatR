@@ -7,6 +7,55 @@
 
 
 # =============================================================================
+# Helper Functions
+# =============================================================================
+
+#' Safely convert columns to factors with validation
+#'
+#' Validates data before factor conversion to prevent errors from invalid data.
+#'
+#' @param data Data frame containing the columns to convert
+#' @param vars Character vector of column names to convert to factors
+#' @return List with success flag, data (modified), and optional error message
+safe_factor_conversion <- function(data, vars) {
+    for (v in vars) {
+        if (!v %in% names(data)) {
+            return(list(success = FALSE, data = data, 
+                        error = paste0("Column '", v, "' not found in data.")))
+        }
+        
+        col_data <- data[[v]]
+        
+        # Check for all NA values
+        if (all(is.na(col_data))) {
+            return(list(success = FALSE, data = data,
+                        error = paste0("Column '", v, "' contains only NA values.")))
+        }
+        
+        # Check for empty strings only (after removing NA)
+        non_na_data <- col_data[!is.na(col_data)]
+        if (is.character(non_na_data) && all(trimws(non_na_data) == "")) {
+            return(list(success = FALSE, data = data,
+                        error = paste0("Column '", v, "' contains only empty strings.")))
+        }
+        
+        # Check for sufficient unique values
+        unique_vals <- unique(non_na_data)
+        if (length(unique_vals) < 2) {
+            return(list(success = FALSE, data = data,
+                        error = paste0("Column '", v, "' has fewer than 2 unique values (found ", 
+                                      length(unique_vals), ").")))
+        }
+        
+        # Safe to convert
+        data[[v]] <- as.factor(data[[v]])
+    }
+    
+    list(success = TRUE, data = data, error = NULL)
+}
+
+
+# =============================================================================
 # Generic Robust ANOVA Runner
 # =============================================================================
 
@@ -138,12 +187,13 @@ t1way_config <- list(
     },
     
     run_test = function(formula_obj, data, tr_value) {
-        # t1way requires factors - convert grouping variable
+        # t1way requires factors - convert grouping variable with validation
         vars <- all.vars(formula_obj)[-1]  # exclude response variable
-        for (v in vars) {
-            data[[v]] <- as.factor(data[[v]])
+        conversion <- safe_factor_conversion(data, vars)
+        if (!conversion$success) {
+            stop(conversion$error)
         }
-        WRS2::t1way(formula = formula_obj, data = data, tr = tr_value)
+        WRS2::t1way(formula = formula_obj, data = conversion$data, tr = tr_value)
     },
     
     extract_results = function(out) {
@@ -228,12 +278,13 @@ t2way_config <- list(
     },
     
     run_test = function(formula_obj, data, tr_value) {
-        # t2way requires factors - convert grouping variables
+        # t2way requires factors - convert grouping variables with validation
         vars <- all.vars(formula_obj)[-1]  # exclude response variable
-        for (v in vars) {
-            data[[v]] <- as.factor(data[[v]])
+        conversion <- safe_factor_conversion(data, vars)
+        if (!conversion$success) {
+            stop(conversion$error)
         }
-        WRS2::t2way(formula = formula_obj, data = data, tr = tr_value)
+        WRS2::t2way(formula = formula_obj, data = conversion$data, tr = tr_value)
     },
     
     extract_results = function(out) {
@@ -342,12 +393,13 @@ t3way_config <- list(
     },
     
     run_test = function(formula_obj, data, tr_value) {
-        # t3way requires factors - convert grouping variables
+        # t3way requires factors - convert grouping variables with validation
         vars <- all.vars(formula_obj)[-1]  # exclude response variable
-        for (v in vars) {
-            data[[v]] <- as.factor(data[[v]])
+        conversion <- safe_factor_conversion(data, vars)
+        if (!conversion$success) {
+            stop(conversion$error)
         }
-        WRS2::t3way(formula = formula_obj, data = data, tr = tr_value)
+        WRS2::t3way(formula = formula_obj, data = conversion$data, tr = tr_value)
     },
     
     extract_results = function(out) {
