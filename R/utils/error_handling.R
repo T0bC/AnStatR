@@ -143,22 +143,23 @@ default_error_parser <- function(error_msg, operation_name = "Operation") {
 #' Error parser for statistical tests
 #'
 #' Translates common statistical test error messages into user-friendly versions.
+#' Parameter naming matches safe_execute() which passes operation_name as second argument.
 #'
 #' @param error_msg Character, the original error message
-#' @param test_name Character, name of the statistical test
+#' @param operation_name Character, name of the operation (typically the test name)
 #' @return Character, user-friendly error message
 #' @export
-stat_error_parser <- function(error_msg, test_name = "Test") {
+stat_error_parser <- function(error_msg, operation_name = "Test") {
     if (grepl("groups", error_msg, ignore.case = TRUE)) {
-        paste0(test_name, ": Insufficient groups for comparison. Need at least 2 groups with data.")
+        paste0(operation_name, ": Insufficient groups for comparison. Need at least 2 groups with data.")
     } else if (grepl("sample size|observations", error_msg, ignore.case = TRUE)) {
-        paste0(test_name, ": Insufficient sample size in one or more groups.")
+        paste0(operation_name, ": Insufficient sample size in one or more groups.")
     } else if (grepl("NA|missing", error_msg, ignore.case = TRUE)) {
-        paste0(test_name, ": Too many missing values in the data.")
+        paste0(operation_name, ": Too many missing values in the data.")
     } else if (grepl("variance|constant", error_msg, ignore.case = TRUE)) {
-        paste0(test_name, ": Cannot compute - one or more groups have zero variance.")
+        paste0(operation_name, ": Cannot compute - one or more groups have zero variance.")
     } else {
-        paste0(test_name, " failed: ", error_msg)
+        paste0(operation_name, " failed: ", error_msg)
     }
 }
 
