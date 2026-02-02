@@ -16,6 +16,15 @@
 #' @export
 render_app_error <- function(error_obj, show_icon = TRUE, 
                               icon_name = "exclamation-triangle-fill") {
+    # Ensure message is length-one character
+    error_message <- if (length(error_obj$message) > 1) {
+        paste(error_obj$message, collapse = " ")
+    } else if (is.null(error_obj$message)) {
+        "An unknown error occurred"
+    } else {
+        as.character(error_obj$message)
+    }
+    
     # Main error message
     icon_element <- if (show_icon) {
         bsicons::bs_icon(icon_name, class = "me-2")
@@ -26,7 +35,7 @@ render_app_error <- function(error_obj, show_icon = TRUE,
     error_header <- shiny::tags$div(
         class = "app-error-message",
         icon_element,
-        shiny::tags$strong(error_obj$message)
+        shiny::tags$strong(error_message)
     )
     
     # Build context info if available
@@ -34,13 +43,17 @@ render_app_error <- function(error_obj, show_icon = TRUE,
     if (!is.null(error_obj$context) && length(error_obj$context) > 0) {
         context_items <- lapply(names(error_obj$context), function(key) {
             value <- error_obj$context[[key]]
-            # Format value nicely
+            # Format value nicely - MUST be length-one character for Shiny tags
             formatted_value <- if (is.logical(value)) {
-                ifelse(value, "Yes", "No")
+                if (length(value) > 1) paste(ifelse(value, "Yes", "No"), collapse = ", ")
+                else ifelse(value, "Yes", "No")
             } else if (is.numeric(value)) {
-                as.character(value)
+                if (length(value) > 1) paste(as.character(value), collapse = ", ")
+                else as.character(value)
             } else {
-                as.character(value)
+                # Ensure single string even if vector
+                if (length(value) > 1) paste(as.character(value), collapse = ", ")
+                else as.character(value)
             }
             shiny::tags$div(
                 class = "app-error-context-item",
