@@ -30,9 +30,9 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             return()
         }
         
-        # Compute with progress
-        shiny::withProgress(message = "Computing KMO measures...", {
-            # Prepare data: subset, remove NA rows, optionally scale
+        # Compute with unified progress for all PCA steps
+        shiny::withProgress(message = "Preparing data...", value = 0, {
+            # Step 1: Prepare data (10%)
             prep_result <- prepare_pca_data(
                 data = data,
                 measure_cols = measure_cols,
@@ -55,8 +55,29 @@ handle_pca_computation <- function(input, median_data, pca_state) {
                 return()
             }
             
-            shiny::incProgress(0.3)
+            shiny::setProgress(0.1, message = "Computing correlation matrix...")
             
+            # Step 2: Compute correlation matrix (30%)
+            corr_cols <- names(prepared_data)
+            error_context <- list(
+                n_variables = length(corr_cols),
+                variables = paste(corr_cols, collapse = ", "),
+                n_observations = nrow(prepared_data)
+            )
+            
+            correlation_result <- safe_execute(
+                expr = compute_correlation_data(prepared_data, corr_cols),
+                operation_name = "Correlation Plot",
+                context = error_context,
+                error_parser = correlation_error_parser
+            )
+            
+            pca_state$correlation_result <- correlation_result
+            pca_state$prepared_data <- prepared_data
+            
+            shiny::setProgress(0.3, message = "Computing KMO measures...")
+            
+            # Step 3: Compute KMO (50%)
             kmo_result <- calculate_kmo(prepared_data)
             
             # Add info about removed rows to KMO result if any were removed
@@ -65,10 +86,9 @@ handle_pca_computation <- function(input, median_data, pca_state) {
                 kmo_result$original_rows <- prep_result$original_rows
             }
             
-            shiny::incProgress(0.4)
-            
             pca_state$kmo_result <- kmo_result
-            pca_state$prepared_data <- prepared_data
+            
+            shiny::setProgress(0.5, message = "Computing PCA...")
             
             # If KMO failed, skip PCA computation
             if (is_app_error(kmo_result)) {
@@ -77,15 +97,15 @@ handle_pca_computation <- function(input, median_data, pca_state) {
                 return()
             }
             
-            # Compute PCA
-            shiny::setProgress(0.5, message = "Computing PCA...")
-            
+            # Step 4: Compute PCA (100%)
             pca_result <- calculate_pca(prepared_data)
             
-            shiny::incProgress(0.4)
+            shiny::setProgress(0.9, message = "Finalizing...")
             
             pca_state$pca_result <- pca_result
             pca_state$last_computation <- Sys.time()
+            
+            shiny::setProgress(1.0)
         })
     })
 }
