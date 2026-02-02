@@ -34,3 +34,81 @@ prepare_pca_data <- function(data, measure_cols, scale = TRUE) {
         original_rows = original_rows
     )
 }
+
+
+#' Create PCA Excel Output
+#'
+#' Exports PCA results to a formatted Excel workbook with multiple sheets.
+#'
+#' @param pca_result PCA result object from FactoMineR::PCA
+#' @param file Path to save the Excel file
+#' @return NULL (side effect: writes file)
+createPCAExcelOutput <- function(pca_result, file) {
+    wb <- openxlsx::createWorkbook()
+    
+    # Sheet 1: Eigenvalues
+    eig <- as.data.frame(pca_result$eig)
+    eig <- cbind(Component = paste0("Dim.", seq_len(nrow(eig))), eig)
+    names(eig) <- c("Component", "Eigenvalue", "Variance (%)", "Cumulative Variance (%)")
+    eig[, 2:4] <- round(eig[, 2:4], 4)
+    
+    openxlsx::addWorksheet(wb, "Eigenvalues")
+    openxlsx::writeData(wb, "Eigenvalues", eig)
+    openxlsx::setColWidths(wb, "Eigenvalues", cols = seq_len(ncol(eig)), widths = "auto")
+    
+    # Sheet 2: Variable Coordinates
+    var_coord <- as.data.frame(pca_result$var$coord)
+    var_coord <- cbind(Variable = rownames(var_coord), round(var_coord, 4))
+    rownames(var_coord) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Variable Coordinates")
+    openxlsx::writeData(wb, "Variable Coordinates", var_coord)
+    openxlsx::setColWidths(wb, "Variable Coordinates", cols = seq_len(ncol(var_coord)), widths = "auto")
+    
+    # Sheet 3: Variable Contributions
+    var_contrib <- as.data.frame(pca_result$var$contrib)
+    var_contrib <- cbind(Variable = rownames(var_contrib), round(var_contrib, 4))
+    rownames(var_contrib) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Variable Contributions")
+    openxlsx::writeData(wb, "Variable Contributions", var_contrib)
+    openxlsx::setColWidths(wb, "Variable Contributions", cols = seq_len(ncol(var_contrib)), widths = "auto")
+    
+    # Sheet 4: Variable Cos2
+    var_cos2 <- as.data.frame(pca_result$var$cos2)
+    var_cos2 <- cbind(Variable = rownames(var_cos2), round(var_cos2, 4))
+    rownames(var_cos2) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Variable Cos2")
+    openxlsx::writeData(wb, "Variable Cos2", var_cos2)
+    openxlsx::setColWidths(wb, "Variable Cos2", cols = seq_len(ncol(var_cos2)), widths = "auto")
+    
+    # Sheet 5: Individual Coordinates
+    ind_coord <- as.data.frame(pca_result$ind$coord)
+    ind_coord <- cbind(Individual = rownames(ind_coord), round(ind_coord, 4))
+    rownames(ind_coord) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Individual Coordinates")
+    openxlsx::writeData(wb, "Individual Coordinates", ind_coord)
+    openxlsx::setColWidths(wb, "Individual Coordinates", cols = seq_len(ncol(ind_coord)), widths = "auto")
+    
+    # Sheet 6: Individual Contributions
+    ind_contrib <- as.data.frame(pca_result$ind$contrib)
+    ind_contrib <- cbind(Individual = rownames(ind_contrib), round(ind_contrib, 4))
+    rownames(ind_contrib) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Individual Contributions")
+    openxlsx::writeData(wb, "Individual Contributions", ind_contrib)
+    openxlsx::setColWidths(wb, "Individual Contributions", cols = seq_len(ncol(ind_contrib)), widths = "auto")
+    
+    # Sheet 7: Individual Cos2
+    ind_cos2 <- as.data.frame(pca_result$ind$cos2)
+    ind_cos2 <- cbind(Individual = rownames(ind_cos2), round(ind_cos2, 4))
+    rownames(ind_cos2) <- NULL
+    
+    openxlsx::addWorksheet(wb, "Individual Cos2")
+    openxlsx::writeData(wb, "Individual Cos2", ind_cos2)
+    openxlsx::setColWidths(wb, "Individual Cos2", cols = seq_len(ncol(ind_cos2)), widths = "auto")
+    
+    openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+}
