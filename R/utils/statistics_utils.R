@@ -287,15 +287,15 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         # Choose the best available p-value column
         p_col <- if ("p.adjusted" %in% available_lincon_cols) {
             "p.adjusted"
-        } else if ("Lincon: p.value" %in% available_lincon_cols) {
-            "Lincon: p.value"
+        } else if ("Lincon.p.value" %in% available_lincon_cols) {
+            "Lincon.p.value"
         } else {
             NULL
         }
         
         # Choose the best available psihat column
-        psihat_col <- if ("Lincon: psihat" %in% available_lincon_cols) {
-            "Lincon: psihat"
+        psihat_col <- if ("Lincon.psihat" %in% available_lincon_cols) {
+            "Lincon.psihat"
         } else {
             NULL
         }
@@ -310,7 +310,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
             df1 = result_lincon,  # lincon results
             df2 = result_cliff,   # cliff results
             df1ColNames = df1ColNames,
-            df2ColNames = c("Interaction", "Cliff: psihat", "Cliff: p.value"),
+            df2ColNames = c("Interaction", "Cliff.psihat", "Cliff.p.value"),
             merge_key = "Interaction",
             x_axis = x_axis,
             filter_valid = params$valid_comparisons,
@@ -322,8 +322,8 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         result_combined <- create_combined_results(
             df1 = result_lincon,  # Tukey HSD results
             df2 = result_cliff,   # Cohen's d results
-            df1ColNames = c("Interaction", "Difference", "P_Value_Raw"),
-            df2ColNames = c("Interaction", "Cohen's d", "p.value"),
+            df1ColNames = c("Interaction", "Difference", "p.value.raw"),
+            df2ColNames = c("Interaction", "Cohen.d", "p.value"),
             merge_key = "Interaction",
             x_axis = x_axis,
             filter_valid = params$valid_comparisons,
