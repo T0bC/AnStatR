@@ -133,7 +133,20 @@ server_pca <- function(id, median_data, data_version) {
                 return(error_alert_structured(kmo, type = "danger"))
             }
             
-            # Success - render KMO results and correlation plot
+            # Check correlation plot result for errors
+            corr_result <- correlation_plot_result()
+            corr_content <- if (!is.null(corr_result) && !corr_result$success) {
+                # Show error instead of plot
+                shiny::div(
+                    class = "p-3",
+                    error_alert_structured(corr_result$error, type = "danger")
+                )
+            } else {
+                # Show the plot
+                ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
+            }
+            
+            # Success - render KMO results and correlation plot/error
             shiny::tagList(
                 render_kmo_results(kmo),
                 
@@ -147,38 +160,58 @@ server_pca <- function(id, median_data, data_version) {
                             "Correlation Matrix"
                         ),
                         value = "correlation_matrix",
-                        ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
+                        corr_content
                     )
                 )
             )
         })
         
-        # Render correlation plot
-        output$correlation_plot <- ggiraph::renderGirafe({
+        # Reactive to store correlation data computation result or error
+        # This separates computation (which may fail) from rendering (which should not fail)
+        # Note: prepared_data is already cleaned (NA rows removed) and contains only measurement columns
+        correlation_plot_result <- shiny::reactive({
             prepared <- pca_state$prepared_data
-            measure_cols <- input$measureVar
             
-            if (is.null(prepared) || is.null(measure_cols) || length(measure_cols) < 2) {
+            if (is.null(prepared) || ncol(prepared) < 2) {
                 return(NULL)
             }
             
+            # Use column names from prepared data (already subset to measurement cols)
+            measure_cols <- names(prepared)
+            
             error_context <- list(
                 n_variables = length(measure_cols),
-                variables = paste(measure_cols, collapse = ", ")
+                variables = paste(measure_cols, collapse = ", "),
+                n_observations = nrow(prepared)
             )
             
+            # Wrap only the computation in safe_execute - rendering happens separately
             result <- safe_execute(
-                expr = create_correlation_plot(prepared, measure_cols),
+                expr = compute_correlation_data(prepared, measure_cols),
                 operation_name = "Correlation Plot",
                 context = error_context,
                 error_parser = correlation_error_parser
             )
             
-            if (!result$success) {
+            return(result)
+        })
+        
+        # Render correlation plot - only renders if computation succeeded
+        output$correlation_plot <- ggiraph::renderGirafe({
+            result <- correlation_plot_result()
+            
+            if (is.null(result)) {
                 return(NULL)
             }
             
-            result$result
+            if (!result$success) {
+                # Return NULL - the error is displayed in the UI via error_alert_structured
+                return(NULL)
+            }
+            
+            # Render the pre-computed correlation data
+            # This should not fail since all validation happened in compute_correlation_data
+            render_correlation_girafe(result$result)
         })
         
         # Return NULL - no outputs needed for downstream modules yet
