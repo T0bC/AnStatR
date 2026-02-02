@@ -17,6 +17,9 @@ server_plotting <- function(id, median_data, data_version) {
         # Debug flag from environment variable (set TEXAN_DEBUG_REACTIVES=true to enable)
         DEBUG_REACTIVES <- tolower(Sys.getenv("TEXAN_DEBUG_REACTIVES", "false")) == "true"
         
+        # Saved filter state for persistence across median recalculations
+        saved_filter_state <- shiny::reactiveVal(list())
+        
         # Source component files
         source("R/server/modules/pages/plotting/input_updaters.R", local = TRUE)
         source("R/server/modules/pages/plotting/filter_logic.R", local = TRUE)
@@ -38,13 +41,25 @@ server_plotting <- function(id, median_data, data_version) {
             median_data = median_data,
             data_version = data_version,
             descriptive_cols = descriptive_cols,
-            measurement_cols = measurement_cols
+            measurement_cols = measurement_cols,
+            saved_filter_state = saved_filter_state
         )
         
         # ----- 3. Filter Logic -----
         filter_cols <- create_filter_cols_reactive(input)
         filtered_data <- create_filtered_data_reactive(input, median_data, filter_cols)
-        setup_filter_checkboxes_output(output, ns, median_data, filter_cols)
+        
+        # Capture filter state before median data changes (for persistence)
+        shiny::observeEvent(median_data(), {
+            cols <- shiny::isolate(filter_cols())
+            if (length(cols) > 0) {
+                state <- lapply(cols, function(col) input[[col]])
+                names(state) <- cols
+                saved_filter_state(state)
+            }
+        }, priority = 100, ignoreInit = TRUE)
+        
+        setup_filter_checkboxes_output(output, ns, median_data, filter_cols, saved_filter_state)
         
         # ----- 4. Selection Reactives -----
         selection_reactives <- create_selection_reactives(input)
