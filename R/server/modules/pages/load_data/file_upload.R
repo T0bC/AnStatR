@@ -38,8 +38,9 @@ handle_file_upload <- function(input, loaded_data, session = NULL, data_version 
         if (file_ext == "csv") {
           # Read CSV with user-specified settings
           quote_char <- input$csv_quote
-          # Handle "None" option for quote character
-          if (is.null(quote_char) || quote_char == "") {
+          # Handle "None" option and invalid quote characters
+          if (is.null(quote_char) || !is.character(quote_char) || 
+              length(quote_char) != 1 || quote_char == "" || quote_char == "None") {
             quote_char <- ""
           }
           
