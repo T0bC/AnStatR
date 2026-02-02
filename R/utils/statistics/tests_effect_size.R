@@ -85,11 +85,11 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
     
     data.frame(
         Interaction = paste(test_df$Group.A, test_df$Group.B, sep = " vs. "),
-        `Cliff: psihat` = test_df$p.hat,
-        `Cliff: ci.lower` = test_df$p.ci.lower,
-        `Cliff: ci.upper` = test_df$p.ci.upper,
-        `Cliff: p.value` = test_df$p.value,
-        `Cliff: p.crit` = test_df$p.crit,
+        Cliff.psihat = test_df$p.hat,
+        Cliff.ci.lower = test_df$p.ci.lower,
+        Cliff.ci.upper = test_df$p.ci.upper,
+        Cliff.p.value = test_df$p.value,
+        Cliff.p.crit = test_df$p.crit,
         stringsAsFactors = FALSE
     )
 }
@@ -155,10 +155,10 @@ format_cliff_bootstrap <- function(results_list, p_adjust_method) {
         
         data.frame(
             Interaction = interaction,
-            `Cliff: psihat` = format_col("Cliff: psihat"),
-            `Cliff: ci.lower` = format_col("Cliff: ci.lower"),
-            `Cliff: ci.upper` = format_col("Cliff: ci.upper"),
-            `Cliff: p.value` = format_col("Cliff: p.value"),
+            Cliff.psihat = format_col("Cliff.psihat"),
+            Cliff.ci.lower = format_col("Cliff.ci.lower"),
+            Cliff.ci.upper = format_col("Cliff.ci.upper"),
+            Cliff.p.value = format_col("Cliff.p.value"),
             stringsAsFactors = FALSE
         )
     })
@@ -185,7 +185,7 @@ format_cliff_single <- function(result_df, p_adjust_method) {
     }
     
     # Round numeric columns that actually exist
-    numeric_cols <- c("Cliff: psihat", "Cliff: ci.lower", "Cliff: ci.upper", "Cliff: p.value", "Cliff: p.crit")
+    numeric_cols <- c("Cliff.psihat", "Cliff.ci.lower", "Cliff.ci.upper", "Cliff.p.value", "Cliff.p.crit")
     available_cols <- intersect(numeric_cols, names(result_df))
     
     if (length(available_cols) > 0) {
