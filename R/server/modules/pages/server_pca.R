@@ -11,7 +11,7 @@ server_pca <- function(id, median_data, data_version) {
         ns <- session$ns
         
         # Source components
-        source("R/utils/pca_utils.R", local = TRUE)
+        source("R/server/modules/pages/pca/pca_utils.R", local = TRUE)
         source("R/utils/error_handling.R", local = TRUE)
         source("R/ui/modules/components/error_display.R", local = TRUE)
         source("R/server/modules/pages/pca/kmo_results.R", local = TRUE)
