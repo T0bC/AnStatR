@@ -13,17 +13,22 @@
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @param descriptive_cols Reactive returning descriptive column names
 #' @param measurement_cols Reactive returning measurement column names
+#' @param saved_filter_state ReactiveVal for filter persistence (reset on new data)
 #' @return NULL (side effects only - registers observers)
 setup_input_updaters <- function(input, 
                                   session, 
                                   median_data, 
                                   data_version,
                                   descriptive_cols,
-                                  measurement_cols) {
+                                  measurement_cols,
+                                  saved_filter_state = NULL) {
     
     # Reset all inputs when new data is loaded
     if (!is.null(data_version)) {
         shiny::observeEvent(data_version(), {
+            # Clear saved filter state for fresh start with new dataset
+            if (!is.null(saved_filter_state)) saved_filter_state(list())
+            
             shiny::updateSelectizeInput(session, "metaData", selected = character(0))
             shiny::updateSelectizeInput(session, "measureVar", selected = character(0))
             shiny::updateSelectizeInput(session, "hideCols", selected = character(0))
