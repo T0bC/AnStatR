@@ -1,0 +1,89 @@
+/*
+ * CSS Additions for New Tab: {tabname}
+ * 
+ * USAGE: Add these selectors to the existing rules in www/css/styles.css
+ *        Replace {tabname} with your tab name (lowercase, hyphenated)
+ *        
+ * IMPORTANT: Do NOT create a new CSS file. Add to existing selectors.
+ */
+
+/* ============================================================
+ * 1. GAP SPACING (around line 75 in styles.css)
+ * Add to existing selector list:
+ * ============================================================ */
+.tab-pane[data-value="{tabname}"].bslib-gap-spacing {
+    /* Already defined - just add this selector to the existing rule */
+}
+
+/* ============================================================
+ * 2. LAYOUT MARGIN (around line 84 in styles.css)
+ * Add to existing selector list:
+ * ============================================================ */
+.tab-pane[data-value="{tabname}"]>.bslib-sidebar-layout {
+    /* Already defined - just add this selector to the existing rule */
+}
+
+/* ============================================================
+ * 3. NAV-TABS POSITIONING (around line 93 in styles.css)
+ * Add to existing selector list:
+ * ============================================================ */
+.{tabname}-sidebar .nav-tabs {
+    /* Already defined - just add this selector to the existing rule */
+}
+
+/* ============================================================
+ * 4. NAV-ITEM DISTRIBUTION (around line 103 in styles.css)
+ * Add to existing selector list:
+ * ============================================================ */
+.{tabname}-sidebar .nav-tabs .nav-item {
+    /* Already defined - just add this selector to the existing rule */
+}
+
+/* ============================================================
+ * 5. NAV-LINK STYLING (around line 111 in styles.css)
+ * Add BOTH selectors to existing rule:
+ * ============================================================ */
+.sidebar-content .{tabname}-sidebar .nav-tabs .nav-link,
+.{tabname}-sidebar .nav-tabs .nav-link {
+    /* Already defined - just add these selectors to the existing rule */
+}
+
+/* ============================================================
+ * 6. ACTIVE TAB STYLING (around line 127 in styles.css)
+ * Add BOTH selectors to existing rule:
+ * ============================================================ */
+.sidebar-content .{tabname}-sidebar .nav-tabs .nav-link.active,
+.{tabname}-sidebar .nav-tabs .nav-link.active {
+    /* Already defined - just add these selectors to the existing rule */
+}
+
+/* ============================================================
+ * 7. HOVER STATE (around line 139 in styles.css)
+ * Add BOTH selectors to existing rule:
+ * ============================================================ */
+.sidebar-content .{tabname}-sidebar .nav-tabs .nav-link:hover:not(.active),
+.{tabname}-sidebar .nav-tabs .nav-link:hover:not(.active) {
+    /* Already defined - just add these selectors to the existing rule */
+}
+
+/* ============================================================
+ * 8. ICON CENTERING (around line 150 in styles.css)
+ * Add to existing selector list:
+ * ============================================================ */
+.{tabname}-sidebar .nav-tabs .nav-link svg {
+    /* Already defined - just add this selector to the existing rule */
+}
+
+/* ============================================================
+ * 9. OVERFLOW VISIBLE (around line 239 in styles.css)
+ * Add these selectors to existing rule for popup/dropdown support:
+ * ============================================================ */
+.{tabname}-sidebar,
+.{tabname}-sidebar .accordion,
+.{tabname}-sidebar .accordion-item,
+.{tabname}-sidebar .accordion-body,
+.{tabname}-sidebar .accordion-collapse,
+.{tabname}-sidebar .tab-content,
+.{tabname}-sidebar .tab-pane {
+    /* Already defined - just add these selectors to the existing rule */
+}
