@@ -16,6 +16,12 @@
 #'   - rows_removed: Number of rows removed due to NA values
 #'   - original_rows: Original number of rows
 prepare_pca_data <- function(data, measure_cols, scale = TRUE) {
+    # Validate that all requested columns exist
+    missing_cols <- setdiff(measure_cols, names(data))
+    if (length(missing_cols) > 0) {
+        stop(paste("Columns not found in data:", paste(missing_cols, collapse = ", ")))
+    }
+    
     pca_data <- data[, measure_cols, drop = FALSE]
     original_rows <- nrow(pca_data)
     
