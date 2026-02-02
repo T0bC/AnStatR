@@ -1,8 +1,8 @@
 #' KMO Results Display Component
 #'
-#' Renders KMO measure results with color-coded interpretation.
+#' Renders KMO measure results with color-coded interpretation in collapsible panels.
 
-#' Render KMO results in a formatted card
+#' Render KMO results in collapsible accordion panels
 #'
 #' @param kmo_result List with overall and individual KMO values
 #' @return Shiny tags object with formatted KMO display
@@ -10,25 +10,33 @@ render_kmo_results <- function(kmo_result) {
     overall_kmo <- kmo_result$overall
     individual_kmo <- kmo_result$individual
     
-    bslib::card(
-        bslib::card_header(
-            class = "bg-primary text-white",
-            bsicons::bs_icon("bar-chart-fill", class = "me-2"),
-            "KMO Measure Results"
-        ),
-        bslib::card_body(
-            # Overall KMO
+    bslib::accordion(
+        id = "kmo_accordion",
+        open = "overall_kmo",
+        bslib::accordion_panel(
+            title = shiny::tags$span(
+                bsicons::bs_icon("speedometer2", class = "me-2"),
+                "Overall KMO"
+            ),
+            value = "overall_kmo",
             shiny::tags$div(
-                class = "mb-3",
-                shiny::tags$h6("Overall KMO"),
+                class = "d-flex align-items-center gap-3",
                 shiny::tags$div(
                     class = paste("badge fs-5", kmo_badge_class(overall_kmo)),
-                    sprintf("%.3f - %s", overall_kmo, kmo_interpretation(overall_kmo))
+                    sprintf("%.3f", overall_kmo)
+                ),
+                shiny::tags$span(
+                    class = "text-muted",
+                    kmo_interpretation(overall_kmo)
                 )
+            )
+        ),
+        bslib::accordion_panel(
+            title = shiny::tags$span(
+                bsicons::bs_icon("list-ul", class = "me-2"),
+                "Individual Variable KMO"
             ),
-            shiny::tags$hr(),
-            # Individual KMO table
-            shiny::tags$h6("Individual Variable KMO"),
+            value = "individual_kmo",
             render_kmo_table(individual_kmo)
         )
     )
