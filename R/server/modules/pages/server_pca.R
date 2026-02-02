@@ -16,6 +16,7 @@ server_pca <- function(id, median_data, data_version) {
         source("R/ui/modules/components/error_display.R", local = TRUE)
         source("R/server/modules/pages/pca/kmo_results.R", local = TRUE)
         source("R/server/modules/pages/pca/pca_computation.R", local = TRUE)
+        source("R/server/modules/pages/pca/correlation_plot.R", local = TRUE)
         
         # Reactive values for PCA state
         pca_state <- shiny::reactiveValues(
@@ -132,8 +133,44 @@ server_pca <- function(id, median_data, data_version) {
                 return(error_alert_structured(kmo, type = "danger"))
             }
             
-            # Success - render KMO results
-            render_kmo_results(kmo)
+            # Success - render KMO results and correlation plot
+            shiny::tagList(
+                render_kmo_results(kmo),
+                shiny::tags$hr(),
+                shiny::tags$h5(
+                    bsicons::bs_icon("grid-3x3", class = "me-2"),
+                    "Correlation Matrix"
+                ),
+                ggiraph::girafeOutput(ns("correlation_plot"), height = "500px")
+            )
+        })
+        
+        # Render correlation plot
+        output$correlation_plot <- ggiraph::renderGirafe({
+            prepared <- pca_state$prepared_data
+            measure_cols <- input$measureVar
+            
+            if (is.null(prepared) || is.null(measure_cols) || length(measure_cols) < 2) {
+                return(NULL)
+            }
+            
+            error_context <- list(
+                n_variables = length(measure_cols),
+                variables = paste(measure_cols, collapse = ", ")
+            )
+            
+            result <- safe_execute(
+                expr = create_correlation_plot(prepared, measure_cols),
+                operation_name = "Correlation Plot",
+                context = error_context,
+                error_parser = correlation_error_parser
+            )
+            
+            if (!result$success) {
+                return(NULL)
+            }
+            
+            result$result
         })
         
         # Return NULL - no outputs needed for downstream modules yet
