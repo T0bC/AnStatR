@@ -6,14 +6,13 @@ This guide explains how to add a new tab to the TexAn 2.0 Shiny app with consist
 
 ```
 R/
-├── ui/modules/pages/
-│   └── ui_{tabname}.R              # Main UI module
-├── server/modules/pages/
+├── ui/{tabname}/
+│   ├── ui_{tabname}.R              # Main UI module
+│   ├── ui_tab_{section1}.R         # Sidebar tab 1 UI
+│   └── ui_tab_{section2}.R         # Sidebar tab 2 UI
+├── server/{tabname}/
 │   ├── server_{tabname}.R          # Main server module
-│   └── {tabname}/                   # Tab-specific components
-│       ├── ui_tab_{section1}.R     # Sidebar tab 1 UI
-│       ├── ui_tab_{section2}.R     # Sidebar tab 2 UI
-│       └── ...                      # Additional logic files
+│   └── *.R                          # Server logic components
 app.R                                # Main app (add sources + nav_panel)
 www/css/styles.css                   # Add sidebar class selectors
 ```
@@ -22,7 +21,7 @@ www/css/styles.css                   # Add sidebar class selectors
 
 ### Step 1: Create UI Module
 
-**File:** `R/ui/modules/pages/ui_{tabname}.R`
+**File:** `R/ui/{tabname}/ui_{tabname}.R`
 
 ```r
 #' UI for the {TabName} page
@@ -33,8 +32,8 @@ UI_{tabname} <- function(id) {
     ns <- shiny::NS(id)
     
     # Source UI tab components
-    source("R/server/modules/pages/{tabname}/ui_tab_{section1}.R", local = TRUE)
-    source("R/server/modules/pages/{tabname}/ui_tab_{section2}.R", local = TRUE)
+    source("R/ui/{tabname}/ui_tab_{section1}.R", local = TRUE)
+    source("R/ui/{tabname}/ui_tab_{section2}.R", local = TRUE)
 
     shiny::tagList(
         # Optional: Initialize window size reporting
@@ -73,7 +72,7 @@ UI_{tabname} <- function(id) {
 
 ### Step 2: Create Sidebar Tab Components
 
-**Directory:** `R/server/modules/pages/{tabname}/`
+**Directory:** `R/ui/{tabname}/`
 
 **File:** `ui_tab_{section1}.R`
 
@@ -113,7 +112,7 @@ create_{tabname}_{section1}_tab <- function(ns) {
 
 ### Step 3: Create Server Module
 
-**File:** `R/server/modules/pages/server_{tabname}.R`
+**File:** `R/server/{tabname}/server_{tabname}.R`
 
 ```r
 #' Server module for {TabName} page
@@ -161,10 +160,10 @@ Add these changes to `app.R`:
 
 ```r
 # 1. Add UI source (after other UI sources)
-source("R/ui/modules/pages/ui_{tabname}.R")
+source("R/ui/{tabname}/ui_{tabname}.R")
 
 # 2. Add server source (after other server sources)
-source("R/server/modules/pages/server_{tabname}.R")
+source("R/server/{tabname}/server_{tabname}.R")
 
 # 3. Add nav_panel in app_ui (use appropriate bsicons icon)
 bslib::nav_panel(
@@ -249,10 +248,11 @@ Add `.{tabname}-sidebar` to ALL nav-link selectors:
 
 ## Checklist
 
-- [ ] Create `R/ui/modules/pages/ui_{tabname}.R`
-- [ ] Create `R/server/modules/pages/{tabname}/` directory
-- [ ] Create sidebar tab UI files in the directory
-- [ ] Create `R/server/modules/pages/server_{tabname}.R`
+- [ ] Create `R/ui/{tabname}/` directory
+- [ ] Create `R/ui/{tabname}/ui_{tabname}.R`
+- [ ] Create sidebar tab UI files: `R/ui/{tabname}/ui_tab_*.R`
+- [ ] Create `R/server/{tabname}/` directory
+- [ ] Create `R/server/{tabname}/server_{tabname}.R`
 - [ ] Add UI source to `app.R`
 - [ ] Add server source to `app.R`
 - [ ] Add `nav_panel` to `app_ui`

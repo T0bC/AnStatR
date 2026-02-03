@@ -1,20 +1,20 @@
 #' UI for the {TabName} page
 #'
 #' Orchestrates all {TabName} UI components.
-#' Tab components are sourced from R/server/modules/pages/{tabname}/
+#' Tab components are sourced from R/ui/{tabname}/
 #'
 #' @param id Module namespace ID
 #' @return A bslib layout_sidebar UI element
 #'
-#' USAGE: Copy this file to R/ui/modules/pages/ui_{tabname}.R
+#' USAGE: Copy this file to R/ui/{tabname}/ui_{tabname}.R
 #'        Replace all {tabname} with your tab name (lowercase)
 #'        Replace all {TabName} with your tab name (TitleCase)
 UI_{tabname} <- function(id) {
     ns <- shiny::NS(id)
     
     # Source UI tab components
-    source("R/server/modules/pages/{tabname}/ui_tab_section1.R", local = TRUE)
-    source("R/server/modules/pages/{tabname}/ui_tab_section2.R", local = TRUE)
+    source("R/ui/{tabname}/ui_tab_section1.R", local = TRUE)
+    source("R/ui/{tabname}/ui_tab_section2.R", local = TRUE)
 
     shiny::tagList(
         # Optional: Initialize window size reporting for responsive plots

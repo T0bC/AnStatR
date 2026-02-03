@@ -5,7 +5,7 @@
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
 #'
-#' USAGE: Copy to R/server/modules/pages/{tabname}/ui_tab_section1.R
+#' USAGE: Copy to R/ui/{tabname}/ui_tab_section1.R
 #'        Rename function and update content as needed
 create_{tabname}_section1_tab <- function(ns) {
     bslib::nav_panel(

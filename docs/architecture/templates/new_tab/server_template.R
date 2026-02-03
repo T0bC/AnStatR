@@ -7,7 +7,7 @@
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only) or list of reactives for downstream modules
 #'
-#' USAGE: Copy this file to R/server/modules/pages/server_{tabname}.R
+#' USAGE: Copy this file to R/server/{tabname}/server_{tabname}.R
 #'        Replace all {tabname} with your tab name (lowercase)
 #'        Replace all {TabName} with your tab name (TitleCase)
 server_{tabname} <- function(id, input_data, data_version) {
