@@ -18,6 +18,9 @@
 #' @param color_map Named character vector mapping group names to hex colors
 #' @param grid_legend List with grid/legend options: legend_position, h_grid, v_grid, 
 #'   top_right_borders, show_median, show_sd, aspect_ratio
+
+# Import data utilities for create_interaction function
+box::use(../../utils/data_utils)
 #' @param stat_line_style List with stat line styling: median_thickness, median_width,
 #'   sd_thickness, sd_width
 #' @param axis_style List with axis styling: tick_length, line_thickness
@@ -69,7 +72,7 @@ create_scatter_plot <- function(data,
     
     # Create interaction term for grouping (used for outlier detection, trimming)
     # This uses original column order for consistent grouping behavior
-    interaction_term <- create_interaction(data, x_col)
+    interaction_term <- data_utils$create_interaction(data, x_col)
     
     # Set up x-axis variable
     if (length(x_col) > 1) {
@@ -78,7 +81,7 @@ create_scatter_plot <- function(data,
         # User expects: first selected = outer, last selected = inner
         # So we reverse: c("Outer", "Inner") -> c("Inner", "Outer") -> "Inner.Outer"
         # guide_axis_nested then shows: Outer as top level, Inner closest to axis
-        x_nested_interaction <- create_interaction(data, rev(x_col))
+        x_nested_interaction <- data_utils$create_interaction(data, rev(x_col))
         
         # DEBUG: Print interaction levels to console
         message("=== DEBUG: Nested axis interaction ===")
@@ -100,7 +103,7 @@ create_scatter_plot <- function(data,
     if (is.null(color_cols) || length(color_cols) == 0) {
         color_cols <- x_col
     }
-    color_interaction <- create_interaction(data, color_cols)
+    color_interaction <- data_utils$create_interaction(data, color_cols)
     data$.color_group <- as.character(color_interaction)
     
     # Create shape interaction term if shape columns specified
@@ -110,7 +113,7 @@ create_scatter_plot <- function(data,
         # Validate shape columns exist
         valid_shape_cols <- shape_cols[shape_cols %in% names(data)]
         if (length(valid_shape_cols) > 0) {
-            shape_interaction <- create_interaction(data, valid_shape_cols)
+            shape_interaction <- data_utils$create_interaction(data, valid_shape_cols)
             data$.shape_group <- as.character(shape_interaction)
             shape_legend_title <- paste(valid_shape_cols, collapse = " | ")
             
@@ -127,7 +130,7 @@ create_scatter_plot <- function(data,
     
     # STEP 1: Detect outliers first (these are excluded from statistics)
     if (outlier_detection) {
-        data <- detect_outliers(
+        data <- data_utils$detect_outliers(
             data = data,
             value_col = y_col,
             group_col = interaction_term,
@@ -153,7 +156,7 @@ create_scatter_plot <- function(data,
             non_outlier_interaction <- interaction_term[non_outlier_idx]
             
             # Mark trimmed points within non-outlier subset
-            non_outlier_data <- mark_trimmed_data(
+            non_outlier_data <- data_utils$mark_trimmed_data(
                 data = non_outlier_data,
                 value_col = y_col,
                 group_col = non_outlier_interaction,

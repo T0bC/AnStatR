@@ -10,7 +10,7 @@
 NULL
 
 # Import plot renderer for UI helper functions
-box::use(../server/plotting/plot_renderer)
+box::use(../../server/plotting/plot_renderer)
 
 
 #' Setup Plots UI Output

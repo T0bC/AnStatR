@@ -10,6 +10,9 @@
 #' @name data_processing
 NULL
 
+# Import data utilities for create_interaction function
+box::use(../../utils/data_utils)
+
 
 #' Create Processed Data Reactive
 #'
@@ -44,7 +47,7 @@ create_processed_data_reactive <- function(filtered_data,
         
         # Create interaction term for grouping (same as in plot_scatter.R)
         if (!is.null(x_cols) && length(x_cols) > 0 && all(x_cols %in% names(data))) {
-            interaction_term <- create_interaction(data, x_cols)
+            interaction_term <- data_utils$create_interaction(data, x_cols)
         } else {
             interaction_term <- factor(rep("all", nrow(data)))
         }
@@ -61,7 +64,7 @@ create_processed_data_reactive <- function(filtered_data,
             
             # Step 1: Detect outliers for this measurement
             if (isTRUE(outlier_opts$enabled)) {
-                temp_data <- detect_outliers(
+                temp_data <- data_utils$detect_outliers(
                     data = data,
                     value_col = measure_col,
                     group_col = interaction_term,
@@ -81,7 +84,7 @@ create_processed_data_reactive <- function(filtered_data,
                     non_outlier_interaction <- interaction_term[non_outlier_idx]
                     
                     # Mark trimmed points within non-outlier subset
-                    non_outlier_data <- mark_trimmed_data(
+                    non_outlier_data <- data_utils$mark_trimmed_data(
                         data = non_outlier_data,
                         value_col = measure_col,
                         group_col = non_outlier_interaction,
