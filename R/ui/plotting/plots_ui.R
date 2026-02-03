@@ -9,6 +9,9 @@
 #' @name plots_ui
 NULL
 
+# Import plot renderer for UI helper functions
+box::use(../server/plotting/plot_renderer)
+
 
 #' Setup Plots UI Output
 #'
@@ -52,14 +55,14 @@ setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE)
         x_axis <- input$xAxis
         
         if (!has_data) {
-            return(create_placeholder_ui(
+            return(plot_renderer$create_placeholder_ui(
                 "No data available. Please complete the Median Analysis first."
             ))
         }
         
         # Step 1: Need descriptive columns
         if (is.null(meta_data) || length(meta_data) == 0) {
-            return(create_placeholder_ui(
+            return(plot_renderer$create_placeholder_ui(
                 shiny::tagList(
                     shiny::tags$div(
                         class = "text-center",
@@ -79,7 +82,7 @@ setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE)
         
         # Step 2: Need measurement columns
         if (is.null(measures) || length(measures) == 0) {
-            return(create_placeholder_ui(
+            return(plot_renderer$create_placeholder_ui(
                 shiny::tagList(
                     shiny::tags$div(
                         class = "text-center",
@@ -99,7 +102,7 @@ setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE)
         
         # Step 3: Need X-axis
         if (is.null(x_axis) || length(x_axis) == 0) {
-            return(create_placeholder_ui(
+            return(plot_renderer$create_placeholder_ui(
                 shiny::tagList(
                     shiny::tags$div(
                         class = "text-center",
@@ -118,7 +121,7 @@ setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE)
         }
         
         # Generate plot grid - height is determined dynamically by container size
-        generate_plot_grid_ui(
+        plot_renderer$generate_plot_grid_ui(
             ns = ns,
             measures = measures
         )
