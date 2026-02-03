@@ -1,4 +1,4 @@
-# Column utility functions for identifying column types
+﻿# Column utility functions for identifying column types
 # These functions are used throughout the app to distinguish between
 # descriptive (categorical) columns and measurement (numeric) columns.
 #
@@ -13,6 +13,7 @@
 #'
 #' @param data A data frame
 #' @return Character vector of column names that are measurement columns
+#' @export
 get_measurement_cols <- function(data) {
   names(data)[which(!grepl("^[A-Z0-9_]+$", names(data)))]
 }
@@ -24,6 +25,7 @@ get_measurement_cols <- function(data) {
 #'
 #' @param data A data frame
 #' @return Character vector of column names that are descriptive columns
+#' @export
 get_descriptive_cols <- function(data) {
   names(data)[which(grepl("^[A-Z_]+$", names(data)))]
 }
@@ -36,6 +38,7 @@ get_descriptive_cols <- function(data) {
 #' @param data A data frame
 #' @param threshold Maximum number of unique values for a column to be considered descriptive
 #' @return Character vector of column names that are descriptive columns
+#' @export
 get_descriptive_cols_short <- function(data, threshold = 20) {
   valid_cols <- names(data)[which(grepl("^[A-Z0-9_]+$", names(data)))]
   valid_cols[sapply(valid_cols, function(col) length(unique(data[[col]])) < threshold)]
@@ -53,6 +56,7 @@ get_descriptive_cols_short <- function(data, threshold = 20) {
 #'   - measurement_cols: character vector of measurement columns
 #'   - ambiguous_cols: character vector of columns that match both patterns
 #'   - unclassified_cols: character vector of columns that match neither pattern
+#' @export
 validate_column_naming <- function(data) {
   col_names <- names(data)
   
@@ -102,6 +106,7 @@ validate_column_naming <- function(data) {
 #' @param validation_result Result from validate_column_naming()
 #' @param session Shiny session object (for ns function)
 #' @return A Shiny modalDialog object
+#' @export
 create_column_validation_modal <- function(validation_result, session = NULL) {
   ns <- if (!is.null(session)) session$ns else identity
   

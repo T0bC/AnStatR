@@ -1,4 +1,4 @@
-#' Correlation Plot Function for PCA Module
+﻿#' Correlation Plot Function for PCA Module
 #'
 #' Creates an interactive correlation heatmap using ggplot2 and ggiraph.
 #' Mimics createPCAHeatmapCorrDendroPlot but with ggiraph interactivity.
@@ -16,6 +16,7 @@
 #' @param measurement_cols Character vector of column names to include in correlation
 #' @return List with cor_long (data frame for plotting) and ordered_cols (clustered order)
 #' @keywords internal
+#' @export
 compute_correlation_data <- function(data, measurement_cols) {
     # Validate inputs
     if (is.null(data) || nrow(data) == 0) {
@@ -118,6 +119,7 @@ compute_correlation_data <- function(data, measurement_cols) {
 #' @param cor_data List returned by compute_correlation_data()
 #' @return ggiraph interactive plot object
 #' @keywords internal
+#' @export
 render_correlation_girafe <- function(cor_data) {
     cor_long <- cor_data$cor_long
     
@@ -193,6 +195,7 @@ create_correlation_plot <- function(data, measurement_cols) {
 #' @param error_msg Character, the original error message
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
+#' @export
 correlation_error_parser <- function(error_msg, operation_name = "Correlation Plot") {
     if (grepl("NA|missing|NaN", error_msg, ignore.case = TRUE)) {
         "Correlation Plot: Data contains too many missing values. Please handle missing data first."

@@ -1,3 +1,7 @@
+﻿# Import required modules
+box::use(../../utils/error_handling)
+box::use(../../utils/statistics_utils)
+
 #' Statistics Output Logic
 #'
 #' Handles the main output area for statistics results.
@@ -9,8 +13,9 @@
 #'
 #' @param obj Object to check
 #' @return Logical, TRUE if obj is a structured error
+#' @export
 is_stat_error <- function(obj) {
-    is_app_error(obj)
+    error_handling$is_app_error(obj)
 }
 
 
@@ -20,8 +25,9 @@ is_stat_error <- function(obj) {
 #'
 #' @param error_obj Structured error object from create_stat_error()
 #' @return Shiny tags object with error display
+#' @export
 render_stat_error <- function(error_obj) {
-    render_app_error(error_obj)
+    error_handling$render_app_error(error_obj)
 }
 
 
@@ -29,6 +35,7 @@ render_stat_error <- function(error_obj) {
 #'
 #' @param df Data frame to render
 #' @return Shiny tags object with HTML table
+#' @export
 render_stats_table <- function(df) {
     # Build header row
     header_cells <- lapply(names(df), function(col) {
@@ -65,6 +72,7 @@ render_stats_table <- function(df) {
 #' @param debug Logical, whether to enable debug logging
 #' @param data_version Reactive integer that increments when new data is loaded (optional)
 #' @return Reactive containing computation results (for use by download handlers)
+#' @export
 setup_statistics_output <- function(input, output, session, processed_data, 
                                      selected_measures, x_axis, trim_percent,
                                      stats_params, cached_plot_objects, plot_params, 
@@ -192,8 +200,8 @@ setup_statistics_output <- function(input, output, session, processed_data,
             level_discrepancies <- character(0)
             
             for (measure in measures) {
-                filtered_df <- get_filtered_measurement_data(data, measure)
-                discrepancy <- check_level_consistency(
+                filtered_df <- statistics_utils$get_filtered_measurement_data(data, measure)
+                discrepancy <- statistics_utils$check_level_consistency(
                     df = filtered_df,
                     primary_group = x_cols[1],
                     secondary_groups = x_cols[2:length(x_cols)]
@@ -254,12 +262,12 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     )
                     
                     # Get filtered data for this measurement (excludes outliers/trimmed)
-                    filtered_df <- get_filtered_measurement_data(data, measure)
+                    filtered_df <- statistics_utils$get_filtered_measurement_data(data, measure)
                     
                     # Check level consistency for this measurement (multi-way only)
                     level_discrepancy <- NULL
                     if (length(x_cols) > 1) {
-                        level_discrepancy <- check_level_consistency(
+                        level_discrepancy <- statistics_utils$check_level_consistency(
                             df = filtered_df,
                             primary_group = x_cols[1],
                             secondary_groups = x_cols[2:length(x_cols)]
@@ -267,7 +275,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     }
                     
                     # Compute all statistics for this measurement
-                    compute_measurement_statistics(
+                    statistics_utils$compute_measurement_statistics(
                         df = filtered_df,
                         x_axis = x_cols,
                         measure_col = measure,

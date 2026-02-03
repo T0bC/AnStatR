@@ -1,4 +1,4 @@
-# Data preview table rendering logic
+﻿# Data preview table rendering logic
 # This file defines a function that renders a data preview table
 #
 # @param output Shiny output object
@@ -6,6 +6,7 @@
 # @param loaded_data ReactiveVal containing the loaded data
 # @return NULL (side effects: creates output$data_preview)
 
+#' @export
 render_data_preview <- function(output, output_id, loaded_data) {
   output[[output_id]] <- DT::renderDataTable({
     shiny::req(loaded_data())

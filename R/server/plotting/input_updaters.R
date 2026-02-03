@@ -1,4 +1,4 @@
-#' Input Updaters Component
+﻿#' Input Updaters Component
 #'
 #' Handles resetting inputs when new data is loaded and updating selectize
 #' input choices based on data columns and user selections.
@@ -15,6 +15,7 @@
 #' @param measurement_cols Reactive returning measurement column names
 #' @param saved_filter_state ReactiveVal for filter persistence (reset on new data)
 #' @return NULL (side effects only - registers observers)
+#' @export
 setup_input_updaters <- function(input, 
                                   session, 
                                   median_data, 

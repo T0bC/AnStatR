@@ -1,3 +1,6 @@
+﻿# Import required modules
+box::use(../../utils/statistics_utils)
+
 #' Statistics Report Generation
 #'
 #' Handles generation of downloadable reports (HTML/PDF) for statistics results.
@@ -15,6 +18,7 @@ NULL
 #' @param params Statistics parameters used for computation
 #' @param x_axis X-axis columns used
 #' @return Character string with markdown content
+#' @export
 generate_measurement_markdown <- function(result, params, x_axis) {
     lines <- character(0)
     
@@ -63,6 +67,7 @@ generate_measurement_markdown <- function(result, params, x_axis) {
 #'
 #' @param df Data frame to convert
 #' @return Character string with markdown table
+#' @export
 df_to_markdown <- function(df) {
     if (is.null(df) || nrow(df) == 0) {
         return("*No data available*")
@@ -100,6 +105,7 @@ df_to_markdown <- function(df) {
 #' @param x_axis X-axis columns
 #' @param timestamp Computation timestamp
 #' @return Character string with HTML content
+#' @export
 generate_html_report <- function(result, plot_object, params, x_axis, timestamp) {
     # Generate markdown content
     md_content <- generate_measurement_markdown(result, params, x_axis)
@@ -245,6 +251,7 @@ generate_html_report <- function(result, plot_object, params, x_axis, timestamp)
 #'
 #' @param df Data frame to convert
 #' @return Character string with HTML table
+#' @export
 df_to_html_table <- function(df) {
     if (is.null(df) || nrow(df) == 0) {
         return("<p><em>No data available</em></p>")
@@ -289,6 +296,7 @@ df_to_html_table <- function(df) {
 #' @param computation_results Reactive containing computation results
 #' @param cached_plot_objects Reactive containing cached ggplot objects
 #' @return NULL (side effects only - registers download handlers)
+#' @export
 setup_statistics_download_handlers <- function(input, output, session, 
                                                 computation_results, cached_plot_objects) {
     ns <- session$ns

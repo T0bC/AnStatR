@@ -1,4 +1,4 @@
-#' Create an interactive scatter plot for a single measurement variable
+﻿#' Create an interactive scatter plot for a single measurement variable
 #'
 #' Uses ggiraph for interactivity with hover tooltips.
 #' Supports data trimming and outlier detection visualization where
@@ -410,6 +410,7 @@ create_scatter_plot <- function(data,
 #' @param is_trimmed Logical vector indicating trimmed points
 #' @param is_outlier Logical vector indicating outlier points
 #' @return Character vector of tooltip HTML strings
+#' @export
 build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL,
                                is_trimmed = NULL, is_outlier = NULL) {
     
@@ -462,6 +463,7 @@ build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL,
 #'
 #' @param message Character string to display
 #' @return A ggplot2 object
+#' @export
 create_empty_plot <- function(message = "No data to display") {
     ggplot2::ggplot() +
         ggplot2::annotate(

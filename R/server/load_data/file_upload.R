@@ -1,6 +1,9 @@
-# File upload and validation logic
+﻿# File upload and validation logic
 # This file defines a function that handles file uploads (CSV and XLSX)
-#
+
+# Import column utils module
+box::use(../../utils/column_utils)
+
 # @param input Shiny input object from the parent module (server_load_data).
 #   This object is provided by moduleServer() and contains reactive references
 #   to all UI inputs defined in ui_load_data.R, including:
@@ -15,6 +18,7 @@
 # @param data_version ReactiveVal to increment when new data is loaded (for downstream reset)
 # @return NULL (side effects: updates loaded_data, increments data_version, shows notifications)
 
+#' @export
 handle_file_upload <- function(input, loaded_data, session = NULL, data_version = NULL) {
   shiny::observeEvent(input$data_file, {
     shiny::req(input$data_file)
@@ -86,11 +90,11 @@ handle_file_upload <- function(input, loaded_data, session = NULL, data_version 
     }
 
     # Validate column naming conventions
-    validation <- validate_column_naming(data)
+    validation <- column_utils$validate_column_naming(data)
     
     if (!validation$valid && !is.null(session)) {
       # Show modal dialog with column naming warnings
-      shiny::showModal(create_column_validation_modal(validation, session))
+      shiny::showModal(column_utils$create_column_validation_modal(validation, session))
     }
 
     # Increment data version to signal downstream modules to reset

@@ -1,4 +1,4 @@
-#' PCA Results Display Component
+﻿#' PCA Results Display Component
 #'
 #' Renders PCA results with eigenvalues, variable contributions, and individual coordinates
 #' in collapsible accordion panels with download buttons.
@@ -8,6 +8,7 @@
 #' @param pca_result PCA result object from FactoMineR::PCA
 #' @param ns Namespace function for download button IDs
 #' @return Shiny tags object with formatted PCA display
+#' @export
 render_pca_results <- function(pca_result, ns) {
     # Extract eigenvalues
     eig <- pca_result$eig
@@ -65,6 +66,7 @@ render_pca_results <- function(pca_result, ns) {
 #'
 #' @param eig Eigenvalues matrix from PCA result
 #' @return Shiny tags object with eigenvalues table
+#' @export
 render_eigenvalues_table <- function(eig) {
     eig_df <- as.data.frame(eig)
     eig_df <- cbind(
@@ -113,6 +115,7 @@ render_eigenvalues_table <- function(eig) {
 #'
 #' @param cum_var Numeric cumulative variance percentage
 #' @return Character CSS class for badge
+#' @export
 variance_badge_class <- function(cum_var) {
     if (cum_var >= 80) "badge bg-success"
     else if (cum_var >= 60) "badge bg-warning text-dark"
@@ -124,6 +127,7 @@ variance_badge_class <- function(cum_var) {
 #'
 #' @param var Variable results from PCA ($var)
 #' @return Shiny tags object with variable results
+#' @export
 render_variable_results <- function(var) {
     shiny::tagList(
         # Contributions (first - most important for interpretation)
@@ -145,6 +149,7 @@ render_variable_results <- function(var) {
 #'
 #' @param ind Individual results from PCA ($ind)
 #' @return Shiny tags object with individual results
+#' @export
 render_individual_results <- function(ind) {
     n_ind <- nrow(ind$coord)
     
@@ -184,6 +189,7 @@ render_individual_results <- function(ind) {
 #' @param mat Matrix or data frame to render
 #' @param row_label Label for the row names column
 #' @return DT datatable with interactive sorting
+#' @export
 render_sortable_table <- function(mat, row_label = "Item") {
     df <- as.data.frame(mat)
     df <- cbind(Item = rownames(df), round(df, 4))
@@ -217,6 +223,7 @@ render_sortable_table <- function(mat, row_label = "Item") {
 #' @param mat Matrix or data frame to render
 #' @param row_label Label for the row names column
 #' @return Shiny tags object with table
+#' @export
 render_matrix_table <- function(mat, row_label = "Item") {
     df <- as.data.frame(mat)
     df <- cbind(Item = rownames(df), round(df, 4))
@@ -262,6 +269,7 @@ render_matrix_table <- function(mat, row_label = "Item") {
 #'
 #' @param ns Namespace function for download button IDs
 #' @return Shiny tags object with download buttons
+#' @export
 render_download_buttons <- function(ns) {
     shiny::tags$div(
         class = "d-flex flex-column gap-2",

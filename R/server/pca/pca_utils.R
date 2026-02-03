@@ -1,4 +1,4 @@
-#' PCA Utility Functions
+﻿#' PCA Utility Functions
 #'
 #' Provides data preparation utilities for PCA analysis.
 
@@ -15,6 +15,7 @@
 #'   - data: Data frame with selected columns, NA rows removed, optionally scaled
 #'   - rows_removed: Number of rows removed due to NA values
 #'   - original_rows: Original number of rows
+#' @export
 prepare_pca_data <- function(data, measure_cols, scale = TRUE) {
     # Validate that all requested columns exist
     missing_cols <- setdiff(measure_cols, names(data))
@@ -49,6 +50,7 @@ prepare_pca_data <- function(data, measure_cols, scale = TRUE) {
 #' @param pca_result PCA result object from FactoMineR::PCA
 #' @param file Path to save the Excel file
 #' @return NULL (side effect: writes file)
+#' @export
 createPCAExcelOutput <- function(pca_result, file) {
     wb <- openxlsx::createWorkbook()
     

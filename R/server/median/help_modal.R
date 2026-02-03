@@ -1,10 +1,11 @@
-# Help modal display logic
+﻿# Help modal display logic
 # This file defines a function that shows a help modal when the help button is clicked
 #
 # @param input Shiny input object
 # @param session Shiny session object
 # @return NULL (side effects: displays modal dialog)
 
+#' @export
 handle_help_button <- function(input, session) {
     shiny::observeEvent(input$helpButton, {
         shiny::showModal(

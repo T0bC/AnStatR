@@ -5,6 +5,10 @@
 #' - Includes Tukey HSD post-hoc comparisons
 #' - Follows the same output structure as robust tests for UI compatibility
 
+# Import required modules
+box::use(../statistics_utils)
+box::use(../error_handling)
+
 
 # =============================================================================
 # Main Parametric ANOVA Function
@@ -39,7 +43,7 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
     
     # Validate inputs
     if (length(x_axis) == 0 || length(x_axis) > 3) {
-        return(simple_error(
+        return(error_handling$simple_error(
             message = "Parametric ANOVA requires 1 to 3 grouping variables.",
             operation_name = "parametric_anova",
             context = error_context
@@ -50,7 +54,7 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
     for (factor in x_axis) {
         n_levels <- length(unique(df[[factor]]))
         if (n_levels < 2) {
-            return(simple_error(
+            return(error_handling$simple_error(
                 message = sprintf("Factor '%s' must have at least 2 levels, found %d.", 
                                 factor, n_levels),
                 operation_name = "parametric_anova",
@@ -76,7 +80,7 @@ perform_parametric_anova <- function(df, x_axis, measure_col, tr_value = 0,
     }
     
     # Run ANOVA with error handling
-    anova_result <- safe_stat_test({
+    anova_result <- statistics_utils$safe_stat_test({
         # Fit the model
         model <- stats::aov(formula_obj, data = df)
         
@@ -193,7 +197,7 @@ perform_tukey_hsd <- function(df, x_axis, measure_col, tr_value = 0,
     group_sizes <- get_group_sizes(df, x_axis, measure_col)
     
     # Run Tukey HSD with error handling
-    tukey_result <- safe_stat_test({
+    tukey_result <- statistics_utils$safe_stat_test({
         model <- stats::aov(formula_obj, data = df)
         tukey_out <- stats::TukeyHSD(model, conf.level = 0.95)
         
@@ -500,7 +504,7 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
     n_groups <- length(groups)
     
     if (n_groups < 2) {
-        return(simple_error(
+        return(error_handling$simple_error(
             message = "Cohen's d requires at least 2 groups for comparison.",
             operation_name = "cohens_d",
             context = error_context
@@ -508,7 +512,7 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
     }
     
     # Calculate effect sizes with error handling
-    effect_result <- safe_stat_test({
+    effect_result <- statistics_utils$safe_stat_test({
         # Initialize results
         results <- list()
         

@@ -1,4 +1,4 @@
-#' Summarize data with various statistics
+﻿#' Summarize data with various statistics
 #'
 #' Calculates summary statistics (n, mean, median, var, sd, sem, cv) for measurement
 #' columns, optionally including Shapiro-Wilk normality test results.
@@ -12,6 +12,7 @@
 #' @param exclude_vars Character vector of columns to exclude from results
 #' @param shapiro_test Logical, whether to include Shapiro-Wilk test
 #' @return Data frame in long format with summary statistics
+#' @export
 summarize_data <- function(data,
                            grouping_vars,
                            measure_vars,
@@ -22,6 +23,7 @@ summarize_data <- function(data,
     measure_vars <- measure_vars[!grepl("_outlier|_trimmed", measure_vars)]
     
     # Helper to get filtered data (excluding outliers and trimmed values)
+#' @export
     get_filtered_data <- function(values, outliers, trimmed) {
         # Exclude both outliers and trimmed values
         keep_idx <- which(!outliers & !trimmed & !is.na(values))
@@ -149,6 +151,7 @@ summarize_data <- function(data,
         ), .groups = "drop")
     
     # Helper to check if all values are identical
+#' @export
     all_identical <- function(x) {
         length(unique(x)) == 1
     }
@@ -264,6 +267,7 @@ summarize_data <- function(data,
 #' @return List of lists, each containing:
 #'   - col: Character string identifying the combination
 #'   - df: Filtered data frame for that combination
+#' @export
 filter_by_columns <- function(df, columns_to_filter) {
     # Get the levels for each column
     levels_list <- purrr::map(columns_to_filter, ~levels(as.factor(df[[.]])))

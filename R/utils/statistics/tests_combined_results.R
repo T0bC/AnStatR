@@ -4,6 +4,9 @@
 #' robust and parametric statistical test approaches. It handles the different
 #' column naming conventions and p-value adjustment logic for each approach.
 
+# Import error handling module
+box::use(../error_handling)
+
 
 # =============================================================================
 # Helper Functions
@@ -92,16 +95,16 @@ create_combined_results <- function(df1, df2, df1ColNames, df2ColNames,
                                     use_scientific = FALSE) {
     
     # Check if either input is a structured error object
-    if (is_app_error(df1)) {
+    if (error_handling$is_app_error(df1)) {
         return(df1)
     }
-    if (is_app_error(df2)) {
+    if (error_handling$is_app_error(df2)) {
         return(df2)
     }
     
     # Validate that inputs are data frames
     if (!is.data.frame(df1) || !is.data.frame(df2)) {
-        return(simple_error(
+        return(error_handling$simple_error(
             message = "Invalid input: both df1 and df2 must be data frames.",
             operation_name = "create_combined_results",
             context = list(

@@ -1,10 +1,11 @@
-#' Bootstrap Tab UI Component
+﻿#' Bootstrap Tab UI Component
 #'
 #' Creates the Bootstrap tab for the statistics sidebar.
 #' Contains bootstrap options for statistical tests.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_bootstrap_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

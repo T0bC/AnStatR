@@ -1,4 +1,4 @@
-# Median table rendering logic
+﻿# Median table rendering logic
 # This file defines a function that calculates and renders the median results table
 #
 # @param output Shiny output object
@@ -10,6 +10,7 @@
 # @param removed_cols ReactiveVal to store columns removed due to within-group variation
 # @return NULL (side effects: creates output$medianTable and updates median_results)
 
+#' @export
 render_median_table <- function(output, output_id, filtered_data, grouping_cols, 
                                  quality_col = NULL, median_results, removed_cols = NULL) {
     output[[output_id]] <- DT::renderDataTable({

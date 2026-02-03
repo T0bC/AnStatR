@@ -1,10 +1,11 @@
-#' Adjustments Tab UI Component
+﻿#' Adjustments Tab UI Component
 #'
 #' Creates the Adjustments tab for the statistics sidebar.
 #' Contains p-value adjustment method selection.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_adjustments_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

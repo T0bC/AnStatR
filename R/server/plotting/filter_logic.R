@@ -1,4 +1,4 @@
-#' Filter Logic Component
+﻿#' Filter Logic Component
 #'
 #' Handles filter column selection, checkbox UI rendering, and filtered data reactive.
 #'
@@ -16,6 +16,7 @@ NULL
 #'   - input$metaData: Selected descriptive columns
 #'   - input$hideCols: Columns to hide from filtering
 #' @return Reactive returning character vector of columns to show for filtering
+#' @export
 create_filter_cols_reactive <- function(input) {
     shiny::reactive({
         selected <- input$metaData
@@ -35,6 +36,7 @@ create_filter_cols_reactive <- function(input) {
 #' @param median_data Reactive containing the median-processed data
 #' @param filter_cols Reactive returning columns to filter on
 #' @return Reactive returning filtered data frame
+#' @export
 create_filtered_data_reactive <- function(input, median_data, filter_cols) {
     shiny::reactive({
         data <- median_data()
@@ -81,6 +83,7 @@ create_filtered_data_reactive <- function(input, median_data, filter_cols) {
 #' @param filter_cols Reactive returning columns to show for filtering
 #' @param saved_filter_state ReactiveVal containing saved filter selections (list of column -> selected values)
 #' @return NULL (side effects only - registers output)
+#' @export
 setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols, saved_filter_state = NULL) {
     output$checkboxes <- shiny::renderUI({
         data <- median_data()
@@ -99,6 +102,7 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols,
         saved_state <- if (!is.null(saved_filter_state)) shiny::isolate(saved_filter_state()) else list()
         
         # Helper to get choices with NA displayed as "NA"
+#' @export
         get_choices_with_na_label <- function(values) {
             choices <- unique(values)
             has_na <- any(is.na(choices))
@@ -108,6 +112,7 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols,
         }
         
         # Helper to determine selected values for a column
+#' @export
         get_selected_values <- function(col, choices) {
             if (!is.null(saved_state[[col]])) {
                 # Intersect saved selections with available choices

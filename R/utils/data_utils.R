@@ -1,4 +1,4 @@
-# Data utility functions for data transformations
+﻿# Data utility functions for data transformations
 # These functions are used for creating interaction terms and marking trimmed data
 
 #' Create interaction term from multiple columns
@@ -14,6 +14,7 @@
 #' create_interaction(df, "SPECIES")
 #' # Multiple columns create interaction
 #' create_interaction(df, c("SPECIES", "DIET"))
+#' @export
 create_interaction <- function(df, cols) {
     if (length(cols) == 0) {
         stop("At least one column must be provided.")
@@ -52,6 +53,7 @@ create_interaction <- function(df, cols) {
 #'   - .group: the grouping factor
 #'   - .is_trimmed: logical, TRUE if point is trimmed (excluded)
 #'   - .trim_rank: rank within group (for debugging)
+#' @export
 mark_trimmed_data <- function(data, value_col, group_col, trim_percent = 0) {
     # Validate inputs
     if (!value_col %in% names(data)) {
@@ -129,6 +131,7 @@ mark_trimmed_data <- function(data, value_col, group_col, trim_percent = 0) {
 #' @param factor Numeric, threshold factor (interpretation depends on method)
 #' @param bootstrap_samples Integer, number of bootstrap samples (for bootstrap method)
 #' @return Data frame with additional column .is_outlier (logical)
+#' @export
 detect_outliers <- function(data, value_col, group_col, 
                             method = "IQR", factor = 1.5, 
                             bootstrap_samples = 1000) {
@@ -156,6 +159,7 @@ detect_outliers <- function(data, value_col, group_col,
     }
     
     # Define outlier detection functions (return logical vector same length as input)
+#' @export
     detect_iqr <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -170,6 +174,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_zscore <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -180,6 +185,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_modified_zscore <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -194,6 +200,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_adjusted_boxplot <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -221,6 +228,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_kde <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -234,6 +242,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_isolation_forest <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -252,6 +261,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_lof <- function(x, fac) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -272,6 +282,7 @@ detect_outliers <- function(data, value_col, group_col,
         result
     }
     
+#' @export
     detect_bootstrap <- function(x, fac, n_samples) {
         result <- rep(FALSE, length(x))
         valid <- is.finite(x)
@@ -317,6 +328,7 @@ detect_outliers <- function(data, value_col, group_col,
 #' @param data Data frame with {col}_outlier and {col}_trimmed columns
 #' @param measure_col Character, name of the measurement column
 #' @return Data frame with only valid (non-outlier, non-trimmed) rows for this measurement
+#' @export
 get_filtered_measurement_data <- function(data, measure_col) {
     outlier_col <- paste0(measure_col, "_outlier")
     trimmed_col <- paste0(measure_col, "_trimmed")
@@ -342,6 +354,7 @@ get_filtered_measurement_data <- function(data, measure_col) {
 #' @param primary_group Character, the primary grouping column (first X-axis variable)
 #' @param secondary_groups Character vector, secondary grouping columns to check for consistency
 #' @return NULL if consistent, otherwise character vector of discrepancy messages
+#' @export
 check_level_consistency <- function(df, primary_group, secondary_groups) {
     if (length(secondary_groups) == 0) return(NULL)
     

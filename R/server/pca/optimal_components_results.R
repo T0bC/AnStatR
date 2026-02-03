@@ -1,4 +1,4 @@
-#' Optimal Components Results Display
+﻿#' Optimal Components Results Display
 #'
 #' Renders optimal component estimation results with scree plot visualization
 #' and summary table showing recommendations from each method.
@@ -11,6 +11,7 @@
 #' @param optimal_result Result from calculate_optimal_components() or error object
 #' @param ns Namespace function for output IDs
 #' @return Shiny tags object with formatted display
+#' @export
 render_optimal_components_content <- function(optimal_result, ns) {
     # Handle NULL case
     if (is.null(optimal_result)) {
@@ -21,8 +22,8 @@ render_optimal_components_content <- function(optimal_result, ns) {
     }
     
     # Handle error case
-    if (is_app_error(optimal_result)) {
-        return(error_alert_structured(optimal_result, type = "warning"))
+    if (error_handling$is_app_error(optimal_result)) {
+        return(error_display$error_alert_structured(optimal_result, type = "warning"))
     }
     
     # Render successful results
@@ -35,6 +36,7 @@ render_optimal_components_content <- function(optimal_result, ns) {
 #' @param optimal_result Result from calculate_optimal_components()
 #' @param ns Namespace function for output IDs
 #' @return Shiny tags object with formatted display
+#' @export
 render_optimal_components <- function(optimal_result, ns) {
     if (is.null(optimal_result)) {
         return(NULL)
@@ -63,6 +65,7 @@ render_optimal_components <- function(optimal_result, ns) {
 #'
 #' @param optimal_result Result from calculate_optimal_components()
 #' @return Shiny tags object
+#' @export
 render_optimal_summary <- function(optimal_result) {
     summary <- optimal_result$summary
     
@@ -103,6 +106,7 @@ render_optimal_summary <- function(optimal_result) {
 #'
 #' @param methods List of method results
 #' @return Shiny tags object with table
+#' @export
 render_methods_table <- function(methods) {
     # Build table rows
     rows <- lapply(names(methods), function(method_name) {
@@ -158,6 +162,7 @@ render_methods_table <- function(methods) {
 #'
 #' @param optimal_result Result from calculate_optimal_components()
 #' @return ggplot object
+#' @export
 create_optimal_scree_plot <- function(optimal_result) {
     eigenvalues <- optimal_result$eigenvalues
     n_components <- length(eigenvalues)
@@ -208,7 +213,7 @@ create_optimal_scree_plot <- function(optimal_result) {
             "text",
             x = n_components * 0.95,
             y = 1.1,
-            label = "Kaiser (λ=1)",
+            label = "Kaiser (Î»=1)",
             hjust = 1,
             size = 3,
             color = "#0d6efd"
@@ -229,7 +234,7 @@ create_optimal_scree_plot <- function(optimal_result) {
                 "text",
                 x = n_components * 0.95,
                 y = mp_thresh + max(eigenvalues) * 0.05,
-                label = sprintf("M-P (λ=%.2f)", mp_thresh),
+                label = sprintf("M-P (Î»=%.2f)", mp_thresh),
                 hjust = 1,
                 size = 3,
                 color = "#198754"
@@ -303,6 +308,7 @@ create_optimal_scree_plot <- function(optimal_result) {
 #'
 #' @param optimal_result Result from calculate_optimal_components()
 #' @return girafe object
+#' @export
 render_optimal_scree_girafe <- function(optimal_result) {
     p <- create_optimal_scree_plot(optimal_result)
     

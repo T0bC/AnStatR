@@ -1,4 +1,4 @@
-#' UI for the Summary Statistics page
+﻿#' UI for the Summary Statistics page
 #'
 #' Orchestrates all summary statistics UI components.
 #' Uses bslib::layout_sidebar with sidebar controls and main content cards.
@@ -7,6 +7,7 @@
 #'
 #' @param id Module namespace ID
 #' @return A bslib layout_sidebar UI element
+#' @export
 UI_summary_stats <- function(id) {
     ns <- shiny::NS(id)
     

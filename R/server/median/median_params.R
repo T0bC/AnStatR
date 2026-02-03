@@ -1,4 +1,4 @@
-#' Median Parameters Component
+﻿#' Median Parameters Component
 #'
 #' Creates a unified debounced reactive for all median calculation inputs.
 #' This prevents double-renders by consolidating grouping and quality filter
@@ -27,12 +27,14 @@ NULL
 #' @return Reactive returning list with:
 #'   - grouping_cols: Character vector of grouping columns
 #'   - quality_settings: List with filter settings
+#' @export
 create_median_params <- function(loaded_data, input, quality_col_info, debounce_ms = 400) {
     
     # Cache for median parameters
     cached_params <- shiny::reactiveVal(NULL)
     
     # Helper to create fingerprint for comparison
+#' @export
     make_fingerprint <- function(params) {
         paste(
             paste(params$grouping_cols %||% "NULL", collapse = ":"),
@@ -46,6 +48,7 @@ create_median_params <- function(loaded_data, input, quality_col_info, debounce_
     }
     
     # Build quality settings from inputs
+#' @export
     build_quality_settings <- function(info) {
         if (is.null(input$quality_column) || input$quality_column == "None") {
             list(

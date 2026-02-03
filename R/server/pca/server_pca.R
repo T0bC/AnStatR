@@ -1,4 +1,4 @@
-#' Server module for PCA page
+﻿#' Server module for PCA page
 #'
 #' Handles all PCA-related server logic.
 #'
@@ -6,22 +6,23 @@
 #' @param median_data Reactive containing median-processed data from median module
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only)
+#' @export
 server_pca <- function(id, median_data, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
-        # Source components
-        source("R/utils/column_utils.R", local = TRUE)
-        source("R/server/pca/pca_utils.R", local = TRUE)
-        source("R/utils/error_handling.R", local = TRUE)
-        source("R/ui/components/error_display.R", local = TRUE)
-        source("R/server/pca/kmo_results.R", local = TRUE)
-        source("R/server/pca/kmo_computation.R", local = TRUE)
-        source("R/server/pca/pca_computation.R", local = TRUE)
-        source("R/server/pca/correlation_plot.R", local = TRUE)
-        source("R/server/pca/pca_results.R", local = TRUE)
-        source("R/server/pca/optimal_components.R", local = TRUE)
-        source("R/server/pca/optimal_components_results.R", local = TRUE)
+        # Import components
+        box::use(../../utils/column_utils)
+        box::use(../pca/pca_utils)
+        box::use(../../utils/error_handling)
+        box::use(../../ui/components/error_display)
+        box::use(../pca/kmo_results)
+        box::use(../pca/kmo_computation)
+        box::use(../pca/pca_computation)
+        box::use(../pca/correlation_plot)
+        box::use(../pca/pca_results)
+        box::use(../pca/optimal_components)
+        box::use(../pca/optimal_components_results)
         
         # Reactive values for PCA state
         pca_state <- shiny::reactiveValues(
@@ -40,8 +41,8 @@ server_pca <- function(id, median_data, data_version) {
             if (is.null(data)) return(list(descriptive = NULL, measurement = NULL))
             
             list(
-                descriptive = get_descriptive_cols(data),
-                measurement = get_measurement_cols(data)
+                descriptive = column_utils$get_descriptive_cols(data),
+                measurement = column_utils$get_measurement_cols(data)
             )
         })
         
@@ -92,7 +93,7 @@ server_pca <- function(id, median_data, data_version) {
         }, ignoreInit = TRUE)
         
         # PCA computation handler
-        handle_pca_computation(
+        pca_computation$handle_pca_computation(
             input = input,
             median_data = median_data,
             pca_state = pca_state
@@ -134,8 +135,8 @@ server_pca <- function(id, median_data, data_version) {
             }
             
             # Error case
-            if (is_app_error(kmo)) {
-                return(error_alert_structured(kmo, type = "danger"))
+            if (error_handling$is_app_error(kmo)) {
+                return(error_display$error_alert_structured(kmo, type = "danger"))
             }
             
             # Check correlation plot result for errors
@@ -144,7 +145,7 @@ server_pca <- function(id, median_data, data_version) {
                 # Show error instead of plot
                 shiny::div(
                     class = "p-3",
-                    error_alert_structured(corr_result$error, type = "danger")
+                    error_display$error_alert_structured(corr_result$error, type = "danger")
                 )
             } else {
                 # Show the plot
@@ -156,10 +157,10 @@ server_pca <- function(id, median_data, data_version) {
             pca_content <- NULL
             
             if (!is.null(pca)) {
-                if (is_app_error(pca)) {
-                    pca_content <- error_alert_structured(pca, type = "danger")
+                if (error_handling$is_app_error(pca)) {
+                    pca_content <- error_display$error_alert_structured(pca, type = "danger")
                 } else {
-                    pca_content <- render_pca_results(pca, ns)
+                    pca_content <- pca_results$render_pca_results(pca, ns)
                 }
             }
             
@@ -203,7 +204,7 @@ server_pca <- function(id, median_data, data_version) {
                 # Section 3: KMO Results
                 shiny::tags$div(
                     class = "mb-2",
-                    render_kmo_results(kmo)
+                    kmo_results$render_kmo_results(kmo)
                 ),
                 
                 # Section 4: Optimal Components
@@ -218,7 +219,7 @@ server_pca <- function(id, median_data, data_version) {
                                 "Optimal Number of Components"
                             ),
                             value = "optimal_components",
-                            render_optimal_components_content(pca_state$optimal_result, ns)
+                            optimal_components_results$render_optimal_components_content(pca_state$optimal_result, ns)
                         )
                     )
                 ),
@@ -246,11 +247,11 @@ server_pca <- function(id, median_data, data_version) {
         output$optimal_scree_plot <- ggiraph::renderGirafe({
             optimal <- pca_state$optimal_result
             
-            if (is.null(optimal) || is_app_error(optimal)) {
+            if (is.null(optimal) || error_handling$is_app_error(optimal)) {
                 return(NULL)
             }
             
-            render_optimal_scree_girafe(optimal)
+            optimal_components_results$render_optimal_scree_girafe(optimal)
         })
         
         # Render correlation plot - only renders if computation succeeded
@@ -268,7 +269,7 @@ server_pca <- function(id, median_data, data_version) {
             
             # Render the pre-computed correlation data
             # This should not fail since all validation happened in compute_correlation_data
-            render_correlation_girafe(result$result)
+            correlation_plot$render_correlation_girafe(result$result)
         })
         
         # Download handler for Excel export
@@ -279,8 +280,8 @@ server_pca <- function(id, median_data, data_version) {
             content = function(file) {
                 pca <- pca_state$pca_result
                 shiny::req(pca)
-                shiny::req(!is_app_error(pca))
-                createPCAExcelOutput(pca, file)
+                shiny::req(!error_handling$is_app_error(pca))
+                pca_results$createPCAExcelOutput(pca, file)
             }
         )
         
@@ -292,7 +293,7 @@ server_pca <- function(id, median_data, data_version) {
             content = function(file) {
                 pca <- pca_state$pca_result
                 shiny::req(pca)
-                shiny::req(!is_app_error(pca))
+                shiny::req(!error_handling$is_app_error(pca))
                 saveRDS(pca, file)
             }
         )

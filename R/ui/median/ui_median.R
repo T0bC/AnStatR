@@ -1,3 +1,4 @@
+﻿#' @export
 UI_median <- function(id) {
     ns <- shiny::NS(id)
 

@@ -1,17 +1,18 @@
-#' UI for the PCA page
+﻿#' UI for the PCA page
 #'
 #' Orchestrates all PCA UI components.
 #' Tab components are sourced from R/ui/pca/
 #'
 #' @param id Module namespace ID
 #' @return A bslib layout_sidebar UI element
+#' @export
 UI_pca <- function(id) {
     ns <- shiny::NS(id)
     
-    # Source UI tab components
-    source("R/ui/pca/ui_tab_data_selection.R", local = TRUE)
-    source("R/ui/pca/ui_tab_plotting_controls.R", local = TRUE)
-    source("R/ui/pca/ui_tab_actions.R", local = TRUE)
+    # Import UI tab components using box
+    box::use(./ui_tab_data_selection)
+    box::use(./ui_tab_plotting_controls)
+    box::use(./ui_tab_actions)
 
     shiny::tagList(
         # Initialize window size reporting with namespaced IDs
@@ -28,9 +29,9 @@ UI_pca <- function(id) {
                 # Horizontal tabs with icons only
                 bslib::navset_tab(
                     id = ns("sidebar_tabs"),
-                    create_pca_data_selection_tab(ns),
-                    create_pca_plotting_controls_tab(ns),
-                    create_pca_actions_tab(ns)
+                    ui_tab_data_selection$create_pca_data_selection_tab(ns),
+                    ui_tab_plotting_controls$create_pca_plotting_controls_tab(ns),
+                    ui_tab_actions$create_pca_actions_tab(ns)
                 ),
                 
                 # Compute PCA button at bottom (always visible)

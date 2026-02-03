@@ -1,10 +1,11 @@
-#' Processing Tab UI Component
+﻿#' Processing Tab UI Component
 #'
 #' Creates the Processing tab for the plotting sidebar.
 #' Contains outlier detection and trimming options.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_processing_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(
@@ -96,6 +97,7 @@ create_processing_tab <- function(ns) {
 #'
 #' @param ns Namespace function from parent module
 #' @return A div containing radio button inputs
+#' @export
 create_outlier_method_radio <- function(ns) {
     shiny::tags$div(
         class = "form-group shiny-input-radiogroup shiny-input-container",

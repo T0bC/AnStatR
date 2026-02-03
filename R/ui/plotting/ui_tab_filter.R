@@ -1,9 +1,10 @@
-#' Filter Tab UI Component
+﻿#' Filter Tab UI Component
 #'
 #' Creates the Filter tab for the plotting sidebar.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_filter_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

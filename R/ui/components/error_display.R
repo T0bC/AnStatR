@@ -1,4 +1,4 @@
-#' Global Error Display UI Components
+﻿#' Global Error Display UI Components
 #'
 #' Provides standardized UI components for displaying errors across all modules.
 #' Works with structured error objects from error_handling.R.

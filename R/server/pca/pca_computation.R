@@ -1,4 +1,4 @@
-#' PCA Computation Handler
+﻿#' PCA Computation Handler
 #'
 #' Handles KMO and PCA computation with validation and progress feedback.
 #'
@@ -8,6 +8,7 @@
 #' @param median_data Reactive containing the source data
 #' @param pca_state ReactiveValues to store computation results
 #' @return NULL (side effects only)
+#' @export
 handle_pca_computation <- function(input, median_data, pca_state) {
     shiny::observeEvent(input$compute_pca_button, {
         data <- median_data()
@@ -15,7 +16,7 @@ handle_pca_computation <- function(input, median_data, pca_state) {
         
         # Validation
         if (is.null(data)) {
-            pca_state$kmo_result <- simple_error(
+            pca_state$kmo_result <- error_handling$simple_error(
                 "No data available. Please load data first.",
                 operation_name = "PCA Validation"
             )
@@ -23,7 +24,7 @@ handle_pca_computation <- function(input, median_data, pca_state) {
         }
         
         if (is.null(measure_cols) || length(measure_cols) < 2) {
-            pca_state$kmo_result <- simple_error(
+            pca_state$kmo_result <- error_handling$simple_error(
                 "Please select at least 2 measurement columns for PCA.",
                 operation_name = "PCA Validation"
             )
@@ -43,7 +44,7 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             
             # Check if we have enough data after NA removal
             if (nrow(prepared_data) < 2) {
-                pca_state$kmo_result <- simple_error(
+                pca_state$kmo_result <- error_handling$simple_error(
                     "Not enough complete observations after removing rows with missing values.",
                     operation_name = "PCA Validation",
                     context = list(
@@ -65,11 +66,11 @@ handle_pca_computation <- function(input, median_data, pca_state) {
                 n_observations = nrow(prepared_data)
             )
             
-            correlation_result <- safe_execute(
-                expr = compute_correlation_data(prepared_data, corr_cols),
+            correlation_result <- error_handling$safe_execute(
+                expr = correlation_plot$compute_correlation_data(prepared_data, corr_cols),
                 operation_name = "Correlation Plot",
                 context = error_context,
-                error_parser = correlation_error_parser
+                error_parser = correlation_plot$correlation_error_parser
             )
             
             pca_state$correlation_result <- correlation_result
@@ -78,10 +79,10 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             shiny::setProgress(0.3, message = "Computing KMO measures...")
             
             # Step 3: Compute KMO (50%)
-            kmo_result <- calculate_kmo(prepared_data)
+            kmo_result <- kmo_computation$calculate_kmo(prepared_data)
             
             # Add info about removed rows to KMO result if any were removed
-            if (!is_app_error(kmo_result) && prep_result$rows_removed > 0) {
+            if (!error_handling$is_app_error(kmo_result) && prep_result$rows_removed > 0) {
                 kmo_result$rows_removed <- prep_result$rows_removed
                 kmo_result$original_rows <- prep_result$original_rows
             }
@@ -91,7 +92,7 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             shiny::setProgress(0.5, message = "Computing PCA...")
             
             # If KMO failed, skip PCA computation
-            if (is_app_error(kmo_result)) {
+            if (error_handling$is_app_error(kmo_result)) {
                 pca_state$pca_result <- NULL
                 pca_state$last_computation <- Sys.time()
                 return()
@@ -103,16 +104,16 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             shiny::setProgress(0.8, message = "Estimating optimal components...")
             
             # Step 5: Compute optimal number of components
-            if (!is_app_error(pca_result)) {
-                optimal_result <- safe_execute(
-                    expr = calculate_optimal_components(
+            if (!error_handling$is_app_error(pca_result)) {
+                optimal_result <- error_handling$safe_execute(
+                    expr = optimal_components$calculate_optimal_components(
                         data = prepared_data,
                         eigenvalues = pca_result$eig[, 1],
                         scale = isTRUE(input$scale_data)
                     ),
                     operation_name = "Optimal Components",
                     context = error_context,
-                    error_parser = optimal_components_error_parser
+                    error_parser = optimal_components$optimal_components_error_parser
                 )
                 
                 if (optimal_result$success) {
@@ -140,6 +141,7 @@ handle_pca_computation <- function(input, median_data, pca_state) {
 #' @param data Data frame with numeric columns (already prepared and scaled)
 #' @param ncp Number of principal components to compute (default: 5)
 #' @return PCA result object from FactoMineR, or structured error
+#' @export
 calculate_pca <- function(data, ncp = 5) {
     error_context <- list(
         n_variables = ncol(data),
@@ -173,6 +175,7 @@ calculate_pca <- function(data, ncp = 5) {
 #' @param error_msg Character, the original error message
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
+#' @export
 pca_error_parser <- function(error_msg, operation_name = "PCA") {
     if (grepl("singular|invertible", error_msg, ignore.case = TRUE)) {
         "PCA: Data matrix is singular. Remove highly correlated or constant variables."

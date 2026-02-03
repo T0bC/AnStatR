@@ -1,17 +1,18 @@
-#' UI for the Statistics page
+﻿#' UI for the Statistics page
 #'
 #' Orchestrates all statistics UI components.
 #' Tab components are sourced from R/ui/statistics/
 #'
 #' @param id Module namespace ID
 #' @return A bslib layout_sidebar UI element
+#' @export
 UI_statistics <- function(id) {
     ns <- shiny::NS(id)
     
-    # Source UI tab components
-    source("R/ui/statistics/ui_tab_options.R", local = TRUE)
-    source("R/ui/statistics/ui_tab_bootstrap.R", local = TRUE)
-    source("R/ui/statistics/ui_tab_adjustments.R", local = TRUE)
+    # Import UI tab components using box
+    box::use(./ui_tab_options)
+    box::use(./ui_tab_bootstrap)
+    box::use(./ui_tab_adjustments)
 
     shiny::tagList(
         bslib::layout_sidebar(
@@ -23,9 +24,9 @@ UI_statistics <- function(id) {
                 # Horizontal tabs with icons only
                 bslib::navset_tab(
                     id = ns("sidebar_tabs"),
-                    create_options_tab(ns),
-                    create_bootstrap_tab(ns),
-                    create_adjustments_tab(ns)
+                    ui_tab_options$create_options_tab(ns),
+                    ui_tab_bootstrap$create_bootstrap_tab(ns),
+                    ui_tab_adjustments$create_adjustments_tab(ns)
                 ),
                 
                 # Compute button at bottom (always visible)

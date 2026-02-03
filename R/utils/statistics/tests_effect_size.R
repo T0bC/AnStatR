@@ -5,6 +5,10 @@
 #' - Future: Cohen's d, Hedges' g, etc.
 
 
+# Import required modules
+box::use(../statistics_utils)
+box::use(../error_handling)
+
 # =============================================================================
 # Cliff's Delta Helper Functions
 # =============================================================================
@@ -230,7 +234,7 @@ perform_cliff <- function(df, x_axis, measure_col, tr_value,
     error_context <- build_cliff_context(df, x_axis, measure_col, use_bootstrap)
     
     # 4. Run the test iterations
-    test_result <- safe_stat_test({
+    test_result <- statistics_utils$safe_stat_test({
         results_list <- vector("list", boot_params$n_iterations)
         
         for (i in seq_len(boot_params$n_iterations)) {

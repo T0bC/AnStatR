@@ -1,4 +1,4 @@
-#' Global Error Handling Utilities
+﻿#' Global Error Handling Utilities
 #'
 #' Provides standardized error handling functions for use across all modules.
 #' Includes error creation, safe execution wrappers, and error checking utilities.

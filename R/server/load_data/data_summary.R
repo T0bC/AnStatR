@@ -1,4 +1,4 @@
-# Data summary rendering logic
+﻿# Data summary rendering logic
 # This file defines a function that renders a statistical summary
 #
 # @param output Shiny output object
@@ -6,6 +6,7 @@
 # @param loaded_data ReactiveVal containing the loaded data
 # @return NULL (side effects: creates output$data_summary)
 
+#' @export
 render_data_summary <- function(output, output_id, loaded_data) {
   output[[output_id]] <- shiny::renderUI({
     shiny::req(loaded_data())

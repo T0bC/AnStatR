@@ -5,6 +5,10 @@
 #' - Two-way (t2way)
 #' - Three-way (t3way)
 
+# Import required modules
+box::use(../statistics_utils)
+box::use(../error_handling)
+
 
 # =============================================================================
 # Helper Functions
@@ -123,7 +127,7 @@ run_robust_anova <- function(df, x_axis, measure_col, tr_value,
     error_context <- config$build_context(df, x_axis, measure_col, tr_value, use_bootstrap)
     
     # 4. Run the test iterations
-    test_result <- safe_stat_test({
+    test_result <- statistics_utils$safe_stat_test({
         # Initialize results storage
         results_matrix <- as.data.frame(
             matrix(NA_real_, nrow = boot_params$n_iterations, ncol = length(config$result_cols))

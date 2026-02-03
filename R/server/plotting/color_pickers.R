@@ -1,4 +1,4 @@
-#' Color Pickers Component
+﻿#' Color Pickers Component
 #'
 #' Handles color group detection and dynamic color picker UI rendering.
 #'
@@ -17,6 +17,7 @@ NULL
 #' @param filtered_data Reactive returning filtered data frame
 #' @param color_cols Reactive returning selected color columns
 #' @return Reactive returning sorted character vector of unique group names
+#' @export
 create_color_groups_reactive <- function(filtered_data, color_cols) {
     shiny::reactive({
         data <- filtered_data()
@@ -41,6 +42,7 @@ create_color_groups_reactive <- function(filtered_data, color_cols) {
 #'   - input$color_*: Dynamic color picker inputs for each group
 #' @param color_groups Reactive returning unique group names
 #' @return Reactive returning named character vector of colors
+#' @export
 create_custom_color_map_reactive <- function(input, color_groups) {
     shiny::reactive({
         groups <- color_groups()
@@ -86,6 +88,7 @@ create_custom_color_map_reactive <- function(input, color_groups) {
 #' @param color_groups Reactive returning unique group names
 #' @param custom_color_map Reactive returning current color map
 #' @return NULL (side effects only - registers output)
+#' @export
 setup_color_pickers_output <- function(output, 
                                         ns, 
                                         filtered_data, 

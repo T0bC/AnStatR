@@ -1,4 +1,4 @@
-#' KMO Results Display Component
+﻿#' KMO Results Display Component
 #'
 #' Renders KMO measure results with color-coded interpretation in collapsible panels.
 
@@ -6,6 +6,7 @@
 #'
 #' @param kmo_result List with overall and individual KMO values
 #' @return Shiny tags object with formatted KMO display
+#' @export
 render_kmo_results <- function(kmo_result) {
     overall_kmo <- kmo_result$overall
     individual_kmo <- kmo_result$individual
@@ -46,6 +47,7 @@ render_kmo_results <- function(kmo_result) {
 #'
 #' @param kmo Numeric KMO value
 #' @return Character CSS class for badge
+#' @export
 kmo_badge_class <- function(kmo) {
     if (kmo >= 0.8) "bg-success"
     else if (kmo >= 0.6) "bg-warning text-dark"
@@ -56,6 +58,7 @@ kmo_badge_class <- function(kmo) {
 #'
 #' @param kmo Numeric KMO value
 #' @return Character interpretation
+#' @export
 kmo_interpretation <- function(kmo) {
     if (kmo >= 0.9) "Marvelous"
     else if (kmo >= 0.8) "Meritorious"
@@ -69,6 +72,7 @@ kmo_interpretation <- function(kmo) {
 #'
 #' @param individual_kmo Named numeric vector of individual KMO values
 #' @return Shiny tags object with table
+#' @export
 render_kmo_table <- function(individual_kmo) {
     sorted_kmo <- sort(individual_kmo, decreasing = TRUE)
     

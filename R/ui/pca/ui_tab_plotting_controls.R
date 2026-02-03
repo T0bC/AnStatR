@@ -1,9 +1,10 @@
-#' PCA Plotting Controls Tab UI Component
+﻿#' PCA Plotting Controls Tab UI Component
 #'
 #' Creates the Plotting Controls tab for the PCA sidebar.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_pca_plotting_controls_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

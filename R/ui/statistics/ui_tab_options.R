@@ -1,10 +1,11 @@
-#' Options Tab UI Component
+﻿#' Options Tab UI Component
 #'
 #' Creates the Options tab for the statistics sidebar.
 #' Contains main options like trimming display and output toggles.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_options_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

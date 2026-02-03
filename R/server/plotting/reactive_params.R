@@ -1,4 +1,4 @@
-#' Reactive Parameters Component
+﻿#' Reactive Parameters Component
 #'
 #' Creates all plot-related reactives: selections, styling options, and the
 #' consolidated plot_params reactive with caching and debouncing.
@@ -17,6 +17,7 @@ NULL
 #'
 #' @param median_data Reactive containing the median-processed data
 #' @return List with descriptive_cols and measurement_cols reactives
+#' @export
 create_column_reactives <- function(median_data) {
     list(
         descriptive_cols = shiny::reactive({
@@ -41,6 +42,7 @@ create_column_reactives <- function(median_data) {
 #'   - input$tooltip: Selected tooltip columns
 #'   - input$pointColor: Selected color columns
 #' @return List of selection reactives
+#' @export
 create_selection_reactives <- function(input) {
     list(
         measures = shiny::reactive({ input$measureVar }),
@@ -65,6 +67,7 @@ create_selection_reactives <- function(input) {
 #'   - input$windowSize: Window dimensions from plot_resize.js
 #' @param debug Logical, enable debug logging
 #' @return Reactive returning list(width, height)
+#' @export
 create_window_size_reactive <- function(input, debug = FALSE) {
     cached_window_size <- shiny::reactiveVal(list(width = 800, height = 600))
     
@@ -92,6 +95,7 @@ create_window_size_reactive <- function(input, debug = FALSE) {
 #'   - input$exportWidth: Export width in cm
 #'   - input$exportHeight: Export height in cm
 #' @return List with export_width and export_height reactives
+#' @export
 create_export_dimension_reactives <- function(input) {
     list(
         export_width = shiny::reactive({ input$exportWidth %||% 16 }),
@@ -112,6 +116,7 @@ create_export_dimension_reactives <- function(input) {
 #'   - input$probabilityFactor: Factor for probability methods
 #'   - input$bootstrapSamples: Number of bootstrap samples
 #' @return List with trim_percent and outlier_options reactives
+#' @export
 create_processing_option_reactives <- function(input) {
     list(
         trim_percent = shiny::reactive({ input$trim_slider %||% 0 }),
@@ -141,6 +146,7 @@ create_processing_option_reactives <- function(input) {
 #'   - input$medianThickness, input$medianWidth, input$sdThickness, input$sdWidth
 #'   - input$axisTickLength, input$axisLineThickness
 #' @return List of style reactives
+#' @export
 create_style_reactives <- function(input) {
     list(
         point_style = shiny::reactive({
@@ -202,6 +208,7 @@ create_style_reactives <- function(input) {
 #' @param custom_color_map Reactive returning named color vector
 #' @param debug Logical, enable debug logging
 #' @return Reactive returning consolidated plot parameters list
+#' @export
 create_plot_params <- function(filtered_data,
                                 selection_reactives,
                                 processing_reactives,
@@ -214,6 +221,7 @@ create_plot_params <- function(filtered_data,
     cached_plot_params <- shiny::reactiveVal(NULL)
     
     # Helper to create a fingerprint for comparison
+#' @export
     make_fingerprint <- function(params) {
         paste(
             nrow(params$data),
@@ -248,6 +256,7 @@ create_plot_params <- function(filtered_data,
         )
     }
     
+#' @export
     debug_log <- function(source, details = NULL) {
         if (debug) {
             timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")

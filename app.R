@@ -2,58 +2,38 @@
 # Source refs allow stack traces to show file names and line numbers
 options(shiny.fullstacktrace = TRUE, keep.source = TRUE)
 
-# Source utility functions (used across multiple modules)
-source("R/utils/error_handling.R")
-source("R/utils/column_utils.R")
-source("R/utils/data_utils.R")
-source("R/utils/Rallfun-v43.R")
-source("R/utils/statistics_utils.R")
+# ============================================================================
+# Box Package Imports - Explicit Namespacing
+# ============================================================================
+# All modules are imported using box::use() for explicit function origins.
+# Functions are called as module$function() e.g., settings_modal$get_default_theme()
 
-# Source UI modules
-source("R/ui/load_data/ui_load_data.R")
-source("R/ui/median/ui_median.R")
-source("R/ui/plotting/ui_plotting.R")
-source("R/ui/summary_stats/ui_summary_stats.R")
-source("R/ui/statistics/ui_statistics.R")
-source("R/ui/pca/ui_pca.R")
+# Utils
+box::use(R/utils/error_handling)
+box::use(R/utils/column_utils)
+box::use(R/utils/data_utils)
+box::use(R/utils/`Rallfun-v43`)
+box::use(R/utils/statistics_utils)
 
-# Source component modules
-source("R/ui/components/settings_modal.R")
-source("R/ui/components/error_display.R")
+# UI modules
+box::use(R/ui/load_data/ui_load_data)
+box::use(R/ui/median/ui_median)
+box::use(R/ui/plotting/ui_plotting)
+box::use(R/ui/summary_stats/ui_summary_stats)
+box::use(R/ui/statistics/ui_statistics)
+box::use(R/ui/pca/ui_pca)
 
-# Source server modules
-source("R/server/load_data/server_load_data.R")
-source("R/server/median/server_median.R")
-source("R/server/plotting/server_plotting.R")
-source("R/server/summary_stats/server_summary_stats.R")
-source("R/server/statistics/server_statistics.R")
-source("R/server/pca/server_pca.R")
+# UI components
+box::use(R/ui/components/settings_modal)
+box::use(R/ui/components/error_display)
 
-# Source server sub-modules: Load Data
-source("R/server/load_data/file_upload.R")
-source("R/server/load_data/data_preview.R")
-source("R/server/load_data/missing_values_plot.R")
-source("R/server/load_data/data_summary.R")
-
-# Source server sub-modules: Median
-source("R/server/median/help_modal.R")
-source("R/ui/median/grouping_ui.R")
-source("R/ui/median/quality_filter_ui.R")
-source("R/server/median/quality_filter_logic.R")
-source("R/server/median/median_table.R")
-source("R/server/median/median_params.R")
-
-# Source server sub-modules: Plotting
-source("R/server/plotting/plot_scatter.R")
-source("R/server/plotting/plot_renderer.R")
-
-# Source server sub-modules: Summary Stats
-source("R/server/summary_stats/summary_utils.R")
-
-# Source server sub-modules: Statistics
-source("R/server/statistics/sidebar_logic.R")
-source("R/server/statistics/statistics_output.R")
-source("R/server/statistics/statistics_report.R")
+# Server modules
+box::use(R/server/load_data/server_load_data)
+box::use(R/server/median/server_median)
+box::use(R/server/plotting/server_plotting)
+box::use(R/server/summary_stats/server_summary_stats)
+box::use(R/server/statistics/server_statistics)
+box::use(R/server/pca/server_pca)
 
 # Load required packages
 library(shiny)
@@ -76,6 +56,7 @@ library(WRS2)
 library(cli)
 library(htmltools)
 library(base64enc)
+library(ggplot2)
 
 # Prevent Rplots.pdf creation by setting default PDF device to null
 # This avoids file clutter when DataExplorer or other packages open a default device
@@ -87,7 +68,7 @@ shiny::addResourcePath("www", "www")
 app_ui <- bslib::page_navbar(
   id = "active_page",
   title = "TexAn 2.0",
-  theme = get_default_theme(),
+  theme = settings_modal$get_default_theme(),
   header = shiny::tags$head(
     shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/css/styles.css"),
     shiny::tags$script(src = "www/js/plot_resize.js"),
@@ -98,32 +79,32 @@ app_ui <- bslib::page_navbar(
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("file-earmark-arrow-up"), "Load Data"),
     value = "load_data",
-    UI_load_data("load_data_id")
+    ui_load_data$UI_load_data("load_data_id")
   ),
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("calculator"), "Median"),
     value = "median",
-    UI_median("median_id")
+    ui_median$UI_median("median_id")
   ),
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("graph-up"), "Plotting"),
     value = "plotting",
-    UI_plotting("plotting_id")
+    ui_plotting$UI_plotting("plotting_id")
   ),
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("table"), "Summary Stats"),
     value = "summary_stats",
-    UI_summary_stats("summary_stats_id")
+    ui_summary_stats$UI_summary_stats("summary_stats_id")
   ),
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("bar-chart-line"), "Statistics"),
     value = "statistics",
-    UI_statistics("statistics_id")
+    ui_statistics$UI_statistics("statistics_id")
   ),
   bslib::nav_panel(
     title = shiny::tagList(bsicons::bs_icon("bar-chart-steps"), "PCA"),
     value = "pca",
-    UI_pca("pca_id")
+    ui_pca$UI_pca("pca_id")
   ),
   bslib::nav_spacer(),
   bslib::nav_item(
@@ -142,23 +123,23 @@ app_server <- function(input, output, session) {
   
   # Register module servers
   # server_load_data returns list with $data (reactive) and $version (reactive)
-  load_data_result <- server_load_data("load_data_id")
+  load_data_result <- server_load_data$server_load_data("load_data_id")
   
   # Pass both data and version to downstream modules for state reset on new data
-  median_result <- server_median("median_id", 
+  median_result <- server_median$server_median("median_id", 
                 loaded_data = load_data_result$data, 
                 data_version = load_data_result$version)
   
   # Pass median data to plotting module
   # plotting_result contains processed_data (with {col}_outlier and {col}_trimmed flags)
   # and selected_measures - Plotting tab is the source of truth for downstream modules
-  plotting_result <- server_plotting("plotting_id",
+  plotting_result <- server_plotting$server_plotting("plotting_id",
                                      median_data = median_result,
                                      data_version = load_data_result$version)
   
   # Pass plotting-processed data to summary stats module
   # processed_data has {col}_outlier and {col}_trimmed columns for each selected measurement
-  server_summary_stats("summary_stats_id",
+  server_summary_stats$server_summary_stats("summary_stats_id",
                        processed_data = plotting_result$processed_data,
                        selected_measures = plotting_result$selected_measures,
                        x_axis = plotting_result$x_axis,
@@ -167,7 +148,7 @@ app_server <- function(input, output, session) {
   # Pass plotting-processed data to statistics module
   # cached_plot_objects allows statistics tab to display the same plots without recomputation
   # plot_params includes window_size for consistent plot sizing
-  server_statistics("statistics_id",
+  server_statistics$server_statistics("statistics_id",
                     processed_data = plotting_result$processed_data,
                     selected_measures = plotting_result$selected_measures,
                     x_axis = plotting_result$x_axis,
@@ -177,12 +158,12 @@ app_server <- function(input, output, session) {
                     data_version = load_data_result$version)
   
   # Pass median data to PCA module
-  server_pca("pca_id",
+  server_pca$server_pca("pca_id",
              median_data = median_result,
              data_version = load_data_result$version)
 
   # Initialize settings modal
-  settings_modal_server(input, session)
+  settings_modal$settings_modal_server(input, session)
   
   # Reset median_tab_activated when new data is loaded
   shiny::observeEvent(load_data_result$version(), {

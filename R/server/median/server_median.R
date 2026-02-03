@@ -1,3 +1,19 @@
+﻿# Import help modal module
+box::use(./help_modal)
+# Import grouping UI module
+box::use(../../ui/median/grouping_ui)
+# Import quality filter UI module
+box::use(../../ui/median/quality_filter_ui)
+# Import median params module
+box::use(./median_params)
+# Import quality filter logic module
+box::use(./quality_filter_logic)
+# Import median table module
+box::use(./median_table)
+# Import column utils module
+box::use(../../utils/column_utils)
+
+#' @export
 server_median <- function(id, loaded_data, data_version = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
@@ -24,7 +40,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
                 # Get new descriptive columns from the new dataset
                 new_data <- loaded_data()
                 if (!is.null(new_data)) {
-                    new_cols <- get_descriptive_cols(new_data)
+                    new_cols <- column_utils$get_descriptive_cols(new_data)
                     old_cols <- previous_descriptive_cols()
                     
                     # Smart selection retention for grouping columns
@@ -75,7 +91,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         shiny::observeEvent(loaded_data(), {
             data <- loaded_data()
             if (!is.null(data) && length(previous_descriptive_cols()) == 0) {
-                previous_descriptive_cols(get_descriptive_cols(data))
+                previous_descriptive_cols(column_utils$get_descriptive_cols(data))
             }
         }, once = TRUE)
 
@@ -83,13 +99,13 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         # Following the explicit dependency injection pattern...
 
         # Help button handler
-        handle_help_button(
+        help_modal$handle_help_button(
             input = input,
             session = session
         )
 
         # Grouping UI renderer (no longer updates a separate reactiveVal)
-        render_grouping_ui(
+        grouping_ui$render_grouping_ui(
             output = output,
             output_id = "grouping_ui",
             loaded_data = loaded_data,
@@ -98,7 +114,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         )
 
         # Quality filter UI renderer (returns quality_col_info reactive)
-        quality_col_info <- render_quality_filter_ui(
+        quality_col_info <- quality_filter_ui$render_quality_filter_ui(
             output = output,
             output_id = "quality_filter_ui",
             loaded_data = loaded_data,
@@ -109,7 +125,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         # ----- Unified Debounced Parameters -----
         # Consolidates grouping and quality inputs with single debounce
         # Prevents double-renders when multiple inputs change
-        median_params <- create_median_params(
+        median_params <- median_params$create_median_params(
             loaded_data = loaded_data,
             input = input,
             quality_col_info = quality_col_info,
@@ -140,7 +156,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
             shiny::req(data)
             
             # Apply quality filter
-            result <- apply_quality_filter(data, params$quality_settings, params$grouping_cols)
+            result <- quality_filter_logic$apply_quality_filter(data, params$quality_settings, params$grouping_cols)
             
             filtered_data(result$data)
             filter_message(result$message)
@@ -213,7 +229,7 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         })
 
         # Median table renderer
-        render_median_table(
+        median_table$render_median_table(
             output = output,
             output_id = "medianTable",
             filtered_data = filtered_data,

@@ -1,4 +1,4 @@
-#' Data Processing Component
+﻿#' Data Processing Component
 #'
 #' Creates processed data with outlier and trim flags for each selected measurement.
 #' This enables downstream modules to use the same exclusion logic as plotting.
@@ -22,6 +22,7 @@ NULL
 #' @param trim_percent Reactive returning trim percentage (0-100)
 #' @param outlier_options Reactive returning outlier detection options list
 #' @return Reactive returning processed data with per-column outlier/trimmed flags
+#' @export
 create_processed_data_reactive <- function(filtered_data, 
                                             selected_measures, 
                                             x_axis,

@@ -1,4 +1,4 @@
-#' Setup sidebar UI logic for Summary Statistics
+﻿#' Setup sidebar UI logic for Summary Statistics
 #'
 #' Handles dynamic filter options UI. Always uses "Measurement" mode.
 #' Defaults to X-axis selection from Plotting tab for grouping.
@@ -9,6 +9,7 @@
 #' @param session Shiny session object from the parent module
 #' @param descriptive_cols Reactive returning descriptive column names
 #' @param x_axis Reactive returning X-axis columns from plotting tab
+#' @export
 setup_sidebar_logic <- function(input, output, session, descriptive_cols, x_axis) {
     ns <- session$ns
     

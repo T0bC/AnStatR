@@ -1,4 +1,4 @@
-#' Server logic for the Summary Statistics page
+﻿#' Server logic for the Summary Statistics page
 #'
 #' Orchestrates all summary statistics components using explicit dependency injection.
 #' Components are sourced from R/server/summary_stats/
@@ -14,14 +14,16 @@
 #' @param x_axis Reactive returning X-axis columns from plotting (used as default grouping)
 #' @param data_version Reactive integer that increments when new data is loaded
 #' @return NULL (side effects only)
+#' @export
 server_summary_stats <- function(id, processed_data, selected_measures, x_axis, data_version) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         
-        # Source component files
-        source("R/server/summary_stats/summary_utils.R", local = TRUE)
-        source("R/server/summary_stats/sidebar_logic.R", local = TRUE)
-        source("R/server/summary_stats/summary_tables.R", local = TRUE)
+        # Import component modules
+        box::use(../summary_stats/summary_utils)
+        box::use(../summary_stats/sidebar_logic)
+        box::use(../summary_stats/summary_tables)
+        box::use(../../utils/column_utils)
         
         # ----- 1. Column Reactives -----
         # Use only the selected measurements from plotting (already have _outlier/_trimmed flags)
@@ -30,7 +32,7 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
             if (is.null(measures) || length(measures) == 0) {
                 # Fallback to all measurement cols if none selected
                 shiny::req(processed_data())
-                cols <- get_measurement_cols(processed_data())
+                cols <- column_utils$get_measurement_cols(processed_data())
                 cols[!grepl("_outlier|_trimmed", cols)]
             } else {
                 measures
@@ -39,7 +41,7 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
         
         descriptive_cols <- shiny::reactive({
             shiny::req(processed_data())
-            get_descriptive_cols(processed_data())
+            column_utils$get_descriptive_cols(processed_data())
         })
         
         # ----- 2. Reset state on new data -----
@@ -65,7 +67,7 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
         
         # ----- 3. Sidebar Logic -----
         # Pass x_axis from plotting as default for filter options
-        setup_sidebar_logic(
+        sidebar_logic$setup_sidebar_logic(
             input = input,
             output = output,
             session = session,
@@ -74,23 +76,22 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
         )
         
         # ----- 4. Summary DataFrames -----
-        # No trim_value needed - data already has {col}_trimmed columns
         # Always uses "Measurement" mode with filter_options_select as grouping
-        summary_dfs <- create_summary_dfs_reactive(
+        summary_dfs <- summary_tables$create_summary_dfs_reactive(
             input = input,
             median_data = processed_data,
             measurement_cols = measurement_cols
         )
         
         # ----- 5. Table Outputs -----
-        setup_summary_table_outputs(
+        summary_tables$setup_summary_table_outputs(
             output = output,
             session = session,
             summary_dfs = summary_dfs
         )
         
         # ----- 6. Tables UI Container -----
-        setup_summary_tables_ui(
+        summary_tables$setup_summary_tables_ui(
             output = output,
             ns = ns,
             summary_dfs = summary_dfs,
@@ -98,7 +99,7 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
         )
         
         # ----- 7. Download All Handler -----
-        setup_download_all_handler(
+        summary_tables$setup_download_all_handler(
             output = output,
             summary_dfs = summary_dfs
         )

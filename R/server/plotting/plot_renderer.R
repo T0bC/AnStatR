@@ -1,4 +1,4 @@
-#' Plot Renderer Component
+﻿#' Plot Renderer Component
 #'
 #' Handles rendering of multiple interactive ggiraph scatter plots.
 #' Each measurement variable gets its own plot card.
@@ -18,6 +18,7 @@
 #' @param measure_cols Reactive returning selected measurement column names
 #' @param create_scatter_plot Function to create scatter plots (injected dependency)
 #' @return Reactive returning named list of ggplot objects (keyed by measure name)
+#' @export
 create_cached_plot_objects <- function(plot_params, measure_cols, create_scatter_plot) {
     shiny::reactive({
         params <- plot_params()
@@ -76,6 +77,7 @@ create_cached_plot_objects <- function(plot_params, measure_cols, create_scatter
 #' @param export_width Reactive returning export width in cm
 #' @param export_height Reactive returning export height in cm
 #' @return NULL (side effects only - registers plot outputs and download handlers)
+#' @export
 setup_plot_outputs <- function(output, 
                                 ns, 
                                 plot_params,
@@ -130,6 +132,7 @@ setup_plot_outputs <- function(output,
                 download_id <- paste0("download_", plot_id)
                 
                 # Helper function to get the cached ggplot (shared between render and download)
+#' @export
                 get_plot <- function() {
                     plots <- cached_plot_objects()
                     shiny::req(plots, local_measure %in% names(plots))
@@ -239,6 +242,7 @@ setup_plot_outputs <- function(output,
 #' @param ns Namespace function from parent module
 #' @param measures Character vector of measurement column names
 #' @return A div containing vertically stacked plot cards
+#' @export
 generate_plot_grid_ui <- function(ns, measures) {
     
     # Generate plot cards for each measurement - one per row
@@ -298,6 +302,7 @@ generate_plot_grid_ui <- function(ns, measures) {
 #' @param message Character string or tagList for the message content
 #' @param min_height CSS min-height value (default: "300px")
 #' @return A div with centered message
+#' @export
 create_placeholder_ui <- function(message, min_height = "300px") {
     shiny::tags$div(
         class = "d-flex align-items-center justify-content-center",

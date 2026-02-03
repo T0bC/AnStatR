@@ -1,4 +1,4 @@
-#' Optimal Components Estimation
+﻿#' Optimal Components Estimation
 #'
 #' Computes multiple criteria for determining the optimal number of PCA components.
 #' Includes FactoMineR's estim_ncp, elbow detection, parallel analysis,
@@ -11,6 +11,7 @@
 #' @param eigenvalues Numeric vector of eigenvalues from PCA result
 #' @param scale Logical, whether data was scaled (for estim_ncp)
 #' @return List with results from each method, or structured error
+#' @export
 calculate_optimal_components <- function(data, eigenvalues, scale = TRUE) {
     n <- nrow(data)
     p <- ncol(data)
@@ -150,6 +151,7 @@ calculate_optimal_components <- function(data, eigenvalues, scale = TRUE) {
 #'
 #' @param eigenvalues Numeric vector of eigenvalues
 #' @return List with ncp (elbow position)
+#' @export
 detect_elbow <- function(eigenvalues) {
     n <- length(eigenvalues)
     
@@ -183,6 +185,7 @@ detect_elbow <- function(eigenvalues) {
 #' @param data Data frame with numeric columns
 #' @param n_iter Number of random iterations
 #' @return List with ncp and random eigenvalues (95th percentile)
+#' @export
 compute_parallel_analysis <- function(data, n_iter = 100) {
     n <- nrow(data)
     p <- ncol(data)
@@ -225,6 +228,7 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
 #' @param n Number of observations
 #' @param p Number of variables
 #' @return List with ncp and threshold
+#' @export
 compute_marchenko_pastur <- function(eigenvalues, n, p) {
     # Aspect ratio
     gamma <- p / n
@@ -256,6 +260,7 @@ compute_marchenko_pastur <- function(eigenvalues, n, p) {
 #' @param n Number of observations
 #' @param p Number of variables
 #' @return List with ncp and threshold
+#' @export
 compute_gavish_donoho <- function(eigenvalues, n, p) {
     # Aspect ratio beta = min(n,p) / max(n,p)
     beta <- min(n, p) / max(n, p)
@@ -290,6 +295,7 @@ compute_gavish_donoho <- function(eigenvalues, n, p) {
 #' @param error_msg Character, the original error message
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
+#' @export
 optimal_components_error_parser <- function(error_msg, operation_name = "Optimal Components") {
     if (grepl("singular|invertible", error_msg, ignore.case = TRUE)) {
         paste0(operation_name, ": Data matrix is singular.")

@@ -1,4 +1,4 @@
-#' Download Handler Component
+﻿#' Download Handler Component
 #'
 #' Handles Excel export of filtered data.
 #'
@@ -19,6 +19,7 @@ NULL
 #'   - input$xAxis: Selected X-axis columns (used in filename)
 #' @param filtered_data Reactive returning filtered data frame
 #' @return NULL (side effects only - registers download handler)
+#' @export
 setup_download_handler <- function(output, input, filtered_data) {
     output$downloadData <- shiny::downloadHandler(
         filename = function() {

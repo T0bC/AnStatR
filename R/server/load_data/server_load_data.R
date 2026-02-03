@@ -1,4 +1,4 @@
-# Server module for the "Load Data" tab panel
+﻿# Server module for the "Load Data" tab panel
 #
 # This module handles file uploads (CSV/XLSX) and displays data previews.
 # It serves as the entry point for data into the application.
@@ -19,15 +19,23 @@
 # - `output`: A reactive list for rendering outputs (tables, plots, etc.)
 # - `session`: The Shiny session object, used for namespace management via `session$ns`
 #
-# These objects are scoped to this module's namespace, meaning `input$data_file`
-# here only sees the input from UI_load_data(), not from other modules.
-#
-# ## Component Architecture
-# 
-# This module uses explicit dependency injection for its sub-components.
-# Each component function receives the specific objects it needs as parameters,
-# rather than relying on implicit scoping. See `docs/architecture/explicit_dependency_injection.md`.
-#
+#' These objects are scoped to this module's namespace, meaning `input$data_file`
+#' here only sees the input from UI_load_data(), not from other modules.
+#'
+#' ## Component Architecture
+#' 
+#' This module uses explicit dependency injection for its sub-components.
+#' Each component function receives the specific objects it needs as parameters,
+#' rather than relying on implicit scoping. See `docs/architecture/explicit_dependency_injection.md`.
+#'
+#' @export
+# Import sub-modules using box
+box::use(./file_upload)
+box::use(./data_preview)
+box::use(./missing_values_plot)
+box::use(./data_summary)
+
+#' @export
 server_load_data <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
     # `input`, `output`, `session` are provided by moduleServer() - see @details above
@@ -95,7 +103,7 @@ server_load_data <- function(id) {
     # We pass the module's `input` object so the component can reactively
     # access inputs defined in ui_load_data.R (e.g., input$data_file, input$csv_delimiter).
     # See function documentation in R/server/load_data/file_upload.R
-    handle_file_upload(
+    file_upload$handle_file_upload(
       input = input,  # Module input object from moduleServer() above
       loaded_data = loaded_data,
       session = session,  # For showing column validation modal
@@ -103,21 +111,21 @@ server_load_data <- function(id) {
     )
     
     # Data preview renderer - requires output object and loaded data
-    render_data_preview(
+    data_preview$render_data_preview(
       output = output,
       output_id = "data_preview",
       loaded_data = loaded_data
     )
     
     # Missing values plot renderer - requires output object and loaded data
-    render_missing_values_plot(
+    missing_values_plot$render_missing_values_plot(
       output = output,
       output_id = "missing_values_plot",
       loaded_data = loaded_data
     )
     
     # Data summary renderer - requires output object and loaded data
-    render_data_summary(
+    data_summary$render_data_summary(
       output = output,
       output_id = "data_summary",
       loaded_data = loaded_data

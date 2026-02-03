@@ -1,18 +1,19 @@
-#' UI for the Plotting page
+﻿#' UI for the Plotting page
 #'
 #' Orchestrates all plotting UI components.
 #' Tab components are sourced from R/ui/plotting/
 #'
 #' @param id Module namespace ID
 #' @return A bslib layout_sidebar UI element
+#' @export
 UI_plotting <- function(id) {
     ns <- shiny::NS(id)
     
-    # Source UI tab components
-    source("R/ui/plotting/ui_tab_data_selection.R", local = TRUE)
-    source("R/ui/plotting/ui_tab_filter.R", local = TRUE)
-    source("R/ui/plotting/ui_tab_processing.R", local = TRUE)
-    source("R/ui/plotting/ui_tab_style.R", local = TRUE)
+    # Import UI tab components using box
+    box::use(./ui_tab_data_selection)
+    box::use(./ui_tab_filter)
+    box::use(./ui_tab_processing)
+    box::use(./ui_tab_style)
 
     shiny::tagList(
         # Initialize window size reporting with namespaced IDs
@@ -29,10 +30,10 @@ UI_plotting <- function(id) {
                 # Horizontal tabs with icons only
                 bslib::navset_tab(
                     id = ns("sidebar_tabs"),
-                    create_data_selection_tab(ns),
-                    create_filter_tab(ns),
-                    create_processing_tab(ns),
-                    create_style_tab(ns)
+                    ui_tab_data_selection$create_data_selection_tab(ns),
+                    ui_tab_filter$create_filter_tab(ns),
+                    ui_tab_processing$create_processing_tab(ns),
+                    ui_tab_style$create_style_tab(ns)
                 ),
                 
                 # Download button at bottom (always visible)

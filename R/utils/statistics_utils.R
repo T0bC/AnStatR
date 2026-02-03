@@ -8,13 +8,13 @@
 #' - tests_effect_size.R: Cliff's Delta
 #' - tests_combined_results.R: Result formatting
 
-
-# Source test implementation files
-source("R/utils/statistics/tests_robust_anova.R", local = TRUE)
-source("R/utils/statistics/tests_parametric_anova.R", local = TRUE)
-source("R/utils/statistics/tests_contrasts.R", local = TRUE)
-source("R/utils/statistics/tests_effect_size.R", local = TRUE)
-source("R/utils/statistics/tests_combined_results.R", local = TRUE)
+# Import test implementation modules
+box::use(./statistics/tests_robust_anova)
+box::use(./statistics/tests_parametric_anova)
+box::use(./statistics/tests_contrasts)
+box::use(./statistics/tests_effect_size)
+box::use(./statistics/tests_combined_results)
+box::use(./error_handling)
 
 
 #' Create a structured error object for statistical tests
@@ -28,9 +28,10 @@ source("R/utils/statistics/tests_combined_results.R", local = TRUE)
 #' @param test_name Character, name of the test that failed
 #' @param context List, optional context with function arguments for debugging
 #' @return List with is_error=TRUE and structured error information
+#' @export
 create_stat_error <- function(user_msg, raw_msg, error_obj, test_name, context = NULL) {
     # Delegate to global error handling with test_name as operation_name
-    create_app_error(
+    error_handling$create_app_error(
         user_msg = user_msg,
         raw_msg = raw_msg,
         error_obj = error_obj,
@@ -49,13 +50,14 @@ create_stat_error <- function(user_msg, raw_msg, error_obj, test_name, context =
 #' @param test_name Character, name of the test for error messages
 #' @param context List, optional context with function arguments for debugging
 #' @return List with success flag and either result or structured error
+#' @export
 safe_stat_test <- function(expr, test_name = "test", context = NULL) {
     # Delegate to global safe_execute with stat-specific error parser
-    safe_execute(
+    error_handling$safe_execute(
         expr = expr,
         operation_name = test_name,
         context = context,
-        error_parser = stat_error_parser
+        error_parser = error_handling$stat_error_parser
     )
 }
 
@@ -67,6 +69,7 @@ safe_stat_test <- function(expr, test_name = "test", context = NULL) {
 #' @param df Data frame containing the data
 #' @param x_axis Character vector of grouping column(s)
 #' @return Integer, smallest group size
+#' @export
 calculate_smallest_group <- function(df, x_axis) {
     group_counts <- df %>%
         dplyr::group_by(dplyr::across(dplyr::all_of(x_axis))) %>%
@@ -81,6 +84,7 @@ calculate_smallest_group <- function(df, x_axis) {
 #' @param boot_results Data frame with bootstrap iterations (rows) and statistics (columns)
 #' @param digits Integer, number of significant digits
 #' @return Data frame with mean [CI lower - CI upper] format
+#' @export
 format_bootstrap_results <- function(boot_results, digits = 3) {
     # Validate input
     if (is.null(boot_results) || nrow(boot_results) == 0) {
@@ -137,6 +141,7 @@ format_bootstrap_results <- function(boot_results, digits = 3) {
 #' @param params List of statistics parameters from sidebar
 #' @param level_discrepancy Character vector or NULL, level consistency issues
 #' @return List with all results for this measurement
+#' @export
 compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, params,
                                            level_discrepancy = NULL) {
     
@@ -153,17 +158,17 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
             "1" = list(
                 type = "one-way",
                 header = "Robust One-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-                test_fn = perform_t1way
+                test_fn = tests_robust_anova$perform_t1way
             ),
             "2" = list(
                 type = "two-way", 
                 header = "Robust Two-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-                test_fn = perform_t2way
+                test_fn = tests_robust_anova$perform_t2way
             ),
             "3" = list(
                 type = "three-way",
                 header = "Robust Three-Way Trimmed Means Comparisons [ANOVA] - Heteroscedastic Welch-Yuen",
-                test_fn = perform_t3way
+                test_fn = tests_robust_anova$perform_t3way
             ),
             list(
                 type = "error",
@@ -177,17 +182,17 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
             "1" = list(
                 type = "one-way",
                 header = "Classical One-Way ANOVA - Parametric Test",
-                test_fn = perform_parametric_anova
+                test_fn = tests_parametric_anova$perform_parametric_anova
             ),
             "2" = list(
                 type = "two-way", 
                 header = "Classical Two-Way ANOVA - Parametric Test",
-                test_fn = perform_parametric_anova
+                test_fn = tests_parametric_anova$perform_parametric_anova
             ),
             "3" = list(
                 type = "three-way",
                 header = "Classical Three-Way ANOVA - Parametric Test",
-                test_fn = perform_parametric_anova
+                test_fn = tests_parametric_anova$perform_parametric_anova
             ),
             list(
                 type = "error",
@@ -251,7 +256,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
     # Post-hoc tests (based on test approach)
     if (test_approach == "robust") {
         # Linear contrasts for robust tests
-        result_lincon <- perform_lincon(
+        result_lincon <- tests_contrasts$perform_lincon(
             df = df,
             x_axis = x_axis,
             measure_col = measure_col,
@@ -263,7 +268,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         )
     } else {
         # Tukey HSD for parametric tests
-        result_lincon <- perform_tukey_hsd(
+        result_lincon <- tests_parametric_anova$perform_tukey_hsd(
             df = df,
             x_axis = x_axis,
             measure_col = measure_col,
@@ -279,7 +284,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
     # Effect size (based on test approach)
     if (test_approach == "robust") {
         # Cliff's Delta for robust tests
-        result_cliff <- perform_cliff(
+        result_cliff <- tests_effect_size$perform_cliff(
             df = df,
             x_axis = x_axis,
             measure_col = measure_col,
@@ -291,7 +296,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         )
     } else {
         # Cohen's d for parametric tests
-        result_cliff <- perform_cohens_d(
+        result_cliff <- tests_effect_size$perform_cohens_d(
             df = df,
             x_axis = x_axis,
             measure_col = measure_col,
@@ -330,7 +335,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         if (!is.null(p_col)) df1ColNames <- c(df1ColNames, p_col)
         
         # Use generic combined results function for robust tests
-        result_combined <- create_combined_results(
+        result_combined <- tests_combined_results$create_combined_results(
             df1 = result_lincon,  # lincon results
             df2 = result_cliff,   # cliff results
             df1ColNames = df1ColNames,
@@ -343,7 +348,7 @@ compute_measurement_statistics <- function(df, x_axis, measure_col, tr_value, pa
         )
     } else {
         # Use generic combined results function for parametric tests
-        result_combined <- create_combined_results(
+        result_combined <- tests_combined_results$create_combined_results(
             df1 = result_lincon,  # Tukey HSD results
             df2 = result_cliff,   # Cohen's d results
             df1ColNames = c("Interaction", "Difference", "p.value.raw"),

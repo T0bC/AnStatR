@@ -1,4 +1,4 @@
-# Quality Filter UI rendering
+﻿# Quality Filter UI rendering
 # This file defines a function that renders the quality column selection and filtering UI
 #
 # @param output Shiny output object
@@ -8,6 +8,7 @@
 # @param session Shiny session object
 # @return Reactive returning quality column info (used by median_params for unified debouncing)
 
+#' @export
 render_quality_filter_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
     
@@ -39,7 +40,7 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
             max_val <- max(col_data, na.rm = TRUE)
             
             # Check if it's discrete integers with few unique values (like quality grades 1-4)
-            # Treat as categorical if: all integers AND few unique values (≤10)
+            # Treat as categorical if: all integers AND few unique values (â‰¤10)
             all_integers <- all(col_data == floor(col_data), na.rm = TRUE)
             
             if (all_integers && n_unique <= 10) {
@@ -158,7 +159,7 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
                 shiny::tagList(
                     shiny::numericInput(
                         inputId = ns("quality_threshold"),
-                        label = "Minimum quality threshold (keep values ≥):",
+                        label = "Minimum quality threshold (keep values â‰¥):",
                         value = default_threshold,
                         min = info$min,
                         max = info$max,

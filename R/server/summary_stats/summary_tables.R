@@ -1,3 +1,8 @@
+﻿# Import required modules
+box::use(../summary_stats/summary_utils)
+box::use(../../utils/error_handling)
+box::use(../../ui/components/error_display)
+
 #' Create summary dataframes reactive
 #'
 #' Computes summary statistics for each measurement column.
@@ -11,6 +16,7 @@
 #' @param median_data Reactive containing processed data with outlier/trimmed flags
 #' @param measurement_cols Reactive returning measurement column names
 #' @return Reactive returning list of summary dataframes (one per measurement)
+#' @export
 create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
     
     shiny::reactive({
@@ -32,7 +38,7 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
         
         # Return error if no valid grouping variables
         if (length(valid_grouping_vars) == 0) {
-            return(simple_error(
+            return(error_handling$simple_error(
                 message = "Selected grouping columns are not available in the current dataset. Please select valid columns.",
                 operation_name = "Summary Statistics",
                 context = list(
@@ -43,8 +49,8 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
         }
         
         # Summarize the data (uses {col}_outlier and {col}_trimmed columns)
-        summary_result <- safe_execute(
-            expr = summarize_data(
+        summary_result <- error_handling$safe_execute(
+            expr = summary_utils$summarize_data(
                 data = data,
                 grouping_vars = valid_grouping_vars,
                 measure_vars = measure_cols,
@@ -56,7 +62,7 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
                 n_measures = length(measure_cols),
                 n_rows = nrow(data)
             ),
-            error_parser = default_error_parser
+            error_parser = error_handling$default_error_parser
         )
         
         # Return error if summarization failed
@@ -99,6 +105,7 @@ create_summary_dfs_reactive <- function(input, median_data, measurement_cols) {
 #' @param output Shiny output object from the parent module
 #' @param session Shiny session object from the parent module
 #' @param summary_dfs Reactive returning list of summary dataframes
+#' @export
 setup_summary_table_outputs <- function(output, session, summary_dfs) {
     ns <- session$ns
     
@@ -161,6 +168,7 @@ setup_summary_table_outputs <- function(output, session, summary_dfs) {
 #' @param ns Namespace function from session
 #' @param summary_dfs Reactive returning list of summary dataframes
 #' @param median_data Reactive containing the median-processed data
+#' @export
 setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
     
     output$summary_tables <- shiny::renderUI({
@@ -185,8 +193,8 @@ setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
         summaries <- summary_dfs()
         
         # Check for structured error from summarize_data
-        if (is_app_error(summaries)) {
-            return(error_alert_structured(summaries, type = "danger"))
+        if (error_handling$is_app_error(summaries)) {
+            return(error_display$error_alert_structured(summaries, type = "danger"))
         }
         
         if (is.null(summaries) || length(summaries) == 0) {
@@ -252,6 +260,7 @@ setup_summary_tables_ui <- function(output, ns, summary_dfs, median_data) {
 #'
 #' @param output Shiny output object from the parent module
 #' @param summary_dfs Reactive returning list of summary dataframes
+#' @export
 setup_download_all_handler <- function(output, summary_dfs) {
     
     output$download_all <- shiny::downloadHandler(

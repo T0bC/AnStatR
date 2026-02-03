@@ -1,9 +1,9 @@
-# Settings Modal UI Component
+﻿# Settings Modal UI Component
 #
 # This component provides the settings modal dialog for the app.
 # It handles theme selection and other global app settings.
 
-# Available themes for the app
+#' @export
 available_themes <- list(
   "Default (Light)" = bslib::bs_theme(preset = "bootstrap"),
   "Flatly (Light)" = bslib::bs_theme(preset = "flatly"),
@@ -15,15 +15,15 @@ available_themes <- list(
   "Solar (Dark)" = bslib::bs_theme(preset = "solar")
 )
 
-# Default theme name (must match a key in available_themes)
+#' @export
 default_theme_name <- "Cosmo (Light)"
 
-# Get the default theme object
+#' @export
 get_default_theme <- function() {
   available_themes[[default_theme_name]]
 }
 
-# Settings modal UI
+#' @export
 settings_modal_ui <- function() {
   shiny::modalDialog(
     title = "App Settings",
@@ -43,9 +43,7 @@ settings_modal_ui <- function() {
   )
 }
 
-# Settings modal server logic
-# @param input Shiny input object
-# @param session Shiny session object
+#' @export
 settings_modal_server <- function(input, session) {
   # Open settings modal when gear icon is clicked
   shiny::observeEvent(input$settings_btn, {

@@ -1,9 +1,10 @@
-#' Data Selection Tab UI Component
+﻿#' Data Selection Tab UI Component
 #'
 #' Creates the Data Selection tab for the plotting sidebar.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_data_selection_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

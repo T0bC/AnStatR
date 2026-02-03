@@ -1,4 +1,4 @@
-#' Plots UI Component
+﻿#' Plots UI Component
 #'
 #' Handles rendering of the main plots container with step-by-step guidance.
 #'
@@ -23,8 +23,10 @@ NULL
 #' @param median_data Reactive containing the median-processed data
 #' @param debug Logical, enable debug logging
 #' @return NULL (side effects only - registers output)
+#' @export
 setup_plots_ui_output <- function(output, ns, input, median_data, debug = FALSE) {
     
+#' @export
     debug_log <- function(source, details = NULL) {
         if (debug) {
             timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")

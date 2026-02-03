@@ -1,3 +1,4 @@
+﻿#' @export
 UI_load_data <- function(id) {
   ns <- shiny::NS(id)
 

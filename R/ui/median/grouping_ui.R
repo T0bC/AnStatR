@@ -1,4 +1,4 @@
-# Grouping UI rendering
+﻿# Grouping UI rendering
 # This file defines a function that renders the grouping column selection UI
 #
 # @param output Shiny output object
@@ -8,6 +8,7 @@
 # @param session Shiny session object
 # @return NULL (side effects: creates output; input$grouping_columns used by median_params)
 
+#' @export
 render_grouping_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
     

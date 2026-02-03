@@ -1,4 +1,4 @@
-#' KMO Computation Functions
+﻿#' KMO Computation Functions
 #'
 #' Provides KMO measure calculation with proper error handling.
 
@@ -6,6 +6,7 @@
 #'
 #' @param data Data frame with numeric columns (already prepared)
 #' @return List with overall KMO and individual variable KMOs, or structured error
+#' @export
 calculate_kmo <- function(data) {
     error_context <- list(
         n_variables = ncol(data),
@@ -34,6 +35,7 @@ calculate_kmo <- function(data) {
 #' @param error_msg Character, the original error message
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
+#' @export
 kmo_error_parser <- function(error_msg, operation_name = "KMO") {
     if (grepl("singular|invertible", error_msg, ignore.case = TRUE)) {
         "KMO: Correlation matrix is singular. Remove highly correlated or constant variables."

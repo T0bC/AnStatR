@@ -1,9 +1,10 @@
-#' PCA Data Selection Tab UI Component
+﻿#' PCA Data Selection Tab UI Component
 #'
 #' Creates the Data Selection tab for the PCA sidebar.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_pca_data_selection_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(

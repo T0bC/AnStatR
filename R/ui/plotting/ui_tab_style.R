@@ -1,10 +1,11 @@
-#' Style Tab UI Component
+﻿#' Style Tab UI Component
 #'
 #' Creates the Plot Style tab for the plotting sidebar.
 #' Contains accordion panels for points, legend/grid, median/SD, axis, colors, and export.
 #'
 #' @param ns Namespace function from parent module
 #' @return A bslib::nav_panel element
+#' @export
 create_style_tab <- function(ns) {
     bslib::nav_panel(
         title = bslib::tooltip(
@@ -35,6 +36,7 @@ create_style_tab <- function(ns) {
 #' Points Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_points_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Points",
@@ -110,6 +112,7 @@ create_points_accordion_panel <- function(ns) {
 #' Legend & Grid Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_legend_grid_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Legend & Grid",
@@ -156,6 +159,7 @@ create_legend_grid_accordion_panel <- function(ns) {
 #' Median & SD Lines Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_median_sd_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Median & SD Lines",
@@ -204,6 +208,7 @@ create_median_sd_accordion_panel <- function(ns) {
 #' Axis Settings Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_axis_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Axis Settings",
@@ -234,6 +239,7 @@ create_axis_accordion_panel <- function(ns) {
 #' Colors Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_colors_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Custom Colors",
@@ -248,6 +254,7 @@ create_colors_accordion_panel <- function(ns) {
 #' Export Settings Accordion Panel
 #' @param ns Namespace function
 #' @return A bslib::accordion_panel element
+#' @export
 create_export_accordion_panel <- function(ns) {
     bslib::accordion_panel(
         title = "Export Settings",

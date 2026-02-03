@@ -1,4 +1,4 @@
-#' Sidebar Logic for Statistics Module
+﻿#' Sidebar Logic for Statistics Module
 #'
 #' Handles dynamic UI elements in the statistics sidebar.
 #'
@@ -7,6 +7,7 @@
 #' @param session Shiny session object from the parent module
 #' @param x_axis Reactive containing selected X-axis columns from plotting
 #' @param trim_percent Reactive containing the trim percentage from plotting
+#' @export
 setup_sidebar_ui <- function(input, output, session, x_axis, trim_percent) {
     ns <- session$ns
     
@@ -95,6 +96,7 @@ setup_sidebar_ui <- function(input, output, session, x_axis, trim_percent) {
 #' @param input Shiny input object from the parent module
 #' @param x_axis Reactive containing selected X-axis columns from plotting
 #' @return Reactive containing all statistics parameters
+#' @export
 create_statistics_params <- function(input, x_axis) {
     shiny::reactive({
         list(

@@ -1,9 +1,16 @@
-#' Linear Contrast Statistical Tests
+#' Linear Contrasts Statistical Tests
 #'
-#' Contains pairwise comparison tests using linear contrasts:
-#' - lincon (linear contrasts)
-#' - Future: mcp2atm, other contrast methods
+#' Contains post-hoc linear contrasts tests for both robust and parametric approaches:
+#' - lincon: Linear contrasts for robust tests (Welch-Yuen family)
+#' - Uses trimmed means for robust approach
+#' - Uses standard means for parametric approach
 
+# Import required modules
+box::use(../statistics_utils)
+box::use(../error_handling)
+library(WRS2)
+library(dplyr)
+library(stats)
 
 # =============================================================================
 # lincon Helper Functions
@@ -256,7 +263,7 @@ perform_lincon <- function(df, x_axis, measure_col, tr_value,
     error_context <- build_lincon_context(df, x_axis, measure_col, tr_value, use_bootstrap)
     
     # 4. Run the test iterations
-    test_result <- safe_stat_test({
+    test_result <- statistics_utils$safe_stat_test({
         results_list <- vector("list", boot_params$n_iterations)
         
         for (i in seq_len(boot_params$n_iterations)) {
