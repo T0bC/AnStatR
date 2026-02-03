@@ -203,7 +203,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
             
             for (measure in measures) {
                 filtered_df <- data_utils$get_filtered_measurement_data(data, measure)
-                discrepancy <- statistics_utils$check_level_consistency(
+                discrepancy <- data_utils$check_level_consistency(
                     df = filtered_df,
                     primary_group = x_cols[1],
                     secondary_groups = x_cols[2:length(x_cols)]
@@ -269,7 +269,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     # Check level consistency for this measurement (multi-way only)
                     level_discrepancy <- NULL
                     if (length(x_cols) > 1) {
-                        level_discrepancy <- statistics_utils$check_level_consistency(
+                        level_discrepancy <- data_utils$check_level_consistency(
                             df = filtered_df,
                             primary_group = x_cols[1],
                             secondary_groups = x_cols[2:length(x_cols)]
