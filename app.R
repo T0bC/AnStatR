@@ -8,6 +8,8 @@ options(shiny.fullstacktrace = TRUE, keep.source = TRUE)
 # All modules are imported using box::use() for explicit function origins.
 # Functions are called as module$function() e.g., settings_modal$get_default_theme()
 
+library(box)
+
 # Utils
 box::use(R/utils/error_handling)
 box::use(R/utils/column_utils)
