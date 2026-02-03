@@ -156,7 +156,7 @@ stat_error_parser <- function(error_msg, operation_name = "Test") {
         paste0(operation_name, ": Insufficient groups for comparison. Need at least 2 groups with data.")
     } else if (grepl("sample size|observations", error_msg, ignore.case = TRUE)) {
         paste0(operation_name, ": Insufficient sample size in one or more groups.")
-    } else if (grepl("NA|missing", error_msg, ignore.case = TRUE)) {
+    } else if (grepl("\\bNA\\b|\\bNAs\\b|NA values|missing values|is\\.na", error_msg, ignore.case = TRUE)) {
         paste0(operation_name, ": Too many missing values in the data.")
     } else if (grepl("variance|constant", error_msg, ignore.case = TRUE)) {
         paste0(operation_name, ": Cannot compute - one or more groups have zero variance.")
