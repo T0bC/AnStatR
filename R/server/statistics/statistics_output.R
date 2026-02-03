@@ -2,6 +2,7 @@
 box::use(../../utils/error_handling)
 box::use(../../utils/statistics_utils)
 box::use(../../utils/data_utils)
+box::use(../../ui/components/error_display[render_app_error])
 
 #' Statistics Output Logic
 #'
@@ -28,7 +29,7 @@ is_stat_error <- function(obj) {
 #' @return Shiny tags object with error display
 #' @export
 render_stat_error <- function(error_obj) {
-    error_handling$render_app_error(error_obj)
+    render_app_error(error_obj)
 }
 
 
