@@ -68,8 +68,8 @@ render_median_table <- function(output, output_id, filtered_data, grouping_cols,
                 for (col in other_descriptive) {
                     # Check if this column varies within any group
                     varies_within_group <- any(
-                        tapply(data[[col]], 
-                               interaction(data[selected_grouping], drop = TRUE),
+                        stats::tapply(data[[col]], 
+                               stats::interaction(data[selected_grouping], drop = TRUE),
                                function(x) length(unique(x)) > 1)
                     )
                     if (varies_within_group) {
@@ -97,7 +97,7 @@ render_median_table <- function(output, output_id, filtered_data, grouping_cols,
             median_data <- stats::aggregate(
                 data[measurement_col_names],
                 by = data[selected_grouping],
-                FUN = function(x) median(x, na.rm = TRUE)
+                FUN = function(x) stats::median(x, na.rm = TRUE)
             )
             
             # If there are constant descriptive columns, merge them back
