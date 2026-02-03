@@ -325,7 +325,7 @@ create_scatter_plot <- function(data,
         retained_data <- data[retained_idx, , drop = FALSE]
         p <- p + ggplot2::stat_summary(
             data = retained_data,
-            fun = median,
+            fun = stats::median,
             geom = "crossbar",
             width = median_width,
             color = "black",
