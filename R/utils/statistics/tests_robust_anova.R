@@ -309,19 +309,19 @@ t2way_config <- list(
             data.frame(
                 Effect = effect_labels,
                 Q.Statistic = c(
-                    paste0(signif(mean(results$Qa, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$Qa, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "Qa"], 3), " - ", signif(ci_bounds[2, "Qa"], 3), "]"),
-                    paste0(signif(mean(results$Qb, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$Qb, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "Qb"], 3), " - ", signif(ci_bounds[2, "Qb"], 3), "]"),
-                    paste0(signif(mean(results$Qab, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$Qab, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "Qab"], 3), " - ", signif(ci_bounds[2, "Qab"], 3), "]")
                 ),
                 p.value = c(
-                    paste0(signif(mean(results$A.p.value, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$A.p.value, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "A.p.value"], 3), " - ", signif(ci_bounds[2, "A.p.value"], 3), "]"),
-                    paste0(signif(mean(results$B.p.value, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$B.p.value, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "B.p.value"], 3), " - ", signif(ci_bounds[2, "B.p.value"], 3), "]"),
-                    paste0(signif(mean(results$AB.p.value, na.rm = TRUE), 3), " [",
+                    paste0(signif(stats::mean(results$AB.p.value, na.rm = TRUE), 3), " [",
                            signif(ci_bounds[1, "AB.p.value"], 3), " - ", signif(ci_bounds[2, "AB.p.value"], 3), "]")
                 ),
                 stringsAsFactors = FALSE
@@ -435,12 +435,12 @@ t3way_config <- list(
             })
             
             q_stats <- sapply(q_cols, function(col) {
-                paste0(signif(mean(results[[col]], na.rm = TRUE), 3), " [",
+                paste0(signif(stats::mean(results[[col]], na.rm = TRUE), 3), " [",
                        signif(ci_bounds[1, col], 3), " - ", signif(ci_bounds[2, col], 3), "]")
             })
             
             p_vals <- sapply(p_cols, function(col) {
-                paste0(signif(mean(results[[col]], na.rm = TRUE), 3), " [",
+                paste0(signif(stats::mean(results[[col]], na.rm = TRUE), 3), " [",
                        signif(ci_bounds[1, col], 3), " - ", signif(ci_bounds[2, col], 3), "]")
             })
             
