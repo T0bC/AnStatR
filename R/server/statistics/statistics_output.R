@@ -1,6 +1,7 @@
 ﻿# Import required modules
 box::use(../../utils/error_handling)
 box::use(../../utils/statistics_utils)
+box::use(../../utils/data_utils)
 
 #' Statistics Output Logic
 #'
@@ -200,7 +201,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
             level_discrepancies <- character(0)
             
             for (measure in measures) {
-                filtered_df <- statistics_utils$get_filtered_measurement_data(data, measure)
+                filtered_df <- data_utils$get_filtered_measurement_data(data, measure)
                 discrepancy <- statistics_utils$check_level_consistency(
                     df = filtered_df,
                     primary_group = x_cols[1],
@@ -262,7 +263,7 @@ setup_statistics_output <- function(input, output, session, processed_data,
                     )
                     
                     # Get filtered data for this measurement (excludes outliers/trimmed)
-                    filtered_df <- statistics_utils$get_filtered_measurement_data(data, measure)
+                    filtered_df <- data_utils$get_filtered_measurement_data(data, measure)
                     
                     # Check level consistency for this measurement (multi-way only)
                     level_discrepancy <- NULL

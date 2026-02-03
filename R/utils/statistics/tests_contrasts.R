@@ -8,6 +8,7 @@
 # Import required modules
 box::use(../statistics_utils)
 box::use(../error_handling)
+box::use(./tests_robust_anova[setup_bootstrap_params])
 library(WRS2)
 library(dplyr)
 library(stats)
