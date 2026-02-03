@@ -68,6 +68,11 @@ build_cliff_context <- function(df, x_axis, measure_col, use_bootstrap) {
 #' @param measure_col Measurement column
 #' @return Data frame with cliff results for this iteration
 run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
+    # Debug: Check for missing values before processing
+    cat("DEBUG: Missing values in measure column:", sum(is.na(sample_data[[measure_col]])), "\n")
+    cat("DEBUG: Missing values in grouping columns:", sapply(sample_data[x_axis], function(col) sum(is.na(col))), "\n")
+    cat("DEBUG: Total rows before processing:", nrow(sample_data), "\n")
+    
     # Combine groups for multi-factor designs
     if (length(x_axis) > 1) {
         sample_data$combinedGroups <- do.call(paste, c(sample_data[x_axis], sep = "."))
@@ -75,6 +80,16 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
         sample_data$combinedGroups <- sample_data[[x_axis[1]]]
     }
     sample_data$combinedGroupsNum <- as.numeric(as.factor(sample_data$combinedGroups))
+    
+    # Debug: Check for missing values after processing
+    cat("DEBUG: Missing values in combinedGroups:", sum(is.na(sample_data$combinedGroups)), "\n")
+    cat("DEBUG: Missing values in combinedGroupsNum:", sum(is.na(sample_data$combinedGroupsNum)), "\n")
+    cat("DEBUG: Data structure being passed to cidmulv2_labelled:\n")
+    cat("  - measure_col:", measure_col, "\n")
+    cat("  - gcode column exists:", "combinedGroupsNum" %in% names(sample_data), "\n")
+    cat("  - glab column exists:", "combinedGroups" %in% names(sample_data), "\n")
+    cat("  - Sample of combinedGroupsNum:", utils::head(sample_data$combinedGroupsNum), "\n")
+    cat("  - Sample of measure column:", utils::head(sample_data[[measure_col]]), "\n")
     
     # Run cidmulv2_labelled (Cliff's Delta for multiple groups)
     cliff_result <- cidmulv2_labelled(
@@ -259,6 +274,18 @@ perform_cliff <- function(df, x_axis, measure_col, tr_value,
                           use_bootstrap = FALSE, boot_samples = 599,
                           boot_sample_size = NULL, p_adjust_method = "bonferroni") {
     
+    # Debug: Check data before any processing
+    cat("DEBUG: Data received by perform_cliff:\n")
+    cat("  - Total rows:", nrow(df), "\n")
+    cat("  - Groups and sizes:\n")
+    if (length(x_axis) > 1) {
+        df$debug_combined <- do.call(paste, c(df[x_axis], sep = "."))
+        print(table(df$debug_combined, useNA = "ifany"))
+    } else {
+        print(table(df[[x_axis[1]]], useNA = "ifany"))
+    }
+    cat("  - Missing values in measure column:", sum(is.na(df[[measure_col]])), "\n")
+    
     # 1. Validate inputs
     validation_error <- validate_cliff(df, x_axis)
     if (!is.null(validation_error)) return(validation_error)
@@ -281,8 +308,11 @@ perform_cliff <- function(df, x_axis, measure_col, tr_value,
         results_list
     }, test_name = "cliff", context = error_context)
     
-    # 5. Handle errors
-    if (!test_result$success) return(test_result$error)
+    # 5. Handle errors - show original error message for debugging
+    if (!test_result$success) {
+        cat("DEBUG: Original error from cidmulv2_labelled:", test_result$error$raw_msg, "\n")
+        return(test_result$error)
+    }
     
     # 6. Format results
     if (use_bootstrap) {
