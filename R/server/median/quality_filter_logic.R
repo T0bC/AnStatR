@@ -96,10 +96,10 @@ filter_categorical <- function(data, col, bad_values, grouping_cols) {
         
         message <- paste0(
             "Categorical quality filter applied.\n",
-            "Groups: ", n_groups_total, " total â€” ",
+            "Groups: ", n_groups_total, " total - ",
             n_groups_all_bad, " kept intact (only bad values), ",
             n_groups_filtered, " cleaned (bad rows removed).\n",
-            "Rows: ", rows_before, " â†’ ", rows_after, 
+            "Rows: ", rows_before, " -> ", rows_after, 
             " (", rows_before - rows_after, " bad rows removed)"
         )
         
@@ -110,7 +110,7 @@ filter_categorical <- function(data, col, bad_values, grouping_cols) {
         
         message <- paste0(
             "Categorical quality filter applied (no grouping).\n",
-            "Rows: ", rows_before, " â†’ ", rows_after,
+            "Rows: ", rows_before, " -> ", rows_after,
             " (", rows_before - rows_after, " bad values removed)"
         )
     }
@@ -156,11 +156,11 @@ filter_numeric <- function(data, col, threshold, grouping_cols) {
         rows_after <- nrow(filtered)
         
         message <- paste0(
-            "Numeric quality filter applied (threshold â‰¥ ", threshold, ").\n",
-            "Groups: ", n_groups_total, " total â€” ",
+            "Numeric quality filter applied (threshold >= ", threshold, ").\n",
+            "Groups: ", n_groups_total, " total - ",
             n_groups_all_bad, " kept intact (all below threshold), ",
             n_groups_filtered, " cleaned (below-threshold rows removed).\n",
-            "Rows: ", rows_before, " â†’ ", rows_after,
+            "Rows: ", rows_before, " -> ", rows_after,
             " (", rows_before - rows_after, " rows removed)"
         )
         
@@ -170,8 +170,8 @@ filter_numeric <- function(data, col, threshold, grouping_cols) {
         rows_after <- nrow(filtered)
         
         message <- paste0(
-            "Numeric quality filter applied (threshold â‰¥ ", threshold, ", no grouping).\n",
-            "Rows: ", rows_before, " â†’ ", rows_after,
+            "Numeric quality filter applied (threshold >= ", threshold, ", no grouping).\n",
+            "Rows: ", rows_before, " -> ", rows_after,
             " (", rows_before - rows_after, " below threshold removed)"
         )
     }
