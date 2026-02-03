@@ -318,7 +318,7 @@ calculate_raw_pvalues <- function(differences, group_pairs, group_sizes, model_s
             return(NA_real_)
         }
         
-        se_diff <- stats::sqrt(model_stats$mse * (1/n1 + 1/n2))
+        se_diff <- sqrt(model_stats$mse * (1/n1 + 1/n2))
         t_stat <- differences[i] / se_diff
         2 * stats::pt(abs(t_stat), df = model_stats$df_residual, lower.tail = FALSE)
     }, numeric(1))
@@ -380,7 +380,7 @@ add_multi_factor_columns <- function(result_df, comparisons, group_sizes, model_
             next
         }
         
-        se_values[i] <- stats::sqrt(model_stats$mse * (1/n1 + 1/n2))
+        se_values[i] <- sqrt(model_stats$mse * (1/n1 + 1/n2))
         t_values[i] <- result_df$Difference[i] / se_values[i]
         
         margin <- stats::qt(0.975, df = model_stats$df_residual) * se_values[i]
@@ -523,21 +523,21 @@ perform_cohens_d <- function(df, x_axis, measure_col, tr_value = 0,
                 group2_data <- df[df[[group_var]] == groups[j], measure_col]
                 
                 # Calculate means and SDs
-                mean1 <- stats::mean(group1_data, na.rm = TRUE)
-                mean2 <- stats::mean(group2_data, na.rm = TRUE)
-                sd1 <- stats::sd(group1_data, na.rm = TRUE)
-                sd2 <- stats::sd(group2_data, na.rm = TRUE)
+                mean1 <- mean(group1_data, na.rm = TRUE)
+                mean2 <- mean(group2_data, na.rm = TRUE)
+                sd1 <- sd(group1_data, na.rm = TRUE)
+                sd2 <- sd(group2_data, na.rm = TRUE)
                 n1 <- length(group1_data)
                 n2 <- length(group2_data)
                 
                 # Pooled standard deviation
-                pooled_sd <- stats::sqrt(((n1 - 1) * sd1^2 + (n2 - 1) * sd2^2) / (n1 + n2 - 2))
+                pooled_sd <- sqrt(((n1 - 1) * sd1^2 + (n2 - 1) * sd2^2) / (n1 + n2 - 2))
                 
                 # Cohen's d
                 d <- (mean1 - mean2) / pooled_sd
                 
                 # Standard error of d
-                se_d <- stats::sqrt((n1 + n2) / (n1 * n2) + d^2 / (2 * (n1 + n2)))
+                se_d <- sqrt((n1 + n2) / (n1 * n2) + d^2 / (2 * (n1 + n2)))
                 
                 # 95% CI for d
                 ci_lower <- d - 1.96 * se_d
