@@ -9,6 +9,7 @@
 box::use(../statistics_utils)
 box::use(../error_handling)
 box::use(./tests_robust_anova[setup_bootstrap_params, sample_for_iteration])
+box::use(./tests_parametric_anova)
 box::use(../`Rallfun-v43`[cidmulv2_labelled])
 
 # =============================================================================
@@ -221,32 +222,35 @@ format_cliff_single <- function(result_df, p_adjust_method) {
 # Main Cohen's d Function (Placeholder)
 # =============================================================================
 
-#' Perform Cohen's d Effect Size (Placeholder)
+#' Perform Cohen's d Effect Size
 #'
-#' Placeholder function for Cohen's d effect size calculations.
-#' Currently returns an error as this functionality is not yet implemented.
+#' Performs pairwise Cohen's d effect size calculations for all group pairs.
+#' For multi-factor designs, groups are combined into a single factor.
+#' Uses the implementation from tests_parametric_anova.R.
 #'
-#' @param df Data frame containing the data
+#' @param df Data frame containing the data (already filtered for outliers/trimmed)
 #' @param x_axis Character vector of grouping column(s)
 #' @param measure_col Character, measurement column name
-#' @param tr_value Numeric, trim proportion (not used for Cohen's d)
+#' @param tr_value Numeric, trim proportion (not used for Cohen's d, kept for API consistency)
 #' @param use_bootstrap Logical, whether to use bootstrap
 #' @param boot_samples Integer, number of bootstrap samples
 #' @param boot_sample_size Integer or NULL, bootstrap sample size per group
 #' @param p_adjust_method Character, p-value adjustment method
-#' @return Error data frame indicating not implemented
+#' @return Data frame with Cohen's d effect size results or error
 perform_cohens_d <- function(df, x_axis, measure_col, tr_value,
                            use_bootstrap = FALSE, boot_samples = 599,
                            boot_sample_size = NULL, p_adjust_method = "bonferroni") {
     
-    error_handling$simple_error(
-        message = "Cohen's d effect size calculations are not yet implemented.",
-        operation_name = "cohens_d",
-        context = list(
-            measure = measure_col,
-            grouping = x_axis,
-            n_observations = nrow(df)
-        )
+    # Delegate to the actual implementation in tests_parametric_anova
+    tests_parametric_anova$perform_cohens_d(
+        df = df,
+        x_axis = x_axis,
+        measure_col = measure_col,
+        tr_value = tr_value,
+        use_bootstrap = use_bootstrap,
+        boot_samples = boot_samples,
+        boot_sample_size = boot_sample_size,
+        p_adjust_method = p_adjust_method
     )
 }
 
