@@ -257,8 +257,8 @@ detect_outliers <- function(data, value_col, group_col,
         }
         
         xv <- x[valid]
-        iso <- isotree::isolation.forest(matrix(xv, ncol = 1), ntrees = 100, nthreads = 1)
-        scores <- predict(iso, matrix(xv, ncol = 1))
+        iso <- isotree::isolation.forest(base::matrix(xv, ncol = 1), ntrees = 100, nthreads = 1)
+        scores <- stats::predict(iso, base::matrix(xv, ncol = 1))
         threshold <- stats::quantile(scores, 1 - fac)
         result[valid] <- scores > threshold
         result
@@ -279,7 +279,7 @@ detect_outliers <- function(data, value_col, group_col,
         k <- min(5, length(xv) - 1)
         if (k < 1) return(result)
         
-        lof_scores <- dbscan::lof(matrix(xv, ncol = 1), minPts = k)
+        lof_scores <- dbscan::lof(base::matrix(xv, ncol = 1), minPts = k)
         threshold <- stats::quantile(lof_scores, 1 - fac, na.rm = TRUE)
         result[valid] <- lof_scores > threshold
         result
