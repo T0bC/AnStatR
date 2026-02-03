@@ -2,6 +2,7 @@
 #'
 #' Handles dynamic filter options UI. Always uses "Measurement" mode.
 #' Defaults to X-axis selection from Plotting tab for grouping.
+#' Validates that selected columns exist in current dataset.
 #'
 #' @param input Shiny input object from the parent module
 #' @param output Shiny output object from the parent module
@@ -16,19 +17,32 @@ setup_sidebar_logic <- function(input, output, session, descriptive_cols, x_axis
         desc_cols <- descriptive_cols()
         shiny::req(length(desc_cols) > 0)
         
-        # Use X-axis selection from plotting as default
-        x_axis_cols <- x_axis()
-        
-        # Filter to only include valid descriptive columns
-        selected <- if (!is.null(x_axis_cols) && length(x_axis_cols) > 0) {
-            x_axis_cols[x_axis_cols %in% desc_cols]
+        # Check if current selection is still valid for the new data
+        current_selection <- shiny::isolate(input$filter_options_select)
+        valid_current <- if (!is.null(current_selection) && length(current_selection) > 0) {
+            current_selection[current_selection %in% desc_cols]
         } else {
             character(0)
         }
         
-        # Fallback to first descriptive col if no valid x_axis selection
-        if (length(selected) == 0 && length(desc_cols) > 0) {
-            selected <- desc_cols[1]
+        # If current selection is still valid, keep it
+        if (length(valid_current) > 0) {
+            selected <- valid_current
+        } else {
+            # Otherwise, use X-axis selection from plotting as default
+            x_axis_cols <- x_axis()
+            
+            # Filter to only include valid descriptive columns
+            selected <- if (!is.null(x_axis_cols) && length(x_axis_cols) > 0) {
+                x_axis_cols[x_axis_cols %in% desc_cols]
+            } else {
+                character(0)
+            }
+            
+            # Fallback to first descriptive col if no valid selection
+            if (length(selected) == 0 && length(desc_cols) > 0) {
+                selected <- desc_cols[1]
+            }
         }
         
         shiny::selectizeInput(
