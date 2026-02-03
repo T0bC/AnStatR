@@ -8,6 +8,9 @@
 # @param session Shiny session object
 # @return Reactive returning quality column info (used by median_params for unified debouncing)
 
+# Import column utilities
+box::use(../../utils/column_utils)
+
 #' @export
 render_quality_filter_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
@@ -15,7 +18,7 @@ render_quality_filter_ui <- function(output, output_id, loaded_data, input, sess
     # Reactive to get descriptive columns for quality selection (strict pattern)
     descriptive_cols <- shiny::reactive({
         shiny::req(loaded_data())
-        get_descriptive_cols(loaded_data())
+        column_utils$get_descriptive_cols(loaded_data())
     })
     
     # Reactive to analyze selected quality column
