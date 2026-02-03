@@ -20,7 +20,7 @@ render_data_summary <- function(output, output_id, loaded_data) {
     )
     
     # Capture the HTML output as a character string
-    summary_html <- capture.output(
+    summary_html <- utils::capture.output(
       print(
         summary_obj,
         method = 'render',
