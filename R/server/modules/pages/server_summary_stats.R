@@ -45,10 +45,20 @@ server_summary_stats <- function(id, processed_data, selected_measures, x_axis, 
         # ----- 2. Reset state on new data -----
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
+                # Reset Shapiro checkbox
                 shiny::updateCheckboxInput(
                     session = session,
                     inputId = "shapiro",
                     value = FALSE
+                )
+                
+                # Reset filter_options_select to force re-render with new columns
+                # The sidebar_logic will set appropriate defaults from new data
+                shiny::updateSelectizeInput(
+                    session = session,
+                    inputId = "filter_options_select",
+                    choices = character(0),
+                    selected = character(0)
                 )
             }, ignoreInit = TRUE)
         }
