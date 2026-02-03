@@ -8,6 +8,9 @@
 # @param session Shiny session object
 # @return NULL (side effects: creates output; input$grouping_columns used by median_params)
 
+# Import column utilities
+box::use(../../utils/column_utils)
+
 #' @export
 render_grouping_ui <- function(output, output_id, loaded_data, input, session) {
     ns <- session$ns
@@ -15,7 +18,7 @@ render_grouping_ui <- function(output, output_id, loaded_data, input, session) {
     # Reactive to get descriptive columns (strict pattern: uppercase + underscores only)
     descriptive_cols <- shiny::reactive({
         shiny::req(loaded_data())
-        get_descriptive_cols(loaded_data())
+        column_utils$get_descriptive_cols(loaded_data())
     })
     
     # Render grouping column selection UI
