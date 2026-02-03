@@ -126,8 +126,8 @@ setup_filter_checkboxes_output <- function(output, ns, median_data, filter_cols,
         # Split columns into two groups for side-by-side layout
         if (length(cols) > 1) {
             half <- ceiling(length(cols) / 2)
-            cols1 <- cols[seq_len(half)]
-            cols2 <- cols[-seq_len(half)]
+            cols1 <- cols[base::seq_len(half)]
+            cols2 <- cols[-base::seq_len(half)]
             
             shiny::fluidRow(
                 shiny::column(6, lapply(cols1, function(col) {

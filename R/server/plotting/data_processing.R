@@ -49,7 +49,7 @@ create_processed_data_reactive <- function(filtered_data,
         if (!is.null(x_cols) && length(x_cols) > 0 && all(x_cols %in% names(data))) {
             interaction_term <- data_utils$create_interaction(data, x_cols)
         } else {
-            interaction_term <- factor(rep("all", nrow(data)))
+            interaction_term <- factor(base::rep("all", nrow(data)))
         }
         
         # Process each measurement column

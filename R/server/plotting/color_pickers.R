@@ -32,7 +32,7 @@ create_color_groups_reactive <- function(filtered_data, color_cols) {
         
         # Use create_interaction to get unique group levels
         interaction_factor <- data_utils$create_interaction(data, cols)
-        sort(as.character(unique(interaction_factor)))
+        base::sort(as.character(unique(interaction_factor)))
     })
 }
 

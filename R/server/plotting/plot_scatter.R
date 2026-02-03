@@ -81,12 +81,12 @@ create_scatter_plot <- function(data,
         # User expects: first selected = outer, last selected = inner
         # So we reverse: c("Outer", "Inner") -> c("Inner", "Outer") -> "Inner.Outer"
         # guide_axis_nested then shows: Outer as top level, Inner closest to axis
-        x_nested_interaction <- data_utils$create_interaction(data, rev(x_col))
+        x_nested_interaction <- data_utils$create_interaction(data, base::rev(x_col))
         
         # DEBUG: Print interaction levels to console
         message("=== DEBUG: Nested axis interaction ===")
-        message("Columns (reversed): ", paste(rev(x_col), collapse = ", "))
-        message("Unique levels: ", paste(head(unique(x_nested_interaction), 10), collapse = " | "))
+        message("Columns (reversed): ", paste(base::rev(x_col), collapse = ", "))
+        message("Unique levels: ", paste(utils::head(unique(x_nested_interaction), 10), collapse = " | "))
         message("Sample label: ", as.character(x_nested_interaction[1]))
         message("======================================")
         
@@ -293,7 +293,7 @@ create_scatter_plot <- function(data,
         n_shapes <- length(unique(data$.shape_group))
         # Fillable shapes that work well: 21=circle, 22=square, 23=diamond, 24=triangle up, 25=triangle down
         fillable_shapes <- c(21, 22, 23, 24, 25, 3)  # 3=plus as fallback for 6th
-        shape_values <- fillable_shapes[seq_len(min(n_shapes, length(fillable_shapes)))]
+        shape_values <- fillable_shapes[base::seq_len(min(n_shapes, length(fillable_shapes)))]
         
         p <- p + ggplot2::scale_shape_manual(
             values = shape_values,
@@ -429,7 +429,7 @@ build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL,
         valid_cols <- tooltip_cols[tooltip_cols %in% names(data)]
         
         if (length(valid_cols) > 0) {
-            extra_info <- sapply(seq_len(nrow(data)), function(i) {
+            extra_info <- sapply(base::seq_len(nrow(data)), function(i) {
                 parts <- sapply(valid_cols, function(col) {
                     paste0("<strong>", col, ":</strong> ", data[[col]][i])
                 })
@@ -441,7 +441,7 @@ build_tooltip_text <- function(data, x_var, x_label, y_col, tooltip_cols = NULL,
     
     # Add status indicators for trimmed/outlier points
     if (!is.null(is_trimmed) || !is.null(is_outlier)) {
-        status <- sapply(seq_len(nrow(data)), function(i) {
+        status <- sapply(base::seq_len(nrow(data)), function(i) {
             flags <- c()
             if (!is.null(is_trimmed) && is_trimmed[i]) {
                 flags <- c(flags, "<span style='color:#dc3545;'>Trimmed</span>")
