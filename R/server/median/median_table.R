@@ -10,6 +10,9 @@
 # @param removed_cols ReactiveVal to store columns removed due to within-group variation
 # @return NULL (side effects: creates output$medianTable and updates median_results)
 
+# Import column utilities
+box::use(../../utils/column_utils)
+
 #' @export
 render_median_table <- function(output, output_id, filtered_data, grouping_cols, 
                                  quality_col = NULL, median_results, removed_cols = NULL) {
@@ -21,8 +24,8 @@ render_median_table <- function(output, output_id, filtered_data, grouping_cols,
         quality_column <- if (!is.null(quality_col)) quality_col() else NULL
 
         # Get column types using utility functions
-        measurement_col_names <- get_measurement_cols(data)
-        descriptive_col_names <- get_descriptive_cols(data)
+        measurement_col_names <- column_utils$get_measurement_cols(data)
+        descriptive_col_names <- column_utils$get_descriptive_cols(data)
         
         # Remove quality column from descriptive columns (it's no longer needed after filtering)
         if (!is.null(quality_column) && quality_column != "None" && quality_column %in% descriptive_col_names) {
