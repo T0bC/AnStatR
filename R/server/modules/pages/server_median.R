@@ -8,8 +8,11 @@ server_median <- function(id, loaded_data, data_version = NULL) {
         median_results <- shiny::reactiveVal(NULL)
         removed_cols <- shiny::reactiveVal(NULL)  # Columns removed due to within-group variation
 
-        # Reset all state when new data is loaded
-        # This prevents stale selections from causing errors with new datasets
+        # Store previous column names to enable smart selection retention
+        previous_descriptive_cols <- shiny::reactiveVal(character(0))
+        
+        # Reset state and update UI choices when new data is loaded
+        # Smart selection retention: keep selections for columns that exist in both datasets
         if (!is.null(data_version)) {
             shiny::observeEvent(data_version(), {
                 # Reset all reactive values to initial state
@@ -18,12 +21,63 @@ server_median <- function(id, loaded_data, data_version = NULL) {
                 median_results(NULL)
                 removed_cols(NULL)
                 
-                # Reset UI inputs using updateSelectizeInput
-                shiny::updateSelectizeInput(session, "grouping_columns", selected = character(0))
-                shiny::updateSelectizeInput(session, "quality_column", selected = "None")
-                shiny::updateSelectizeInput(session, "bad_quality_values", selected = character(0))
+                # Get new descriptive columns from the new dataset
+                new_data <- loaded_data()
+                if (!is.null(new_data)) {
+                    new_cols <- get_descriptive_cols(new_data)
+                    old_cols <- previous_descriptive_cols()
+                    
+                    # Smart selection retention for grouping columns
+                    current_grouping <- shiny::isolate(input$grouping_columns)
+                    retained_grouping <- if (!is.null(current_grouping)) {
+                        intersect(current_grouping, new_cols)
+                    } else {
+                        character(0)
+                    }
+                    
+                    # Smart selection retention for quality column
+                    current_quality <- shiny::isolate(input$quality_column)
+                    retained_quality <- if (!is.null(current_quality) && 
+                                           current_quality != "None" && 
+                                           current_quality %in% new_cols) {
+                        current_quality
+                    } else {
+                        "None"
+                    }
+                    
+                    # Update selectize inputs with new choices and retained selections
+                    shiny::updateSelectizeInput(
+                        session, "grouping_columns",
+                        choices = new_cols,
+                        selected = retained_grouping
+                    )
+                    shiny::updateSelectizeInput(
+                        session, "quality_column",
+                        choices = c("None (no quality filtering)" = "None", new_cols),
+                        selected = retained_quality
+                    )
+                    # Always reset bad_quality_values since they depend on quality column content
+                    shiny::updateSelectizeInput(session, "bad_quality_values", selected = character(0))
+                    
+                    # Update stored previous columns for next data load
+                    previous_descriptive_cols(new_cols)
+                } else {
+                    # No data - reset everything
+                    shiny::updateSelectizeInput(session, "grouping_columns", choices = character(0), selected = character(0))
+                    shiny::updateSelectizeInput(session, "quality_column", choices = c("None (no quality filtering)" = "None"), selected = "None")
+                    shiny::updateSelectizeInput(session, "bad_quality_values", selected = character(0))
+                    previous_descriptive_cols(character(0))
+                }
             }, ignoreInit = TRUE)
         }
+        
+        # Initialize previous_descriptive_cols when data is first loaded
+        shiny::observeEvent(loaded_data(), {
+            data <- loaded_data()
+            if (!is.null(data) && length(previous_descriptive_cols()) == 0) {
+                previous_descriptive_cols(get_descriptive_cols(data))
+            }
+        }, once = TRUE)
 
         # Initialize modular components with explicit parameters
         # Following the explicit dependency injection pattern...
