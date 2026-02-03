@@ -100,7 +100,31 @@ handle_pca_computation <- function(input, median_data, pca_state) {
             # Step 4: Compute PCA (100%)
             pca_result <- calculate_pca(prepared_data)
             
-            shiny::setProgress(0.9, message = "Finalizing...")
+            shiny::setProgress(0.8, message = "Estimating optimal components...")
+            
+            # Step 5: Compute optimal number of components
+            if (!is_app_error(pca_result)) {
+                optimal_result <- safe_execute(
+                    expr = calculate_optimal_components(
+                        data = prepared_data,
+                        eigenvalues = pca_result$eig[, 1],
+                        scale = isTRUE(input$scale_data)
+                    ),
+                    operation_name = "Optimal Components",
+                    context = error_context,
+                    error_parser = optimal_components_error_parser
+                )
+                
+                if (optimal_result$success) {
+                    pca_state$optimal_result <- optimal_result$result
+                } else {
+                    pca_state$optimal_result <- optimal_result$error
+                }
+            } else {
+                pca_state$optimal_result <- NULL
+            }
+            
+            shiny::setProgress(0.95, message = "Finalizing...")
             
             pca_state$pca_result <- pca_result
             pca_state$last_computation <- Sys.time()
