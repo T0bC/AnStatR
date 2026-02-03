@@ -68,8 +68,8 @@ render_median_table <- function(output, output_id, filtered_data, grouping_cols,
                 for (col in other_descriptive) {
                     # Check if this column varies within any group
                     varies_within_group <- any(
-                        stats::tapply(data[[col]], 
-                               stats::interaction(data[selected_grouping], drop = TRUE),
+                        base::tapply(data[[col]], 
+                               base::interaction(data[selected_grouping], drop = TRUE),
                                function(x) length(unique(x)) > 1)
                     )
                     if (varies_within_group) {
