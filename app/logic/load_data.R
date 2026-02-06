@@ -5,6 +5,10 @@ box::use(
   tools[file_ext],
 )
 
+box::use(
+  app/logic/error_handling,
+)
+
 #' Validate that a filename has a supported extension
 #' @param filename Character, the original filename (not the temp path)
 #' @return List with `valid` (logical) and `ext` (character, lowercased extension)
@@ -33,45 +37,47 @@ normalize_quote_char <- function(quote_char) {
   quote_char
 }
 
-#' Read a data file (CSV or XLSX) and return a data.frame or error message
+#' Read a data file (CSV or XLSX) and return a data.frame or error
 #' @param path Character, path to the file on disk
 #' @param ext Character, file extension ("csv" or "xlsx")
 #' @param header Logical, does the CSV have a header row?
 #' @param delimiter Character, CSV field separator
 #' @param quote_char Character, CSV quote character (already normalized)
 #' @return List with `success` (logical), `data` (data.frame or NULL),
-#'   and `error` (character or NULL)
+#'   and `error` (structured error object or NULL)
 #' @export
 read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
                            quote_char = '"') {
-  tryCatch(
-    {
-      data <- suppressWarnings(
-        if (ext == "csv") {
-          read.csv(
-            file = path,
-            header = header,
-            sep = delimiter,
-            quote = quote_char,
-            stringsAsFactors = FALSE
-          )
-        } else {
-          openxlsx$read.xlsx(
-            xlsxFile = path,
-            sheet = 1
-          )
-        }
-      )
-      rhino$log$info(
-        "File read successfully: {ext} ({nrow(data)} rows, {ncol(data)} cols)"
-      )
-      list(success = TRUE, data = data, error = NULL)
-    },
-    error = function(e) {
-      rhino$log$error("File read failed: {conditionMessage(e)}")
-      list(success = FALSE, data = NULL, error = conditionMessage(e))
-    }
+  result <- error_handling$safe_execute(
+    expr = suppressWarnings(
+      if (ext == "csv") {
+        read.csv(
+          file = path,
+          header = header,
+          sep = delimiter,
+          quote = quote_char,
+          stringsAsFactors = FALSE
+        )
+      } else {
+        openxlsx$read.xlsx(
+          xlsxFile = path,
+          sheet = 1
+        )
+      }
+    ),
+    operation_name = "Data Import",
+    context = list(file = path, format = ext),
+    error_parser = error_handling$default_error_parser
   )
+
+  if (!result$success) {
+    return(list(success = FALSE, data = NULL, error = result$error))
+  }
+
+  rhino$log$info(
+    "File read successfully: {ext} ({nrow(result$result)} rows, "
+  )
+  list(success = TRUE, data = result$result, error = NULL)
 }
 
 #' Validate that a loaded data.frame is usable
@@ -81,12 +87,24 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
 validate_data <- function(data) {
   if (!is.data.frame(data)) {
     rhino$log$warn("Validation failed: not a data.frame")
-    return(list(valid = FALSE, message = "The uploaded file did not produce a data frame."))
+    return(list(
+      valid = FALSE,
+      error = error_handling$simple_error(
+        message = "The uploaded file did not produce a data frame.",
+        operation_name = "Data Validation"
+      )
+    ))
   }
   if (nrow(data) == 0) {
     rhino$log$warn("Validation failed: data.frame has 0 rows")
-    return(list(valid = FALSE, message = "The uploaded file appears to be empty."))
+    return(list(
+      valid = FALSE,
+      error = error_handling$simple_error(
+        message = "The uploaded file appears to be empty.",
+        operation_name = "Data Validation"
+      )
+    ))
   }
   rhino$log$info("Data validation passed: {nrow(data)} rows, {ncol(data)} cols")
-  list(valid = TRUE, message = NULL)
+  list(valid = TRUE, error = NULL)
 }
