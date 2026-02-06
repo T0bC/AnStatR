@@ -130,6 +130,50 @@ test_that("non-exported function works", {
 
 This pattern allows testing both public and private functions while maintaining proper encapsulation.
 
+## Logging
+
+Use `rhino$log` for all application logging. Import `rhino` via `box::use(rhino)`.
+
+### Log levels
+
+| Level | Usage |
+|-------|-------|
+| `rhino$log$debug()` | Detailed tracing during development (variable values, flow) |
+| `rhino$log$info()` | Normal operations (data loaded, module initialized) |
+| `rhino$log$warn()` | Unexpected but recoverable (bad input, fallback used) |
+| `rhino$log$error()` | Operation failed, user is affected |
+| `rhino$log$fatal()` | App cannot continue |
+
+### Where to log
+
+- **Logic layer (`app/logic/`)**: Log outcomes of pure functions — success at `INFO`, failures at `WARN` or `ERROR`.
+- **View layer (`app/view/`)**: Log lifecycle events — upload received, module initialized, user action triggered.
+- **Never log sensitive data** (passwords, tokens, PII).
+
+### Message format
+
+Use glue-style interpolation (built into `rhino$log`):
+
+```r
+rhino$log$info("File read successfully: {ext} ({nrow(data)} rows, {ncol(data)} cols)")
+rhino$log$warn("Unsupported file extension: '{ext}' from '{filename}'")
+rhino$log$error("File read failed: {conditionMessage(e)}")
+```
+
+### Configuration
+
+Logging is configured in `config.yml`:
+
+```yaml
+default:
+  rhino_log_level: !expr Sys.getenv("RHINO_LOG_LEVEL", "INFO")
+  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", NA)
+```
+
+- **Development**: `RHINO_LOG_LEVEL=INFO` (default), logs to console.
+- **Production**: Set `RHINO_LOG_FILE=app.log` and `RHINO_LOG_LEVEL=WARN` as environment variables.
+- `app.log` is excluded from version control via `.gitignore`.
+
 ## Code style
 
 The maximum line length is 100 characters.
