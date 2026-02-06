@@ -14,11 +14,11 @@ Without standardized error handling:
 
 ## Solution: Two-Layer Architecture
 
-### Layer 1: Error Handling (`R/utils/error_handling.R`)
+### Layer 1: Error Handling (`app/logic/error_handling.R`)
 
 Creates structured error objects with user-friendly messages and debugging context.
 
-### Layer 2: Error Display (`R/ui/modules/components/error_display.R`)
+### Layer 2: Error Display (`app/view/error_display.R`)
 
 Renders structured errors as consistent UI components with expandable details.
 
@@ -151,9 +151,13 @@ list(
 
 ## Implementation Example
 
-### Utility Function (statistics_utils.R)
+### Utility Function (app/logic/statistics_utils.R)
 
 ```r
+box::use(
+    app/logic/error_handling[safe_execute, stat_error_parser]
+)
+
 perform_t1way <- function(df, x_axis, measure_col, tr_value, ...) {
     # Build context for error reporting
     error_context <- list(
@@ -183,9 +187,14 @@ perform_t1way <- function(df, x_axis, measure_col, tr_value, ...) {
 }
 ```
 
-### Output Rendering (statistics_output.R)
+### Output Rendering (app/view/statistics_output.R)
 
 ```r
+box::use(
+    app/logic/error_handling[is_app_error, render_app_error],
+    shiny[tags]
+)
+
 # Check and render appropriately
 if (is_app_error(res$result_t_way)) {
     tway_ui <- tags$div(
@@ -224,3 +233,46 @@ if (is_app_error(res$result_t_way)) {
 - **Always provide `context`** with relevant parameters for debugging
 - **Use domain-specific parsers** (`stat_error_parser`) when available
 - **Render with `render_app_error()`** to show expandable stack traces
+
+---
+
+## Box Import Guidelines for Error Handling
+
+### In Logic Files (app/logic/)
+
+```r
+box::use(
+    app/logic/error_handling[safe_execute, simple_error, is_app_error]
+)
+```
+
+### In View Files (app/view/)
+
+```r
+box::use(
+    app/logic/error_handling[is_app_error, render_app_error, error_alert],
+    shiny[tags, showModal, modalDialog]
+)
+```
+
+### In Module Files
+
+```r
+box::use(
+    shiny[moduleServer, NS],
+    app/logic/error_handling[safe_execute, is_app_error]
+)
+
+#' @export
+ui <- function(id) {
+    ns <- NS(id)
+    # UI code here
+}
+
+#' @export
+server <- function(id) {
+    moduleServer(id, function(input, output, session) {
+        # Module server code with error handling
+    })
+}
+```
