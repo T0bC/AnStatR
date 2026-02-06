@@ -1,25 +1,6 @@
----
-title: "How-to: Build Rhino apps with LLM tools"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{How-to: Build Rhino apps with LLM tools}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
 
-LLM tools like [GitHub Copilot](https://github.com/features/copilot) can be extremely helpful when building apps with Rhino.
-However, the unique project structure and the use of the box package for module imports can make it harder for these tools to understand and assist effectively.
-The good news is that their performance can be significantly improved by providing custom instructions.
+# Custom instructions for LLM tools
 
-# Custom instructions for GitHub Copilot
-
-To optimize GitHub Copilot for working with Rhino projects,
-you can create a file named `copilot-instructions.md` in the `.github/` directory of your repository.
-To see instructions below as markdown [visit vignette source](https://github.com/Appsilon/rhino/blob/main/vignettes/how-to/build-rhino-apps-with-llm-tools.Rmd).
-
-Example instructions:
-
-<div class="p-3 border rounded bg-secondary-subtle">
 ## Importing and exporting
 
 Use only `box::use` for imports. Using `library` and `::` is forbidden.
@@ -35,6 +16,8 @@ Using `[...]` is forbidden.
 All external functions in a script should be imported. This includes operators, like `%>%`.
 
 A script should only import functions that it uses.
+
+## Importing Modules and Packages
 
 ### Ways of importing
 
@@ -62,6 +45,7 @@ app/logic/utils$my_function()
 ```
 
 **Benefits of this approach:**
+
 - `dplyr$filter()` → clearly from dplyr package
 - `app/logic/utils$my_function()` → clearly from your utils module
 - Stack traces show the full origin path
@@ -76,6 +60,7 @@ If a function is used by other scripts, it should be exported by adding `#' @exp
 ## Rhino modules
 
 When creating a new module in `app/view`, use the template:
+
 ```r
 box::use(
   shiny[moduleServer, NS]
@@ -148,4 +133,3 @@ This pattern allows testing both public and private functions while maintaining 
 ## Code style
 
 The maximum line length is 100 characters.
-</div>
