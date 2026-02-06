@@ -38,37 +38,34 @@ A script should only import functions that it uses.
 
 ### Ways of importing
 
-There are two ways a package or a script can be imported:
-
-1. List imported functions - functions imported are listed in []
+**ALWAYS use the `$` approach for explicit function origin and debugging clarity:**
 
 ```r
-box::use(
-  dplyr[filter],
-)
-
-filter(mtcars, cyl > 4)
-```
-
-Use it if there are no more than 8 functions imported from this package/script.
-
-2. Import package and access functions with `$`
-
-```r
+# First: R packages only
 box::use(
   dplyr,
+  shiny,
+  ggplot2
 )
+
+# Second: Custom app modules only  
+box::use(
+  app/logic/utils,
+  app/view/components,
+  app/static/styles
+)
+
+# Usage:
 dplyr$filter(mtcars, cyl > 4)
+shiny$moduleServer(id, ...)
+app/logic/utils$my_function()
 ```
 
-When moving function into a different script, remember to adjust imports in `box::use`:
-
-1. Add import for all required functions to the file where you moved the function.
-2. Make sure to follow the correct way of importing (direct or using $) in the new file. Modify it if needed.
-3. Remove redundant imports from the original file.
-4. Import the moved function in the original file.
-
-Use it if there are more than 8 functions imported from this package/script.
+**Benefits of this approach:**
+- `dplyr$filter()` → clearly from dplyr package
+- `app/logic/utils$my_function()` → clearly from your utils module
+- Stack traces show the full origin path
+- Consistent debugging visibility across entire codebase
 
 ### Exporting
 
