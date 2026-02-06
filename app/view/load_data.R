@@ -1,10 +1,12 @@
 box::use(
+  bsicons,
   bslib,
   DataExplorer,
   DT,
   ggplot2,
   rhino,
   shiny,
+  summarytools,
 )
 
 box::use(
@@ -167,6 +169,7 @@ server <- function(id) {
           bslib$accordion_panel(
             title = "Data Preview",
             value = "data_preview",
+            icon = bsicons$bs_icon("table"),
             shiny$tags$div(
               class = "table-responsive",
               DT$dataTableOutput(ns("data_preview"))
@@ -175,7 +178,14 @@ server <- function(id) {
           bslib$accordion_panel(
             title = "Missing Values",
             value = "missing_values",
+            icon = bsicons$bs_icon("bar-chart"),
             shiny$plotOutput(ns("missing_values_plot"))
+          ),
+          bslib$accordion_panel(
+            title = "Data Summary",
+            value = "data_summary",
+            icon = bsicons$bs_icon("list-ul"),
+            shiny$uiOutput(ns("data_summary"))
           )
         )
       }
@@ -207,6 +217,29 @@ server <- function(id) {
         loaded_data(),
         ggtheme = ggplot2$theme_classic(base_size = 16)
       )
+    })
+
+    # Data summary (summarytools::dfSummary rendered as HTML)
+    output$data_summary <- shiny$renderUI({
+      shiny$req(loaded_data())
+      summary_obj <- summarytools$dfSummary(
+        loaded_data(),
+        max.distinct.values = 25
+      )
+      summary_html <- utils::capture.output(
+        print(
+          summary_obj,
+          method = "render",
+          plain.ascii = FALSE,
+          varnumbers = FALSE,
+          valid.col = FALSE,
+          graph.magnif = 0.5,
+          style = "grid",
+          footnote = ""
+        )
+      )
+      summary_html <- paste(summary_html, collapse = "\n")
+      shiny$HTML(summary_html)
     })
 
     # Return for downstream modules
