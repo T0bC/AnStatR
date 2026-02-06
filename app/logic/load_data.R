@@ -44,20 +44,22 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
                            quote_char = '"') {
   tryCatch(
     {
-      data <- if (ext == "csv") {
-        read.csv(
-          file = path,
-          header = header,
-          sep = delimiter,
-          quote = quote_char,
-          stringsAsFactors = FALSE
-        )
-      } else {
-        openxlsx$read.xlsx(
-          xlsxFile = path,
-          sheet = 1
-        )
-      }
+      data <- suppressWarnings(
+        if (ext == "csv") {
+          read.csv(
+            file = path,
+            header = header,
+            sep = delimiter,
+            quote = quote_char,
+            stringsAsFactors = FALSE
+          )
+        } else {
+          openxlsx$read.xlsx(
+            xlsxFile = path,
+            sheet = 1
+          )
+        }
+      )
       list(success = TRUE, data = data, error = NULL)
     },
     error = function(e) {
