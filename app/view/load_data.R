@@ -1,6 +1,8 @@
 box::use(
   bslib,
+  DataExplorer,
   DT,
+  ggplot2,
   rhino,
   shiny,
 )
@@ -169,6 +171,11 @@ server <- function(id) {
               class = "table-responsive",
               DT$dataTableOutput(ns("data_preview"))
             )
+          ),
+          bslib$accordion_panel(
+            title = "Missing Values",
+            value = "missing_values",
+            shiny$plotOutput(ns("missing_values_plot"))
           )
         )
       }
@@ -190,6 +197,15 @@ server <- function(id) {
           dom = "ltip"
         ),
         rownames = FALSE
+      )
+    })
+
+    # Missing values plot
+    output$missing_values_plot <- shiny$renderPlot({
+      shiny$req(loaded_data())
+      DataExplorer$plot_missing(
+        loaded_data(),
+        ggtheme = ggplot2$theme_classic(base_size = 16)
       )
     })
 
