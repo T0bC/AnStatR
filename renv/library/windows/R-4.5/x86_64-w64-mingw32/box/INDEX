@@ -1,0 +1,10 @@
+export                  Explicitly declare module exports
+file                    Find the full paths of files in modules
+help                    Display module documentation
+mod-hooks               Hooks for module events
+name                    Get a module’s name
+register_S3_method      Register S3 methods
+script_path             Set the base path of the script
+topenv                  Get a module’s namespace environment
+unload                  Unload or reload modules
+use                     Import a module or package

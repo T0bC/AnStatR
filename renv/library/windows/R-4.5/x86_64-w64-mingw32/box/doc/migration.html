@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Konrad Rudolph" />
+
+<meta name="date" content="2025-11-25" />
+
+<title>Migration guide</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Migration guide</h1>
+<h4 class="author">Konrad Rudolph</h4>
+<h4 class="date">2025-11-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#modules-v1.0-box" id="toc-modules-v1.0-box">‘modules’
+“v1.0” == ‘box’</a></li>
+<li><a href="#importing-modules-and-packages" id="toc-importing-modules-and-packages">Importing modules and
+packages</a>
+<ul>
+<li><a href="#general-syntax" id="toc-general-syntax">General
+syntax</a></li>
+<li><a href="#attaching-names" id="toc-attaching-names">Attaching
+names</a></li>
+<li><a href="#loading-documentation" id="toc-loading-documentation">Loading documentation</a></li>
+</ul></li>
+<li><a href="#executing-code-during-module-loading" id="toc-executing-code-during-module-loading">Executing code during
+module loading</a></li>
+<li><a href="#changed-options" id="toc-changed-options">Changed
+options</a></li>
+<li><a href="#changed-function-names" id="toc-changed-function-names">Changed function names</a></li>
+<li><a href="#exporting-names-from-modules" id="toc-exporting-names-from-modules">Exporting names from
+modules</a></li>
+<li><a href="#accessing-default-packages" id="toc-accessing-default-packages">Accessing default packages</a></li>
+<li><a href="#loading-parents-of-nested-modules" id="toc-loading-parents-of-nested-modules">Loading parents of nested
+modules</a></li>
+<li><a href="#displaying-documentation" id="toc-displaying-documentation">Displaying documentation</a></li>
+<li><a href="#cyclic-imports" id="toc-cyclic-imports">Cyclic
+imports</a></li>
+</ul>
+</div>
+
+<div id="modules-v1.0-box" class="section level2">
+<h2>‘modules’ “v1.0” == ‘box’</h2>
+<p>‘box’ is the spiritual successor of the <a href="https://github.com/klmr/modules">‘modules’ package</a>, which will
+forever remain at version 0.9.<em>x</em>. However, the API of ‘box’
+intentionally breaks backwards compatibility, and module code written
+for use with ‘modules’ will no longer work with ‘box’.</p>
+<p>The following guide is intended to ease migration to ‘box’.
+<strong>Migration is strongly recommended</strong>, since the authors
+believe that ‘modules’ had conceptual shortcomings that have been fixed
+in ‘box’, and to keep the ecosystem consolidated. For the time being,
+‘modules’ will receive support (only) in the form of critical bug
+fixes.</p>
+</div>
+<div id="importing-modules-and-packages" class="section level2">
+<h2>Importing modules and packages</h2>
+<div id="general-syntax" class="section level3">
+<h3>General syntax</h3>
+<p>With the ‘modules’ package, modules and packages were imported
+via</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(modules)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># …</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>modname <span class="ot">=</span> <span class="fu">import</span>(<span class="st">&#39;prefix/modname&#39;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>pkgname <span class="ot">=</span> <span class="fu">import_package</span>(<span class="st">&#39;pkgname&#39;</span>)</span></code></pre></div>
+<p>With ‘box’, modules and packages are imported via <a href="https://klmr.me/box/reference/use.html"><code>box::use</code></a>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(prefix<span class="sc">/</span>modname)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(pkgname)</span></code></pre></div>
+<p>Notably, module and package names in a use declaration in ‘box’ are
+unquoted, unevaluated expressions; and <strong>the ‘box’ package is
+never loaded via <code>library</code></strong>. In fact,
+<code>library(box)</code> raises an error.</p>
+<p>Furthermore, with ‘box’, module names <em>must</em> be fully
+qualified. The equivalent of the ‘modules’ code
+<code>mod = import(&#39;modname&#39;)</code> no longer exists. To import a
+<em>local</em> module without namespace prefix, instead use</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>modname)</span></code></pre></div>
+<p><code>box::use</code> has no return value. Instead, it automatically
+creates an alias with the module/package name in the calling scope
+<em>if no names are attached</em> (see below). To override the alias
+name, specify it as as a named argument:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(<span class="at">mod_alias =</span> prefix<span class="sc">/</span>modname)</span></code></pre></div>
+<p>Unlike with <code>modules::import</code>, <code>box::use</code>
+allows (and encourages) multiple use declarations at once:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>    prefix<span class="sc">/</span>mod1,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>    <span class="at">mod =</span> prefix<span class="sc">/</span>mod2,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>    pkg</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="attaching-names" class="section level3">
+<h3>Attaching names</h3>
+<p>In ‘modules’, the <code>attach</code> and
+<code>attach_operators</code> parameters controlled if and which names
+were attached. In ‘box’, attachment is controlled via attach list
+declarations:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># ‘modules’:</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">import</span>(<span class="st">&#39;prefix/mod&#39;</span>, <span class="at">attach =</span> <span class="fu">c</span>(<span class="st">&#39;name1&#39;</span>, <span class="st">&#39;name2&#39;</span>))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># ‘box’:</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(prefix<span class="sc">/</span>mod[name1, name2])</span></code></pre></div>
+<p>Wildcard attach lists are also supported:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># ‘modules’:</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">import</span>(<span class="st">&#39;prefix/mod&#39;</span>, <span class="at">attach =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># ‘box’:</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(prefix<span class="sc">/</span>mod[...])</span></code></pre></div>
+<p>To introduce a module/package alias when attaching names, specify an
+alias name:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># ‘modules’:</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>mod <span class="ot">=</span> <span class="fu">import</span>(<span class="st">&#39;prefix/mod&#39;</span>, <span class="at">attach =</span> <span class="fu">c</span>(<span class="st">&#39;name1&#39;</span>, <span class="st">&#39;name2&#39;</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># ‘box’:</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(<span class="at">mod =</span> prefix<span class="sc">/</span>mod[name1, name2])</span></code></pre></div>
+<p>‘box’ also allows declaring aliases for attached names; this feature
+did not exist in ‘modules’:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Declare alias for one name, attach other name unchanged:</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(prefix<span class="sc">/</span>mod[<span class="at">name_alias =</span> name1, name2])</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># Declare alias for two names, attach all other exported names unchanged:</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(prefix<span class="sc">/</span>mod[<span class="at">name_alias1 =</span> name1, <span class="at">name_alias2 =</span> name2, ...])</span></code></pre></div>
+<p>The <code>attach_operators</code> option from ‘modules’ has been
+dropped. If users require operators, they need to explicitly attach them
+when using ‘box’.</p>
+</div>
+<div id="loading-documentation" class="section level3">
+<h3>Loading documentation</h3>
+<p>The <code>doc</code> option from <code>modules::import</code> has
+been dropped without replacement. ‘box’ loads documentation lazily only
+when it is requested via <code>box::help</code> (see below).</p>
+</div>
+</div>
+<div id="executing-code-during-module-loading" class="section level2">
+<h2>Executing code during module loading</h2>
+<p>The ‘modules’ package treated modules as regular R source code files:
+upon importing them, the entire code inside a module file was executed.
+‘box’ conceptually no longer does this. It regards module source code as
+<em>declarative</em>: the module source code defines a number of names
+to be exported. However, code with side-effects on the module file level
+is no longer guaranteed to execute.</p>
+<p>Instead, ‘box’ introduces <a href="https://klmr.me/box/reference/mod-hooks.html">module event
+hooks</a>, in particular <code>.on_load</code>, which is a function that
+gets executed whenever a module is first loaded inside an R session.</p>
+</div>
+<div id="changed-options" class="section level2">
+<h2>Changed options</h2>
+<p>In ‘modules’, the module search path was set via
+<code>options(&#39;import.path&#39;)</code>. In ‘box’, use
+<code>options(&#39;box.path&#39;)</code> instead.</p>
+<p>The ‘modules’ options <code>options(&#39;import.attach&#39;)</code> and
+<code>options(&#39;warn.conflicts&#39;)</code> no longer exist. In particular,
+‘box’ no longer warns of name conflicts when attaching names. Instead,
+it encourages consciously choosing which names to attach.</p>
+</div>
+<div id="changed-function-names" class="section level2">
+<h2>Changed function names</h2>
+<p>The ‘modules’ function <code>module_file</code> is now called <a href="https://klmr.me/box/reference/file.html"><code>box::file</code></a>.
+Its semantics have also changed: it no longer cares whether files
+relative to the module exist or not; it merely constructs appropriate
+path strings.</p>
+<p>The ‘module’ function <code>module_name</code> is now called <a href="https://klmr.me/box/reference/name.html"><code>box::name</code></a>.
+It no longer has any arguments.</p>
+</div>
+<div id="exporting-names-from-modules" class="section level2">
+<h2>Exporting names from modules</h2>
+<p>With the ‘modules’ packages, module source files exported all
+non-hidden names; that is, all names that didn’t start with a dot
+(<code>.</code>).</p>
+<p>‘box’ makes exporting explicit. By default, <em>no</em> names are
+exported from a module, unless they are marked with the directive
+comment <code>#&#39; @export</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># This function is not exported:</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>f1 <span class="ot">=</span> <span class="cf">function</span> () {}</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co"># This nested module is not exported</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>nested1)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co"># This function is exported:</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>f2 <span class="ot">=</span> <span class="cf">function</span> () {}</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co"># This nested module is exported</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>nested2)</span></code></pre></div>
+<p><code>@export</code> directives that decorate <code>box::use</code>
+declarations apply to <em>all</em> names declared in it:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>    <span class="at">pkg_alias =</span> pkg,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>    prefix<span class="sc">/</span>mod,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>    prefix<span class="sc">/</span>mod2[a, b, c]</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>The above code will export the names <code>pkg_alias</code>,
+<code>mod</code>, <code>a</code>, <code>b</code> and <code>c</code>.
+This replaces the function <code>export_submodule</code> from ‘modules’,
+which no longer exists.</p>
+<p>There’s one exception to this: if a module contains <em>no</em>
+declared export, ‘box’ assumes that it is a plain R script, and treats
+it as a <em>legacy module</em>. This causes ‘box’ to revert to the
+export behaviour of ‘modules’. To suppress this behaviour (that is, to
+create a module which explicitly doesn’t export any names), module
+authors can add the following declaration to their module source code,
+which explicitly declares that the source file is to be treated as a
+module with no exports:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">export</span>()</span></code></pre></div>
+</div>
+<div id="accessing-default-packages" class="section level2">
+<h2>Accessing default packages</h2>
+<p>In ‘modules’, module source code “sees” the package search path at
+the time it is loaded. That is, modules have implicit access to all
+names in packages that were attached when the module was loaded. In
+particular, this means that legacy modules could access names in the
+default packages (in non-interactive sessions, that’s typically
+‘datasets’, ‘utils’, ‘grDevices’, ‘graphics’ and ‘stats’; in interactive
+sessions, the package ‘methods’ is added).</p>
+<p>‘box’ modules no longer attach <em>any</em> packages by default,
+except ‘base’. If a module needs to use functions from those other
+packages, it needs to declare them explicitly (e.g. via
+<code>box::use(stats)</code>). If users want to import all default R
+packages, they can import the module <code>r/core</code> for this
+purpose. The following declaration approximates the behaviour of
+‘modules’:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(r<span class="sc">/</span>core[...])</span></code></pre></div>
+</div>
+<div id="loading-parents-of-nested-modules" class="section level2">
+<h2>Loading parents of nested modules</h2>
+<p>Consider the following file hierarchy defining a nested module:</p>
+<pre><code><b>a</b>
+├─ <i>__init__.r</i>
+╰─ <b>b</b>
+   ├─ <i>__init__.r</i>
+   ╰─ <i><b>c</b>.r</i></code></pre>
+<p>In ‘modules’, the declaration <code>import(a/b/c)</code> would import
+the module <code>c</code>, but this would first execute the code of the
+modules <code>a</code> and <code>a/b</code>. In other words it would
+source the files <code>a/__init__.r</code>, <code>a/b/__init__.r</code>,
+and <code>a/b/c.r</code>, in this order.</p>
+<p>‘box’ no longer loads the full module hierarchy:
+<code>box::use(a/b/c)</code> loads only the module defined by
+<code>a/b/c.r</code>. Likewise, <code>box::use(a/b)</code> does
+<em>not</em> automatically load <code>a/b/c.r</code> (but the same
+behaviour was already present in ‘modules’).</p>
+</div>
+<div id="displaying-documentation" class="section level2">
+<h2>Displaying documentation</h2>
+<p>‘modules’ overrode the <code>help</code> function and the
+<code>?</code> operator to allow displaying module documentation. Since
+‘box’ is no longer attached, these functions no longer display module
+documentation. Instead, the documentation of anything imported via
+‘box’ (both modules and packages!) can be queried via <a href="https://klmr.me/box/reference/help.html"><code>box::help</code></a>.</p>
+<p>Unlike ‘modules’, ‘box’ also supports displaying the documentation of
+nested module names, e.g. <code>box::help(a$b$c)</code>.</p>
+</div>
+<div id="cyclic-imports" class="section level2">
+<h2>Cyclic imports</h2>
+<p>Cyclic/circular imports are supported by both ‘modules’ and ‘box’.
+However, the level of support differs. The details are complicated, and
+it is generally recommended to avoid cyclic modules. However, there are
+some situations where circularity in the dependencies makes sense, and
+‘box’ strives to make this work, where technically possible.</p>
+<p>For instance, consider the following (nonsensical) working, circular
+definition of the functions <code>even</code> and <code>odd</code>,
+which determine whether a non-negative integer is even or odd:</p>
+<ul>
+<li><p><code>even.r</code>:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>odd[...])</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>even <span class="ot">=</span> <span class="cf">function</span> (n) {</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>    n <span class="sc">==</span> <span class="dv">0</span><span class="dt">L</span> <span class="sc">||</span> <span class="sc">!</span> <span class="fu">odd</span>(n)</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>}</span></code></pre></div></li>
+<li><p><code>odd.r</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>even[...])</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>odd <span class="ot">=</span> <span class="cf">function</span> (n) {</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    n <span class="sc">!=</span> <span class="dv">0</span><span class="dt">L</span> <span class="sc">&amp;&amp;</span> <span class="fu">even</span>(n <span class="sc">-</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>}</span></code></pre></div></li>
+</ul>
+<p>These modules compute <code>even</code> in terms of <code>odd</code>,
+and vice-versa. Yet ‘box’ has no trouble importing and using both these
+modules. However, this no longer works once we attempt to export
+imported submodules themselves. That is, the following version of
+<code>odd.r</code> would cause an error:</p>
+<ul>
+<li><p><code>odd.r</code>:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>even[...])</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>odd <span class="ot">=</span> <span class="cf">function</span> (n) {</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>    n <span class="sc">!=</span> <span class="dv">0</span><span class="dt">L</span> <span class="sc">&amp;&amp;</span> <span class="fu">even</span>(n <span class="sc">-</span> <span class="dv">1</span><span class="dt">L</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>}</span></code></pre></div></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

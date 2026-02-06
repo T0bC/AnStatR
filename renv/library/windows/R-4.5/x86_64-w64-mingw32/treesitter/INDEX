@@ -1,0 +1,57 @@
+TreeCursor              Tree cursors
+is_language             Is 'x' a language?
+is_node                 Is 'x' a node?
+is_parser               Is 'x' a parser?
+is_query                Is 'x' a query?
+is_tree                 Is 'x' a tree?
+language_field_count    Language field count
+language_field_id_for_name
+                        Language field identifiers
+language_field_name_for_id
+                        Language field names
+language_name           Language name
+language_next_state     Language state advancement
+language_state_count    Language state count
+language_symbol_count   Language symbol count
+language_symbol_for_name
+                        Language symbols
+language_symbol_name    Language symbol names
+node-child              Get a node's child by index
+node-child-by-field     Get a node's child by field id or name
+node-child-count        Get a node's child count
+node-children           Get a node's children
+node-descendant         Node descendants
+node-field-name-for-child
+                        Get a child's field name by index
+node-first-child-byte   Get the first child that extends beyond the
+                        given byte offset
+node-grammar            Node grammar types and symbols
+node-location           Node byte and point accessors
+node-metadata           Node metadata
+node-parse-state        Node parse states
+node-sibling            Node sibling accessors
+node_descendant_count   Node descendant count
+node_language           Get a node's underlying language
+node_parent             Get a node's parent
+node_raw_s_expression   "Raw" S-expression
+node_show_s_expression
+                        Pretty print a 'node"s s-expression
+node_symbol             Node symbol
+node_text               Get a node's underlying text
+node_type               Node type
+node_walk               Generate a 'TreeCursor' iterator
+parser                  Create a new parser
+parser-adjustments      Parser adjustments
+parser-parse            Parse or reparse text
+points                  Points
+query                   Queries
+query-accessors         Query accessors
+query-matches-and-captures
+                        Query matches and captures
+ranges                  Ranges
+text_parse              Parse a snippet of text
+tree-accessors          Tree accessors
+tree_root_node          Retrieve the root node of the tree
+tree_root_node_with_offset
+                        Retrieve an offset root node
+tree_walk               Generate a 'TreeCursor' iterator

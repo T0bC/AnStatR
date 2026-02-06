@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Konrad Rudolph" />
+
+<meta name="date" content="2025-11-25" />
+
+<title>Contributing to ‘box’</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Contributing to ‘box’</h1>
+<h4 class="author">Konrad Rudolph</h4>
+<h4 class="date">2025-11-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#installation" id="toc-installation">Installation</a></li>
+<li><a href="#development" id="toc-development">Development</a>
+<ul>
+<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#branches" id="toc-branches">Branches</a></li>
+<li><a href="#code-style" id="toc-code-style">Code style</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="installation" class="section level1">
+<h1>Installation</h1>
+<p>Compared to many other R packages, ‘box’ uses a somewhat different
+development workflow:</p>
+<p>While ‘box’ uses ‘devtools’ and ‘roxygen2’ to generate documentation
+and package infrastructure, <em>generated code and data is not checked
+into version control!</em> This means in particular that the project
+does not contain a <code>NAMESPACE</code> file, since that is
+auto-(re)generated by tools. Therefore, attempting to install the
+current development version of ‘box’ via
+<code>pak::pak(&#39;klmr/box&#39;)</code> or equivalent means <em>will
+fail!</em></p>
+<p>Instead, an up-to-date, automatically generated build of the
+development version of ‘box’ should be installed from <a href="https://klmr.r-universe.dev/">R-Universe</a>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&#39;box&#39;</span>, <span class="at">repos =</span> <span class="st">&#39;https://klmr.r-universe.dev&#39;</span>)</span></code></pre></div>
+<p>… or from the corresponding <code>build</code> branch:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">&#39;klmr/box@build&#39;</span>)</span></code></pre></div>
+<p>Alternatively it can be built manually using the instructions
+below.</p>
+</div>
+<div id="development" class="section level1">
+<h1>Development</h1>
+<div id="building" class="section level2">
+<h2>Building</h2>
+<p>The project contains a <code>Makefile</code> written in the <a href="https://www.gnu.org/software/make/manual/make.html">GNU Make</a>
+dialect that contains various development utilities. Invoking
+<code>make</code> without target will show a list of available targets
+with short descriptions. Using this <code>Makefile</code> isn’t
+<em>necessary</em>, but it helps. In particular:</p>
+<ul>
+<li><code>make documentation</code> builds the <code>NAMESPACE</code>
+file, the shared C library and the package documentation.</li>
+<li><code>make test</code> runs the unit tests.</li>
+<li><code>make check</code> runs checks, and should run cleanly before
+submitting a pull request: of note, <code>make check</code> performs
+additional checks that are not performed by either
+<code>R CMD check</code> or <code>rcmdcheck::rcmdcheck()</code> (these
+checks can be found as individual scripts under <code>scripts/</code>;
+they roughly correspond to some undocumented checks performed internally
+on CRAN).</li>
+</ul>
+</div>
+<div id="branches" class="section level2">
+<h2>Branches</h2>
+<p>All new code should be developed on a new branch with a name prefixed
+<code>fix/</code> (for bug fixes), <code>feature/</code> (for new
+features/enhancements), and <code>chore/</code> (for any other
+contributions: fixed typos, project infrastructure, tests, etc.).
+Branches for pull requests will be merged into the <a href="https://github.com/klmr/box/tree/main"><code>main</code>
+branch</a>.</p>
+</div>
+<div id="code-style" class="section level2">
+<h2>Code style</h2>
+<p>The code style of ‘box’ is similar to the <a href="https://style.tidyverse.org/">Tidyverse style guide</a>, but with
+several notable differences:</p>
+<ul>
+<li><p>The file extension for R code files is lowercase <code>.r</code>
+(not uppercase <code>.R</code>). The file extension for R Markdown files
+is lowercase <code>.rmd</code> (not uppercase <code>.Rmd</code>).</p>
+<div class="rationale">
+<p><strong>Rationale:</strong> using capital letters in file extensions
+is a pointless violation of established convention that creates
+unnecessary inconsistencies.</p>
+</div></li>
+<li><p>Use <code>=</code> for assignment, not <code>&lt;-</code>.</p>
+<ul>
+<li><p>On the (very rare!) occasions where assignment inside a function
+call is required, use additional parentheses to make <code>=</code>
+syntactically an assignment rather than named argument passing.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>x <span class="ot">=</span> <span class="dv">5</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># OK (rarely):</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>((<span class="at">x =</span> <span class="fu">function_call</span>()))) {}</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(x <span class="ot">&lt;-</span> <span class="fu">function_call</span>())) {}</span></code></pre></div></li>
+<li><p><code>&lt;&lt;-</code> is banned. Instead of
+<code>name &lt;&lt;- value</code>, use <code>env$name = value</code>,
+where <code>env</code> is a previously-defined name referring to the
+desired target environment. This pattern is used in various places in
+the code, and good, context-dependent names for <code>env</code> are
+<code>ns</code>, <code>self</code>, or similar. <code>assign()</code>
+should generally not be used when the name of the assignee is statically
+known.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>self <span class="ot">=</span> <span class="fu">parent.frame</span>()</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co"># … later, inside a nested closure:</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>self<span class="sc">$</span>x <span class="ot">=</span> <span class="cn">TRUE</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>x <span class="ot">&lt;&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;x&#39;</span>, <span class="cn">TRUE</span>, <span class="at">envir =</span> caller)</span></code></pre></div>
+<div class="rationale">
+<p><strong>Rationale:</strong> <code>&lt;&lt;-</code> leaves it unclear
+where assignment will happen. Subset-assignment via <code>$</code> makes
+the assignment target scope explicit, which makes the code clearer and
+less error-prone.</p>
+</div></li>
+</ul></li>
+<li><p>Leave a space between <code>function</code> and the following
+opening parenthesis.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span> () {}</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>f <span class="ot">=</span> <span class="cf">function</span>() {}</span></code></pre></div>
+<div class="rationale">
+<p><strong>Rationale:</strong> a function declaration in R does not use
+function call syntax; rather, it’s a special syntactic construct
+equivalent to <code>if</code> and <code>while</code>, so the same
+formatting conventions apply.</p>
+</div></li>
+<li><p>Use single quotes, not double quotes, around strings. — Even when
+the string contains <code>&#39;</code>, which should be escaped.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="st">&#39;text&#39;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="st">&#39;text with </span><span class="sc">\&#39;</span><span class="st">quotes</span><span class="sc">\&#39;</span><span class="st">&#39;</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="st">&quot;text&quot;</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="st">&quot;text with &#39;quotes&#39;&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>r<span class="st">&#39;(text with &#39;</span>quotes<span class="st">&#39;)&#39;</span></span></code></pre></div>
+<div class="rationale">
+<p><strong>Rationale:</strong> raw strings cannot be used since ‘box’
+supports R versions pre R 4.0.</p>
+</div></li>
+<li><p>Use four spaces for indentation. Do <em>not</em> add extra spaces
+to align assignments or named function call arguments.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>first <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>second <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>first  <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>second <span class="ot">=</span> <span class="dv">2</span></span></code></pre></div></li>
+<li><p>The line length is hard-limited to 120 columns. <em>Most</em>
+lines should be shorter, but there is no (soft, or otherwise) limit at
+80 columns.</p></li>
+<li><p>Explicitly use integer literals where the logical type of the
+expression is integer.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># GOOD:</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span><span class="dt">L</span>) {}</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># BAD:</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span>) {}</span></code></pre></div></li>
+</ul>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

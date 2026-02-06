@@ -1,0 +1,2 @@
+box_use_parser          'box::use' Document Parser
+use_box_lsp             Configures a project to use {box.lsp}

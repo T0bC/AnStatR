@@ -1,0 +1,21 @@
+%<-%                    Destructure a named list into individual
+                        variables
+app                     Rhino application
+auto_test_r             Watch and automatically run R tests
+build_js                Build JavaScript
+build_sass              Build Sass
+dependencies            Manage dependencies
+devmode                 Development mode
+diagnostics             Print diagnostics
+format_js               Format JavaScript
+format_r                Format R
+format_sass             Format Sass
+init                    Create Rhino application
+lint_js                 Lint JavaScript
+lint_r                  Lint R
+lint_sass               Lint Sass
+log                     Logging functions
+react_component         React components
+rhinos                  Population of rhinos
+test_e2e                Run Cypress end-to-end tests
+test_r                  Run R unit tests
