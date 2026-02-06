@@ -1,6 +1,7 @@
 box::use(
   bslib,
   DT,
+  rhino,
   shiny,
 )
 
@@ -82,6 +83,7 @@ server <- function(id) {
       shiny$req(input$data_file)
 
       file_info <- input$data_file
+      rhino$log$info("File upload received: '{file_info$name}'")
 
       # Step 1: Validate extension (pure logic)
       ext_check <- load_data$validate_file_extension(file_info$name)
@@ -125,6 +127,9 @@ server <- function(id) {
       }
 
       # Success — update reactives
+      rhino$log$info(
+        "Load complete: '{file_info$name}' "
+      )
       data_version(data_version() + 1)
       loaded_data(result$data)
       shiny$showNotification(
