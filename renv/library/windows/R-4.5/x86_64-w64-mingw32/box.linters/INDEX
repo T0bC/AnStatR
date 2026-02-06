@@ -1,0 +1,45 @@
+box_alphabetical_calls_linter
+                        'box' library alphabetical module and function
+                        imports linter
+box_default_linters     Box-compatible default linters
+box_func_import_count_linter
+                        'box' library function import count linter
+box_mod_fun_exists_linter
+                        'box' library attached function exists and
+                        exported by called module linter
+box_pkg_fun_exists_linter
+                        'box' library attached function exists and
+                        exported by package linter
+box_separate_calls_linter
+                        'box' library separate packages and module
+                        imports linter
+box_trailing_commas_linter
+                        'box' library trailing commas linter
+box_universal_import_linter
+                        'box' library universal import linter
+box_unused_att_mod_obj_linter
+                        'box' library unused attached module object
+                        linter
+box_unused_att_pkg_fun_linter
+                        'box' library unused attached package function
+                        linter
+box_unused_attached_mod_linter
+                        'box' library unused attached module linter
+box_unused_attached_pkg_linter
+                        'box' library unused attached package linter
+box_usage_linter        'box' library-aware object usage linter
+is_treesitter_installed
+                        Check if treesitter and dependencies are
+                        installed
+namespaced_function_calls
+                        Check that namespace::function() calls except
+                        for box::*() are not made.
+r6_usage_linter         R6 class usage linter
+rhino_default_linters   Rhino default linters
+style_box_use_dir       Style the box::use() calls for a directory
+style_box_use_file      Style the box::use() calls of a source code
+style_box_use_text      Style the box::use() calls of source code text
+unused_declared_object_linter
+                        Unused declared function and data objects
+                        linter
+use_box_lintr           Use lintr with box.linters in your project

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Konrad Rudolph" />
+
+<meta name="date" content="2025-11-25" />
+
+<title>Similar packages</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Similar packages</h1>
+<h4 class="author">Konrad Rudolph</h4>
+<h4 class="date">2025-11-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#tools-for-writing-modular-code" id="toc-tools-for-writing-modular-code">Tools for writing modular
+code</a></li>
+<li><a href="#tools-for-loading-code" id="toc-tools-for-loading-code">Tools for loading code</a></li>
+<li><a href="#tools-for-organising-code" id="toc-tools-for-organising-code">Tools for organising code</a></li>
+</ul>
+</div>
+
+<p>The need for tools to make R code more modular, and to improve code
+reuse, is demonstrated by the wealth of related packages that have
+sprung up over the years. Many of them have objectives similar to ‘box’,
+although they vary wildly in how they approach their common goal, and
+not all objectives are shared. In the following I’ve listed the related
+R packages that I know of. The descriptions are (mostly) copied from the
+respective package metadata, and the interested reader is invited to
+consult the original documentation.</p>
+<p>The list is intended to be a fairly exhaustive — so if you find a
+missing package please let me know.</p>
+<div id="tools-for-writing-modular-code" class="section level2">
+<h2>Tools for writing modular code</h2>
+<ul>
+<li><p>‘<strong><a href="https://cran.r-project.org/package=modules">modules</a></strong>’
+(no relation to the predecessor of ‘box’, also called ‘modules’):
+Provides modules as an organizational unit for source code. Modules
+enforce to be more rigorous when defining dependencies and have a local
+search path. They can be used as a sub unit within packages or in
+scripts.</p></li>
+<li><p>‘<a href="https://trinkerrstuff.wordpress.com/2018/02/22/minimal-explicit-python-style-package-loading-for-r/">trinker/<strong>pysty</strong></a>’:
+‘Python’ style packages importing using the common forms of:
+<code>import PACKAGE</code>, <code>import PACKAGE as ALIAS</code>, or
+<code>from PACKAGE import FUN1, FUN2, FUN_N</code>.</p></li>
+<li><p>‘<a href="https://shiny.rstudio.com/articles/modules.html"><strong>Shiny</strong>’
+modules</a>: ‘Shiny’ modules address the namespacing problem in Shiny UI
+and server logic, adding a level of abstraction beyond
+functions.</p></li>
+<li><p>‘<a href="https://opensource.nibr.com/tidymodules/">Novartis/<strong>tidymodules</strong></a>’:
+‘tidymodules’ offers a robust framework for developing ‘Shiny’ modules
+based on R6 classes which should facilitates inter-modules
+communication.</p></li>
+</ul>
+</div>
+<div id="tools-for-loading-code" class="section level2">
+<h2>Tools for loading code</h2>
+<p>The packages listed above also provide means for loading code;
+however, I won’t replicate them here. Some of the tools below have
+subsequently also gained capabilities for authoring modular code, but
+since their initial and primary purpose was <em>loading</em> code,
+they’re instead listed below.</p>
+<ul>
+<li><p>‘<strong><a href="https://cran.r-project.org/package=import">import</a></strong>’:
+Alternative mechanism for importing objects from packages and R modules.
+The syntax allows for importing multiple objects with a single command
+in an expressive way. The import package bridges some of the gap between
+using library (or require) and direct (single-object) imports.
+Furthermore the imported objects are not placed in the current
+environment.</p></li>
+<li><p>‘<strong><a href="https://conflicted.r-lib.org/">conflicted</a></strong>’: R’s
+default conflict management system gives the most recently loaded
+package precedence. This can make it hard to detect conflicts,
+particularly when they arise because a package update creates ambiguity
+that did not previously exist. ‘conflicted’ takes a different approach,
+making every conflict an error and forcing you to choose which function
+to use.</p></li>
+<li><p>‘<strong><a href="http://trinker.github.io/pacman/">pacman</a></strong>’: Tools to
+more conveniently perform tasks associated with add-on packages. pacman
+conveniently wraps library and package related functions and names them
+in an intuitive and consistent fashion. It seeks to combine
+functionality from lower level functions which can speed up
+workflow.</p></li>
+<li><p>‘<a href="https://jonocarroll.github.io/importAs/">jonocarroll/<strong>importAs</strong></a>’:
+Import namespaces as shorthand symbols rather than full package names,
+in a python-esque fashion.</p></li>
+<li><p>‘<a href="https://cran.r-project.org/package=needs"><strong>needs</strong></a>’:
+A simple function for easier package loading and
+auto-installation.</p></li>
+<li><p>‘<a href="https://cran.r-project.org/package=importar"><strong>importar</strong></a>’:
+Enables ‘Python’-like importing/loading of packages or functions with
+aliasing to prevent namespace conflicts.</p></li>
+<li><p><a href="https://yihui.org/en/2018/09/xfun-pkg-attach/"><strong>xfun</strong>::pkg_attach()</a>:
+A vectorized version of <code>library()</code></p></li>
+</ul>
+</div>
+<div id="tools-for-organising-code" class="section level2">
+<h2>Tools for organising code</h2>
+<ul>
+<li><p>‘<strong><a href="https://cran.r-project.org/package=RSuite">RSuite</a></strong>’:
+Supports safe and reproducible solutions development in R. It will help
+you with environment separation per project, dependency management,
+local packages creation and preparing deployment packs for your
+solutions. (Archived as of 2025-11-25)</p></li>
+<li><p>‘<strong><a href="https://cran.r-project.org/package=mvbutils">mvbutils</a></strong>’:
+Hierarchical workspace tree, code editing and backup, easy package prep,
+editing of packages while loaded, per-object lazy-loading, easy
+documentation, macro functions, and miscellaneous utilities.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

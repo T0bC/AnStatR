@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Konrad Rudolph" />
+
+<meta name="date" content="2025-11-25" />
+
+<title>Get started</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Get started</h1>
+<h4 class="author">Konrad Rudolph</h4>
+<h4 class="date">2025-11-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#using-modules" id="toc-using-modules">Using
+modules</a></li>
+<li><a href="#attaching-modules" id="toc-attaching-modules">Attaching
+modules</a></li>
+<li><a href="#writing-modules" id="toc-writing-modules">Writing
+modules</a></li>
+<li><a href="#nesting-modules" id="toc-nesting-modules">Nesting
+modules</a></li>
+<li><a href="#code-execution-on-loading" id="toc-code-execution-on-loading">Code execution on loading</a>
+<ul>
+<li><a href="#module-helper-functions" id="toc-module-helper-functions">Module helper functions</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="using-modules" class="section level2">
+<h2>Using modules</h2>
+<p>For the purpose of this tutorial, we are going to use the example
+module <code>bio/seq</code>. The module implements some very basic
+mechanisms for dealing with DNA sequences (= character strings
+consisting of the letters <code>A</code>, <code>C</code>, <code>G</code>
+and <code>T</code>).</p>
+<p>First, we load the module:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>bio<span class="sc">/</span>seq)</span></code></pre></div>
+<p>The function <code>box::use</code> accepts a list of
+<em>unquoted</em>, <em>qualified</em> module names. Each of these module
+names will load a single module and make it available to the caller in
+some form. In the code above, we’ve loaded a single module,
+<code>bio/seq</code>. <code>bio</code> serves as a <em>parent
+module</em> that may group several submodules. Since the module name
+inside <code>box::use</code> starts with <code>./</code>, the module
+location is resolved <em>locally</em>, i.e. relative to the path of the
+currently running code.</p>
+<p>In the above, <code>seq</code> is the module’s <em>proper name</em>.
+<code>bio/seq</code> is its <em>fully qualified name</em>. And
+<code>./bio/seq</code> is its <em><code>use</code> declaration</em>.</p>
+<p>To see the effect of this <code>use</code> declaration, let’s inspect
+our workspace:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">ls</span>()</span></code></pre></div>
+<pre><code>## [1] &quot;oldwd&quot; &quot;seq&quot;</code></pre>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>seq</span></code></pre></div>
+<pre><code>## &lt;module: ./bio/seq&gt;</code></pre>
+<p>We have used the module’s fully qualified name to load it. But, as
+shown by <code>ls</code>, loading the module this way only introduces a
+single new name into the current scope, the module itself, identified by
+its proper (non-qualified) name.</p>
+<p>To see which names a module exports, we use <code>ls</code> again,
+this time on the module itself:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">ls</span>(seq)</span></code></pre></div>
+<pre><code>## [1] &quot;is_valid&quot; &quot;revcomp&quot;  &quot;seq&quot;      &quot;table&quot;</code></pre>
+<p>It appears that <code>seq</code> exports 4 different names. To access
+exported names, we use the <code>$</code> operator:
+<code>seq$is_valid</code> allows us to use the first function in the
+list of exported names. We can also display the interactive help for
+individual names using the <code>box::help</code> function, e.g.:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">help</span>(seq<span class="sc">$</span>revcomp)</span></code></pre></div>
+<p>Now let’s actually <em>use</em> the module. The <code>seq</code>
+function inside the <code>bio/seq</code> module constructs a set of
+(optionally named) biological sequences:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>s <span class="ot">=</span> seq<span class="sc">$</span><span class="fu">seq</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>    <span class="at">gene1 =</span> <span class="st">&#39;GATTACAGATCAGCTCAGCACCTAGCACTATCAGCAAC&#39;</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>    <span class="at">gene2 =</span> <span class="st">&#39;CATAGCAACTGACATCACAGCG&#39;</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>seq<span class="sc">$</span><span class="fu">is_valid</span>(s)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>s</span></code></pre></div>
+<pre><code>## 2 DNA sequences:
+##   &gt;gene1
+##   GATTACAGATCAGCTCAGCACCTAGCA...
+##   &gt;gene2
+##   CATAGCAACTGACATCACAGCG</code></pre>
+<p>Note how we automatically get pretty-printed (<a href="https://en.wikipedia.org/wiki/FASTA_format">FASTA</a>) output
+because the <code>print</code> method (which gets called implicitly
+here) is specialised for the <code>&#39;bio/seq&#39;</code> S3 class in the
+<code>bio/seq</code> module (prefixing S3 classes inside modules with
+the full module name is a convention to avoid name clashes of S3
+classes):</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">getS3method</span>(<span class="st">&#39;print&#39;</span>, <span class="st">&#39;bio/seq&#39;</span>)</span></code></pre></div>
+<pre><code>## function (x) {
+##     box::use(stringr[trunc = str_trunc])
+## 
+##     if (is.null(names(x))) names(x) = paste(&#39;seq&#39;, seq_along(x))
+## 
+##     cat(
+##         sprintf(&#39;%d DNA sequence%s:\n&#39;, length(x), if (length(x) == 1L) &#39;&#39; else &#39;s&#39;),
+##         sprintf(&#39;  &gt;%s\n  %s\n&#39;, names(x), trunc(x, 30L)),
+##         sep = &#39;&#39;
+##     )
+##     invisible(x)
+## }
+## &lt;environment: 0x115dffe08&gt;</code></pre>
+<p>The source code for <code>`print.bio/seq`</code> contains an
+interesting <code>use</code> declaration: it showcases an alternative
+way of invoking <code>box::use</code>, which we’ll explore now.</p>
+</div>
+<div id="attaching-modules" class="section level2">
+<h2>Attaching modules</h2>
+<p>Let’s have a look at alternative ways of using modules.</p>
+<p>To start, let’s unload the <code>bio/seq</code> module …</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">unload</span>(seq)</span></code></pre></div>
+<p>… and load it again, via a different route:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">options</span>(<span class="at">box.path =</span> <span class="fu">getwd</span>())</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(bio<span class="sc">/</span>seq[revcomp, is_valid])</span></code></pre></div>
+<p>After unloading the already loaded module,
+<code>options(box.path = …)</code> sets the module search path: this is
+where <code>box::use</code> searches for modules. If more than one path
+is given, <code>box::use</code> searches them all until a module of
+matching name is found. This works analogously to how
+<code>.libPaths</code> operates on R packages.</p>
+<p>The <code>box::use</code> directive can now use <code>bio/seq</code>
+instead of <code>./bio/seq</code> as the module name: rather than a
+relative name we specify a <em>global</em> name. In this example we set
+the search path to the current working directory but in normal usage it
+would be a global library location, e.g. (following the <a href="https://specifications.freedesktop.org/basedir/latest/">XDG base
+directory specification</a>) <code>~/.local/share/R/modules</code> on
+Linux.</p>
+<p><strong>Note</strong> that non-local module names <em>must</em> be
+fully qualified, nested modules: <code>box::use(foo/bar)</code> works,
+<code>box::use(bar)</code> does not (instead, it is assumed that
+<code>bar</code> refers to a <em>package</em>)!</p>
+<p>In the declaration above we use <code>[revcomp, is_valid]</code> to
+specify that the names <code>revcomp</code> and <code>is_valid</code>
+from the <code>bio/seq</code> module should be attached in the calling
+environment. The <code>[…]</code> part is an <em>attach
+specification</em>: a comma-separated list of names inside the
+parentheses specifies which names to attach. The special symbol
+<code>...</code> can be used to specify that <em>all exported names</em>
+should be attached. This has an effect similar to conventional package
+loading via <code>library</code> (or <code>attach</code>ing an
+environment): all the attached names are now available for direct use
+without necessitating the <code>seq$</code> qualifier:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">is_valid</span>(s)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">revcomp</span>(s)</span></code></pre></div>
+<pre><code>## 2 DNA sequences:
+##   &gt;gene1
+##   GTTGCTGATAGTGCTAGGTGCTGAGCT...
+##   &gt;gene2
+##   CGCTGTGATGTCAGTTGCTATG</code></pre>
+<p>However, unlike the <code>attach</code> function, module attachment
+happens in the <em>current, local scope</em> only.</p>
+<p>Since the above code was executed in the global environment, there’s
+no distinction between local and global scope:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">search</span>()</span></code></pre></div>
+<pre><code>##  [1] &quot;.GlobalEnv&quot;        &quot;mod:bio/seq&quot;       &quot;package:stats&quot;    
+##  [4] &quot;package:graphics&quot;  &quot;package:grDevices&quot; &quot;package:datasets&quot; 
+##  [7] &quot;renv:shims&quot;        &quot;package:utils&quot;     &quot;package:methods&quot;  
+## [10] &quot;Autoloads&quot;         &quot;package:base&quot;</code></pre>
+<p>Note the second item, which reads “<code>mod:bio/seq</code>”. But
+let’s now undo that, to attach (and use) the module locally instead:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">detach</span>()</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>seq_table <span class="ot">=</span> <span class="cf">function</span> (s) {</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>    box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>bio<span class="sc">/</span>seq[...])</span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a>    <span class="fu">table</span>(s)</span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>}</span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="fu">seq_table</span>(s)</span></code></pre></div>
+<pre><code>## $gene1
+##  A  C  G  T 
+## 13 12  6  7 
+## 
+## $gene2
+## A C G T 
+## 8 7 4 3</code></pre>
+<p>Unlike above, we are now attaching <em>all</em> exported names
+instead of specifying individual names. The subsequent line of code uses
+the <code>seq$table</code> function rather than <code>base::table</code>
+(which would have a different output). And note that the
+<code>seq</code> module’s <code>table</code> function is <em>not</em>
+attached outside the local scope:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">search</span>()</span></code></pre></div>
+<pre><code>##  [1] &quot;.GlobalEnv&quot;        &quot;package:stats&quot;     &quot;package:graphics&quot; 
+##  [4] &quot;package:grDevices&quot; &quot;package:datasets&quot;  &quot;renv:shims&quot;       
+##  [7] &quot;package:utils&quot;     &quot;package:methods&quot;   &quot;Autoloads&quot;        
+## [10] &quot;package:base&quot;</code></pre>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">table</span>(s)</span></code></pre></div>
+<pre><code>## s
+##                 CATAGCAACTGACATCACAGCG GATTACAGATCAGCTCAGCACCTAGCACTATCAGCAAC 
+##                                      1                                      1</code></pre>
+<p>This is very powerful, as it isolates separate scopes more
+effectively than the <code>attach</code> function. What is more, modules
+which are used and attached inside another module <em>remain</em> inside
+that module and are not visible outside the module by default.</p>
+<p>Nevertheless, the normal, recommended usage of a module is without an
+attach specification, as this makes it clearer which names are being
+referring to.</p>
+</div>
+<div id="writing-modules" class="section level2">
+<h2>Writing modules</h2>
+<p>The module <code>bio/seq</code>, which we have used in the previous
+section, is implemented in the file <a href="bio/seq.r"><code>bio/seq.r</code></a>. The file <code>seq.r</code>
+is, by and large, a regular R source file, which happens to live in a
+directory named <code>bio</code>.</p>
+<p>In fact, there are only three things worth mentioning:</p>
+<ol style="list-style-type: decimal">
+<li><p>Documentation: functions in the module file can be documented
+using ‘<a href="https://cran.r-project.org/package=roxygen2">roxygen2</a>’ syntax.
+It works the same as for packages. The ‘box’ package parses the
+documentation and makes it available via <code>box::help</code>.
+<em>Displaying module help requires that ‘roxygen2’ is
+installed.</em></p></li>
+<li><p>Export declarations: similar to packages, modules explicitly need
+to declare which names they export; they do this using the annotation
+comment <code>#&#39; @export</code> in front of the name assignment. Again,
+this works similarly to ‘roxygen2’ (but does <em>not</em> require having
+that package installed).</p></li>
+<li><p><a href="https://adv-r.hadley.nz/s3.html">S3 functions</a>: ‘box’
+registers and exports such functions automatically as necessary, but
+this only works for <em>user generics</em> that are defined inside the
+same module. When overriding “known generics” (such as
+<code>print</code>), we need to register these manually via
+<code>register_S3_method</code> (this is necessary since these functions
+are inherently ambiguous and there is no automatic way of finding
+them).</p></li>
+</ol>
+</div>
+<div id="nesting-modules" class="section level2">
+<h2>Nesting modules</h2>
+<p>Modules can also form nested hierarchies. In fact, here is the
+implementation of <code>bio</code> (in <a href="bio/__init__.r"><code>bio/__init__.r</code></a>: since
+<code>bio</code> is a directory rather than a file, the module
+implementation resides in the nested file <code>__init__.r</code>):</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>seq)</span></code></pre></div>
+<p>The submodule is specified as <code>./seq</code> rather than
+<code>seq</code>: the explicitly provided relative path prevents lookup
+in the import search path (that we set via
+<code>options(box.path = …)</code>); instead, only the current directory
+(that is, the directory containing the <code>bio</code> module) is
+considered.</p>
+<p>When applied to a <code>box::use</code> declaration,
+<code>@export</code> causes all names which are imported by that
+declaration to also be exported: any module name created by the
+declaration (here, <code>seq</code>) is exported as-is. Furthermore, any
+attached name is likewise exported. Refer to the <code>box::use</code>
+documentation and examples for more details on which names are
+exported.</p>
+<p>Coming back to our example module, we can now use the
+<code>bio</code> module:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">options</span>(<span class="at">box.path =</span> <span class="cn">NULL</span>) <span class="co"># Reset search path</span></span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>bio)</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="fu">ls</span>(bio)</span></code></pre></div>
+<pre><code>## [1] &quot;seq&quot;</code></pre>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">ls</span>(bio<span class="sc">$</span>seq)</span></code></pre></div>
+<pre><code>## [1] &quot;is_valid&quot; &quot;revcomp&quot;  &quot;seq&quot;      &quot;table&quot;</code></pre>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a>bio<span class="sc">$</span>seq<span class="sc">$</span><span class="fu">revcomp</span>(<span class="st">&#39;CAT&#39;</span>)</span></code></pre></div>
+<pre><code>## 1 DNA sequence:
+##   &gt;seq 1
+##   ATG</code></pre>
+<p>We could also have implemented <code>bio</code> as follows:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>seq[...])</span></code></pre></div>
+<p>This would have made all of <code>seq</code>’s definitions
+immediately available in <code>bio</code>, without having to always
+write <code>seq$…</code>. This is sometimes useful, but should be
+employed with care: being explicit about namespaces generally increases
+code robustness and readability.</p>
+</div>
+<div id="code-execution-on-loading" class="section level2">
+<h2>Code execution on loading</h2>
+<p>Modules define functions and values. To execute code when a module is
+loaded, put it inside a function with the name <code>.on_load</code>.
+This function is similar to the hook for the <code>.onLoad</code>
+<em>package</em> namespace event.</p>
+<p>This function is executed the first time the module is loaded in an R
+session. Subsequent calls to <code>box::use</code> for that module,
+regardless of whether they occur in a different scope, will refer to the
+already loaded, cached module, and will <em>not</em> reload the
+module.</p>
+<p>We can illustrate this by loading a module which has side-effects,
+<code>info</code>.</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>.on_load <span class="ot">=</span> <span class="cf">function</span> (ns) {</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>    <span class="fu">message</span>(</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>        <span class="st">&#39;Loading module &quot;&#39;</span>, box<span class="sc">::</span><span class="fu">name</span>(), <span class="st">&#39;&quot;</span><span class="sc">\n</span><span class="st">&#39;</span>,</span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>        <span class="st">&#39;Module path: &quot;&#39;</span>, <span class="fu">basename</span>(box<span class="sc">::</span><span class="fu">file</span>()), <span class="st">&#39;&quot;&#39;</span></span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>    )</span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>}</span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">export</span>() <span class="co"># Mark as a ‘box’ module.</span></span></code></pre></div>
+<p>Let’s use it:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>info)</span></code></pre></div>
+<pre><code>## Loading module &quot;info&quot;
+## Module path: &quot;vignettes&quot;</code></pre>
+<p>We have imported the module, and get the diagnostic messages. Let’s
+re-use the module:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span>info)</span></code></pre></div>
+<p>… no messages are displayed. However, we <em>can</em> explicitly
+reload a module. This clears the cache, and loads the module again. This
+can be useful during development and debugging:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">reload</span>(info)</span></code></pre></div>
+<pre><code>## Loading module &quot;info&quot;
+## Module path: &quot;vignettes&quot;</code></pre>
+<p>And this displays the messages again. The <code>reload</code>
+function is a shortcut for <code>unload</code> followed by
+<code>import</code> (using the exact same arguments as used on the
+original <code>import</code> call).</p>
+<div id="module-helper-functions" class="section level3">
+<h3>Module helper functions</h3>
+<p>This <code>info</code> module also show-cases two important helper
+functions:</p>
+<ol style="list-style-type: decimal">
+<li><p><code>box::name</code> returns the name of the module with which
+it was loaded. This is especially handy because, when called outside of
+a module, <code>box::name</code> is <code>NULL</code>. This allows
+testing whether a piece of code was loaded as a module, or invoked
+directly (e.g. via <code>Rscript</code> on the command line).</p></li>
+<li><p><code>box::file</code> is similar to <code>system.file</code>: it
+returns the full path to any file within the directory where a module is
+stored. This is useful when distributing data files with modules, which
+are loaded from within the module. When invoked without arguments,
+<code>box::file</code> returns the full path to the directory containing
+the module source file.</p></li>
+</ol>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

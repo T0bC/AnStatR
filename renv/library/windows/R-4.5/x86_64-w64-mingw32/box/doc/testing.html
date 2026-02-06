@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Konrad Rudolph" />
+
+<meta name="date" content="2025-11-25" />
+
+<title>Testing modules</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Testing modules</h1>
+<h4 class="author">Konrad Rudolph</h4>
+<h4 class="date">2025-11-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#testing-is-crucial" id="toc-testing-is-crucial">Testing is
+crucial</a></li>
+<li><a href="#support-for-existing-testing-frameworks" id="toc-support-for-existing-testing-frameworks">Support for existing
+testing frameworks</a>
+<ul>
+<li><a href="#a-note-on-rstudio-and-other-ides" id="toc-a-note-on-rstudio-and-other-ides">A note on RStudio and other
+IDEs</a></li>
+</ul></li>
+<li><a href="#test-interfaces-not-implementation-details" id="toc-test-interfaces-not-implementation-details">Test interfaces, not
+implementation details</a></li>
+</ul>
+</div>
+
+<div id="testing-is-crucial" class="section level2">
+<h2>Testing is crucial</h2>
+<p>Writing tests to ensure code correctness is a crucial part of
+developing robust software. This is especially true for dynamic
+languages such as R, which lack some of the tools that ensure
+correctness in statically checked programming languages.</p>
+<p>‘box’ does not dictate a specific style of testing, and different
+kinds of testing are appropriate in different situations. However, the
+following article suggests a structure for the test accompanying a
+module which I have found to work well.</p>
+<p>Following the suggested structure causes the implementation and the
+tests of each module to be located in paths next to each other. This
+structure is found in several other conventions across programming
+languages; but it differs somewhat from the convention of R packages
+(where all implementation code is in a separate directory from all
+testing code), and differs drastically from the convention found for
+instance in Java. That said, it should be possible to make a Java-like
+test project work with ‘box’, too.</p>
+</div>
+<div id="support-for-existing-testing-frameworks" class="section level2">
+<h2>Support for existing testing frameworks</h2>
+<p>‘box’ is agnostic regarding the testing framework. The following
+example employs the widely used ‘<a href="https://testthat.r-lib.org/">testthat</a>’ unit testing package,
+but other frameworks exist, and should also work.</p>
+<p>This example uses the <a href="bio/seq.r"><code>bio/seq</code></a>
+module from the <em><a href="box.html">Getting started</a></em>
+vignette. To enable unit testing, this module contains the following
+code at the very end:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(box<span class="sc">::</span><span class="fu">name</span>())) {</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>    box<span class="sc">::</span><span class="fu">use</span>(.<span class="sc">/</span><span class="st">`</span><span class="at">__tests__</span><span class="st">`</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>}</span></code></pre></div>
+<p>This allows us to run the tests by running the module source code
+from the command line, e.g. via</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">Rscript</span> bio/seq.r</span></code></pre></div>
+<p>… or inside an IDE such as RStudio by choosing the menu item “Tools”
+› “Jobs” › “Start Local Job…” <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. This works because <code>box::name</code>
+returns the name of the module from which this function is called. But
+if the function is invoked from code that wasn’t loaded via
+<code>box::use</code> (as is the case here), its value is
+<code>NULL</code>. In other words, <code>is.null(box::name())</code> is
+a way of testing whether the code currently being run is loaded as a
+module, or executed directly.</p>
+<p>The code inside the <code>if</code> imports the
+<code>__tests__</code> submodule: that’s where we put the unit tests.
+The name <code>__tests__</code> is a convention. You’re free to choose a
+different name, but I recommend sticking with this convention. Note that
+<code>__tests__</code> is not a valid R variable name; that’s why it
+needs to be written in backticks, i.e. the qualified local module name
+is <code>./`__tests__`</code>.</p>
+<p>In this case, the <code>__tests__</code> submodule consists of a
+directory with the following contents:</p>
+<ul>
+<li><code>__tests__/</code>
+<ul>
+<li><a href="bio/__tests__/__init__.r"><code>__init__.r</code></a></li>
+<li><a href="bio/__tests__/helper-module.r"><code>helper-module.r</code></a></li>
+<li>individual test files</li>
+</ul></li>
+</ul>
+<p>The <code>__init__.r</code> file corresponds closely to the file
+<code>tests/testthat.R</code> in a standard R package structure. It
+loads ‘testthat’ and launches the tests:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(testthat[...])</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>.on_load <span class="ot">=</span> <span class="cf">function</span> (ns) {</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    <span class="fu">test_dir</span>(box<span class="sc">::</span><span class="fu">file</span>())</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>}</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">export</span>()</span></code></pre></div>
+<p>This first loads and attaches the ‘testthat’ package. Although
+attaching is not strictly necessary, ‘testthat’ code is a lot more
+readable without cluttering the code with explicit name
+qualifications.</p>
+<p>Next it invokes <code>test_dir</code> and passes the tests’ directory
+via <code>box::file</code> inside the module’s <code>.on_load</code>
+hook — remember that only declarations should be at file level inside a
+module! All code execution should happen inside functions.</p>
+<p>The <code>helper-module.r</code> file is a ‘testthat’ helper; these
+are sourced automatically by ‘testthat’ in the environment where the
+tests are run. We use this mechanism to load our module in the test
+environment:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(..<span class="sc">/</span>seq[...])</span></code></pre></div>
+<p>And, again, attaching isn’t strictly necessary here. Note also that,
+depending on how the tests are run, this helper file might not be
+needed, since executing the module script file itself already loads the
+module contents into the global namespace; however, not all ways of
+loading the tests do this; for instance, RStudio’s “Start Local Job”
+doesn’t. So having this helper is sometimes necessary, and never
+hurts.</p>
+<p>With this set-up, the actual unit test files look exactly like
+regular ‘testthat’ test files. For instance, here’s
+<code>__tests__/test-seq.r</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">&#39;valid sequences can be created&#39;</span>, {</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>    <span class="fu">expect_error</span>((<span class="at">s =</span> <span class="fu">seq</span>(<span class="st">&#39;GATTACA&#39;</span>)), <span class="cn">NA</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>    <span class="fu">expect_true</span>(<span class="fu">is_valid</span>(s))</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>    <span class="fu">expect_error</span>(<span class="fu">seq</span>(<span class="st">&#39;cattaga&#39;</span>), <span class="cn">NA</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>})</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">&#39;invalid sequences cannot be created&#39;</span>, {</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    <span class="fu">expect_error</span>(<span class="fu">seq</span>(<span class="st">&#39;GATTXA&#39;</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>})</span></code></pre></div>
+<div id="a-note-on-rstudio-and-other-ides" class="section level3">
+<h3>A note on RStudio and other IDEs</h3>
+<p>Most IDEs have an option to “Source” a local file. When doing this it
+may <em>seem</em> as if the tests are correctly run, but this isn’t
+actually the case! This is because <code>box::use</code> doesn’t reload
+code that has already been loaded previously; instead, it uses an
+already loaded, cached version. This means that running the tests via
+the “Source” button risks running an outdated version of the tests, or
+the module, or both, after modifying their code.</p>
+<p>To avoid this, always execute the test module in a new R session. In
+RStudio, the easiest way of doing this is by running it as a job, via
+the menu “Tools” › “Jobs” › “Start Local Job…” (or using the option
+“Source as Local Job…” in the “Source” drop-down).</p>
+</div>
+</div>
+<div id="test-interfaces-not-implementation-details" class="section level2">
+<h2>Test interfaces, not implementation details</h2>
+<p>One big difference between testing module code and testing package
+code is that, with the testing structure laid out above, the testing
+code only sees the module’s public interface, it does not get access to
+the internal module implementation.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
+<p>This is <em>by design</em>: the idea is that we want to test the
+<em>observable behaviour</em> rather than the (purely incidental)
+current implementation, which might be changed. This is the way unit
+testing works in many other environments, and how it is often
+recommended.</p>
+<p>But I realise that this may not always be appropriate. Sometimes we
+<em>need</em> to test implementation details. There are essentially two
+workarounds for this. For the moment, I have not yet developed a strong
+preference for either of these methods.</p>
+<ol style="list-style-type: decimal">
+<li><p>Put the tests into the module files themselves.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># mymod.r</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>this_works <span class="ot">=</span> <span class="cf">function</span> () <span class="cn">TRUE</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(box<span class="sc">::</span><span class="fu">name</span>())) {</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    box<span class="sc">::</span><span class="fu">use</span>(testthat[...])</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="co"># Define tests</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">&#39;implementation detail X works&#39;</span>, {</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>        <span class="fu">expect_true</span>(<span class="fu">this_works</span>())</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    })</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="co"># Invoke tests</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>    <span class="fu">test_file</span>(box<span class="sc">::</span><span class="fu">file</span>())</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>}</span></code></pre></div></li>
+<li><p>Get access to the private module namespace for testing. When
+loading a module with <code>box::use</code>, the module object has an
+attribute <code>namespace</code> that holds the private module
+namespace. It generally shouldn’t be accessed by client code, but access
+by the testing code for a module is entirely legitimate:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># __tests__/test-something.r</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>box<span class="sc">::</span><span class="fu">use</span>(..<span class="sc">/</span>mymod)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>impl <span class="ot">=</span> <span class="fu">attr</span>(mymod, <span class="st">&#39;namespace&#39;</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">&#39;implementation detail X works&#39;</span>, {</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>    <span class="fu">expect_true</span>(impl<span class="sc">$</span><span class="fu">this_works</span>())</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>})</span></code></pre></div></li>
+</ol>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>It may be tempting to instead use the “Source” button
+but doing so is problematic; see the section “A note on RStudio and
+other IDEs”!<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Depending on how it’s invoked; but we shouldn’t make
+assumptions. In particular, when invoked as a job in RStudio, the test
+module is loaded via the test helper, and thus the module internals are
+not visible.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

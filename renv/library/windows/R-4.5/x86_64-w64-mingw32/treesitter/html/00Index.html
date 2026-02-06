@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head><title>R: Bindings to 'Tree-Sitter'</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body><div class="container">
+<h1> Bindings to 'Tree-Sitter'
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;treesitter&rsquo; version 0.3.1</h2>
+
+<ul><li><a href="../DESCRIPTION" type="text/plain; charset=utf-8">DESCRIPTION file</a>.</li>
+<li><a href="../NEWS.md">Package NEWS</a>.</li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#I">I</a>
+<a href="#L">L</a>
+<a href="#N">N</a>
+<a href="#P">P</a>
+<a href="#Q">Q</a>
+<a href="#R">R</a>
+<a href="#T">T</a>
+</p>
+
+
+<h2><a id="I">-- I --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="is_language.html">is_language</a></td>
+<td>Is 'x' a language?</td></tr>
+<tr><td style="width: 25%;"><a href="is_node.html">is_node</a></td>
+<td>Is 'x' a node?</td></tr>
+<tr><td style="width: 25%;"><a href="is_parser.html">is_parser</a></td>
+<td>Is 'x' a parser?</td></tr>
+<tr><td style="width: 25%;"><a href="points.html">is_point</a></td>
+<td>Points</td></tr>
+<tr><td style="width: 25%;"><a href="is_query.html">is_query</a></td>
+<td>Is 'x' a query?</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">is_range</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="is_tree.html">is_tree</a></td>
+<td>Is 'x' a tree?</td></tr>
+</table>
+
+<h2><a id="L">-- L --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="language_field_count.html">language_field_count</a></td>
+<td>Language field count</td></tr>
+<tr><td style="width: 25%;"><a href="language_field_id_for_name.html">language_field_id_for_name</a></td>
+<td>Language field identifiers</td></tr>
+<tr><td style="width: 25%;"><a href="language_field_name_for_id.html">language_field_name_for_id</a></td>
+<td>Language field names</td></tr>
+<tr><td style="width: 25%;"><a href="language_name.html">language_name</a></td>
+<td>Language name</td></tr>
+<tr><td style="width: 25%;"><a href="language_next_state.html">language_next_state</a></td>
+<td>Language state advancement</td></tr>
+<tr><td style="width: 25%;"><a href="language_state_count.html">language_state_count</a></td>
+<td>Language state count</td></tr>
+<tr><td style="width: 25%;"><a href="language_symbol_count.html">language_symbol_count</a></td>
+<td>Language symbol count</td></tr>
+<tr><td style="width: 25%;"><a href="language_symbol_for_name.html">language_symbol_for_name</a></td>
+<td>Language symbols</td></tr>
+<tr><td style="width: 25%;"><a href="language_symbol_name.html">language_symbol_name</a></td>
+<td>Language symbol names</td></tr>
+</table>
+
+<h2><a id="N">-- N --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="node-child.html">node-child</a></td>
+<td>Get a node's child by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-by-field.html">node-child-by-field</a></td>
+<td>Get a node's child by field id or name</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-count.html">node-child-count</a></td>
+<td>Get a node's child count</td></tr>
+<tr><td style="width: 25%;"><a href="node-children.html">node-children</a></td>
+<td>Get a node's children</td></tr>
+<tr><td style="width: 25%;"><a href="node-descendant.html">node-descendant</a></td>
+<td>Node descendants</td></tr>
+<tr><td style="width: 25%;"><a href="node-field-name-for-child.html">node-field-name-for-child</a></td>
+<td>Get a child's field name by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-first-child-byte.html">node-first-child-byte</a></td>
+<td>Get the first child that extends beyond the given byte offset</td></tr>
+<tr><td style="width: 25%;"><a href="node-grammar.html">node-grammar</a></td>
+<td>Node grammar types and symbols</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node-location</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node-metadata</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node-parse-state.html">node-parse-state</a></td>
+<td>Node parse states</td></tr>
+<tr><td style="width: 25%;"><a href="node-sibling.html">node-sibling</a></td>
+<td>Node sibling accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-child.html">node_child</a></td>
+<td>Get a node's child by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-children.html">node_children</a></td>
+<td>Get a node's children</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-by-field.html">node_child_by_field_id</a></td>
+<td>Get a node's child by field id or name</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-by-field.html">node_child_by_field_name</a></td>
+<td>Get a node's child by field id or name</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-count.html">node_child_count</a></td>
+<td>Get a node's child count</td></tr>
+<tr><td style="width: 25%;"><a href="node_descendant_count.html">node_descendant_count</a></td>
+<td>Node descendant count</td></tr>
+<tr><td style="width: 25%;"><a href="node-descendant.html">node_descendant_for_byte_range</a></td>
+<td>Node descendants</td></tr>
+<tr><td style="width: 25%;"><a href="node-descendant.html">node_descendant_for_point_range</a></td>
+<td>Node descendants</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node_end_byte</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node_end_point</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-field-name-for-child.html">node_field_name_for_child</a></td>
+<td>Get a child's field name by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-field-name-for-child.html">node_field_name_for_named_child</a></td>
+<td>Get a child's field name by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-first-child-byte.html">node_first_child_for_byte</a></td>
+<td>Get the first child that extends beyond the given byte offset</td></tr>
+<tr><td style="width: 25%;"><a href="node-first-child-byte.html">node_first_named_child_for_byte</a></td>
+<td>Get the first child that extends beyond the given byte offset</td></tr>
+<tr><td style="width: 25%;"><a href="node-grammar.html">node_grammar_symbol</a></td>
+<td>Node grammar types and symbols</td></tr>
+<tr><td style="width: 25%;"><a href="node-grammar.html">node_grammar_type</a></td>
+<td>Node grammar types and symbols</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node_has_error</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node_is_error</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node_is_extra</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node_is_missing</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node-metadata.html">node_is_named</a></td>
+<td>Node metadata</td></tr>
+<tr><td style="width: 25%;"><a href="node_language.html">node_language</a></td>
+<td>Get a node's underlying language</td></tr>
+<tr><td style="width: 25%;"><a href="node-child.html">node_named_child</a></td>
+<td>Get a node's child by index</td></tr>
+<tr><td style="width: 25%;"><a href="node-children.html">node_named_children</a></td>
+<td>Get a node's children</td></tr>
+<tr><td style="width: 25%;"><a href="node-child-count.html">node_named_child_count</a></td>
+<td>Get a node's child count</td></tr>
+<tr><td style="width: 25%;"><a href="node-descendant.html">node_named_descendant_for_byte_range</a></td>
+<td>Node descendants</td></tr>
+<tr><td style="width: 25%;"><a href="node-descendant.html">node_named_descendant_for_point_range</a></td>
+<td>Node descendants</td></tr>
+<tr><td style="width: 25%;"><a href="node-sibling.html">node_next_named_sibling</a></td>
+<td>Node sibling accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-parse-state.html">node_next_parse_state</a></td>
+<td>Node parse states</td></tr>
+<tr><td style="width: 25%;"><a href="node-sibling.html">node_next_sibling</a></td>
+<td>Node sibling accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node_parent.html">node_parent</a></td>
+<td>Get a node's parent</td></tr>
+<tr><td style="width: 25%;"><a href="node-parse-state.html">node_parse_state</a></td>
+<td>Node parse states</td></tr>
+<tr><td style="width: 25%;"><a href="node-sibling.html">node_previous_named_sibling</a></td>
+<td>Node sibling accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-sibling.html">node_previous_sibling</a></td>
+<td>Node sibling accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node_range</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node_raw_s_expression.html">node_raw_s_expression</a></td>
+<td>"Raw" S-expression</td></tr>
+<tr><td style="width: 25%;"><a href="node_show_s_expression.html">node_show_s_expression</a></td>
+<td>Pretty print a 'node"s s-expression</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node_start_byte</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node-location.html">node_start_point</a></td>
+<td>Node byte and point accessors</td></tr>
+<tr><td style="width: 25%;"><a href="node_symbol.html">node_symbol</a></td>
+<td>Node symbol</td></tr>
+<tr><td style="width: 25%;"><a href="node_text.html">node_text</a></td>
+<td>Get a node's underlying text</td></tr>
+<tr><td style="width: 25%;"><a href="node_type.html">node_type</a></td>
+<td>Node type</td></tr>
+<tr><td style="width: 25%;"><a href="node_walk.html">node_walk</a></td>
+<td>Generate a 'TreeCursor' iterator</td></tr>
+</table>
+
+<h2><a id="P">-- P --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="parser.html">parser</a></td>
+<td>Create a new parser</td></tr>
+<tr><td style="width: 25%;"><a href="parser-adjustments.html">parser-adjustments</a></td>
+<td>Parser adjustments</td></tr>
+<tr><td style="width: 25%;"><a href="parser-parse.html">parser-parse</a></td>
+<td>Parse or reparse text</td></tr>
+<tr><td style="width: 25%;"><a href="parser-parse.html">parser_parse</a></td>
+<td>Parse or reparse text</td></tr>
+<tr><td style="width: 25%;"><a href="parser-parse.html">parser_reparse</a></td>
+<td>Parse or reparse text</td></tr>
+<tr><td style="width: 25%;"><a href="parser-adjustments.html">parser_set_included_ranges</a></td>
+<td>Parser adjustments</td></tr>
+<tr><td style="width: 25%;"><a href="parser-adjustments.html">parser_set_language</a></td>
+<td>Parser adjustments</td></tr>
+<tr><td style="width: 25%;"><a href="parser-adjustments.html">parser_set_timeout</a></td>
+<td>Parser adjustments</td></tr>
+<tr><td style="width: 25%;"><a href="points.html">point</a></td>
+<td>Points</td></tr>
+<tr><td style="width: 25%;"><a href="points.html">points</a></td>
+<td>Points</td></tr>
+<tr><td style="width: 25%;"><a href="points.html">point_column</a></td>
+<td>Points</td></tr>
+<tr><td style="width: 25%;"><a href="points.html">point_row</a></td>
+<td>Points</td></tr>
+</table>
+
+<h2><a id="Q">-- Q --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="query.html">query</a></td>
+<td>Queries</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query-accessors</a></td>
+<td>Query accessors</td></tr>
+<tr><td style="width: 25%;"><a href="query-matches-and-captures.html">query-matches-and-captures</a></td>
+<td>Query matches and captures</td></tr>
+<tr><td style="width: 25%;"><a href="query-matches-and-captures.html">query_captures</a></td>
+<td>Query matches and captures</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query_capture_count</a></td>
+<td>Query accessors</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query_end_byte_for_pattern</a></td>
+<td>Query accessors</td></tr>
+<tr><td style="width: 25%;"><a href="query-matches-and-captures.html">query_matches</a></td>
+<td>Query matches and captures</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query_pattern_count</a></td>
+<td>Query accessors</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query_start_byte_for_pattern</a></td>
+<td>Query accessors</td></tr>
+<tr><td style="width: 25%;"><a href="query-accessors.html">query_string_count</a></td>
+<td>Query accessors</td></tr>
+</table>
+
+<h2><a id="R">-- R --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="ranges.html">range</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">ranges</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">range_end_byte</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">range_end_point</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">range_start_byte</a></td>
+<td>Ranges</td></tr>
+<tr><td style="width: 25%;"><a href="ranges.html">range_start_point</a></td>
+<td>Ranges</td></tr>
+</table>
+
+<h2><a id="T">-- T --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="text_parse.html">text_parse</a></td>
+<td>Parse a snippet of text</td></tr>
+<tr><td style="width: 25%;"><a href="tree-accessors.html">tree-accessors</a></td>
+<td>Tree accessors</td></tr>
+<tr><td style="width: 25%;"><a href="TreeCursor.html">TreeCursor</a></td>
+<td>Tree cursors</td></tr>
+<tr><td style="width: 25%;"><a href="tree-accessors.html">tree_included_ranges</a></td>
+<td>Tree accessors</td></tr>
+<tr><td style="width: 25%;"><a href="tree-accessors.html">tree_language</a></td>
+<td>Tree accessors</td></tr>
+<tr><td style="width: 25%;"><a href="tree_root_node.html">tree_root_node</a></td>
+<td>Retrieve the root node of the tree</td></tr>
+<tr><td style="width: 25%;"><a href="tree_root_node_with_offset.html">tree_root_node_with_offset</a></td>
+<td>Retrieve an offset root node</td></tr>
+<tr><td style="width: 25%;"><a href="tree-accessors.html">tree_text</a></td>
+<td>Tree accessors</td></tr>
+<tr><td style="width: 25%;"><a href="tree_walk.html">tree_walk</a></td>
+<td>Generate a 'TreeCursor' iterator</td></tr>
+</table>
+</div></body></html>
