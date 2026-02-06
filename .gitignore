@@ -1,0 +1,9 @@
+# Rhino defaults
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+node_modules/
+
+# Legacy reference code (read-only, not part of new codebase)
+legacy_texan2/
