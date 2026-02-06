@@ -1,5 +1,6 @@
 box::use(
   openxlsx,
+  rhino,
   utils[read.csv],
   tools[file_ext],
 )
@@ -10,10 +11,11 @@ box::use(
 #' @export
 validate_file_extension <- function(filename) {
   ext <- tolower(file_ext(filename))
-  list(
-    valid = ext %in% c("csv", "xlsx"),
-    ext = ext
-  )
+  valid <- ext %in% c("csv", "xlsx")
+  if (!valid) {
+    rhino$log$warn("Unsupported file extension: '{ext}' from '{filename}'")
+  }
+  list(valid = valid, ext = ext)
 }
 
 #' Normalize the CSV quote character from UI input
@@ -60,9 +62,13 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
           )
         }
       )
+      rhino$log$info(
+        "File read successfully: {ext} ({nrow(data)} rows, {ncol(data)} cols)"
+      )
       list(success = TRUE, data = data, error = NULL)
     },
     error = function(e) {
+      rhino$log$error("File read failed: {conditionMessage(e)}")
       list(success = FALSE, data = NULL, error = conditionMessage(e))
     }
   )
@@ -74,10 +80,13 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
 #' @export
 validate_data <- function(data) {
   if (!is.data.frame(data)) {
+    rhino$log$warn("Validation failed: not a data.frame")
     return(list(valid = FALSE, message = "The uploaded file did not produce a data frame."))
   }
   if (nrow(data) == 0) {
+    rhino$log$warn("Validation failed: data.frame has 0 rows")
     return(list(valid = FALSE, message = "The uploaded file appears to be empty."))
   }
+  rhino$log$info("Data validation passed: {nrow(data)} rows, {ncol(data)} cols")
   list(valid = TRUE, message = NULL)
 }
