@@ -1,4 +1,5 @@
 box::use(
+  bsicons,
   bslib,
   shiny,
 )
@@ -18,7 +19,9 @@ ui <- function(id) {
     title = "TexAn 2.0",
     theme = settings$get_default_theme(),
     bslib$nav_panel(
-      title = "Load Data",
+      title = shiny$tagList(
+        bsicons$bs_icon("file-earmark-arrow-up"), "Load Data"
+      ),
       value = "load_data",
       load_data$ui(ns("load_data"))
     ),
