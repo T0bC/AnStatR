@@ -9,6 +9,7 @@ box::use(
   app/view/components/sidebar_tabs,
   app/view/error_display,
   app/view/plotting/data_selection,
+  app/view/plotting/filter,
 )
 
 #' @export
@@ -19,7 +20,8 @@ ui <- function(id) {
     ns = ns,
     sidebar_id = "sidebar_tabs",
     tabs = list(
-      data_selection$tab_ui(ns)
+      data_selection$tab_ui(ns),
+      filter$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content"))
   )
@@ -41,6 +43,9 @@ server <- function(id, input_data, data_version) {
 
     # Delegate to sub-module servers
     data_selection$tab_server(
+      input, output, session, input_data, data_version
+    )
+    filter_result <- filter$tab_server(
       input, output, session, input_data, data_version
     )
 
