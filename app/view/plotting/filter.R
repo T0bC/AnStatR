@@ -5,6 +5,7 @@ box::use(
 )
 
 box::use(
+  app/logic/data_utils,
   app/view/components/sidebar_tabs,
 )
 
@@ -128,14 +129,6 @@ tab_server <- function(input, output, session, input_data,
 
     saved_state <- shiny$isolate(saved_filter_state())
 
-    get_choices <- function(values) {
-      choices <- unique(values)
-      has_na <- any(is.na(choices))
-      choices <- choices[!is.na(choices)]
-      if (has_na) choices <- c(choices, "NA")
-      choices
-    }
-
     get_selected <- function(col, choices) {
       if (!is.null(saved_state[[col]])) {
         valid <- intersect(saved_state[[col]], choices)
@@ -144,33 +137,25 @@ tab_server <- function(input, output, session, input_data,
       choices
     }
 
+    make_checkbox <- function(col) {
+      ch <- data_utils$get_filter_choices(data[[col]])
+      shiny$checkboxGroupInput(
+        ns(col), label = col,
+        choices = ch, selected = get_selected(col, ch)
+      )
+    }
+
     if (length(cols) > 1) {
       half <- ceiling(length(cols) / 2)
       cols1 <- cols[seq_len(half)]
       cols2 <- cols[-seq_len(half)]
 
       shiny$fluidRow(
-        shiny$column(6, lapply(cols1, function(col) {
-          ch <- get_choices(data[[col]])
-          shiny$checkboxGroupInput(
-            ns(col), label = col,
-            choices = ch, selected = get_selected(col, ch)
-          )
-        })),
-        shiny$column(6, lapply(cols2, function(col) {
-          ch <- get_choices(data[[col]])
-          shiny$checkboxGroupInput(
-            ns(col), label = col,
-            choices = ch, selected = get_selected(col, ch)
-          )
-        }))
+        shiny$column(6, lapply(cols1, make_checkbox)),
+        shiny$column(6, lapply(cols2, make_checkbox))
       )
     } else {
-      ch <- get_choices(data[[cols]])
-      shiny$checkboxGroupInput(
-        ns(cols), label = cols,
-        choices = ch, selected = get_selected(cols, ch)
-      )
+      make_checkbox(cols)
     }
   })
 
@@ -182,26 +167,11 @@ tab_server <- function(input, output, session, input_data,
     cols <- filter_cols()
     if (length(cols) == 0) return(data)
 
-    for (col in cols) {
-      selected_values <- input[[col]]
-      if (!is.null(selected_values) &&
-          length(selected_values) > 0) {
-        col_values <- data[[col]]
-        include_na <- "NA" %in% selected_values
-        selected_values <- selected_values[
-          selected_values != "NA"
-        ]
+    # Build filters list from checkbox inputs
+    filters <- lapply(cols, function(col) input[[col]])
+    names(filters) <- cols
 
-        matches <- col_values %in% selected_values
-        matches[is.na(matches)] <- FALSE
-        if (include_na) {
-          matches[is.na(col_values)] <- TRUE
-        }
-        data <- data[matches, , drop = FALSE]
-      }
-    }
-
-    data
+    data_utils$filter_data(data, filters)
   })
 
   # Return filtered data for downstream use
