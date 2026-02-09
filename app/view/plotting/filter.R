@@ -62,12 +62,21 @@ tab_server <- function(input, output, session, input_data,
   ns <- session$ns
   saved_filter_state <- shiny$reactiveVal(list())
 
-  # Reset on new data
+  # Smart retention on new data: keep hideCols that still exist
   shiny$observeEvent(data_version(), {
-    saved_filter_state(list())
+    cur_hide <- shiny$isolate(input$hideCols)
+    cur_meta <- shiny$isolate(input$metaData)
+    # hideCols choices come from metaData; retain valid ones
+    if (!is.null(cur_hide) && !is.null(cur_meta)) {
+      retained <- intersect(cur_hide, cur_meta)
+    } else {
+      retained <- character(0)
+    }
     shiny$updateSelectizeInput(
-      session, "hideCols", selected = character(0)
+      session, "hideCols", selected = retained
     )
+    # Clear saved filter state — checkbox values may differ
+    saved_filter_state(list())
   }, ignoreInit = TRUE)
 
   # Update hideCols choices from selected metaData
