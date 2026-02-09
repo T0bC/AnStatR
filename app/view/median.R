@@ -1,5 +1,4 @@
 box::use(
-  bsicons,
   bslib,
   DT,
   rhino,
@@ -73,14 +72,7 @@ ui <- function(id) {
         shiny$uiOutput(ns("quality_filter_options"))
       )
     ),
-    main_content = shiny$uiOutput(ns("main_content")),
-    action_button = shiny$actionButton(
-      inputId = ns("calculate"),
-      label = shiny$tagList(
-        bsicons$bs_icon("calculator"), " Calculate"
-      ),
-      class = "btn-primary btn-sm w-100"
-    )
+    main_content = shiny$uiOutput(ns("main_content"))
   )
 }
 
@@ -270,7 +262,10 @@ server <- function(id, input_data, data_version) {
       )
     })
 
-    # --- Build quality settings from current inputs ---
+    # --- Unified debounced params (grouping + quality) ---
+    # Collects all inputs into one reactive with a single
+    # debounce so the computation fires only once after all
+    # inputs have settled.
     build_quality_settings <- function() {
       info <- quality_col_info()
       if (is.null(input$quality_column) ||
@@ -295,20 +290,63 @@ server <- function(id, input_data, data_version) {
       }
     }
 
-    # --- Calculate button ---
-    shiny$observeEvent(input$calculate, {
-      data <- input_data()
-      if (is.null(data)) {
-        last_error(error_handling$simple_error(
-          message = "No data loaded. Upload a file first.",
-          operation_name = "Median Calculation"
-        ))
-        return()
+    null_to_str <- function(x) {
+      if (is.null(x)) "NULL" else x
+    }
+
+    make_fingerprint <- function(params) {
+      paste(
+        paste(
+          null_to_str(params$grouping_cols),
+          collapse = ":"
+        ),
+        params$quality_settings$enabled,
+        null_to_str(params$quality_settings$column),
+        params$quality_settings$type,
+        paste(
+          null_to_str(params$quality_settings$bad_values),
+          collapse = ":"
+        ),
+        null_to_str(params$quality_settings$threshold),
+        sep = "|"
+      )
+    }
+
+    cached_params <- shiny$reactiveVal(NULL)
+
+    debounced_inputs <- shiny$reactive({
+      shiny$req(input_data())
+      list(
+        grouping_cols = input$grouping_columns,
+        quality_settings = build_quality_settings()
+      )
+    }) |> shiny$debounce(400)
+
+    shiny$observe({
+      new_params <- debounced_inputs()
+      shiny$req(new_params)
+      current <- cached_params()
+      new_fp <- make_fingerprint(new_params)
+      old_fp <- if (!is.null(current)) {
+        make_fingerprint(current)
+      } else {
+        ""
       }
+      if (new_fp != old_fp) {
+        cached_params(new_params)
+      }
+    })
+
+    # --- Run computation when params change ---
+    shiny$observeEvent(cached_params(), {
+      params <- cached_params()
+      shiny$req(params)
+      data <- shiny$isolate(input_data())
+      shiny$req(data)
 
       last_error(NULL)
-      grouping_cols <- input$grouping_columns
-      q_settings <- build_quality_settings()
+      grouping_cols <- params$grouping_cols
+      q_settings <- params$quality_settings
 
       # Step 1: Apply quality filter
       filter_result <- quality_filter$apply_quality_filter(
@@ -319,7 +357,8 @@ server <- function(id, input_data, data_version) {
 
       # Step 2: Compute medians
       quality_col_name <- if (
-        q_settings$enabled && !is.null(q_settings$column)
+        q_settings$enabled &&
+          !is.null(q_settings$column)
       ) {
         q_settings$column
       } else {
@@ -342,7 +381,7 @@ server <- function(id, input_data, data_version) {
       median_results(result$result)
       removed_cols(result$removed_cols)
       rhino$log$info("Median: calculation complete")
-    })
+    }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
     # --- Main content ---
     output$main_content <- shiny$renderUI({
@@ -366,8 +405,7 @@ server <- function(id, input_data, data_version) {
             class = "text-center text-muted",
             shiny$tags$h4("Median Calculation"),
             shiny$tags$p(
-              "Configure grouping and quality filter,",
-              " then click Calculate."
+              "Select grouping columns to begin."
             )
           )
         ))
