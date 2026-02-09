@@ -4,9 +4,10 @@ box::use(
 )
 
 box::use(
+  app/logic/column_utils,
   app/logic/error_handling,
-  app/logic/median/column_utils,
   app/logic/median/compute,
+  app/logic/median/quality_analysis,
   app/logic/median/quality_filter,
 )
 
@@ -23,12 +24,20 @@ describe("get_descriptive_cols", {
     expect_equal(result, c("GENUS", "SPECIES"))
   })
 
-  it("handles columns with underscores and digits", {
+  it("handles columns with underscores (no digits)", {
     df <- data.frame(
       SPEC_ID = "x", IND_AGE_Y = 1, epLsar = 0.5
     )
     result <- column_utils$get_descriptive_cols(df)
     expect_equal(result, c("SPEC_ID", "IND_AGE_Y"))
+  })
+
+  it("excludes uppercase columns with digits", {
+    df <- data.frame(
+      GENUS = "A", SAMPLE_1 = "x", S10z = 1
+    )
+    result <- column_utils$get_descriptive_cols(df)
+    expect_equal(result, "GENUS")
   })
 
   it("returns empty vector when no descriptive cols", {
@@ -39,7 +48,7 @@ describe("get_descriptive_cols", {
 })
 
 describe("get_measurement_cols", {
-  it("identifies non-uppercase columns as measurement", {
+  it("identifies mixed-case columns as measurement", {
     df <- data.frame(
       GENUS = "A", Sq = 1, Sa = 2, epLsar = 0.5
     )
@@ -47,10 +56,38 @@ describe("get_measurement_cols", {
     expect_equal(result, c("Sq", "Sa", "epLsar"))
   })
 
-  it("returns empty vector when all cols are descriptive", {
+  it("does not include uppercase-with-digits columns", {
+    df <- data.frame(
+      GENUS = "A", SAMPLE_1 = "x", Sq = 1
+    )
+    result <- column_utils$get_measurement_cols(df)
+    expect_equal(result, "Sq")
+  })
+
+  it("returns empty vector when all cols are uppercase", {
     df <- data.frame(GENUS = "A", SPECIES = "B")
     result <- column_utils$get_measurement_cols(df)
     expect_equal(result, character(0))
+  })
+})
+
+describe("validate_column_naming", {
+  it("reports valid when no ambiguous columns", {
+    df <- data.frame(GENUS = "A", Sq = 1)
+    result <- column_utils$validate_column_naming(df)
+    expect_true(result$valid)
+    expect_equal(result$descriptive_cols, "GENUS")
+    expect_equal(result$measurement_cols, "Sq")
+    expect_equal(result$ambiguous_cols, character(0))
+  })
+
+  it("detects ambiguous columns with digits", {
+    df <- data.frame(
+      GENUS = "A", SAMPLE_1 = "x", Sq = 1
+    )
+    result <- column_utils$validate_column_naming(df)
+    expect_false(result$valid)
+    expect_equal(result$ambiguous_cols, "SAMPLE_1")
   })
 })
 
@@ -61,32 +98,32 @@ describe("get_measurement_cols", {
 describe("analyze_quality_column", {
   it("returns type 'none' for NULL column", {
     df <- data.frame(A = 1)
-    result <- column_utils$analyze_quality_column(df, NULL)
+    result <- quality_analysis$analyze_quality_column(df, NULL)
     expect_equal(result$type, "none")
   })
 
   it("returns type 'none' for 'None' column", {
     df <- data.frame(A = 1)
-    result <- column_utils$analyze_quality_column(df, "None")
+    result <- quality_analysis$analyze_quality_column(df, "None")
     expect_equal(result$type, "none")
   })
 
   it("detects categorical integer quality grades", {
     df <- data.frame(Q = c(1, 2, 3, 4, 1, 2))
-    result <- column_utils$analyze_quality_column(df, "Q")
+    result <- quality_analysis$analyze_quality_column(df, "Q")
     expect_equal(result$type, "categorical")
     expect_equal(result$n_unique, 4)
   })
 
   it("detects percentage_decimal type (0-1)", {
     df <- data.frame(Q = seq(0.1, 0.9, by = 0.01))
-    result <- column_utils$analyze_quality_column(df, "Q")
+    result <- quality_analysis$analyze_quality_column(df, "Q")
     expect_equal(result$type, "percentage_decimal")
   })
 
   it("detects percentage_100 type (0-100)", {
     df <- data.frame(Q = seq(10, 95, by = 0.5))
-    result <- column_utils$analyze_quality_column(df, "Q")
+    result <- quality_analysis$analyze_quality_column(df, "Q")
     expect_equal(result$type, "percentage_100")
   })
 
@@ -95,7 +132,7 @@ describe("analyze_quality_column", {
       Q = c("good", "bad", "ok", "good"),
       stringsAsFactors = FALSE
     )
-    result <- column_utils$analyze_quality_column(df, "Q")
+    result <- quality_analysis$analyze_quality_column(df, "Q")
     expect_equal(result$type, "categorical")
     expect_equal(result$n_unique, 3)
   })
