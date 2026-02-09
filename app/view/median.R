@@ -25,8 +25,9 @@ ui <- function(id) {
     tabs = list(
       sidebar_tabs$create_tab(
         icon = "sliders",
-        tooltip_text = "Grouping",
-        value = "grouping_tab",
+        tooltip_text = "Settings",
+        value = "settings_tab",
+        # --- Grouping ---
         shiny$h6(class = "text-muted mb-3", "Grouping"),
         shiny$tags$p(
           class = "text-muted small",
@@ -43,12 +44,9 @@ ui <- function(id) {
             placeholder = "Select grouping columns..."
           )
         ),
-        shiny$uiOutput(ns("grouping_info"))
-      ),
-      sidebar_tabs$create_tab(
-        icon = "funnel",
-        tooltip_text = "Filter",
-        value = "filter_tab",
+        shiny$uiOutput(ns("grouping_info")),
+        # --- Quality filter ---
+        shiny$tags$hr(),
         shiny$h6(
           class = "text-muted mb-3", "Quality Filter"
         ),
@@ -90,6 +88,7 @@ server <- function(id, input_data, data_version) {
     quality_col_info <- shiny$reactiveVal(
       list(type = "none")
     )
+    cached_params <- shiny$reactiveVal(NULL)
 
     # --- Reset on new data ---
     shiny$observeEvent(data_version(), {
@@ -99,6 +98,7 @@ server <- function(id, input_data, data_version) {
       removed_cols(NULL)
       last_error(NULL)
       quality_col_info(list(type = "none"))
+      cached_params(NULL)
 
       data <- input_data()
       if (!is.null(data)) {
@@ -312,8 +312,6 @@ server <- function(id, input_data, data_version) {
       )
     }
 
-    cached_params <- shiny$reactiveVal(NULL)
-
     debounced_inputs <- shiny$reactive({
       shiny$req(input_data())
       list(
@@ -414,7 +412,7 @@ server <- function(id, input_data, data_version) {
       shiny$tagList(
         render_summary_ui(
           filter_message(),
-          input$grouping_columns,
+          cached_params()$grouping_cols,
           removed_cols()
         ),
         shiny$tags$div(
