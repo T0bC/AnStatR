@@ -2,6 +2,7 @@
 library(bsicons)
 library(bslib)
 library(cli)
+library(colourpicker)
 library(DataExplorer)
 library(DT)
 library(ggplot2)
