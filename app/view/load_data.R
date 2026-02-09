@@ -10,8 +10,10 @@ box::use(
 )
 
 box::use(
+  app/logic/column_utils,
   app/logic/error_handling,
   app/logic/load_data,
+  app/view/components/column_validation_modal,
   app/view/components/sidebar_tabs,
   app/view/error_display,
 )
@@ -153,6 +155,21 @@ server <- function(id) {
         type = "message",
         duration = 3
       )
+
+      # Check column naming conventions
+      col_validation <- column_utils$validate_column_naming(
+        result$data
+      )
+      if (!col_validation$valid) {
+        rhino$log$warn(
+          "Ambiguous columns: {paste(col_validation$ambiguous_cols, collapse = ', ')}"
+        )
+        shiny$showModal(
+          column_validation_modal$create_modal(
+            col_validation
+          )
+        )
+      }
     })
 
     # Main content: welcome screen, error, or data panels
