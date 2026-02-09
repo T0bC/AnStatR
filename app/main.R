@@ -54,7 +54,7 @@ server <- function(id) {
       input_data = load_data_result$data,
       data_version = load_data_result$version
     )
-    help_modal$server("help")
+    help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
     # Tabs that should only be visible once data is loaded.
