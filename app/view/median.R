@@ -7,9 +7,10 @@ box::use(
 )
 
 box::use(
+  app/logic/column_utils,
   app/logic/error_handling,
-  app/logic/median/column_utils,
   app/logic/median/compute,
+  app/logic/median/quality_analysis,
   app/logic/median/quality_filter,
   app/view/components/sidebar_tabs,
   app/view/error_display,
@@ -217,7 +218,7 @@ server <- function(id, input_data, data_version) {
     shiny$observeEvent(input$quality_column, {
       data <- input_data()
       shiny$req(data)
-      info <- column_utils$analyze_quality_column(
+      info <- quality_analysis$analyze_quality_column(
         data, input$quality_column
       )
       quality_col_info(info)
