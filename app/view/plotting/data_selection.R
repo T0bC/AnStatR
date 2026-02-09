@@ -136,23 +136,61 @@ tab_ui <- function(ns) {
 #' @export
 tab_server <- function(input, output, session, input_data,
                        data_version) {
-  # Reset all selections on new data
+  # Smart retention on new data: keep selections that still exist
   shiny$observeEvent(data_version(), {
+    data <- input_data()
+    if (is.null(data)) {
+      shiny$updateSelectizeInput(
+        session, "metaData",
+        choices = character(0), selected = character(0)
+      )
+      shiny$updateSelectizeInput(
+        session, "measureVar",
+        choices = character(0), selected = character(0)
+      )
+      shiny$updateSelectizeInput(
+        session, "xAxis",
+        choices = character(0), selected = character(0)
+      )
+      shiny$updateSelectizeInput(
+        session, "tooltip",
+        choices = character(0), selected = character(0)
+      )
+      return()
+    }
+
+    desc_cols <- column_utils$get_descriptive_cols(data)
+    meas_cols <- column_utils$get_measurement_cols(data)
+
+    cur_meta <- shiny$isolate(input$metaData)
+    cur_meas <- shiny$isolate(input$measureVar)
+    cur_x    <- shiny$isolate(input$xAxis)
+    cur_tip  <- shiny$isolate(input$tooltip)
+
+    ret_meta <- intersect(cur_meta, desc_cols)
+    ret_meas <- intersect(cur_meas, meas_cols)
+    ret_x    <- intersect(cur_x, ret_meta)
+    ret_tip  <- intersect(cur_tip, ret_meta)
+
     shiny$updateSelectizeInput(
-      session, "metaData", selected = character(0)
+      session, "metaData",
+      choices = desc_cols, selected = ret_meta
     )
     shiny$updateSelectizeInput(
-      session, "measureVar", selected = character(0)
+      session, "measureVar",
+      choices = meas_cols, selected = ret_meas
     )
     shiny$updateSelectizeInput(
-      session, "xAxis", selected = character(0)
+      session, "xAxis",
+      choices = ret_meta, selected = ret_x
     )
     shiny$updateSelectizeInput(
-      session, "tooltip", selected = character(0)
+      session, "tooltip",
+      choices = ret_meta, selected = ret_tip
     )
   }, ignoreInit = TRUE)
 
-  # Update metaData choices from descriptive columns
+  # Update metaData choices when data changes (non-version)
   shiny$observe({
     data <- input_data()
     if (is.null(data)) return()
@@ -164,7 +202,7 @@ tab_server <- function(input, output, session, input_data,
     )
   })
 
-  # Update measureVar choices from measurement columns
+  # Update measureVar choices when data changes (non-version)
   shiny$observe({
     data <- input_data()
     if (is.null(data)) return()
