@@ -1,13 +1,11 @@
 box::use(
   bsicons,
   bslib,
-  rhino,
   shiny,
 )
 
 box::use(
   app/logic/error_handling,
-  app/logic/plotting,
   app/view/components/sidebar_tabs,
   app/view/error_display,
   app/view/plotting/data_selection,
@@ -59,7 +57,8 @@ server <- function(id, input_data, data_version) {
             class = "text-center text-muted",
             shiny$tags$h4("Plotting"),
             shiny$tags$p(
-              "Configure options and run the analysis."
+              "Select descriptive and measurement",
+              " columns to get started."
             )
           )
         )
