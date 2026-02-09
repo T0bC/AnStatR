@@ -83,7 +83,7 @@ analyze_quality_column <- function(data, col_name) {
     hint = paste0(
       "Categorical values (", n_unique, " levels): ",
       paste(
-        head(sort(as.character(unique_vals)), 5),
+        sort(as.character(unique_vals))[seq_len(min(5, n_unique))],
         collapse = ", "
       ),
       if (n_unique > 5) "..." else ""
