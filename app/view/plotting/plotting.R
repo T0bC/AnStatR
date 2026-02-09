@@ -55,8 +55,8 @@ server <- function(id, input_data, data_version) {
     processing$tab_server(
       input, output, session, data_version
     )
-    style$tab_server(
-      input, output, session, data_version
+    style_result <- style$tab_server(
+      input, output, session, input_data, data_version
     )
 
     # Main content: placeholder, error, or results
