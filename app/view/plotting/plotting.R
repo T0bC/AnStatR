@@ -10,6 +10,7 @@ box::use(
   app/view/error_display,
   app/view/plotting/data_selection,
   app/view/plotting/filter,
+  app/view/plotting/processing,
 )
 
 #' @export
@@ -21,7 +22,8 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
-      filter$tab_ui(ns)
+      filter$tab_ui(ns),
+      processing$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content"))
   )
@@ -47,6 +49,9 @@ server <- function(id, input_data, data_version) {
     )
     filter_result <- filter$tab_server(
       input, output, session, input_data, data_version
+    )
+    processing$tab_server(
+      input, output, session, data_version
     )
 
     # Main content: placeholder, error, or results
