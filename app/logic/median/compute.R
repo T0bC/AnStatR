@@ -4,8 +4,8 @@ box::use(
 )
 
 box::use(
+  app/logic/column_utils,
   app/logic/error_handling,
-  app/logic/median/column_utils,
 )
 
 # =============================================================================
