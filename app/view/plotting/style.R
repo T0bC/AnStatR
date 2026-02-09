@@ -1,10 +1,12 @@
 box::use(
   bsicons,
   bslib,
+  colourpicker,
   shiny,
 )
 
 box::use(
+  app/logic/data_utils,
   app/view/components/sidebar_tabs,
 )
 
@@ -31,14 +33,26 @@ tab_ui <- function(ns) {
   )
 }
 
-#' Stub server for the style tab (logic added later)
+#' Server logic for the style tab
+#'
+#' Manages:
+#' - pointShape choices (from metaData)
+#' - pointColor choices (from xAxis)
+#' - Dynamic color picker rendering based on color group levels
+#' - Custom color map reactive
+#'
 #' @param input Shiny input object from parent module
 #' @param output Shiny output object from parent module
 #' @param session Shiny session object from parent module
+#' @param input_data Reactive returning the current data frame
 #' @param data_version Reactive returning the data version counter
+#' @return List with color_map reactive
 #' @export
-tab_server <- function(input, output, session, data_version) {
-  # Update pointShape + pointColor choices from metaData
+tab_server <- function(input, output, session, input_data,
+                       data_version) {
+  ns <- session$ns
+
+  # Update pointShape choices from metaData
   shiny$observe({
     selected_meta <- input$metaData
     if (is.null(selected_meta)) selected_meta <- character(0)
@@ -71,6 +85,117 @@ tab_server <- function(input, output, session, data_version) {
       )
     }
   })
+
+  # Color columns: pointColor selection, fallback to xAxis
+  color_cols <- shiny$reactive({
+    pc <- input$pointColor
+    if (!is.null(pc) && length(pc) > 0) return(pc)
+    xa <- input$xAxis
+    if (!is.null(xa) && length(xa) > 0) return(xa)
+    character(0)
+  })
+
+  # Unique color groups from interaction of color columns
+  color_groups <- shiny$reactive({
+    data <- input_data()
+    cols <- color_cols()
+    if (is.null(data) || nrow(data) == 0 ||
+        length(cols) == 0) {
+      return(character(0))
+    }
+    interaction_factor <- data_utils$create_interaction(
+      data, cols
+    )
+    sort(as.character(unique(interaction_factor)))
+  })
+
+  # Render dynamic color pickers
+  output$colorPickers <- shiny$renderUI({
+    groups <- color_groups()
+
+    if (length(groups) == 0) {
+      return(shiny$tags$p(
+        class = "text-muted small fst-italic",
+        paste(
+          "Select X-Axis columns to customize",
+          "group colors."
+        )
+      ))
+    }
+
+    # Get existing colors (isolate to avoid re-render loop)
+    existing <- shiny$isolate(collect_colors(
+      input, groups
+    ))
+    defaults <- data_utils$default_palette(length(groups))
+
+    # Responsive grid: up to 3 columns
+    num_cols <- min(3, length(groups))
+    col_width <- 12 %/% num_cols
+
+    pickers <- lapply(seq_along(groups), function(i) {
+      group <- groups[i]
+      input_id <- color_input_id(group)
+      current <- if (
+        !is.null(existing) &&
+        group %in% names(existing)
+      ) {
+        existing[[group]]
+      } else {
+        defaults[i]
+      }
+
+      shiny$column(
+        width = col_width,
+        colourpicker$colourInput(
+          inputId = ns(input_id),
+          label = group,
+          value = current,
+          showColour = "both",
+          allowTransparent = FALSE,
+          closeOnClick = TRUE
+        )
+      )
+    })
+
+    shiny$fluidRow(pickers)
+  })
+
+  # Custom color map reactive
+  color_map <- shiny$reactive({
+    groups <- color_groups()
+    if (length(groups) == 0) return(NULL)
+    collect_colors(input, groups)
+  })
+
+  list(
+    color_map = color_map,
+    color_groups = color_groups
+  )
+}
+
+# ---- Internal helpers ----
+
+# Sanitize group name to a valid Shiny input ID
+color_input_id <- function(group) {
+  paste0("color_", gsub("[^[:alnum:]]", "_", group))
+}
+
+# Collect current color values from dynamic inputs
+collect_colors <- function(input, groups) {
+  colors <- vapply(groups, function(group) {
+    val <- input[[color_input_id(group)]]
+    if (is.null(val)) NA_character_ else val
+  }, character(1))
+  names(colors) <- groups
+
+  # Fill NAs with default palette
+  na_idx <- is.na(colors)
+  if (any(na_idx)) {
+    defaults <- data_utils$default_palette(length(groups))
+    colors[na_idx] <- defaults[na_idx]
+  }
+  colors
 }
 
 # ---- Accordion panel helpers ----
