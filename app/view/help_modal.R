@@ -42,15 +42,19 @@ panel <- function(id) {
     ),
     shiny$tags$div(
       class = "offcanvas-body",
-      shiny$tags$p(
-        "The help section will be implemented in a future update."
-      )
+      shiny$uiOutput(ns("help_content"))
     )
   )
 }
 
+# Help markdown files live in docs/help/{tab_value}.md
+# To add help for a new module, create docs/help/{tab_value}.md — no code changes needed.
+help_dir <- "docs/help"
+
+#' @param id Character, module namespace id
+#' @param active_page Reactive string returning the currently selected tab value
 #' @export
-server <- function(id) {
+server <- function(id, active_page) {
   shiny$moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -69,6 +73,20 @@ server <- function(id) {
         ))),
         immediate = TRUE
       )
+    })
+
+    output$help_content <- shiny$renderUI({
+      tab <- active_page()
+      help_file <- file.path(help_dir, paste0(tab, ".md"))
+
+      if (file.exists(help_file)) {
+        shiny$includeMarkdown(help_file)
+      } else {
+        shiny$tags$p(
+          class = "text-muted",
+          paste0("No help available yet for this section.")
+        )
+      }
     })
   })
 }
