@@ -221,6 +221,30 @@
 }
 
 // =============================================================================
+// Global: Disabled Tab State (locked tabs)
+// =============================================================================
+
+// Grayed out appearance for tabs that require prerequisites
+.nav-link.disabled-tab {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  color: var(--bs-secondary) !important;
+}
+
+// Lock icon indicator
+.nav-link.disabled-tab::after {
+  content: " \1F512";
+  font-size: 0.7em;
+  vertical-align: super;
+}
+
+// Prevent hover effects on disabled tab
+.nav-link.disabled-tab:hover {
+  background-color: transparent !important;
+  color: var(--bs-secondary) !important;
+}
+
+// =============================================================================
 // Error Display: app-error-* classes (used by app/view/error_display.R)
 // =============================================================================
 

@@ -1,3 +1,93 @@
+// =============================================================================
+// Disabled Tab State Handler
+// Manages grayed-out / locked tabs based on prerequisite conditions
+// =============================================================================
+
+$(document).ready(function () {
+    // Track disabled state per tab value
+    var disabledTabs = {};
+
+    // Handle state updates from Shiny
+    // message: { tab: "summary", enabled: true/false, reason: "..." }
+    Shiny.addCustomMessageHandler('tab_disabled_state', function (message) {
+        disabledTabs[message.tab] = {
+            enabled: message.enabled,
+            reason: message.reason || 'Prerequisites not met.'
+        };
+        updateDisabledTab(message.tab);
+    });
+
+    function updateDisabledTab(tabValue) {
+        var tabLink = $('a.nav-link[data-value="' + tabValue + '"]');
+        if (tabLink.length === 0) return;
+
+        var state = disabledTabs[tabValue];
+        if (!state) return;
+
+        if (state.enabled) {
+            tabLink.removeClass('disabled-tab');
+            tabLink.removeAttr('title');
+        } else {
+            tabLink.addClass('disabled-tab');
+            tabLink.attr('title', state.reason);
+        }
+    }
+
+    // Intercept clicks on disabled tabs
+    $(document).on('click', 'a.nav-link.disabled-tab', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var tabValue = $(this).data('value');
+        var state = disabledTabs[tabValue];
+        var reason = state ? state.reason : 'Prerequisites not met.';
+
+        showRequirementsModal(tabValue, reason);
+        return false;
+    });
+
+    function showRequirementsModal(tabValue, reason) {
+        var modalId = 'disabled-tab-modal';
+        $('#' + modalId).remove();
+
+        var modalHtml =
+            '<div class="modal fade" id="' + modalId + '" tabindex="-1" aria-hidden="true">' +
+            '  <div class="modal-dialog modal-dialog-centered">' +
+            '    <div class="modal-content">' +
+            '      <div class="modal-header bg-info text-white">' +
+            '        <h5 class="modal-title">' +
+            '          <i class="bi bi-info-circle me-2"></i>Tab Locked' +
+            '        </h5>' +
+            '        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>' +
+            '      </div>' +
+            '      <div class="modal-body">' +
+            '        <p>' + reason + '</p>' +
+            '      </div>' +
+            '      <div class="modal-footer">' +
+            '        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>' +
+            '      </div>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>';
+
+        $('body').append(modalHtml);
+        var modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+
+        $('#' + modalId).on('hidden.bs.modal', function () {
+            $(this).remove();
+        });
+    }
+
+    // Re-apply states after Shiny reconnects
+    $(document).on('shiny:connected', function () {
+        Object.keys(disabledTabs).forEach(function (tab) {
+            updateDisabledTab(tab);
+        });
+    });
+});
+
+// =============================================================================
 // Plot resize handler for responsive plot outputs
 // Reports container dimensions to Shiny for dynamic sizing
 // Uses viewport-relative sizing for proper scaling on all monitor resolutions
