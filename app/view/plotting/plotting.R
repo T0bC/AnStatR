@@ -1,6 +1,7 @@
 box::use(
   bsicons,
   bslib,
+  ggplot2,
   ggiraph,
   rhino,
   shiny,
@@ -188,9 +189,44 @@ server <- function(id, input_data, data_version) {
 
       # Render one ggiraph output per measurement column
       plot_cards <- lapply(measure, function(y_col) {
-        output_id <- paste0("plot_", make.names(y_col))
+        safe_id <- make.names(y_col)
+        output_id <- paste0("plot_", safe_id)
+        dl_svg_id <- paste0("dl_svg_", safe_id)
+        dl_png_id <- paste0("dl_png_", safe_id)
+
         bslib$card(
-          bslib$card_header(y_col),
+          bslib$card_header(
+            class = paste(
+              "py-2 d-flex justify-content-between",
+              "align-items-center"
+            ),
+            shiny$tags$span(
+              class = "fw-semibold", y_col
+            ),
+            shiny$tags$div(
+              class = "d-flex gap-2",
+              shiny$tags$a(
+                id = ns(dl_svg_id),
+                class = "shiny-download-link",
+                href = "", target = "_blank",
+                download = NA,
+                title = "Download SVG",
+                bsicons$bs_icon(
+                  "filetype-svg", size = "1.2em"
+                )
+              ),
+              shiny$tags$a(
+                id = ns(dl_png_id),
+                class = "shiny-download-link",
+                href = "", target = "_blank",
+                download = NA,
+                title = "Download PNG",
+                bsicons$bs_icon(
+                  "filetype-png", size = "1.2em"
+                )
+              )
+            )
+          ),
           bslib$card_body(
             ggiraph$girafeOutput(ns(output_id), height = "400px")
           )
@@ -200,41 +236,95 @@ server <- function(id, input_data, data_version) {
       do.call(shiny$tagList, plot_cards)
     })
 
-    # --- Render ggiraph outputs dynamically ---
+    # --- Render ggiraph outputs + download handlers dynamically ---
     shiny$observe({
       plot_list <- plots()
       shiny$req(plot_list)
 
       lapply(plot_list, function(item) {
-        output_id <- paste0("plot_", make.names(item$y_col))
+        local({
+          local_item <- item
+          safe_id <- make.names(local_item$y_col)
+          output_id <- paste0("plot_", safe_id)
+          dl_svg_id <- paste0("dl_svg_", safe_id)
+          dl_png_id <- paste0("dl_png_", safe_id)
 
-        output[[output_id]] <- ggiraph$renderGirafe({
-          res <- item$result
-          if (!res$success) {
-            last_error(res$error)
-            return(NULL)
+          # Helper: get the ggplot object for this measurement
+          get_plot <- function() {
+            res <- local_item$result
+            if (!res$success) return(NULL)
+            res$result
           }
-          last_error(NULL)
-          ggiraph$girafe(
-            ggobj = res$result,
-            width_svg = 8,
-            height_svg = 5,
-            options = list(
-              ggiraph$opts_hover(
-                css = "fill-opacity:1;stroke-width:2;"
-              ),
-              ggiraph$opts_tooltip(
-                css = paste(
-                  "background-color:white;",
-                  "padding:8px;",
-                  "border-radius:4px;",
-                  "border:1px solid #ccc;",
-                  "font-size:12px;"
+
+          # Render interactive plot
+          output[[output_id]] <- ggiraph$renderGirafe({
+            res <- local_item$result
+            if (!res$success) {
+              last_error(res$error)
+              return(NULL)
+            }
+            last_error(NULL)
+            ggiraph$girafe(
+              ggobj = res$result,
+              width_svg = 8,
+              height_svg = 5,
+              options = list(
+                ggiraph$opts_hover(
+                  css = "fill-opacity:1;stroke-width:2;"
                 ),
-                use_fill = FALSE
-              ),
-              ggiraph$opts_selection(type = "none")
+                ggiraph$opts_tooltip(
+                  css = paste(
+                    "background-color:white;",
+                    "padding:8px;",
+                    "border-radius:4px;",
+                    "border:1px solid #ccc;",
+                    "font-size:12px;"
+                  ),
+                  use_fill = FALSE
+                ),
+                ggiraph$opts_selection(type = "none")
+              )
             )
+          })
+
+          # SVG download handler
+          output[[dl_svg_id]] <- shiny$downloadHandler(
+            filename = function() {
+              paste0(local_item$y_col, "_", Sys.Date(), ".svg")
+            },
+            content = function(file) {
+              p <- get_plot()
+              shiny$req(p)
+              w <- (input$exportWidth %||% 16) / 2.54
+              h <- (input$exportHeight %||% 10) / 2.54
+              ggplot2$ggsave(
+                file, plot = p, device = "svg",
+                width = w, height = h
+              )
+              rhino$log$info(
+                "Download: SVG '{local_item$y_col}'"
+              )
+            }
+          )
+
+          # PNG download handler
+          output[[dl_png_id]] <- shiny$downloadHandler(
+            filename = function() {
+              paste0(local_item$y_col, "_", Sys.Date(), ".png")
+            },
+            content = function(file) {
+              p <- get_plot()
+              shiny$req(p)
+              w <- (input$exportWidth %||% 16) / 2.54
+              h <- (input$exportHeight %||% 10) / 2.54
+              ggplot2$ggsave(
+                file, plot = p, device = "png",
+                width = w, height = h, dpi = 300
+              )
+              rhino$log$info(
+                "Download: PNG '{local_item$y_col}'"
+              )
+            }
           )
         })
       })
