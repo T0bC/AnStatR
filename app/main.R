@@ -11,6 +11,7 @@ box::use(
   app/view/median,
   app/view/plotting,
   app/view/settings_modal,
+  app/view/summary,
 )
 
 #' @export
@@ -48,6 +49,13 @@ ui <- function(id) {
       value = "plotting",
       plotting$ui(ns("plotting"))
     ),
+    bslib$nav_panel(
+      title = shiny$tagList(
+        bsicons$bs_icon("clipboard-data"), "Summary"
+      ),
+      value = "summary",
+      summary$ui(ns("summary"))
+    ),
     bslib$nav_spacer(),
     bslib$nav_item(
       help_modal$ui(ns("help"))
@@ -76,12 +84,17 @@ server <- function(id) {
       input_data = plotting_data,
       data_version = load_data_result$version
     )
+    summary$server(
+      "summary",
+      input_data = load_data_result$data,
+      data_version = load_data_result$version
+    )
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
     # Tabs that should only be visible once data is loaded.
     # Add future tab values here to auto-hide them until data exists.
-    data_dependent_tabs <- c("median", "plotting")
+    data_dependent_tabs <- c("median", "plotting", "summary")
 
     shiny$observe({
       has_data <- !is.null(load_data_result$data())
