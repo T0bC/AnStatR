@@ -131,6 +131,18 @@ tab_server <- function(input, output, session, data_version) {
     shiny$updateCheckboxInput(
       session, "enableOutlierDetection", value = FALSE
     )
+    shiny$updateRadioButtons(
+      session, "detectOutlier", selected = "IQR"
+    )
+    shiny$updateSliderInput(
+      session, "standardFactor", value = 1.5
+    )
+    shiny$updateSliderInput(
+      session, "probabilityFactor", value = 0.05
+    )
+    shiny$updateNumericInput(
+      session, "bootstrapSamples", value = 1000
+    )
   }, ignoreInit = TRUE)
 }
 
