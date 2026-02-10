@@ -90,7 +90,12 @@ server <- function(id, input_data, data_version) {
           trim_percent      = input$trim_slider %||% 0,
           outlier_enabled   = input$enableOutlierDetection %||% FALSE,
           outlier_method    = input$detectOutlier %||% "IQR",
-          outlier_factor    = input$standardFactor %||% 1.5,
+          outlier_factor    = if ((input$detectOutlier %||% "IQR") %in%
+            c("kde", "isolation_forest", "lof")) {
+            input$probabilityFactor %||% 0.05
+          } else {
+            input$standardFactor %||% 1.5
+          },
           bootstrap_samples = input$bootstrapSamples %||% 1000
         ),
         grid_legend   = list(
