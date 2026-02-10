@@ -203,6 +203,19 @@ describe("create_scatter_plot with processing", {
     expect_s3_class(p, "gg")
   })
 
+  it("works with KDE outlier detection (probability factor)", {
+    df <- make_test_data()
+    p <- scatter$create_scatter_plot(
+      data = df, x_cols = "Treatment", y_col = "Value1",
+      processing = list(
+        outlier_enabled = TRUE,
+        outlier_method = "kde",
+        outlier_factor = 0.05
+      )
+    )
+    expect_s3_class(p, "gg")
+  })
+
   it("works with both trimming and outlier detection", {
     df <- make_test_data()
     p <- scatter$create_scatter_plot(
