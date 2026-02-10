@@ -31,7 +31,9 @@ ui <- function(id) {
       processing$tab_ui(ns),
       style$tab_ui(ns)
     ),
-    main_content = shiny$uiOutput(ns("main_content"))
+    main_content = shiny$uiOutput(ns("main_content")),
+    enable_responsive_plots = TRUE,
+    results_id = "main_content"
   )
 }
 
@@ -42,6 +44,20 @@ server <- function(id, input_data, data_version) {
 
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
+
+    # Cache window size from JS (px), with sensible defaults
+    window_size <- shiny$reactiveVal(
+      list(width = 800, height = 400)
+    )
+    shiny$observe({
+      ws <- input$windowSize
+      if (!is.null(ws) && !is.null(ws$width)) {
+        window_size(ws)
+        rhino$log$debug(
+          "Plotting: window size {ws$width}x{ws$height} px"
+        )
+      }
+    })
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
@@ -195,6 +211,7 @@ server <- function(id, input_data, data_version) {
         dl_png_id <- paste0("dl_png_", safe_id)
 
         bslib$card(
+          class = "mb-3 plot-card",
           bslib$card_header(
             class = paste(
               "py-2 d-flex justify-content-between",
@@ -228,7 +245,15 @@ server <- function(id, input_data, data_version) {
             )
           ),
           bslib$card_body(
-            ggiraph$girafeOutput(ns(output_id), height = "400px")
+            class = "p-2 plot-card-body",
+            shiny$tags$div(
+              class = "responsive-plot",
+              ggiraph$girafeOutput(
+                ns(output_id),
+                height = "auto",
+                width = "100%"
+              )
+            )
           )
         )
       })
@@ -256,7 +281,7 @@ server <- function(id, input_data, data_version) {
             res$result
           }
 
-          # Render interactive plot
+          # Render interactive plot (responsive SVG sizing)
           output[[output_id]] <- ggiraph$renderGirafe({
             res <- local_item$result
             if (!res$success) {
@@ -264,10 +289,16 @@ server <- function(id, input_data, data_version) {
               return(NULL)
             }
             last_error(NULL)
+
+            # Convert container px to SVG inches (100 px/in)
+            ws <- window_size()
+            w_svg <- max(4, ws$width / 100)
+            h_svg <- max(2.5, ws$height / 100)
+
             ggiraph$girafe(
               ggobj = res$result,
-              width_svg = 8,
-              height_svg = 5,
+              width_svg = w_svg,
+              height_svg = h_svg,
               options = list(
                 ggiraph$opts_hover(
                   css = "fill-opacity:1;stroke-width:2;"
