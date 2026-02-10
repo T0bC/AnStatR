@@ -412,7 +412,9 @@ build_plot <- function(data, x_var, y_col, ps,
     p <- p + ggiraph$geom_jitter_interactive(
       data = rd, mapping = aes_map,
       hover_nearest = TRUE,
-      width = ps$spread, height = 0,
+      position = ggplot2$position_jitter(
+        width = ps$spread, height = 0, seed = 42L
+      ),
       alpha = ps$alpha, size = ps$size
     )
   }
@@ -430,7 +432,9 @@ build_plot <- function(data, x_var, y_col, ps,
       ),
       shape = 21, color = "gray40", fill = "white",
       hover_nearest = TRUE,
-      width = ps$spread, height = 0,
+      position = ggplot2$position_jitter(
+        width = ps$spread, height = 0, seed = 42L
+      ),
       alpha = ps$alpha, size = ps$size
     )
   }
@@ -448,7 +452,9 @@ build_plot <- function(data, x_var, y_col, ps,
       ),
       shape = 4, color = "gray40",
       hover_nearest = TRUE,
-      width = ps$spread, height = 0,
+      position = ggplot2$position_jitter(
+        width = ps$spread, height = 0, seed = 42L
+      ),
       alpha = ps$alpha, size = ps$size
     )
   }
