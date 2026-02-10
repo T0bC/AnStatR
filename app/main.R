@@ -79,15 +79,17 @@ server <- function(id) {
     plotting_data <- shiny$reactive({
       median_result() %||% load_data_result$data()
     })
-    plotting$server(
+    plotting_result <- plotting$server(
       "plotting",
       input_data = plotting_data,
       data_version = load_data_result$version
     )
     summary$server(
       "summary",
-      input_data = load_data_result$data,
-      data_version = load_data_result$version
+      input_data = plotting_data,
+      data_version = load_data_result$version,
+      plotting_x_axis = plotting_result$x_axis,
+      plotting_measures = plotting_result$measure_cols
     )
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
