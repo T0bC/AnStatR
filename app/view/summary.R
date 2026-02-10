@@ -2,6 +2,7 @@ box::use(
   bsicons,
   bslib,
   DT,
+  openxlsx,
   rhino,
   shiny,
 )
@@ -133,6 +134,96 @@ server <- function(id, input_data, data_version) {
       )
     })
 
+    # --- Debounced computation inputs ---
+    debounced_inputs <- shiny$reactive({
+      shiny$req(input_data())
+      shiny$req(input$filter_options_select)
+      list(
+        grouping_vars = input$filter_options_select,
+        shapiro       = input$shapiro %||% FALSE
+      )
+    }) |> shiny$debounce(400)
+
+    # --- Run computation when inputs change ---
+    shiny$observeEvent(debounced_inputs(), {
+      params <- debounced_inputs()
+      shiny$req(params)
+      data <- shiny$isolate(input_data())
+      shiny$req(data)
+
+      last_error(NULL)
+
+      result <- summary$run_summary(
+        data         = data,
+        grouping_vars = params$grouping_vars,
+        shapiro_test = params$shapiro
+      )
+
+      if (!result$success) {
+        last_error(result$error)
+        summary_dfs(NULL)
+        return()
+      }
+
+      summary_dfs(result$result)
+    }, ignoreNULL = TRUE, ignoreInit = FALSE)
+
+    # --- Dynamic DT table outputs + per-table downloads ---
+    shiny$observe({
+      summaries <- summary_dfs()
+      shiny$req(summaries)
+
+      lapply(summaries, function(item) {
+        local({
+          local_item <- item
+          safe_col <- gsub(
+            "[^a-zA-Z0-9]", "_", local_item$col
+          )
+          table_id <- paste0("table_", safe_col)
+          dl_id <- paste0("download_", safe_col)
+
+          # Render DT table
+          output[[table_id]] <- DT$renderDataTable({
+            n_rows <- nrow(local_item$df)
+            dom <- if (n_rows <= 10) "t" else "tip"
+
+            DT$datatable(
+              local_item$df,
+              options = list(
+                pageLength = 10,
+                scrollX = TRUE,
+                dom = dom,
+                language = list(
+                  paginate = list(
+                    previous = "Previous",
+                    `next` = "Next"
+                  )
+                )
+              ),
+              rownames = FALSE
+            )
+          })
+
+          # Per-table XLSX download
+          output[[dl_id]] <- shiny$downloadHandler(
+            filename = function() {
+              paste0(
+                "summary_stats_", safe_col, ".xlsx"
+              )
+            },
+            content = function(file) {
+              openxlsx$write.xlsx(
+                local_item$df, file, rowNames = FALSE
+              )
+              rhino$log$info(
+                "Summary: downloaded table '{local_item$col}'"
+              )
+            }
+          )
+        })
+      })
+    })
+
     # --- Main content: placeholder, error, or summary cards ---
     output$main_content <- shiny$renderUI({
       data <- input_data()
@@ -236,7 +327,7 @@ server <- function(id, input_data, data_version) {
       do.call(shiny$tagList, table_cards)
     })
 
-    # --- Download all handler (placeholder) ---
+    # --- Download all: multi-sheet XLSX ---
     output$download_all <- shiny$downloadHandler(
       filename = function() {
         paste0(
@@ -246,8 +337,39 @@ server <- function(id, input_data, data_version) {
         )
       },
       content = function(file) {
-        # TODO: implement multi-sheet XLSX export
-        shiny$req(FALSE)
+        summaries <- summary_dfs()
+        shiny$req(summaries)
+
+        wb <- openxlsx$createWorkbook()
+
+        for (item in summaries) {
+          # Sanitize sheet name (max 31 chars)
+          sheet <- gsub("[^a-zA-Z0-9 ]", "_", item$col)
+          sheet <- substr(sheet, 1, 31)
+
+          # Ensure unique sheet names
+          existing <- names(wb)
+          if (sheet %in% existing) {
+            n <- sum(grepl(sheet, existing)) + 1
+            sheet <- paste0(
+              substr(sheet, 1, 28), "_", n
+            )
+          }
+
+          openxlsx$addWorksheet(wb, sheet)
+          openxlsx$writeData(wb, sheet, item$df)
+          openxlsx$setColWidths(
+            wb, sheet,
+            cols = seq_len(ncol(item$df)),
+            widths = "auto"
+          )
+        }
+
+        openxlsx$saveWorkbook(wb, file, overwrite = TRUE)
+        rhino$log$info(
+          "Summary: downloaded all tables",
+          " ({length(summaries)} sheets)"
+        )
       }
     )
 
