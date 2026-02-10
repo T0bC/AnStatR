@@ -51,7 +51,7 @@ ui <- function(id) {
     ),
     bslib$nav_panel(
       title = shiny$tagList(
-        bsicons$bs_icon("clipboard-data"), "Summary"
+        bsicons$bs_icon("table"), "Summary"
       ),
       value = "summary",
       summary$ui(ns("summary"))
@@ -94,16 +94,61 @@ server <- function(id) {
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
-    # Tabs that should only be visible once data is loaded.
-    # Add future tab values here to auto-hide them until data exists.
-    data_dependent_tabs <- c("median", "plotting", "summary")
+    # --- Tab visibility: tiered prerequisites ---
 
+    # Track whether the median tab has been visited at least once
+    median_tab_activated <- shiny$reactiveVal(FALSE)
+
+    # Reset when new data is loaded
+    shiny$observeEvent(load_data_result$version(), {
+      median_tab_activated(FALSE)
+    }, ignoreInit = TRUE)
+
+    # Mark median as activated when user visits it
+    shiny$observeEvent(input$active_page, {
+      if (identical(input$active_page, "median")) {
+        median_tab_activated(TRUE)
+      }
+    })
+
+    # Tier 1: Median — visible when data is loaded
+    # Tier 2: Plotting, Summary — visible when data loaded AND median visited
     shiny$observe({
       has_data <- !is.null(load_data_result$data())
-      toggle <- if (has_data) bslib$nav_show else bslib$nav_hide
-      for (tab in data_dependent_tabs) {
-        toggle("active_page", target = tab)
+      median_visited <- median_tab_activated()
+
+      # Median: show when data exists
+      toggle_median <- if (has_data) bslib$nav_show else bslib$nav_hide
+      toggle_median("active_page", target = "median")
+
+      # Downstream tabs: require data + median visited
+      downstream_tabs <- c("plotting", "summary")
+      toggle_downstream <- if (has_data && median_visited) {
+        bslib$nav_show
+      } else {
+        bslib$nav_hide
       }
+      for (tab in downstream_tabs) {
+        toggle_downstream("active_page", target = tab)
+      }
+    })
+
+    # --- Summary tab: disable when plotting has no selections ---
+    shiny$observe({
+      measures <- plotting_result$measure_cols()
+      x_axis <- plotting_result$x_axis()
+
+      has_selections <- length(measures) > 0 && length(x_axis) > 0
+
+      session$sendCustomMessage("tab_disabled_state", list(
+        tab     = "summary",
+        enabled = has_selections,
+        reason  = paste(
+          "Select measurement and X-axis columns in the",
+          "<strong>Plotting</strong> tab first to unlock",
+          "Summary Statistics."
+        )
+      ))
     })
   })
 }
