@@ -3,12 +3,14 @@ box::use(
   bslib,
   ggplot2,
   ggiraph,
+  openxlsx,
   rhino,
   shiny,
 )
 
 box::use(
   app/logic/error_handling,
+  app/logic/plotting/data_processing,
   app/logic/plotting/scatter,
   app/view/components/sidebar_tabs,
   app/view/error_display,
@@ -32,6 +34,11 @@ ui <- function(id) {
       style$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
+    action_button = shiny$downloadButton(
+      outputId = ns("downloadData"),
+      label = "Download Filtered Data",
+      class = "btn-primary btn-sm w-100"
+    ),
     enable_responsive_plots = TRUE,
     results_id = "main_content"
   )
@@ -360,6 +367,46 @@ server <- function(id, input_data, data_version) {
         })
       })
     })
+
+    # --- Download handler: filtered data with processing columns ---
+    output$downloadData <- shiny$downloadHandler(
+      filename = function() {
+        x_cols <- input$xAxis
+        x_suffix <- if (!is.null(x_cols) && length(x_cols) > 0) {
+          paste0("_", paste(x_cols, collapse = "-"))
+        } else {
+          ""
+        }
+        paste0("filtered_data_", Sys.Date(), x_suffix, ".xlsx")
+      },
+      content = function(file) {
+        data <- filter_result$filtered_data()
+        if (is.null(data) || nrow(data) == 0) {
+          wb <- openxlsx$createWorkbook()
+          openxlsx$addWorksheet(wb, "No Data")
+          openxlsx$writeData(wb, "No Data", "No filtered data available.")
+          openxlsx$saveWorkbook(wb, file, overwrite = TRUE)
+          return()
+        }
+
+        params <- plot_params()
+        export_data <- data_processing$process_data(
+          data         = data,
+          measure_cols = params$measure_cols,
+          x_cols       = params$x_cols,
+          trim_percent = params$processing$trim_percent,
+          outlier_options = list(
+            enabled           = params$processing$outlier_enabled,
+            method            = params$processing$outlier_method,
+            factor            = params$processing$outlier_factor,
+            bootstrap_samples = params$processing$bootstrap_samples
+          )
+        )
+
+        openxlsx$write.xlsx(export_data, file, rowNames = FALSE)
+        rhino$log$info("Download: filtered data ({nrow(export_data)} rows)")
+      }
+    )
 
     # Return for downstream modules
     invisible(NULL)
