@@ -408,7 +408,10 @@ server <- function(id, input_data, data_version) {
       }
     )
 
-    # Return for downstream modules
-    invisible(NULL)
+    # Return selections for downstream modules (e.g. Summary)
+    list(
+      x_axis = shiny$reactive({ input$xAxis }),
+      measure_cols = shiny$reactive({ input$measureVar })
+    )
   })
 }
