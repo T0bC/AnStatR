@@ -26,6 +26,7 @@ ui <- function(id) {
     theme = settings$get_default_theme(),
     header = shiny$tagList(
       shiny$tags$head(
+        shiny$tags$script(src = "static/js/disabled_tabs.js"),
         shiny$tags$script(src = "static/js/plot_resize.js")
       ),
       help_modal$panel(ns("help"))
