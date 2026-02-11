@@ -12,6 +12,7 @@ box::use(
   app/view/pca,
   app/view/plotting,
   app/view/settings_modal,
+  app/view/statistics,
   app/view/summary,
 )
 
@@ -59,6 +60,13 @@ ui <- function(id) {
     ),
     bslib$nav_panel(
       title = shiny$tagList(
+        bsicons$bs_icon("bar-chart-line"), "Statistics"
+      ),
+      value = "statistics",
+      statistics$ui(ns("statistics"))
+    ),
+    bslib$nav_panel(
+      title = shiny$tagList(
         bsicons$bs_icon("bar-chart-steps"), "PCA"
       ),
       value = "pca",
@@ -99,6 +107,11 @@ server <- function(id) {
       plotting_x_axis = plotting_result$x_axis,
       plotting_measures = plotting_result$measure_cols
     )
+    statistics$server(
+      "statistics",
+      input_data = plotting_data,
+      data_version = load_data_result$version
+    )
     pca$server(
       "pca",
       input_data = plotting_data,
@@ -118,6 +131,7 @@ server <- function(id) {
       toggle <- if (has_data) bslib$nav_show else bslib$nav_hide
       toggle("active_page", target = "median")
       toggle("active_page", target = "plotting")
+      toggle("active_page", target = "statistics")
       toggle("active_page", target = "pca")
     })
 
