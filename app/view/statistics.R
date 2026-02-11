@@ -75,6 +75,7 @@ options_tab <- function(ns) {
     # Expandable info about approaches
     bslib$accordion(
       id = ns("test_approach_accordion"),
+      open = FALSE,
       bslib$accordion_panel(
         title = "When to use which approach?",
         value = "test_approach_info",
