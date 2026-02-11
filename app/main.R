@@ -111,7 +111,10 @@ server <- function(id) {
     statistics$server(
       "statistics",
       input_data = plotting_data,
-      data_version = load_data_result$version
+      data_version = load_data_result$version,
+      plotting_x_axis = plotting_result$x_axis,
+      plotting_measures = plotting_result$measure_cols,
+      plotting_trim_percent = plotting_result$trim_percent
     )
     pca$server(
       "pca",
