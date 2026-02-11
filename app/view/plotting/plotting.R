@@ -408,10 +408,11 @@ server <- function(id, input_data, data_version) {
       }
     )
 
-    # Return selections for downstream modules (e.g. Summary)
+    # Return selections for downstream modules (e.g. Summary, Statistics)
     list(
       x_axis = shiny$reactive({ input$xAxis }),
-      measure_cols = shiny$reactive({ input$measureVar })
+      measure_cols = shiny$reactive({ input$measureVar }),
+      trim_percent = shiny$reactive({ input$trim_slider %||% 0 })
     )
   })
 }
