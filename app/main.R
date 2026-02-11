@@ -135,6 +135,24 @@ server <- function(id) {
       toggle("active_page", target = "pca")
     })
 
+    # --- Statistics tab: grayed out with lock until plotting selections exist ---
+    shiny$observe({
+      measures <- plotting_result$measure_cols()
+      x_axis <- plotting_result$x_axis()
+
+      has_selections <- length(measures) > 0 && length(x_axis) > 0
+
+      session$sendCustomMessage("tab_disabled_state", list(
+        tab     = "statistics",
+        enabled = has_selections,
+        reason  = paste(
+          "Select measurement and X-axis columns in the",
+          "<strong>Plotting</strong> tab first to unlock",
+          "the Statistics tab."
+        )
+      ))
+    })
+
     shiny$observe({
       x_axis <- plotting_result$x_axis()
       has_x <- !is.null(x_axis) && length(x_axis) > 0
