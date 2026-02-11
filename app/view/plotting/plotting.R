@@ -412,7 +412,19 @@ server <- function(id, input_data, data_version) {
     list(
       x_axis = shiny$reactive({ input$xAxis }),
       measure_cols = shiny$reactive({ input$measureVar }),
-      trim_percent = shiny$reactive({ input$trim_slider %||% 0 })
+      trim_percent = shiny$reactive({ input$trim_slider %||% 0 }),
+      plot_objects = shiny$reactive({
+        pl <- plots()
+        if (is.null(pl)) return(NULL)
+        # Named list: measure_col -> ggplot object
+        result <- list()
+        for (item in pl) {
+          if (item$result$success) {
+            result[[item$y_col]] <- item$result$result
+          }
+        }
+        if (length(result) == 0) NULL else result
+      })
     )
   })
 }
