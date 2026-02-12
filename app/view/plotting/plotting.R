@@ -33,7 +33,10 @@ ui <- function(id) {
       processing$tab_ui(ns),
       style$tab_ui(ns)
     ),
-    main_content = shiny$uiOutput(ns("main_content")),
+    main_content = shiny$tags$div(
+      class = "scrollable-content",
+      shiny$uiOutput(ns("main_content"))
+    ),
     action_button = shiny$downloadButton(
       outputId = ns("downloadData"),
       label = "Download Filtered Data",
@@ -297,10 +300,10 @@ server <- function(id, input_data, data_version) {
             }
             last_error(NULL)
 
-            # Convert container px to SVG inches (100 px/in)
+            # ~35% of viewport height in inches (96 dpi)
             ws <- window_size()
             w_svg <- max(4, ws$width / 100)
-            h_svg <- max(2.5, ws$height / 100)
+            h_svg <- max(3.5, (ws$height * 0.35) / 96)
 
             ggiraph$girafe(
               ggobj = res$result,
