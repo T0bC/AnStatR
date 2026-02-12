@@ -8,6 +8,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
+  app/logic/statistics/robust_tests,
   app/logic/statistics/validate,
   app/view/components/sidebar_tabs,
   app/view/error_display,
@@ -15,6 +16,87 @@ box::use(
   app/view/statistics/bootstrap,
   app/view/statistics/options,
 )
+
+# --- Private helper: render omnibus result as UI ---
+render_omnibus_result <- function(result, x_axis, approach) {
+  if (is.null(result)) {
+    return(shiny$tags$div(
+      class = "text-muted small px-2",
+      "No omnibus result available."
+    ))
+  }
+
+  if (error_handling$is_app_error(result)) {
+    return(error_display$error_alert_structured(
+      result, type = "warning"
+    ))
+  }
+
+  if (is.data.frame(result) && nrow(result) > 0) {
+    header_label <- if (approach == "robust") {
+      paste0(
+        "Robust ",
+        length(x_axis),
+        "-Way Trimmed Means [ANOVA]",
+        " \u2014 Welch-Yuen"
+      )
+    } else {
+      paste0(
+        "Classical ",
+        length(x_axis),
+        "-Way ANOVA"
+      )
+    }
+
+    return(shiny$tags$div(
+      class = "px-2 pt-2",
+      shiny$tags$h6(
+        class = "text-muted mb-2",
+        bsicons$bs_icon("table", class = "me-1"),
+        header_label
+      ),
+      shiny$tags$div(
+        class = "table-responsive",
+        shiny$tags$table(
+          class = paste(
+            "table table-sm table-striped",
+            "table-hover mb-0"
+          ),
+          shiny$tags$thead(
+            shiny$tags$tr(
+              lapply(names(result), function(col) {
+                shiny$tags$th(
+                  class = "small",
+                  gsub("_", " ", col)
+                )
+              })
+            )
+          ),
+          shiny$tags$tbody(
+            lapply(seq_len(nrow(result)), function(i) {
+              shiny$tags$tr(
+                lapply(
+                  names(result),
+                  function(col) {
+                    shiny$tags$td(
+                      class = "small",
+                      as.character(result[i, col])
+                    )
+                  }
+                )
+              )
+            })
+          )
+        )
+      )
+    ))
+  }
+
+  shiny$tags$div(
+    class = "text-muted small px-2",
+    "Unexpected result format."
+  )
+}
 
 #' @export
 ui <- function(id) {
@@ -196,11 +278,48 @@ server <- function(id, input_data, data_version,
       # modifies the Plotting tab after clicking Compute
       snapshotted_plots(cached_plots)
 
+      # --- Run omnibus tests per measurement ---
+      n_ways <- length(x_cols)
+      omnibus_results <- lapply(measures, function(m) {
+        if (params$test_approach == "robust") {
+          if (n_ways == 1) {
+            robust_tests$perform_t1way(
+              df = data,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val,
+              use_bootstrap = params$use_bootstrap,
+              boot_samples = params$boot_samples,
+              boot_sample_size = params$boot_sample_size
+            )
+          } else {
+            # t2way / t3way not yet implemented
+            error_handling$simple_error(
+              message = paste0(
+                n_ways,
+                "-way robust test not yet implemented."
+              ),
+              operation_name = "statistics_compute"
+            )
+          }
+        } else {
+          # Parametric tests not yet implemented
+          error_handling$simple_error(
+            message = paste(
+              "Parametric tests not yet implemented."
+            ),
+            operation_name = "statistics_compute"
+          )
+        }
+      })
+      names(omnibus_results) <- measures
+
       computation_results(list(
         measures = measures,
         x_axis = x_cols,
         params = params,
         trim_value = tr_val,
+        omnibus = omnibus_results,
         timestamp = Sys.time()
       ))
       computation_status("done")
@@ -405,11 +524,11 @@ server <- function(id, input_data, data_version,
               bslib$card_body(
                 class = "p-2 plot-card-body",
                 plot_ui,
-                # Placeholder for future stat results
-                shiny$tags$div(
-                  class = "text-muted small px-2",
-                  "Statistical test results will",
-                  " appear below the plot."
+                # Omnibus test results
+                render_omnibus_result(
+                  results$omnibus[[m]],
+                  results$x_axis,
+                  results$params$test_approach
                 )
               )
             )
