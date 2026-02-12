@@ -177,53 +177,36 @@
   flex: 0 0 auto !important;
 }
 
-// Responsive plot container — viewport-relative min-height
+// Responsive plot container
 .responsive-plot {
   width: 100%;
-  min-height: 35vh;
-  display: flex;
-  flex-direction: column;
 }
 
-// Spinner container — fill available space
-.responsive-plot .shiny-spinner-output-container {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-// ggiraph widget container — respect the min-height
+// ggiraph widget — with opts_sizing(rescale = FALSE), ggiraph
+// renders the SVG at exact pixel dimensions. We override the inline
+// width so the SVG scales to fit any container (IDE preview or browser).
 .responsive-plot .girafe,
-.responsive-plot .html-widget {
-  min-height: 35vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+.responsive-plot .html-widget,
+.girafe,
+.html-widget.girafe {
+  width: 100% !important;
 }
 
-// ggiraph inner container — fill and contain SVG
+// Inner container — block layout, no overflow clipping
 .responsive-plot .girafe_container_std,
 .girafe_container_std {
-  min-height: 35vh;
-  flex: 1 1 auto;
-  overflow: hidden;
+  width: 100%;
+  overflow: visible;
 }
 
-// SVG fills container — use min-height instead of height:100%
-// because Chrome/Edge cannot resolve percentage height against
-// a flex parent with only min-height set.
+// SVG — override ggiraph's inline width/height attributes.
+// width:100% makes the SVG fill its container (scales down in narrow
+// IDE preview, fills in wide browsers). height:auto preserves the
+// aspect ratio from the SVG viewBox. This works cross-browser.
 .responsive-plot .girafe_container_std svg,
 .girafe_container_std svg {
   display: block;
   width: 100% !important;
-  height: auto !important;
-  min-height: 35vh;
-  max-width: 100%;
-}
-
-// Override ggiraph inline height:auto
-.responsive-plot .girafe.html-widget {
   height: auto !important;
 }
 
