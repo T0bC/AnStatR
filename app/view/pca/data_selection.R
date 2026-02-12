@@ -1,10 +1,12 @@
 box::use(
   bsicons,
   bslib,
+  rhino,
   shiny,
 )
 
 box::use(
+  app/logic/column_utils,
   app/view/components/sidebar_tabs,
 )
 
@@ -91,4 +93,120 @@ tab_ui <- function(ns) {
       value = TRUE
     )
   )
+}
+
+#' Server logic for the PCA data selection sidebar tab
+#'
+#' Populates metaData with descriptive columns and
+#' measureVar with measurement columns using column_utils
+#' naming conventions. GroupBiplot choices come from
+#' selected metaData.
+#'
+#' @param input Shiny input object from parent module
+#' @param output Shiny output object from parent module
+#' @param session Shiny session object from parent module
+#' @param input_data Reactive returning the current data frame
+#' @param data_version Reactive returning the data version counter
+#' @export
+tab_server <- function(input, output, session,
+                       input_data, data_version) {
+  # Smart retention on new data: keep selections that
+  # still exist in the new dataset
+  shiny$observeEvent(data_version(), {
+    data <- input_data()
+    if (is.null(data)) {
+      rhino$log$info(
+        "PCA data_selection: reset (no data)"
+      )
+      shiny$updateSelectizeInput(
+        session, "metaData",
+        choices = character(0),
+        selected = character(0)
+      )
+      shiny$updateSelectizeInput(
+        session, "measureVar",
+        choices = character(0),
+        selected = character(0)
+      )
+      shiny$updateSelectizeInput(
+        session, "GroupBiplot",
+        choices = character(0),
+        selected = character(0)
+      )
+      return()
+    }
+
+    desc_cols <- column_utils$get_descriptive_cols(data)
+    meas_cols <- column_utils$get_measurement_cols(data)
+
+    cur_meta <- shiny$isolate(input$metaData)
+    cur_meas <- shiny$isolate(input$measureVar)
+    cur_grp  <- shiny$isolate(input$GroupBiplot)
+
+    ret_meta <- intersect(cur_meta, desc_cols)
+    ret_meas <- intersect(cur_meas, meas_cols)
+    ret_grp  <- intersect(cur_grp, ret_meta)
+
+    rhino$log$info(
+      "PCA data_selection: ",
+      "{length(desc_cols)} descriptive, ",
+      "{length(meas_cols)} measurement cols"
+    )
+
+    shiny$updateSelectizeInput(
+      session, "metaData",
+      choices = desc_cols, selected = ret_meta
+    )
+    shiny$updateSelectizeInput(
+      session, "measureVar",
+      choices = meas_cols, selected = ret_meas
+    )
+    shiny$updateSelectizeInput(
+      session, "GroupBiplot",
+      choices = ret_meta, selected = ret_grp
+    )
+  }, ignoreInit = TRUE)
+
+  # Update metaData choices when data changes
+  shiny$observe({
+    data <- input_data()
+    if (is.null(data)) return()
+    cols <- column_utils$get_descriptive_cols(data)
+    shiny$updateSelectizeInput(
+      session, "metaData",
+      choices = cols,
+      selected = input$metaData[
+        input$metaData %in% cols
+      ]
+    )
+  })
+
+  # Update measureVar choices when data changes
+  shiny$observe({
+    data <- input_data()
+    if (is.null(data)) return()
+    cols <- column_utils$get_measurement_cols(data)
+    shiny$updateSelectizeInput(
+      session, "measureVar",
+      choices = cols,
+      selected = input$measureVar[
+        input$measureVar %in% cols
+      ]
+    )
+  })
+
+  # Update GroupBiplot choices from selected metaData
+  shiny$observe({
+    selected_meta <- input$metaData
+    if (is.null(selected_meta)) {
+      selected_meta <- character(0)
+    }
+    shiny$updateSelectizeInput(
+      session, "GroupBiplot",
+      choices = selected_meta,
+      selected = input$GroupBiplot[
+        input$GroupBiplot %in% selected_meta
+      ]
+    )
+  })
 }
