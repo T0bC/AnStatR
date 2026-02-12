@@ -10,6 +10,7 @@ box::use(
   app/logic/error_handling,
   app/logic/statistics/parametric_posthoc,
   app/logic/statistics/parametric_tests,
+  app/logic/statistics/report,
   app/logic/statistics/robust_posthoc,
   app/logic/statistics/robust_tests,
   app/logic/statistics/validate,
@@ -642,6 +643,48 @@ server <- function(id, input_data, data_version,
       })
     }, ignoreNULL = TRUE)
 
+    # --- Register download handlers when results arrive ---
+    shiny$observeEvent(computation_results(), {
+      results <- computation_results()
+      shiny$req(results, results$measures)
+      plots <- snapshotted_plots()
+
+      lapply(results$measures, function(measure) {
+        local({
+          local_m <- measure
+          safe_id <- make.names(local_m)
+          dl_id <- paste0("dl_report_", safe_id)
+
+          output[[dl_id]] <- shiny$downloadHandler(
+            filename = function() {
+              paste0(
+                "statistics_", local_m, "_",
+                format(Sys.time(), "%Y%m%d_%H%M%S"),
+                ".html"
+              )
+            },
+            content = function(file) {
+              res <- computation_results()
+              pl <- snapshotted_plots()
+              html <- report$generate_html_report(
+                measure = local_m,
+                plot_object = pl[[local_m]],
+                omnibus_result = res$omnibus[[local_m]],
+                posthoc_result = res$posthoc[[local_m]],
+                params = res$params,
+                x_axis = res$x_axis,
+                timestamp = res$timestamp
+              )
+              writeLines(html, file)
+              rhino$log$info(
+                "Download: HTML report '{local_m}'"
+              )
+            }
+          )
+        })
+      })
+    }, ignoreNULL = TRUE)
+
     # --- Main content: placeholder, error, or results ---
     output$main_content <- shiny$renderUI({
       err <- last_error()
@@ -819,11 +862,28 @@ server <- function(id, input_data, data_version,
                   ),
                   m
                 ),
-                shiny$tags$span(
-                  class = "badge bg-secondary",
-                  paste0(
-                    length(results$x_axis),
-                    "-way"
+                shiny$tags$div(
+                  class = "d-flex align-items-center gap-2",
+                  shiny$tags$a(
+                    id = ns(
+                      paste0("dl_report_", safe_id)
+                    ),
+                    class = "shiny-download-link",
+                    href = "",
+                    target = "_blank",
+                    download = NA,
+                    title = "Download HTML Report",
+                    bsicons$bs_icon(
+                      "file-earmark-arrow-down",
+                      size = "1.2em"
+                    )
+                  ),
+                  shiny$tags$span(
+                    class = "badge bg-secondary",
+                    paste0(
+                      length(results$x_axis),
+                      "-way"
+                    )
                   )
                 )
               ),
