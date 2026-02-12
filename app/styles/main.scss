@@ -205,17 +205,20 @@
 // ggiraph inner container — fill and contain SVG
 .responsive-plot .girafe_container_std,
 .girafe_container_std {
-  min-height: 0;
+  min-height: 35vh;
   flex: 1 1 auto;
   overflow: hidden;
 }
 
-// SVG fills container
+// SVG fills container — use min-height instead of height:100%
+// because Chrome/Edge cannot resolve percentage height against
+// a flex parent with only min-height set.
 .responsive-plot .girafe_container_std svg,
 .girafe_container_std svg {
   display: block;
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
+  min-height: 35vh;
   max-width: 100%;
 }
 
