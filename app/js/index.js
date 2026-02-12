@@ -251,3 +251,43 @@ var TEXAN_DEBUG = false;
         fixAllGirafeSvgs();
     });
 })();
+
+// =============================================================================
+// Keep selectize dropdowns open for multi-select inputs
+// Patches Selectize.prototype.close so that multi-select dropdowns
+// remain open while the control is focused.
+// =============================================================================
+
+(function () {
+    function applyPrototypePatch() {
+        var Ctor = window.Selectize;
+        if (!Ctor || !Ctor.prototype) return false;
+        if (Ctor.prototype._close_patched) return true;
+
+        var origAddItem = Ctor.prototype.addItem;
+        Ctor.prototype.addItem = function (value, silent) {
+            var isMulti = this.settings.maxItems !== 1;
+            var result = origAddItem.apply(this, arguments);
+            if (isMulti) {
+                var self = this;
+                setTimeout(function () {
+                    self.open();
+                    self.$control_input[0].focus();
+                }, 0);
+            }
+            return result;
+        };
+
+        Ctor.prototype._close_patched = true;
+        return true;
+    }
+
+    // Poll until Selectize is available (loaded async by Shiny)
+    var attempts = 0;
+    var poller = setInterval(function () {
+        attempts++;
+        if (applyPrototypePatch() || attempts > 100) {
+            clearInterval(poller);
+        }
+    }, 100);
+})();
