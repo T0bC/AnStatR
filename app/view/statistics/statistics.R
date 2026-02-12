@@ -407,6 +407,9 @@ server <- function(id, input_data, data_version,
               width_svg = w_svg,
               height_svg = h_svg,
               options = list(
+                ggiraph$opts_sizing(
+                  rescale = FALSE
+                ),
                 ggiraph$opts_hover(
                   css = paste(
                     "fill-opacity:1;",
