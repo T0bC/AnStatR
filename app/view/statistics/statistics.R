@@ -35,18 +35,15 @@ render_omnibus_result <- function(result, x_axis, approach) {
   }
 
   if (is.data.frame(result) && nrow(result) > 0) {
+    n_ways <- length(x_axis)
     header_label <- if (approach == "robust") {
       paste0(
-        "Robust ",
-        length(x_axis),
-        "-Way Trimmed Means [ANOVA]",
-        " \u2014 Welch-Yuen"
+        "Robust ", n_ways, "-Way ANOVA",
+        " \u2014 Trimmed Means (t", n_ways, "way)"
       )
     } else {
       paste0(
-        "Classical ",
-        length(x_axis),
-        "-Way ANOVA"
+        "Classical ", n_ways, "-Way ANOVA"
       )
     }
 
@@ -195,7 +192,7 @@ render_posthoc_result <- function(result, x_axis, params) {
           class = "flex-fill",
           shiny$tags$h6(
             class = "text-secondary mb-1 small fw-bold",
-            "Lincon (Trimmed Means)"
+            "Lincon"
           ),
           shiny$tags$div(
             class = "table-responsive",
@@ -314,7 +311,9 @@ server <- function(id, input_data, data_version,
         use_scientific_notation =
           input$use_scientific_notation %||% FALSE,
         filter_p_values =
-          input$filter_p_values %||% FALSE
+          input$filter_p_values %||% FALSE,
+        filter_valid_comparisons =
+          input$filter_valid_comparisons %||% FALSE
       )
     })
 
@@ -506,7 +505,9 @@ server <- function(id, input_data, data_version,
             boot_sample_size = params$boot_sample_size,
             p_adjust_method =
               params$p_val_cor_method,
-            filter_valid = length(x_cols) > 1
+            filter_valid = isTRUE(
+              params$filter_valid_comparisons
+            )
           )
         })
         names(ph) <- measures
