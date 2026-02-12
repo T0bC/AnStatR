@@ -138,34 +138,49 @@
 }
 
 // =============================================================================
-// Global: Responsive Plot Styles
+// Global: Responsive Plot & Card Styles
 // =============================================================================
 
-// Plot card — fixed height based on available viewport
+// Scrollable content wrapper — breaks out of bslib fill behavior so the
+// main content area scrolls instead of constraining individual cards.
+.scrollable-content {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+// Plot card — adaptive height, grows with content
 .plot-card {
   width: 100%;
-  height: calc((100vh - 56px) * 0.42);
-  min-height: 300px;
-  max-height: 800px;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
   display: flex;
   flex-direction: column;
 }
 
-// Plot card body — fill remaining space after header
+// Plot card body — natural flow, no internal scrollbar
 .plot-card-body {
   padding: 0.5rem !important;
-  flex: 1 1 auto;
-  min-height: 0;
+  overflow: visible !important;
+  max-height: none !important;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-// Responsive plot container — fill card body
+// Override bslib card_body fill behavior inside plot cards
+.plot-card>.card-body {
+  overflow: visible !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+}
+
+// Responsive plot container — viewport-relative min-height
 .responsive-plot {
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
+  min-height: 35vh;
   display: flex;
   flex-direction: column;
 }
@@ -178,12 +193,11 @@
   flex-direction: column;
 }
 
-// ggiraph widget container — fill available space
+// ggiraph widget container — respect the min-height
 .responsive-plot .girafe,
 .responsive-plot .html-widget {
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
+  min-height: 35vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -191,8 +205,8 @@
 // ggiraph inner container — fill and contain SVG
 .responsive-plot .girafe_container_std,
 .girafe_container_std {
-  flex: 1 1 auto;
   min-height: 0;
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
@@ -203,12 +217,11 @@
   width: 100% !important;
   height: 100% !important;
   max-width: 100%;
-  max-height: 100%;
 }
 
-// Override ggiraph inline height:auto to fill container
+// Override ggiraph inline height:auto
 .responsive-plot .girafe.html-widget {
-  height: 100% !important;
+  height: auto !important;
 }
 
 // =============================================================================
