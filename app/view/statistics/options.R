@@ -19,43 +19,22 @@ tab_ui <- function(ns) {
     shiny$uiOutput(ns("trim_value_display")),
     shiny$tags$hr(),
     # Output options
-    shiny$fluidRow(
-      shiny$column(
-        6,
-        shiny$checkboxInput(
-          inputId = ns("show_additional_output"),
-          label = shiny$tags$span(
-            "Additional Output ",
-            bslib$tooltip(
-              bsicons$bs_icon(
-                "info-circle", class = "text-muted"
-              ),
-              paste(
-                "Show additional output like",
-                "Linear Contrasts and",
-                "Cliff's Delta tables."
-              )
-            )
+    shiny$checkboxInput(
+      inputId = ns("show_additional_output"),
+      label = shiny$tags$span(
+        "Additional Output ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
           ),
-          value = FALSE
+          paste(
+            "Show additional output like",
+            "Linear Contrasts and",
+            "Cliff's Delta tables."
+          )
         )
       ),
-      shiny$column(
-        6,
-        shiny$checkboxInput(
-          inputId = ns("use_scientific_notation"),
-          label = shiny$tags$span(
-            "Scientific Notation ",
-            bslib$tooltip(
-              bsicons$bs_icon(
-                "info-circle", class = "text-muted"
-              ),
-              "Display results in scientific notation."
-            )
-          ),
-          value = FALSE
-        )
-      )
+      value = FALSE
     ),
     shiny$tags$hr(),
     # Statistical approach selection
@@ -64,7 +43,8 @@ tab_ui <- function(ns) {
       label = "Statistical Approach:",
       choices = list(
         "Robust Tests" = "robust",
-        "Parametric Tests" = "parametric"
+        "Parametric Tests" = "parametric",
+        "Non-Parametric Tests" = "nonparametric"
       ),
       selected = "robust"
     ),
@@ -148,7 +128,7 @@ tab_server <- function(input, output, session,
           "Recommended for most real-world data."
         )
       )
-    } else {
+    } else if (approach == "parametric") {
       shiny$tags$div(
         class = "small",
         shiny$tags$p(
@@ -158,6 +138,19 @@ tab_server <- function(input, output, session,
         ),
         shiny$tags$p(
           "Use only when assumptions are met."
+        )
+      )
+    } else {
+      shiny$tags$div(
+        class = "small",
+        shiny$tags$p(
+          shiny$tags$strong("Non-Parametric Tests"),
+          " make no assumptions about the",
+          " underlying distribution."
+        ),
+        shiny$tags$p(
+          "Suitable for ordinal data or when",
+          " parametric assumptions are violated."
         )
       )
     }
