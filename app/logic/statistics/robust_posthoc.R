@@ -715,7 +715,8 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
                                      boot_samples = 599,
                                      boot_sample_size = NULL,
                                      p_adjust_method = "bonferroni",
-                                     filter_valid = FALSE) {
+                                     filter_valid = FALSE,
+                                     debug = FALSE) {
   rhino$log$info(
     "combined_posthoc: starting for measure='{measure_col}'"
   )
@@ -746,6 +747,21 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
     boot_samples = boot_samples,
     boot_sample_size = boot_sample_size
   )
+
+  if (debug) {
+    cat("\n=== DEBUG: Raw Lincon Result ===", "\n")
+    if (is.data.frame(lincon_result)) {
+      print(lincon_result)
+    } else {
+      cat("Error:", lincon_result$message, "\n")
+    }
+    cat("\n=== DEBUG: Raw Cliff Result ===", "\n")
+    if (is.data.frame(cliff_result)) {
+      print(cliff_result)
+    } else {
+      cat("Error:", cliff_result$message, "\n")
+    }
+  }
 
   lincon_err <- error_handling$is_app_error(lincon_result)
   cliff_err <- error_handling$is_app_error(cliff_result)
@@ -782,6 +798,13 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
   lincon_norm <- normalize_interaction(lincon_result)
   cliff_norm <- normalize_interaction(cliff_result)
 
+  if (debug) {
+    cat("\n=== DEBUG: Lincon InteractionKeys ===", "\n")
+    print(lincon_norm[, c("Interaction", "InteractionKey")])
+    cat("\n=== DEBUG: Cliff InteractionKeys ===", "\n")
+    print(cliff_norm[, c("Interaction", "InteractionKey")])
+  }
+
   cliff_cols <- setdiff(names(cliff_norm), c("Interaction", "InteractionKey"))
   lincon_selected <- lincon_norm
   cliff_selected <- cliff_norm[, c("InteractionKey", cliff_cols), drop = FALSE]
@@ -790,6 +813,15 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
     lincon_selected, cliff_selected,
     by = "InteractionKey", all = FALSE
   )
+
+  if (debug) {
+    cat("\n=== DEBUG: Merged Result ===", "\n")
+    if (nrow(merged) > 0) {
+      print(merged)
+    } else {
+      cat("No rows matched!\n")
+    }
+  }
 
   if (nrow(merged) == 0) {
     return(error_handling$simple_error(
@@ -825,12 +857,14 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
     }
   }
 
+  merged$Cliff.p.crit <- NULL
+
   desired_order <- c(
     "Interaction",
     "Lincon.psihat", "Lincon.ci.lower", "Lincon.ci.upper",
     "Lincon.p.value", "Lincon.p.adjusted",
     "Cliff.psihat", "Cliff.ci.lower", "Cliff.ci.upper",
-    "Cliff.p.value", "Cliff.p.adjusted", "Cliff.p.crit"
+    "Cliff.p.value", "Cliff.p.adjusted"
   )
   final_cols <- intersect(desired_order, names(merged))
   extra_cols <- setdiff(names(merged), desired_order)
