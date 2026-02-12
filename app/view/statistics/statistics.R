@@ -8,6 +8,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
+  app/logic/statistics/parametric_tests,
   app/logic/statistics/robust_tests,
   app/logic/statistics/validate,
   app/view/components/sidebar_tabs,
@@ -324,11 +325,29 @@ server <- function(id, input_data, data_version,
               operation_name = "statistics_compute"
             )
           }
+        } else if (params$test_approach == "parametric") {
+          if (n_ways == 1) {
+            parametric_tests$perform_anova1way(
+              df = data,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val
+            )
+          } else {
+            error_handling$simple_error(
+              message = paste0(
+                n_ways,
+                "-way parametric test is not yet ",
+                "implemented."
+              ),
+              operation_name = "statistics_compute"
+            )
+          }
         } else {
-          # Parametric tests not yet implemented
           error_handling$simple_error(
-            message = paste(
-              "Parametric tests not yet implemented."
+            message = paste0(
+              "Unknown test approach: '",
+              params$test_approach, "'."
             ),
             operation_name = "statistics_compute"
           )
