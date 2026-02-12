@@ -1,3 +1,12 @@
+box::use(
+  plyr[alply],
+  reshape[melt, cast],
+  stats[
+    as.formula, model.frame, na.omit, pt, qf, qt, rt,
+    var, variable.names,
+  ],
+)
+
 winvar <- function (x, tr = 0.2, na.rm = FALSE, STAND = NULL, ...) 
 {
   if (na.rm) 
@@ -914,6 +923,11 @@ mcp3atm_TM <- function(formula, data, tr = 0.2, ...) {
     dnamesA_X, dnamesB_X, dnamesC_X,
     dnamesAB_X, dnamesAC_X, dnamesBC_X, dnamesABC_X
   )
+  group_labels <- apply(
+    expand.grid(levels(mf[, 2]), levels(mf[, 3]), levels(mf[, 4])),
+    1, function(ss) paste(ss, collapse = "_")
+  )
+  rownames(contrasts) <- group_labels
 
   extract_effect <- function(factor_result) {
     list(
