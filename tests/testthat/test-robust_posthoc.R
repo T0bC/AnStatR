@@ -335,6 +335,48 @@ describe("perform_combined_posthoc 1-way", {
 })
 
 # =============================================================================
+# perform_combined_posthoc — 2-way merge (regression: separator mismatch)
+# =============================================================================
+
+describe("perform_combined_posthoc 2-way", {
+  it("successfully merges lincon and cliff for 2-way design", {
+    df <- make_twoway_data(n_per_cell = 10)
+    result <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true(nrow(result) > 0)
+    expect_true("Lincon.psihat" %in% names(result))
+    expect_true("Cliff.psihat" %in% names(result))
+  })
+})
+
+# =============================================================================
+# perform_combined_posthoc — 3-way merge (regression: separator mismatch)
+# =============================================================================
+
+describe("perform_combined_posthoc 3-way", {
+  it("successfully merges lincon and cliff for 3-way design", {
+    df <- make_threeway_data(n_per_cell = 5)
+    result <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("f1", "f2", "f3"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true(nrow(result) > 0)
+    expect_true("Lincon.psihat" %in% names(result))
+    expect_true("Cliff.psihat" %in% names(result))
+  })
+})
+
+# =============================================================================
 # perform_combined_posthoc — filter_valid with 2-way
 # =============================================================================
 
