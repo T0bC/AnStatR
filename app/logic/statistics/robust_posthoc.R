@@ -99,7 +99,7 @@ flatten_mcp_effects <- function(mcp_result) {
   effects <- mcp_result$effects
   contrasts <- mcp_result$contrasts
 
-  group_names <- rownames(contrasts)
+  group_names <- gsub("_", ".", rownames(contrasts), fixed = TRUE)
   all_rows <- list()
 
   col_offset <- 0
