@@ -177,17 +177,24 @@ tab_server <- function(input, output, session,
     shiny$tags$div(
       class = "mt-2",
       shiny$tags$hr(),
-      shiny$tags$p(
-        class = "small text-muted",
-        bsicons$bs_icon(
-          "info-circle", class = "me-1"
+      shiny$checkboxInput(
+        inputId = session$ns("filter_valid_comparisons"),
+        label = shiny$tags$span(
+          "Only valid comparisons ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "For multi-way designs, keep only",
+              "comparisons where groups differ",
+              "by exactly one factor level.",
+              "P-value adjustment is applied",
+              "after filtering."
+            )
+          )
         ),
-        paste0(
-          length(x_axis),
-          "-way design detected. Pairwise",
-          " comparisons will be computed for",
-          " all factor combinations."
-        )
+        value = TRUE
       )
     )
   })
