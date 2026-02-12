@@ -161,3 +161,161 @@ describe("perform_anova1way ignores bootstrap", {
     expect_equal(result_no_boot, result_with_boot)
   })
 })
+
+# =============================================================================
+# Helper: create test data with two factors
+# =============================================================================
+
+make_twoway_data <- function(n_per_cell = 10) {
+  set.seed(42)
+  grid <- expand.grid(
+    f1 = c("A", "B"),
+    f2 = c("X", "Y"),
+    stringsAsFactors = FALSE
+  )
+  df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
+  df$measure <- rnorm(nrow(df)) +
+    ifelse(df$f1 == "B", 1, 0) +
+    ifelse(df$f2 == "Y", 0.5, 0)
+  rownames(df) <- NULL
+  df
+}
+
+# =============================================================================
+# perform_anova2way — happy path
+# =============================================================================
+
+describe("perform_anova2way", {
+  it("returns a data frame with expected columns", {
+    df <- make_twoway_data(n_per_cell = 10)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(
+      names(result),
+      c("Effect", "Df", "SS", "MS",
+        "F.Statistic", "p.value")
+    )
+    expect_equal(nrow(result), 3)
+  })
+
+  it("returns correct effect labels", {
+    df <- make_twoway_data(n_per_cell = 10)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    expect_equal(
+      result$Effect,
+      c("f1", "f2", "f1:f2")
+    )
+  })
+
+  it("returns numeric F statistics and p-values", {
+    df <- make_twoway_data(n_per_cell = 15)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    expect_true(is.numeric(result$F.Statistic))
+    expect_true(all(result$p.value >= 0 & result$p.value <= 1))
+  })
+
+  it("returns integer Df values", {
+    df <- make_twoway_data(n_per_cell = 10)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    expect_true(is.integer(result$Df))
+    # 2 levels each => Df=1 for main effects, Df=1 for interaction
+    expect_equal(result$Df, c(1L, 1L, 1L))
+  })
+
+  it("detects main effect of factor with large difference", {
+    set.seed(99)
+    df <- expand.grid(
+      f1 = c("Low", "High"),
+      f2 = c("X", "Y"),
+      stringsAsFactors = FALSE
+    )
+    df <- df[rep(seq_len(nrow(df)), each = 20), ]
+    df$measure <- rnorm(nrow(df)) +
+      ifelse(df$f1 == "High", 5, 0)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    # f1 should be highly significant
+    expect_true(result$p.value[1] < 0.05)
+  })
+})
+
+# =============================================================================
+# perform_anova2way — validation errors
+# =============================================================================
+
+describe("perform_anova2way validation", {
+  it("returns app_error when only 1 grouping variable given", {
+    df <- make_twoway_data()
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = "f1",
+      measure_col = "measure"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+
+  it("returns app_error when 3 grouping variables given", {
+    df <- make_twoway_data()
+    df$f3 <- rep(c("P", "Q"), length.out = nrow(df))
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2", "f3"),
+      measure_col = "measure"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+
+  it("returns app_error when a factor has only 1 level", {
+    df <- make_twoway_data()
+    df$f1 <- "A"
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+})
+
+# =============================================================================
+# perform_anova2way — bootstrap is silently ignored
+# =============================================================================
+
+describe("perform_anova2way ignores bootstrap", {
+  it("returns same result regardless of bootstrap flag", {
+    df <- make_twoway_data(n_per_cell = 10)
+    result_no_boot <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure",
+      use_bootstrap = FALSE
+    )
+    result_with_boot <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("f1", "f2"),
+      measure_col = "measure",
+      use_bootstrap = TRUE,
+      boot_samples = 10
+    )
+    expect_equal(result_no_boot, result_with_boot)
+  })
+})
