@@ -292,8 +292,18 @@ server <- function(id, input_data, data_version,
               boot_samples = params$boot_samples,
               boot_sample_size = params$boot_sample_size
             )
+          } else if (n_ways == 2) {
+            robust_tests$perform_t2way(
+              df = data,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val,
+              use_bootstrap = params$use_bootstrap,
+              boot_samples = params$boot_samples,
+              boot_sample_size = params$boot_sample_size
+            )
           } else {
-            # t2way / t3way not yet implemented
+            # t3way not yet implemented
             error_handling$simple_error(
               message = paste0(
                 n_ways,
