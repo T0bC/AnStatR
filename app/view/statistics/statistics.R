@@ -110,7 +110,10 @@ ui <- function(id) {
       bootstrap$tab_ui(ns),
       adjustments$tab_ui(ns)
     ),
-    main_content = shiny$uiOutput(ns("main_content")),
+    main_content = shiny$tags$div(
+      class = "scrollable-content",
+      shiny$uiOutput(ns("main_content"))
+    ),
     enable_responsive_plots = TRUE,
     results_id = "main_content",
     action_button = shiny$tagList(
@@ -363,10 +366,8 @@ server <- function(id, input_data, data_version,
 
             ws <- window_size()
             w_svg <- max(4, ws$width / 100)
-            # Smaller height for statistics cards
-            h_svg <- max(2.5, min(
-              ws$height / 100, 3.5
-            ))
+            # ~35% of viewport height in inches (96 dpi)
+            h_svg <- max(3.5, (ws$height * 0.35) / 96)
 
             ggiraph$girafe(
               ggobj = p,
