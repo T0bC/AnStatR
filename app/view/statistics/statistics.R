@@ -9,6 +9,7 @@ box::use(
 box::use(
   app/logic/error_handling,
   app/logic/statistics/parametric_tests,
+  app/logic/statistics/robust_posthoc,
   app/logic/statistics/robust_tests,
   app/logic/statistics/validate,
   app/view/components/sidebar_tabs,
@@ -97,6 +98,95 @@ render_omnibus_result <- function(result, x_axis, approach) {
     class = "text-muted small px-2",
     "Unexpected result format."
   )
+}
+
+# --- Private helper: render post-hoc result as UI ---
+render_posthoc_result <- function(result, x_axis, params) {
+  if (is.null(result)) return(NULL)
+
+  if (error_handling$is_app_error(result)) {
+    return(shiny$tags$div(
+      class = "mt-3",
+      shiny$tags$h6(
+        class = "text-primary mb-2",
+        bsicons$bs_icon("table", class = "me-1"),
+        "Combined Pairwise Comparisons"
+      ),
+      error_display$error_alert_structured(
+        result, type = "warning"
+      )
+    ))
+  }
+
+  if (is.data.frame(result) && nrow(result) > 0) {
+    display_df <- result
+
+    if (isTRUE(params$filter_p_values) &&
+        "Lincon.p.adjusted" %in% names(display_df) &&
+        is.numeric(display_df$Lincon.p.adjusted)) {
+      display_df <- display_df[
+        display_df$Lincon.p.adjusted < 0.07, ,
+        drop = FALSE
+      ]
+    }
+
+    if (nrow(display_df) == 0) {
+      return(shiny$tags$div(
+        class = "mt-3 text-muted small px-2",
+        "No significant pairwise comparisons found."
+      ))
+    }
+
+    return(shiny$tags$div(
+      class = "mt-3 px-2",
+      shiny$tags$h6(
+        class = "text-primary mb-2",
+        bsicons$bs_icon("table", class = "me-1"),
+        "Combined Pairwise Comparisons"
+      ),
+      shiny$tags$div(
+        class = "table-responsive",
+        shiny$tags$table(
+          class = paste(
+            "table table-sm table-striped",
+            "table-hover mb-0"
+          ),
+          shiny$tags$thead(
+            shiny$tags$tr(
+              lapply(names(display_df), function(col) {
+                shiny$tags$th(
+                  class = "small",
+                  gsub("_", " ", col)
+                )
+              })
+            )
+          ),
+          shiny$tags$tbody(
+            lapply(
+              seq_len(nrow(display_df)),
+              function(i) {
+                shiny$tags$tr(
+                  lapply(
+                    names(display_df),
+                    function(col) {
+                      shiny$tags$td(
+                        class = "small",
+                        as.character(
+                          display_df[i, col]
+                        )
+                      )
+                    }
+                  )
+                )
+              }
+            )
+          )
+        )
+      )
+    ))
+  }
+
+  NULL
 }
 
 #' @export
@@ -369,12 +459,37 @@ server <- function(id, input_data, data_version,
       })
       names(omnibus_results) <- measures
 
+      # --- Run post-hoc tests per measurement ---
+      posthoc_results <- if (
+        params$test_approach == "robust"
+      ) {
+        ph <- lapply(measures, function(m) {
+          robust_posthoc$perform_combined_posthoc(
+            df = data,
+            x_axis = x_cols,
+            measure_col = m,
+            tr_value = tr_val,
+            use_bootstrap = params$use_bootstrap,
+            boot_samples = params$boot_samples,
+            boot_sample_size = params$boot_sample_size,
+            p_adjust_method =
+              params$p_val_cor_method,
+            filter_valid = length(x_cols) > 1
+          )
+        })
+        names(ph) <- measures
+        ph
+      } else {
+        NULL
+      }
+
       computation_results(list(
         measures = measures,
         x_axis = x_cols,
         params = params,
         trim_value = tr_val,
         omnibus = omnibus_results,
+        posthoc = posthoc_results,
         timestamp = Sys.time()
       ))
       computation_status("done")
@@ -585,7 +700,18 @@ server <- function(id, input_data, data_version,
                   results$omnibus[[m]],
                   results$x_axis,
                   results$params$test_approach
-                )
+                ),
+                # Post-hoc pairwise comparisons
+                if (
+                  !is.null(results$posthoc) &&
+                  m %in% names(results$posthoc)
+                ) {
+                  render_posthoc_result(
+                    results$posthoc[[m]],
+                    results$x_axis,
+                    results$params
+                  )
+                }
               )
             )
           }
