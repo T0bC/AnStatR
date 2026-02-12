@@ -38,6 +38,9 @@
 #  Last update:
 #  March, 2024
 
+box::use(
+  stats[pt, qt, qnorm, pnorm, var, na.omit, pbinom, qbinom],
+)
 
 madsq<-function(x)mad(x)^2
 
