@@ -333,6 +333,13 @@ server <- function(id, input_data, data_version,
               measure_col = m,
               tr_value = tr_val
             )
+          } else if (n_ways == 2) {
+            parametric_tests$perform_anova2way(
+              df = data,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val
+            )
           } else {
             error_handling$simple_error(
               message = paste0(
