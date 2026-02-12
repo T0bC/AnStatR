@@ -54,28 +54,12 @@ server <- function(id, input_data, data_version) {
       rhino$log$info("PCA: state reset for new data")
     }, ignoreInit = TRUE)
 
-    # Update input choices when data changes
-    shiny$observe({
-      data <- input_data()
-      if (is.null(data)) return()
-      col_names <- names(data)
-
-      shiny$updateSelectizeInput(
-        session, "metaData",
-        choices = col_names,
-        selected = NULL
-      )
-      shiny$updateSelectizeInput(
-        session, "measureVar",
-        choices = col_names,
-        selected = NULL
-      )
-      shiny$updateSelectizeInput(
-        session, "GroupBiplot",
-        choices = col_names,
-        selected = NULL
-      )
-    })
+    # Delegate to sub-module servers
+    data_selection$tab_server(
+      input, output, session,
+      input_data = input_data,
+      data_version = data_version
+    )
 
     # Main content: placeholder, error, or results
     output$main_content <- shiny$renderUI({
