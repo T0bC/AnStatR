@@ -341,8 +341,6 @@ server <- function(id, input_data, data_version,
           input$p_val_cor_method %||% "bonferroni",
         show_additional_output =
           input$show_additional_output %||% FALSE,
-        use_scientific_notation =
-          input$use_scientific_notation %||% FALSE,
         filter_p_values =
           input$filter_p_values %||% FALSE,
         filter_valid_comparisons =
@@ -415,6 +413,18 @@ server <- function(id, input_data, data_version,
             "the Plotting tab has generated plots",
             "before computing statistics."
           )
+        ))
+        return()
+      }
+
+      # --- Non-parametric: not implemented yet ---
+      if (params$test_approach == "nonparametric") {
+        computation_status("done")
+        computation_results(list(
+          measures = measures,
+          x_axis = x_cols,
+          params = params,
+          not_implemented = TRUE
         ))
         return()
       }
@@ -706,6 +716,50 @@ server <- function(id, input_data, data_version,
                 ),
                 " ",
                 results$error
+              )
+            )
+          )
+        )
+      }
+
+      # Not-implemented placeholder for non-parametric
+      if (status == "done" &&
+          isTRUE(results$not_implemented)) {
+        return(
+          bslib$card(
+            bslib$card_header(
+              "Statistical Test Results"
+            ),
+            bslib$card_body(
+              class = paste(
+                "d-flex align-items-center",
+                "justify-content-center"
+              ),
+              style = "min-height: 300px;",
+              shiny$tags$div(
+                class = "text-center text-muted",
+                shiny$tags$p(
+                  bsicons$bs_icon(
+                    "cone-striped",
+                    size = "3em",
+                    class = "mb-3 text-warning"
+                  )
+                ),
+                shiny$tags$h5(
+                  class = "text-warning",
+                  "Not Implemented Yet"
+                ),
+                shiny$tags$p(
+                  "Non-parametric tests are planned",
+                  " but not yet available."
+                ),
+                shiny$tags$p(
+                  class = "small",
+                  paste(
+                    "Please use Robust Tests or",
+                    "Parametric Tests in the meantime."
+                  )
+                )
               )
             )
           )
