@@ -8,6 +8,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
+  app/logic/statistics/parametric_posthoc,
   app/logic/statistics/parametric_tests,
   app/logic/statistics/robust_posthoc,
   app/logic/statistics/robust_tests,
@@ -144,11 +145,25 @@ render_posthoc_result <- function(result, x_axis, params) {
   if (is.data.frame(result) && nrow(result) > 0) {
     display_df <- result
 
+    # Detect which prefix set is present (robust vs parametric)
+    has_lincon <- any(grepl("^Lincon\\.", names(display_df)))
+    has_tukey <- any(grepl("^Tukey\\.", names(display_df)))
+
+    # Determine the p-adjusted column for filtering
+    p_adj_col <- if (has_lincon) {
+      "Lincon.p.adjusted"
+    } else if (has_tukey) {
+      "Tukey.p.adjusted"
+    } else {
+      NULL
+    }
+
     if (isTRUE(params$filter_p_values) &&
-        "Lincon.p.adjusted" %in% names(display_df) &&
-        is.numeric(display_df$Lincon.p.adjusted)) {
+        !is.null(p_adj_col) &&
+        p_adj_col %in% names(display_df) &&
+        is.numeric(display_df[[p_adj_col]])) {
       display_df <- display_df[
-        display_df$Lincon.p.adjusted < 0.07, ,
+        display_df[[p_adj_col]] < 0.07, ,
         drop = FALSE
       ]
     }
@@ -160,23 +175,41 @@ render_posthoc_result <- function(result, x_axis, params) {
       ))
     }
 
-    # Split into Lincon and Cliff sub-tables
-    lincon_cols <- grep(
-      "^Lincon\\.", names(display_df), value = TRUE
+    # Determine left/right panel prefixes and labels
+    if (has_lincon) {
+      left_prefix <- "Lincon"
+      left_label <- "Lincon"
+      right_prefix <- "Cliff"
+      right_label <- "Cliff's Delta"
+    } else {
+      left_prefix <- "Tukey"
+      left_label <- "Tukey HSD"
+      right_prefix <- "Cohen"
+      right_label <- "Cohen's d"
+    }
+
+    left_cols <- grep(
+      paste0("^", left_prefix, "\\."),
+      names(display_df), value = TRUE
     )
-    cliff_cols <- grep(
-      "^Cliff\\.", names(display_df), value = TRUE
+    right_cols <- grep(
+      paste0("^", right_prefix, "\\."),
+      names(display_df), value = TRUE
     )
 
-    # Lincon table: Interaction + lincon columns, strip prefix
-    lincon_df <- display_df[
-      , c("Interaction", lincon_cols), drop = FALSE
+    # Left table: Interaction + left columns, strip prefix
+    left_df <- display_df[
+      , c("Interaction", left_cols), drop = FALSE
     ]
-    names(lincon_df) <- gsub("^Lincon\\.", "", names(lincon_df))
+    names(left_df) <- gsub(
+      paste0("^", left_prefix, "\\."), "", names(left_df)
+    )
 
-    # Cliff table: cliff columns only (no Interaction), strip prefix
-    cliff_df <- display_df[, cliff_cols, drop = FALSE]
-    names(cliff_df) <- gsub("^Cliff\\.", "", names(cliff_df))
+    # Right table: right columns only, strip prefix
+    right_df <- display_df[, right_cols, drop = FALSE]
+    names(right_df) <- gsub(
+      paste0("^", right_prefix, "\\."), "", names(right_df)
+    )
 
     return(shiny$tags$div(
       class = "mt-3 px-2",
@@ -187,28 +220,28 @@ render_posthoc_result <- function(result, x_axis, params) {
       ),
       shiny$tags$div(
         class = "d-flex gap-3",
-        # Lincon panel
+        # Left panel
         shiny$tags$div(
           class = "flex-fill",
           shiny$tags$h6(
             class = "text-secondary mb-1 small fw-bold",
-            "Lincon"
+            left_label
           ),
           shiny$tags$div(
             class = "table-responsive",
-            build_posthoc_table(lincon_df)
+            build_posthoc_table(left_df)
           )
         ),
-        # Cliff panel
+        # Right panel
         shiny$tags$div(
           class = "flex-fill",
           shiny$tags$h6(
             class = "text-secondary mb-1 small fw-bold",
-            "Cliff's Delta"
+            right_label
           ),
           shiny$tags$div(
             class = "table-responsive",
-            build_posthoc_table(cliff_df)
+            build_posthoc_table(right_df)
           )
         )
       )
@@ -503,6 +536,21 @@ server <- function(id, input_data, data_version,
             use_bootstrap = params$use_bootstrap,
             boot_samples = params$boot_samples,
             boot_sample_size = params$boot_sample_size,
+            p_adjust_method =
+              params$p_val_cor_method,
+            filter_valid = isTRUE(
+              params$filter_valid_comparisons
+            )
+          )
+        })
+        names(ph) <- measures
+        ph
+      } else if (params$test_approach == "parametric") {
+        ph <- lapply(measures, function(m) {
+          parametric_posthoc$perform_combined_parametric_posthoc(
+            df = data,
+            x_axis = x_cols,
+            measure_col = m,
             p_adjust_method =
               params$p_val_cor_method,
             filter_valid = isTRUE(
