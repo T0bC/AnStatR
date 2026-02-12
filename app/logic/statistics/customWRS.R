@@ -794,3 +794,154 @@ mcp2atm_TM <- function (formula, data, tr = 0.2, ...)
   class(result) <- "mcp"
   result
 }
+
+kron <- function(m1, m2) {
+  m1 <- as.matrix(m1)
+  m2 <- as.matrix(m2)
+  kron <- vector(mode = "numeric", length = 0)
+  for (i in 1:nrow(m1)) {
+    m3 <- m1[i, 1] * m2
+    for (j in 2:ncol(m1)) m3 <- cbind(m3, m1[i, j] * m2)
+    if (i == 1) kron <- m3
+    if (i >= 2) kron <- rbind(kron, m3)
+  }
+  kron
+}
+
+cjMAT <- function(J) {
+  L <- (J^2 - J) / 2
+  cj <- matrix(0, nrow = L, ncol = J)
+  ic <- 0
+  for (j in 1:J) {
+    for (k in 1:J) {
+      if (j < k) {
+        ic <- ic + 1
+        cj[ic, j] <- 1
+        cj[ic, k] <- -1
+      }
+    }
+  }
+  cj
+}
+
+con3way <- function(J, K, L) {
+  cj <- cjMAT(J)
+  ck <- cjMAT(K)
+  cl <- cjMAT(L)
+  ij <- matrix(c(rep(1, J)), 1, J)
+  ik <- matrix(c(rep(1, K)), 1, K)
+  il <- matrix(c(rep(1, L)), 1, L)
+  conA <- t(kron(cj, kron(ik, il)))
+  conB <- t(kron(ij, kron(ck, il)))
+  conC <- t(kron(ij, kron(ik, cl)))
+  conAB <- kron(cj, kron(ck, il))
+  conAC <- kron(cj, kron(ik, cl))
+  conBC <- kron(ij, kron(ck, cl))
+  conABC <- kron(cj, kron(ck, cl))
+  list(
+    conA = conA, conB = conB, conC = conC,
+    conAB = t(conAB), conAC = t(conAC),
+    conBC = t(conBC), conABC = t(conABC)
+  )
+}
+
+mcp3atm_TM <- function(formula, data, tr = 0.2, ...) {
+  if (missing(data)) {
+    mf <- model.frame(formula)
+  } else {
+    mf <- model.frame(formula, data)
+  }
+  cl <- match.call()
+  J <- nlevels(mf[, 2])
+  K <- nlevels(mf[, 3])
+  L <- nlevels(mf[, 4])
+  alpha <- 0.05
+  grp <- NA
+  JKL <- J * K * L
+
+  x <- fac2list(mf[, 1], mf[, 2:4])
+  if (!is.na(grp[1])) {
+    yy <- x
+    x <- list()
+    for (j in 1:length(grp)) x[[j]] <- yy[[grp[j]]]
+  }
+  for (j in 1:JKL) {
+    xx <- x[[j]]
+    x[[j]] <- xx[!is.na(xx)]
+  }
+
+  temp <- con3way(J, K, L)
+  conA <- temp$conA
+  conB <- temp$conB
+  conC <- temp$conC
+  conAB <- temp$conAB
+  conAC <- temp$conAC
+  conBC <- temp$conBC
+  conABC <- temp$conABC
+
+  Factor.A <- lincon1(x, con = conA, tr = tr, alpha = alpha)
+  Factor.B <- lincon1(x, con = conB, tr = tr, alpha = alpha)
+  Factor.C <- lincon1(x, con = conC, tr = tr, alpha = alpha)
+  Factor.AB <- lincon1(x, con = conAB, tr = tr, alpha = alpha)
+  Factor.AC <- lincon1(x, con = conAC, tr = tr, alpha = alpha)
+  Factor.BC <- lincon1(x, con = conBC, tr = tr, alpha = alpha)
+  Factor.ABC <- lincon1(x, con = conABC, tr = tr, alpha = alpha)
+
+  dnamesA_X <- levels(mf[, 2])[1:ncol(conA)]
+  dnamesB_X <- levels(mf[, 3])[1:ncol(conB)]
+  dnamesC_X <- levels(mf[, 4])[1:ncol(conC)]
+  dnamesAB_X <- apply(
+    expand.grid(dnamesA_X, dnamesB_X), 1,
+    function(ss) paste(ss[1], ss[2], sep = ":")
+  )
+  dnamesAC_X <- apply(
+    expand.grid(dnamesA_X, dnamesC_X), 1,
+    function(ss) paste(ss[1], ss[2], sep = ":")
+  )
+  dnamesBC_X <- apply(
+    expand.grid(dnamesB_X, dnamesC_X), 1,
+    function(ss) paste(ss[1], ss[2], sep = ":")
+  )
+  dnamesABC_X <- apply(
+    expand.grid(dnamesA_X, dnamesB_X, dnamesC_X), 1,
+    function(ss) paste(ss[1], ss[2], ss[3], sep = ":")
+  )
+
+  contrasts <- as.data.frame(
+    cbind(conA, conB, conC, conAB, conAC, conBC, conABC)
+  )
+  colnames(contrasts) <- c(
+    dnamesA_X, dnamesB_X, dnamesC_X,
+    dnamesAB_X, dnamesAC_X, dnamesBC_X, dnamesABC_X
+  )
+
+  extract_effect <- function(factor_result) {
+    list(
+      psihat = factor_result[[3]][, "psihat"],
+      conf.int = factor_result[[3]][, c("ci.lower", "ci.upper")],
+      p.value = factor_result[[3]][, "p.value"]
+    )
+  }
+
+  effects <- list(
+    extract_effect(Factor.A),
+    extract_effect(Factor.B),
+    extract_effect(Factor.C),
+    extract_effect(Factor.AB),
+    extract_effect(Factor.AC),
+    extract_effect(Factor.BC),
+    extract_effect(Factor.ABC)
+  )
+
+  names(effects) <- c(
+    colnames(mf)[2:4],
+    paste(colnames(mf)[2], colnames(mf)[3], sep = ":"),
+    paste(colnames(mf)[2], colnames(mf)[4], sep = ":"),
+    paste(colnames(mf)[3], colnames(mf)[4], sep = ":"),
+    paste(colnames(mf)[2], colnames(mf)[3], colnames(mf)[4], sep = ":")
+  )
+
+  result <- list(effects = effects, contrasts = contrasts, call = cl)
+  class(result) <- "mcp"
+  result
+}
