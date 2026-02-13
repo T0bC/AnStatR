@@ -99,7 +99,11 @@ server <- function(id, input_data, data_version) {
       }
 
       # Clean NAs in measurement columns
-      na_result <- clean_na_rows(data, measure_cols)
+      meta_cols <- input$metaData
+      if (is.null(meta_cols)) meta_cols <- character(0)
+      na_result <- clean_na_rows(
+        data, measure_cols, meta_cols
+      )
       na_info(na_result)
       cleaned_data <- na_result$data
 
