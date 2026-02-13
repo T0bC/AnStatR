@@ -18,6 +18,31 @@ tab_ui <- function(ns) {
       class = "text-muted mb-3",
       "PCA Plotting Controls"
     ),
+    # Biplot layer toggle
+    shiny$radioButtons(
+      inputId = ns("biplotLayer"),
+      label = shiny$tags$span(
+        "Biplot Layer ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Select which layers to display",
+            "in the biplot: individual scores,",
+            "variable loadings, or both combined."
+          )
+        )
+      ),
+      choices = c(
+        "Individuals" = "individuals",
+        "Variables (Loadings)" = "variables",
+        "Combined" = "combined"
+      ),
+      selected = "combined",
+      inline = TRUE
+    ),
+    shiny$tags$hr(),
     # Group Biplot selection
     shiny$selectizeInput(
       inputId = ns("GroupBiplot"),
