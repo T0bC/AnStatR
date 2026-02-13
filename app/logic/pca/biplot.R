@@ -24,8 +24,9 @@ box::use(
 #' @param dim_x Character, dimension for x-axis (e.g. "Dim.1")
 #' @param dim_y Character, dimension for y-axis (e.g. "Dim.2")
 #' @param layer Character, one of "individuals", "variables", "combined"
-#' @param group_col Character, column name in ind$meta for grouping
-#'   (NULL for no grouping)
+#' @param group_cols Character vector, column name(s) in ind$meta
+#'   for grouping. Multiple columns are combined via interaction().
+#'   NULL for no grouping.
 #' @param show_convex_hull Logical, use convex hull instead of
 #'   95% confidence ellipse
 #' @param point_alpha Character or numeric, "Contribution" or fixed value
@@ -36,7 +37,7 @@ box::use(
 create_biplot <- function(pca_result, dim_x = "Dim.1",
                           dim_y = "Dim.2",
                           layer = "combined",
-                          group_col = NULL,
+                          group_cols = NULL,
                           show_convex_hull = FALSE,
                           point_alpha = "Contribution",
                           point_size = "Contribution",
@@ -45,7 +46,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
     dim_x = dim_x,
     dim_y = dim_y,
     layer = layer,
-    group_col = group_col %||% "none"
+    group_cols = paste(group_cols %||% "none", collapse = ", ")
   )
 
   error_handling$safe_execute(
@@ -60,7 +61,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
       ind_data <- if (show_ind) {
         build_ind_plot_data(
           pca_result, dim_x, dim_y,
-          group_col, point_alpha, point_size
+          group_cols, point_alpha, point_size
         )
       }
       var_data <- if (show_var) {
@@ -365,7 +366,7 @@ validate_biplot_inputs <- function(pca_result, dim_x, dim_y,
 
 #' Build individual plot data
 build_ind_plot_data <- function(pca_result, dim_x, dim_y,
-                                group_col, point_alpha,
+                                group_cols, point_alpha,
                                 point_size) {
   coord <- pca_result$ind$coord
   contrib <- pca_result$ind$contrib
@@ -399,10 +400,18 @@ build_ind_plot_data <- function(pca_result, dim_x, dim_y,
     df$size_val <- contrib_scaled * 5 + 1
   }
 
-  # Group column
-  if (!is.null(group_col) && length(group_col) == 1 &&
-      !is.null(meta) && group_col %in% names(meta)) {
-    df$group <- as.factor(meta[[group_col]])
+  # Group column(s) — use interaction() for multi-level designs
+  if (!is.null(group_cols) && length(group_cols) > 0 &&
+      !is.null(meta)) {
+    valid_cols <- intersect(group_cols, names(meta))
+    if (length(valid_cols) == 1) {
+      df$group <- as.factor(meta[[valid_cols]])
+    } else if (length(valid_cols) > 1) {
+      df$group <- interaction(
+        meta[, valid_cols, drop = FALSE],
+        sep = " / ", drop = TRUE
+      )
+    }
   }
 
   # Tooltip
