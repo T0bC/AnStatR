@@ -83,24 +83,56 @@ tab_ui <- function(ns) {
       )
     ),
     shiny$tags$hr(),
-    # Scale data checkbox
-    shiny$checkboxInput(
-      inputId = ns("scale_data"),
-      label = shiny$tags$span(
-        "Scale Data ",
-        bslib$tooltip(
-          bsicons$bs_icon(
-            "info-circle", class = "text-muted"
-          ),
-          paste(
-            "Select if you want to scale the data",
-            "before performing the PCA. Scaling is",
-            "important if the variables are",
-            "measured in different magnitudes."
-          )
+    # Data scaling options
+    shiny$tags$label(
+      class = "control-label",
+      "Data Scaling ",
+      bslib$tooltip(
+        bsicons$bs_icon(
+          "info-circle", class = "text-muted"
+        ),
+        paste(
+          "Choose how to preprocess the data",
+          "before PCA. Scaling ensures variables",
+          "with different units contribute equally."
         )
+      )
+    ),
+    shiny$radioButtons(
+      inputId = ns("scale_method"),
+      label = NULL,
+      choices = list(
+        "Scale & Center (recommended)" = "scale_center",
+        "Center only" = "center_only",
+        "No scaling" = "none"
       ),
-      value = TRUE
+      selected = "scale_center"
+    ),
+    shiny$tags$small(
+      class = "text-muted",
+      shiny$tags$dl(
+        class = "mb-0",
+        shiny$tags$dt("Scale & Center"),
+        shiny$tags$dd(
+          class = "ms-2 mb-1",
+          "Z-score standardization (mean=0, SD=1).",
+          " Best when variables have different",
+          " units or magnitudes."
+        ),
+        shiny$tags$dt("Center only"),
+        shiny$tags$dd(
+          class = "ms-2 mb-1",
+          "Subtract mean, keep original variance.",
+          " Use when all variables share the same",
+          " unit and variance differences matter."
+        ),
+        shiny$tags$dt("No scaling"),
+        shiny$tags$dd(
+          class = "ms-2 mb-0",
+          "Use raw data. Only if data is already",
+          " preprocessed or on the same scale."
+        )
+      )
     )
   )
 }
