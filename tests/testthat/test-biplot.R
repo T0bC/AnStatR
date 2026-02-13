@@ -14,16 +14,24 @@ impl <- attr(biplot, "namespace")
 # Shared test fixtures
 # =============================================================================
 
-make_pca_result <- function(n = 20, with_group = FALSE) {
+make_pca_result <- function(n = 20, with_group = FALSE,
+                            multi_group = FALSE) {
   set.seed(42)
   test_data <- data.frame(
     group = sample(c("A", "B"), n, replace = TRUE),
+    treatment = sample(c("T1", "T2"), n, replace = TRUE),
     x = rnorm(n, mean = 10, sd = 2),
     y = rnorm(n, mean = 5, sd = 1),
     z = rnorm(n, mean = 0, sd = 3),
     stringsAsFactors = FALSE
   )
-  meta <- if (with_group) "group" else character(0)
+  meta <- if (multi_group) {
+    c("group", "treatment")
+  } else if (with_group) {
+    "group"
+  } else {
+    character(0)
+  }
   res <- pca$run_pca(
     test_data, c("x", "y", "z"),
     meta_cols = meta
@@ -70,37 +78,37 @@ describe("create_biplot", {
 describe("create_biplot with grouping", {
   pca_res <- make_pca_result(n = 20, with_group = TRUE)
 
-  it("handles group_col for individuals layer", {
+  it("handles group_cols for individuals layer", {
     res <- biplot$create_biplot(
       pca_res, layer = "individuals",
-      group_col = "group"
+      group_cols = "group"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
   })
 
-  it("handles group_col for combined layer", {
+  it("handles group_cols for combined layer", {
     res <- biplot$create_biplot(
       pca_res, layer = "combined",
-      group_col = "group"
+      group_cols = "group"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
   })
 
-  it("handles missing group_col gracefully", {
+  it("handles missing group_cols gracefully", {
     res <- biplot$create_biplot(
       pca_res, layer = "individuals",
-      group_col = NULL
+      group_cols = NULL
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
   })
 
-  it("handles non-existent group_col gracefully", {
+  it("handles non-existent group_cols gracefully", {
     res <- biplot$create_biplot(
       pca_res, layer = "individuals",
-      group_col = "nonexistent"
+      group_cols = "nonexistent"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
@@ -117,7 +125,7 @@ describe("create_biplot hull/ellipse toggle", {
   it("renders with convex hull when toggled", {
     res <- biplot$create_biplot(
       pca_res, layer = "individuals",
-      group_col = "group",
+      group_cols = "group",
       show_convex_hull = TRUE
     )
     expect_true(res$success)
@@ -127,7 +135,7 @@ describe("create_biplot hull/ellipse toggle", {
   it("renders with ellipse (default)", {
     res <- biplot$create_biplot(
       pca_res, layer = "individuals",
-      group_col = "group",
+      group_cols = "group",
       show_convex_hull = FALSE
     )
     expect_true(res$success)
@@ -167,6 +175,53 @@ describe("create_biplot contribution mapping", {
       pca_res, layer = "individuals",
       point_alpha = 0.5,
       point_size = 4
+    )
+    expect_true(res$success)
+    expect_true(inherits(res$result, "ggplot"))
+  })
+})
+
+# =============================================================================
+# create_biplot — multi-column interaction grouping
+# =============================================================================
+
+describe("create_biplot with multi-column grouping", {
+  pca_res <- make_pca_result(
+    n = 30, multi_group = TRUE
+  )
+
+  it("combines two group columns via interaction", {
+    res <- biplot$create_biplot(
+      pca_res, layer = "individuals",
+      group_cols = c("group", "treatment")
+    )
+    expect_true(res$success)
+    expect_true(inherits(res$result, "ggplot"))
+  })
+
+  it("combined mode with multi-column grouping", {
+    res <- biplot$create_biplot(
+      pca_res, layer = "combined",
+      group_cols = c("group", "treatment")
+    )
+    expect_true(res$success)
+    expect_true(inherits(res$result, "ggplot"))
+  })
+
+  it("convex hull with multi-column grouping", {
+    res <- biplot$create_biplot(
+      pca_res, layer = "individuals",
+      group_cols = c("group", "treatment"),
+      show_convex_hull = TRUE
+    )
+    expect_true(res$success)
+    expect_true(inherits(res$result, "ggplot"))
+  })
+
+  it("ignores invalid columns in multi-select", {
+    res <- biplot$create_biplot(
+      pca_res, layer = "individuals",
+      group_cols = c("group", "nonexistent")
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
@@ -271,6 +326,9 @@ describe("biplot_error_parser", {
 
 describe("build_ind_plot_data", {
   pca_res <- make_pca_result(n = 10, with_group = TRUE)
+  pca_res_multi <- make_pca_result(
+    n = 10, multi_group = TRUE
+  )
 
   it("returns data frame with expected columns", {
     df <- impl$build_ind_plot_data(
@@ -285,7 +343,7 @@ describe("build_ind_plot_data", {
     expect_equal(nrow(df), 10)
   })
 
-  it("omits group when group_col is NULL", {
+  it("omits group when group_cols is NULL", {
     df <- impl$build_ind_plot_data(
       pca_res, "Dim.1", "Dim.2",
       NULL, 0.5, 3
@@ -293,6 +351,20 @@ describe("build_ind_plot_data", {
     expect_false("group" %in% names(df))
     expect_false("alpha_val" %in% names(df))
     expect_false("size_val" %in% names(df))
+  })
+
+  it("creates interaction group for multiple columns", {
+    df <- impl$build_ind_plot_data(
+      pca_res_multi, "Dim.1", "Dim.2",
+      c("group", "treatment"),
+      "Contribution", "Contribution"
+    )
+    expect_true("group" %in% names(df))
+    expect_true(is.factor(df$group))
+    # Interaction labels contain " / " separator
+    expect_true(all(grepl(
+      " / ", levels(df$group)
+    )))
   })
 })
 
