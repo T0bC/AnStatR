@@ -133,4 +133,39 @@ describe("clean_na_rows", {
     expect_equal(result$rows_removed, 2)
     expect_equal(nrow(result$data), 0)
   })
+
+  it("returns empty meta_na_summary when no meta_cols given", {
+    data <- data.frame(a = 1:5, b = 6:10)
+    result <- na_handling$clean_na_rows(data, c("a", "b"))
+    expect_equal(nrow(result$meta_na_summary), 0)
+  })
+
+  it("reports NAs in descriptive columns", {
+    data <- data.frame(
+      sex = c("M", NA, "F", NA, "M"),
+      site = c(NA, "A", "B", "A", "B"),
+      a = c(1, 2, 3, 4, 5)
+    )
+    result <- na_handling$clean_na_rows(
+      data, "a", meta_cols = c("sex", "site")
+    )
+    expect_equal(result$rows_removed, 0)
+    expect_equal(nrow(result$meta_na_summary), 2)
+    expect_true("sex" %in% result$meta_na_summary$column)
+    expect_true("site" %in% result$meta_na_summary$column)
+  })
+
+  it("does not remove rows for descriptive column NAs", {
+    data <- data.frame(
+      sex = c(NA, NA, NA),
+      a = c(1, 2, 3)
+    )
+    result <- na_handling$clean_na_rows(
+      data, "a", meta_cols = "sex"
+    )
+    expect_equal(result$rows_removed, 0)
+    expect_equal(nrow(result$data), 3)
+    expect_equal(nrow(result$meta_na_summary), 1)
+    expect_equal(result$meta_na_summary$na_count, 3L)
+  })
 })
