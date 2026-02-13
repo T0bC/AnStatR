@@ -174,6 +174,7 @@ render_variable_results <- function(var) {
 
 render_individual_results <- function(ind) {
   n_ind <- nrow(ind$coord)
+  meta <- ind$meta
 
   too_many_warning <- NULL
   if (n_ind > 500) {
@@ -200,19 +201,25 @@ render_individual_results <- function(ind) {
     shiny$tags$h6(
       class = "mt-2 mb-2", "Contributions (%)"
     ),
-    render_sortable_table(ind$contrib, "Individual"),
+    render_ind_sortable_table(
+      ind$contrib, meta
+    ),
 
     # Coordinates
     shiny$tags$h6(
       class = "mt-3 mb-2", "Coordinates"
     ),
-    render_sortable_table(ind$coord, "Individual"),
+    render_ind_sortable_table(
+      ind$coord, meta
+    ),
 
     # Cos2
     shiny$tags$h6(
       class = "mt-3 mb-2", "Cos2 (Quality)"
     ),
-    render_sortable_table(ind$cos2, "Individual")
+    render_ind_sortable_table(
+      ind$cos2, meta
+    )
   )
 }
 
@@ -238,6 +245,56 @@ render_sortable_table <- function(mat,
         list(
           className = "dt-right",
           targets = seq(1, ncol(df) - 1)
+        )
+      )
+    ),
+    rownames = FALSE,
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
+  )
+}
+
+
+render_ind_sortable_table <- function(mat, meta) {
+  df <- as.data.frame(round(mat, 4))
+  has_real_meta <- !is.null(meta) &&
+    nrow(meta) == nrow(df) &&
+    !("Row" %in% names(meta) && ncol(meta) == 1)
+
+  if (has_real_meta) {
+    # Prepend metadata columns for sorting/filtering
+    df <- cbind(meta, df)
+    rownames(df) <- NULL
+    n_meta <- ncol(meta)
+  } else {
+    df <- cbind(
+      Individual = rownames(df), df
+    )
+    rownames(df) <- NULL
+    n_meta <- 1
+  }
+
+  n_rows <- nrow(df)
+  dom_string <- if (n_rows <= 10) "t" else "tip"
+
+  # Numeric columns start after metadata columns
+  numeric_targets <- seq(
+    n_meta, ncol(df) - 1
+  )
+
+  DT$datatable(
+    df,
+    options = list(
+      pageLength = 10,
+      scrollX = TRUE,
+      dom = dom_string,
+      order = list(),
+      columnDefs = list(
+        list(
+          className = "dt-right",
+          targets = as.list(numeric_targets)
         )
       )
     ),
