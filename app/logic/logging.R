@@ -1,4 +1,5 @@
 box::use(
+  config,
   logger,
   shiny,
 )
@@ -18,6 +19,17 @@ box::use(
 #'
 #' @export
 configure_session_logging <- function() {
+  # Ensure the appender matches the current config.
+  # rhino's configure_logger() only sets a file appender when rhino_log_file
+  # is not NA, but never resets to console — so switching from production
+  # back to default in the same R session leaves the file appender active.
+  log_file <- config$get("rhino_log_file")
+  if (is.null(log_file) || is.na(log_file)) {
+    logger$log_appender(logger$appender_stderr)
+  } else {
+    logger$log_appender(logger$appender_file(log_file))
+  }
+
   logger$log_layout(session_layout)
 }
 
