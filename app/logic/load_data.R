@@ -66,7 +66,7 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
       }
     ),
     operation_name = "Data Import",
-    context = list(file = path, format = ext),
+    context = list(file = basename(path), format = ext),
     error_parser = error_handling$default_error_parser
   )
 
