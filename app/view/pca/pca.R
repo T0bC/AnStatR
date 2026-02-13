@@ -12,7 +12,8 @@ box::use(
   app/logic/pca/kmo[calculate_kmo],
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/optimal_components[calculate_optimal_components],
-  app/logic/pca/pca[validate_inputs, run_analysis],
+  app/logic/pca/pca[validate_inputs, run_pca],
+  app/logic/pca/pca_export[create_pca_excel],
   app/logic/pca/scaling[scale_data],
   app/view/components/sidebar_tabs,
   app/view/error_display,
@@ -22,6 +23,7 @@ box::use(
   app/view/pca/kmo_results,
   app/view/pca/na_summary,
   app/view/pca/optimal_components,
+  app/view/pca/pca_results,
   app/view/pca/plotting_controls,
 )
 
@@ -59,6 +61,7 @@ server <- function(id, input_data, data_version) {
     correlation_result <- shiny$reactiveVal(NULL)
     kmo_result <- shiny$reactiveVal(NULL)
     optimal_result <- shiny$reactiveVal(NULL)
+    pca_result <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
@@ -68,6 +71,7 @@ server <- function(id, input_data, data_version) {
       correlation_result(NULL)
       kmo_result(NULL)
       optimal_result(NULL)
+      pca_result(NULL)
       na_info(NULL)
       rhino$log$info("PCA: state reset for new data")
     }, ignoreInit = TRUE)
@@ -92,6 +96,7 @@ server <- function(id, input_data, data_version) {
       correlation_result(NULL)
       kmo_result(NULL)
       optimal_result(NULL)
+      pca_result(NULL)
       na_info(NULL)
 
       data <- input_data()
@@ -188,6 +193,17 @@ server <- function(id, input_data, data_version) {
         numeric_subset, scale = is_scaled
       )
       optimal_result(opt_res)
+
+      # Run PCA
+      rhino$log$info(
+        "PCA: running PCA",
+        " ({length(measure_cols)} columns,",
+        " {nrow(analysis_data)} rows)"
+      )
+      pca_res <- run_pca(
+        analysis_data, measure_cols
+      )
+      pca_result(pca_res)
 
       # Mark that we have results to display
       result(TRUE)
@@ -310,6 +326,37 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # PCA results panel content
+      pca_res <- pca_result()
+      pca_content <- if (
+        !is.null(pca_res) && !pca_res$success
+      ) {
+        error_display$error_alert_structured(
+          pca_res$error, type = "danger"
+        )
+      } else if (
+        !is.null(pca_res) && pca_res$success
+      ) {
+        pca_results$render_pca_results(
+          pca_res$result, ns
+        )
+      } else {
+        NULL
+      }
+
+      pca_panel <- if (!is.null(pca_content)) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "bar-chart-line", class = "me-1"
+            ),
+            "PCA Results"
+          ),
+          value = "pca_panel",
+          pca_content
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -327,7 +374,8 @@ server <- function(id, input_data, data_version) {
             corr_content
           ),
           kmo_panel,
-          opt_panel
+          opt_panel,
+          pca_panel
         )
       )
     })
@@ -341,6 +389,40 @@ server <- function(id, input_data, data_version) {
         opt_res$result
       )
     })
+
+    # Download handler: Excel export
+    output$download_pca_excel <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "pca_results_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".xlsx"
+        )
+      },
+      content = function(file) {
+        pca_res <- pca_result()
+        shiny$req(pca_res)
+        shiny$req(pca_res$success)
+        create_pca_excel(pca_res$result, file)
+      }
+    )
+
+    # Download handler: RDS export
+    output$download_pca_rds <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "pca_object_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".rds"
+        )
+      },
+      content = function(file) {
+        pca_res <- pca_result()
+        shiny$req(pca_res)
+        shiny$req(pca_res$success)
+        saveRDS(pca_res$result, file)
+      }
+    )
 
     # Return for downstream modules
     invisible(NULL)
