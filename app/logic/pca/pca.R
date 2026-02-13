@@ -62,12 +62,15 @@ validate_inputs <- function(columns, data) {
 #' @param meta_cols Character vector of metadata column names
 #'   (optional). When provided, the metadata is attached to the
 #'   result as $ind$meta and used to label individual rows.
-#' @param ncp Maximum number of components to retain (default 5)
+#' @param ncp Number of components to retain. NULL (default)
+#'   retains all feasible components. The full result is always
+#'   stored; downstream renderers use a separate display_ncp
+#'   to limit what is shown in the UI.
 #' @return List with $success, $result or $error.
 #'   $result contains $eig, $var, $ind, $ncp, $call_info.
 #' @export
 run_pca <- function(data, columns,
-                    meta_cols = character(0), ncp = 5) {
+                    meta_cols = character(0), ncp = NULL) {
   error_context <- list(
     n_variables = length(columns),
     n_observations = nrow(data),
@@ -80,8 +83,13 @@ run_pca <- function(data, columns,
       n <- nrow(numeric_data)
       p <- ncol(numeric_data)
 
-      # Limit ncp to feasible range
-      max_ncp <- min(ncp, p, n - 1)
+      # Retain all feasible components by default
+      max_possible <- min(p, n - 1)
+      max_ncp <- if (is.null(ncp)) {
+        max_possible
+      } else {
+        min(ncp, max_possible)
+      }
 
       pca_obj <- stats$prcomp(
         numeric_data,
