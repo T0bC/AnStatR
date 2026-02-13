@@ -226,10 +226,13 @@ build_pca_result <- function(pca_obj, ncp, n, p) {
   )
   colnames(ind_cos2) <- dim_names
 
-  # Individual contributions: (score^2 / (n * eigenvalue)) * 100
+  # Individual contributions: (score^2 / (n_eff * eigenvalue)) * 100
+  # prcomp uses (n-1) divisor for variance, so eigenvalue = sum(score^2)/(n-1)
+  # To make contributions sum to 100: use (n-1) as divisor
+  n_eff <- n - 1
   ind_contrib <- sweep(
     scores^2, 2,
-    n * eigenvalues[comp_idx], FUN = "/"
+    n_eff * eigenvalues[comp_idx], FUN = "/"
   ) * 100
   colnames(ind_contrib) <- dim_names
 
