@@ -70,6 +70,22 @@ create_app_error <- function(user_msg, raw_msg = NULL, error_obj = NULL,
   rhino$log$error(
     "{operation_name}: {user_msg}"
   )
+  if (!is.null(raw_msg) && raw_msg != user_msg) {
+    rhino$log$error("  Raw: {raw_msg}")
+  }
+  if (!is.null(context) && length(context) > 0) {
+    ctx_str <- paste(
+      names(context),
+      vapply(context, function(v) paste(v, collapse = ", "), character(1)),
+      sep = "=", collapse = "; "
+    )
+    rhino$log$error("  Context: {ctx_str}")
+  }
+  if (!is.null(stack_trace)) {
+    # Strip HTML tags for plain-text log output
+    plain_trace <- gsub("<[^>]+>", "", stack_trace)
+    rhino$log$error("  Stack trace:\n{plain_trace}")
+  }
 
   list(
     is_error = TRUE,
