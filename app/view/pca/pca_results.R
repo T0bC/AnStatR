@@ -14,18 +14,57 @@ box::use(
 #' @param pca_result PCA result list from run_pca()
 #'   (the $result field, not the wrapper)
 #' @param ns Namespace function for download button IDs
+#' @param display_ncp Number of dimensions to show in
+#'   variable/individual tables. NULL shows all.
+#'   Eigenvalue table always shows all components.
+#'   Downloads always include all components.
 #' @return Shiny tagList with formatted PCA display
 #' @export
-render_pca_results <- function(pca_result, ns) {
+render_pca_results <- function(pca_result, ns,
+                               display_ncp = NULL) {
   eig <- pca_result$eig
+  total_dims <- ncol(pca_result$var$coord)
+
+  # Determine effective display limit
+  eff_display <- if (
+    is.null(display_ncp) || display_ncp >= total_dims
+  ) {
+    total_dims
+  } else {
+    display_ncp
+  }
+  is_truncated <- eff_display < total_dims
+
+  # Limit variable/individual matrices to display dims
+  var_display <- limit_dims(pca_result$var, eff_display)
+  ind_display <- limit_dims(pca_result$ind, eff_display)
+
+  # Info banner when truncated
+  truncation_note <- if (is_truncated) {
+    shiny$tags$div(
+      class = "alert alert-info mb-3 py-2",
+      bsicons$bs_icon(
+        "info-circle-fill", class = "me-2"
+      ),
+      sprintf(
+        paste(
+          "Showing first %d of %d dimensions",
+          "(based on optimal components + 2).",
+          "Full results available in downloads."
+        ),
+        eff_display, total_dims
+      )
+    )
+  }
 
   shiny$tagList(
+    truncation_note,
     bslib$accordion(
       id = ns("pca_results_accordion"),
       open = "eigenvalues",
       multiple = TRUE,
 
-      # Eigenvalues panel
+      # Eigenvalues panel (always all components)
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
@@ -37,7 +76,7 @@ render_pca_results <- function(pca_result, ns) {
         render_eigenvalues_table(eig)
       ),
 
-      # Variable Results panel
+      # Variable Results panel (display_ncp dims)
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
@@ -46,17 +85,17 @@ render_pca_results <- function(pca_result, ns) {
           "Variable Results"
         ),
         value = "variable_results",
-        render_variable_results(pca_result$var)
+        render_variable_results(var_display)
       ),
 
-      # Individual Results panel
+      # Individual Results panel (display_ncp dims)
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon("people", class = "me-2"),
           "Individual Results"
         ),
         value = "individual_results",
-        render_individual_results(pca_result$ind)
+        render_individual_results(ind_display)
       ),
 
       # Downloads panel
@@ -78,6 +117,19 @@ render_pca_results <- function(pca_result, ns) {
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+limit_dims <- function(result_section, ncp) {
+  dim_cols <- paste0("Dim.", seq_len(ncp))
+  list(
+    coord = result_section$coord[, dim_cols, drop = FALSE],
+    contrib = result_section$contrib[
+      , dim_cols, drop = FALSE
+    ],
+    cos2 = result_section$cos2[, dim_cols, drop = FALSE],
+    meta = result_section$meta
+  )
+}
+
 
 render_eigenvalues_table <- function(eig) {
   eig_df <- as.data.frame(eig)
