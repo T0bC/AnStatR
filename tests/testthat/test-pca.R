@@ -102,7 +102,17 @@ describe("run_pca", {
     )
   })
 
-  it("ncp limits the number of retained components", {
+  it("default ncp=NULL retains all components", {
+    cols <- c("a", "b", "c", "d")
+    res <- pca$run_pca(test_data, cols)
+    r <- res$result
+    # All 4 components retained in var/ind matrices
+    expect_equal(ncol(r$var$coord), length(cols))
+    expect_equal(ncol(r$ind$coord), length(cols))
+    expect_equal(nrow(r$eig), length(cols))
+  })
+
+  it("explicit ncp limits retained components", {
     res <- pca$run_pca(
       test_data, c("a", "b", "c", "d"), ncp = 2
     )
