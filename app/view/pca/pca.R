@@ -20,6 +20,7 @@ box::use(
   app/view/pca/actions,
   app/view/pca/biplot,
   app/view/pca/correlation_plot[render_output],
+  app/view/pca/var_contrib,
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
   app/view/pca/na_summary,
@@ -92,6 +93,12 @@ server <- function(id, input_data, data_version) {
 
     # Delegate biplot rendering
     biplot$render_output(
+      input, output, session,
+      pca_result = pca_result
+    )
+
+    # Delegate variable contribution chart rendering
+    var_contrib$render_output(
       input, output, session,
       pca_result = pca_result
     )
@@ -428,6 +435,30 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Variable contribution chart panel
+      var_contrib_content <- if (
+        !is.null(pca_res) && isTRUE(pca_res$success)
+      ) {
+        ggiraph$girafeOutput(
+          ns("var_contrib"), height = "450px"
+        )
+      }
+
+      var_contrib_panel <- if (
+        !is.null(var_contrib_content)
+      ) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "bar-chart-fill", class = "me-1"
+            ),
+            "Variable Contributions"
+          ),
+          value = "var_contrib_panel",
+          var_contrib_content
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -447,7 +478,8 @@ server <- function(id, input_data, data_version) {
           kmo_panel,
           opt_panel,
           pca_panel,
-          biplot_panel
+          biplot_panel,
+          var_contrib_panel
         )
       )
     })
