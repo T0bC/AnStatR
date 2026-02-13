@@ -59,11 +59,15 @@ validate_inputs <- function(columns, data) {
 #'
 #' @param data Data frame (full, may include metadata columns)
 #' @param columns Character vector of measurement column names
+#' @param meta_cols Character vector of metadata column names
+#'   (optional). When provided, the metadata is attached to the
+#'   result as $ind$meta and used to label individual rows.
 #' @param ncp Maximum number of components to retain (default 5)
 #' @return List with $success, $result or $error.
 #'   $result contains $eig, $var, $ind, $ncp, $call_info.
 #' @export
-run_pca <- function(data, columns, ncp = 5) {
+run_pca <- function(data, columns,
+                    meta_cols = character(0), ncp = 5) {
   error_context <- list(
     n_variables = length(columns),
     n_observations = nrow(data),
@@ -86,6 +90,14 @@ run_pca <- function(data, columns, ncp = 5) {
       )
 
       result <- build_pca_result(pca_obj, max_ncp, n, p)
+
+      # Attach metadata for individual labelling and grouping
+      result$ind$meta <- build_ind_meta(
+        data, meta_cols, n
+      )
+      result <- apply_row_labels(
+        result, result$ind$meta
+      )
 
       rhino$log$info(
         "PCA: complete ({p} variables, {n} observations,",
@@ -253,4 +265,68 @@ build_pca_result <- function(pca_obj, ncp, n, p) {
       ncp = ncp
     )
   )
+}
+
+
+#' Build metadata data frame for individuals
+#'
+#' Extracts selected metadata columns from the original data,
+#' aligned with the rows used in PCA. Returns a data frame
+#' with one row per individual. If no metadata columns are
+#' selected, returns a data frame with a single "Row" column
+#' containing row numbers.
+#'
+#' @param data Full data frame (including metadata columns)
+#' @param meta_cols Character vector of metadata column names
+#' @param n Number of rows (for fallback labels)
+#' @return Data frame with metadata or row numbers
+build_ind_meta <- function(data, meta_cols, n) {
+  if (length(meta_cols) == 0 ||
+      !any(meta_cols %in% names(data))) {
+    return(data.frame(
+      Row = seq_len(n),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  valid_cols <- intersect(meta_cols, names(data))
+  meta <- data[, valid_cols, drop = FALSE]
+  # Convert factors to character for consistent handling
+  for (col in names(meta)) {
+    if (is.factor(meta[[col]])) {
+      meta[[col]] <- as.character(meta[[col]])
+    }
+  }
+  meta
+}
+
+
+#' Apply row labels from metadata to individual result matrices
+#'
+#' Sets rownames on ind$coord, ind$contrib, and ind$cos2 using
+#' a composite label built from metadata columns. If labels are
+#' not unique, appends a row number suffix.
+#'
+#' @param result PCA result list (modified in place via reference)
+#' @param meta Data frame from build_ind_meta
+#' @return The modified result (invisibly)
+apply_row_labels <- function(result, meta) {
+  if ("Row" %in% names(meta) && ncol(meta) == 1) {
+    labels <- as.character(meta$Row)
+  } else {
+    labels <- apply(meta, 1, function(row) {
+      paste(row, collapse = " | ")
+    })
+  }
+
+  # Ensure uniqueness by appending index where needed
+  if (anyDuplicated(labels) > 0) {
+    labels <- make.unique(labels, sep = "_")
+  }
+
+  rownames(result$ind$coord) <- labels
+  rownames(result$ind$contrib) <- labels
+  rownames(result$ind$cos2) <- labels
+
+  invisible(result)
 }
