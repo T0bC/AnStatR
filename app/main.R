@@ -89,6 +89,11 @@ server <- function(id) {
   shiny$moduleServer(id, function(input, output, session) {
     logging$configure_session_logging()
 
+    # In development, stop the app when the browser tab is closed
+    if (!identical(Sys.getenv("R_CONFIG_ACTIVE"), "production")) {
+      session$onSessionEnded(shiny$stopApp)
+    }
+
     load_data_result <- load_data$server("load_data")
     median_result <- median$server(
       "median",
