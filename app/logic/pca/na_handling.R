@@ -51,21 +51,38 @@ analyse_na <- function(data, measurement_cols) {
 #' Remove rows with NAs in measurement columns only
 #'
 #' Removes rows where any of the selected measurement columns
-#' contain NA. Metadata columns are ignored for NA detection.
-#' Returns the cleaned data frame plus a summary of what was removed.
+#' contain NA. Metadata columns are ignored for row removal
+#' but their NA distribution is reported for user awareness.
 #'
 #' @param data Data frame (full, including metadata columns)
 #' @param measurement_cols Character vector of measurement column names
+#' @param meta_cols Character vector of descriptive column names
+#'   (optional). NAs in these columns are reported but do not
+#'   trigger row removal.
 #' @return List with:
 #'   - $data: cleaned data frame (all columns preserved)
 #'   - $rows_before: integer, original row count
 #'   - $rows_after: integer, row count after removal
 #'   - $rows_removed: integer, number of rows removed
-#'   - $na_summary: data frame from analyse_na (before removal)
+#'   - $na_summary: data frame from analyse_na (measurement cols)
+#'   - $meta_na_summary: data frame from analyse_na (descriptive cols)
 #' @export
-clean_na_rows <- function(data, measurement_cols) {
+clean_na_rows <- function(data, measurement_cols,
+                          meta_cols = character(0)) {
   rows_before <- nrow(data)
   na_summary <- analyse_na(data, measurement_cols)
+
+  # Analyse descriptive columns (informational only)
+  meta_na_summary <- if (length(meta_cols) > 0) {
+    analyse_na(data, meta_cols)
+  } else {
+    data.frame(
+      column = character(0),
+      na_count = integer(0),
+      na_percent = numeric(0),
+      stringsAsFactors = FALSE
+    )
+  }
 
   subset <- data[, measurement_cols, drop = FALSE]
   complete <- stats$complete.cases(subset)
@@ -87,11 +104,22 @@ clean_na_rows <- function(data, measurement_cols) {
         collapse = ", "
       )
       rhino$log$info(
-        "PCA NA handling: columns with NAs: {col_info}"
+        "PCA NA handling: measurement NAs: {col_info}"
       )
     }
   } else {
     rhino$log$info("PCA NA handling: no NAs found, 0 rows removed")
+  }
+
+  if (nrow(meta_na_summary) > 0) {
+    meta_info <- paste(
+      meta_na_summary$column,
+      paste0("(", meta_na_summary$na_count, " NAs)"),
+      collapse = ", "
+    )
+    rhino$log$info(
+      "PCA NA handling: descriptive column NAs: {meta_info}"
+    )
   }
 
   list(
@@ -99,6 +127,7 @@ clean_na_rows <- function(data, measurement_cols) {
     rows_before = rows_before,
     rows_after = rows_after,
     rows_removed = rows_removed,
-    na_summary = na_summary
+    na_summary = na_summary,
+    meta_na_summary = meta_na_summary
   )
 }
