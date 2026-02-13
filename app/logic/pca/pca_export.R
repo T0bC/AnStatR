@@ -53,21 +53,24 @@ create_pca_excel <- function(pca_result, file) {
   )
   add_sheet(wb, "Variable Cos2", var_cos2)
 
+  # Individual metadata (if available)
+  ind_meta <- pca_result$ind$meta
+
   # Sheet 5: Individual Coordinates
-  ind_coord <- matrix_to_df(
-    pca_result$ind$coord, "Individual"
+  ind_coord <- ind_matrix_to_df(
+    pca_result$ind$coord, ind_meta
   )
   add_sheet(wb, "Individual Coordinates", ind_coord)
 
   # Sheet 6: Individual Contributions
-  ind_contrib <- matrix_to_df(
-    pca_result$ind$contrib, "Individual"
+  ind_contrib <- ind_matrix_to_df(
+    pca_result$ind$contrib, ind_meta
   )
   add_sheet(wb, "Individual Contributions", ind_contrib)
 
   # Sheet 7: Individual Cos2
-  ind_cos2 <- matrix_to_df(
-    pca_result$ind$cos2, "Individual"
+  ind_cos2 <- ind_matrix_to_df(
+    pca_result$ind$cos2, ind_meta
   )
   add_sheet(wb, "Individual Cos2", ind_cos2)
 
@@ -88,6 +91,22 @@ matrix_to_df <- function(mat, row_label = "Item") {
   df <- cbind(Item = rownames(df), round(df, 4))
   rownames(df) <- NULL
   names(df)[1] <- row_label
+  df
+}
+
+ind_matrix_to_df <- function(mat, meta) {
+  df <- as.data.frame(round(mat, 4))
+  if (!is.null(meta) && nrow(meta) == nrow(df) &&
+      !("Row" %in% names(meta) && ncol(meta) == 1)) {
+    # Prepend metadata columns before PCA dimensions
+    df <- cbind(meta, df)
+    rownames(df) <- NULL
+  } else {
+    df <- cbind(
+      Individual = rownames(df), df
+    )
+    rownames(df) <- NULL
+  }
   df
 }
 
