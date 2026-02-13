@@ -126,11 +126,16 @@ server <- function(id, input_data, data_version) {
         return()
       }
 
-      # Scale data if requested
+      # Scale data based on user selection
       analysis_data <- cleaned_data
-      if (isTRUE(input$scale_data)) {
+      scale_method <- input$scale_method
+      if (!is.null(scale_method) && scale_method != "none") {
+        do_center <- scale_method %in%
+          c("scale_center", "center_only")
+        do_scale <- scale_method == "scale_center"
         scale_res <- scale_data(
-          cleaned_data, measure_cols
+          cleaned_data, measure_cols,
+          center = do_center, scale = do_scale
         )
         if (!scale_res$success) {
           last_error(scale_res$error)
