@@ -201,7 +201,8 @@ server <- function(id, input_data, data_version) {
         " {nrow(analysis_data)} rows)"
       )
       pca_res <- run_pca(
-        analysis_data, measure_cols
+        analysis_data, measure_cols,
+        meta_cols = meta_cols
       )
       pca_result(pca_res)
 
