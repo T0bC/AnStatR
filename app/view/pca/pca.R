@@ -9,12 +9,16 @@ box::use(
 box::use(
   app/logic/error_handling,
   app/logic/pca/correlation_plot[compute_correlation_data],
+  app/logic/pca/kmo[calculate_kmo],
+  app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/pca[validate_inputs, run_analysis],
   app/view/components/sidebar_tabs,
   app/view/error_display,
   app/view/pca/actions,
   app/view/pca/correlation_plot[render_output],
   app/view/pca/data_selection,
+  app/view/pca/kmo_results,
+  app/view/pca/na_summary,
   app/view/pca/plotting_controls,
 )
 
@@ -50,12 +54,16 @@ server <- function(id, input_data, data_version) {
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
     correlation_result <- shiny$reactiveVal(NULL)
+    kmo_result <- shiny$reactiveVal(NULL)
+    na_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
       result(NULL)
       last_error(NULL)
       correlation_result(NULL)
+      kmo_result(NULL)
+      na_info(NULL)
       rhino$log$info("PCA: state reset for new data")
     }, ignoreInit = TRUE)
 
@@ -77,6 +85,8 @@ server <- function(id, input_data, data_version) {
       last_error(NULL)
       result(NULL)
       correlation_result(NULL)
+      kmo_result(NULL)
+      na_info(NULL)
 
       data <- input_data()
       measure_cols <- input$measureVar
@@ -88,14 +98,38 @@ server <- function(id, input_data, data_version) {
         return()
       }
 
+      # Clean NAs in measurement columns
+      na_result <- clean_na_rows(data, measure_cols)
+      na_info(na_result)
+      cleaned_data <- na_result$data
+
+      if (nrow(cleaned_data) < 2) {
+        last_error(error_handling$simple_error(
+          message = paste(
+            "After removing rows with missing values,",
+            "fewer than 2 rows remain.",
+            "Consider deselecting columns with",
+            "many NAs."
+          ),
+          operation_name = "PCA Data Preparation",
+          context = list(
+            rows_before = na_result$rows_before,
+            rows_removed = na_result$rows_removed,
+            rows_after = na_result$rows_after
+          )
+        ))
+        return()
+      }
+
       rhino$log$info(
         "PCA: computing correlation plot",
-        " ({length(measure_cols)} columns)"
+        " ({length(measure_cols)} columns,",
+        " {nrow(cleaned_data)} rows)"
       )
 
-      # Compute correlation
+      # Compute correlation on cleaned data
       corr_res <- compute_correlation_data(
-        data, measure_cols
+        cleaned_data, measure_cols
       )
       correlation_result(corr_res)
 
@@ -103,6 +137,17 @@ server <- function(id, input_data, data_version) {
         last_error(corr_res$error)
         return()
       }
+
+      # Compute KMO measure on cleaned data
+      rhino$log$info(
+        "PCA: computing KMO measure",
+        " ({length(measure_cols)} columns)"
+      )
+      numeric_subset <- cleaned_data[
+        , measure_cols, drop = FALSE
+      ]
+      kmo_res <- calculate_kmo(numeric_subset)
+      kmo_result(kmo_res)
 
       # Mark that we have results to display
       result(TRUE)
@@ -150,6 +195,12 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # NA summary banner
+      na_res <- na_info()
+      na_banner <- if (!is.null(na_res)) {
+        na_summary$render_na_summary(na_res)
+      }
+
       corr_res <- correlation_result()
       corr_content <- if (
         !is.null(corr_res) && !corr_res$success
@@ -163,19 +214,50 @@ server <- function(id, input_data, data_version) {
         )
       }
 
-      bslib$accordion(
-        id = ns("results_accordion"),
-        open = "correlation_panel",
-        multiple = TRUE,
+      # KMO panel content
+      kmo_res <- kmo_result()
+      kmo_content <- if (
+        !is.null(kmo_res) && !kmo_res$success
+      ) {
+        error_display$error_alert_structured(
+          kmo_res$error, type = "danger"
+        )
+      } else if (!is.null(kmo_res)) {
+        kmo_results$render_kmo_results(kmo_res$result)
+      } else {
+        NULL
+      }
+
+      kmo_panel <- if (!is.null(kmo_content)) {
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "grid-3x3", class = "me-1"
+              "speedometer2", class = "me-1"
             ),
-            "Correlation Matrix"
+            "KMO Measure"
           ),
-          value = "correlation_panel",
-          corr_content
+          value = "kmo_panel",
+          kmo_content
+        )
+      }
+
+      shiny$tagList(
+        na_banner,
+        bslib$accordion(
+          id = ns("results_accordion"),
+          open = "correlation_panel",
+          multiple = TRUE,
+          bslib$accordion_panel(
+            title = shiny$tags$span(
+              bsicons$bs_icon(
+                "grid-3x3", class = "me-1"
+              ),
+              "Correlation Matrix"
+            ),
+            value = "correlation_panel",
+            corr_content
+          ),
+          kmo_panel
         )
       )
     })
