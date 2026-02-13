@@ -88,11 +88,8 @@ render_output <- function(input, output, session,
     if (is.null(dim_y)) dim_y <- "Dim.2"
 
     group_cols <- params$group_cols
-    group_col <- if (!is.null(group_cols) &&
-                     length(group_cols) == 1) {
-      group_cols
-    } else {
-      NULL
+    if (is.null(group_cols) || length(group_cols) == 0) {
+      group_cols <- NULL
     }
 
     show_hull <- isTRUE(params$show_hull)
@@ -106,7 +103,7 @@ render_output <- function(input, output, session,
       dim_x = dim_x,
       dim_y = dim_y,
       layer = layer,
-      group_col = group_col,
+      group_cols = group_cols,
       show_convex_hull = show_hull,
       point_alpha = point_alpha,
       point_size = point_size,
