@@ -18,6 +18,7 @@ box::use(
   app/view/components/sidebar_tabs,
   app/view/error_display,
   app/view/pca/actions,
+  app/view/pca/biplot,
   app/view/pca/correlation_plot[render_output],
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
@@ -87,6 +88,12 @@ server <- function(id, input_data, data_version) {
     render_output(
       input, output, session,
       correlation_result = correlation_result
+    )
+
+    # Delegate biplot rendering
+    biplot$render_output(
+      input, output, session,
+      pca_result = pca_result
     )
 
     # Handle Compute PCA button
@@ -205,6 +212,40 @@ server <- function(id, input_data, data_version) {
         meta_cols = meta_cols
       )
       pca_result(pca_res)
+
+      # Update dimension dropdowns to match actual components
+      if (pca_res$success) {
+        dim_choices <- colnames(pca_res$result$var$coord)
+        for (dim_id in c("dimX", "dimY", "dimZ")) {
+          current <- input[[dim_id]]
+          sel <- if (!is.null(current) &&
+                     current %in% dim_choices) {
+            current
+          } else {
+            dim_choices[min(
+              which(dim_id == c("dimX", "dimY", "dimZ")),
+              length(dim_choices)
+            )]
+          }
+          shiny$updateSelectizeInput(
+            session, dim_id,
+            choices = dim_choices,
+            selected = sel
+          )
+        }
+
+        # Update GroupBiplot choices from metadata
+        meta <- pca_res$result$ind$meta
+        if (!is.null(meta) &&
+            !("Row" %in% names(meta) &&
+              ncol(meta) == 1)) {
+          shiny$updateSelectizeInput(
+            session, "GroupBiplot",
+            choices = names(meta),
+            selected = input$GroupBiplot
+          )
+        }
+      }
 
       # Mark that we have results to display
       result(TRUE)
@@ -365,6 +406,28 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Biplot panel content
+      biplot_content <- if (
+        !is.null(pca_res) && isTRUE(pca_res$success)
+      ) {
+        ggiraph$girafeOutput(
+          ns("biplot"), height = "500px"
+        )
+      }
+
+      biplot_panel <- if (!is.null(biplot_content)) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "diagram-2", class = "me-1"
+            ),
+            "Biplot"
+          ),
+          value = "biplot_panel",
+          biplot_content
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -383,7 +446,8 @@ server <- function(id, input_data, data_version) {
           ),
           kmo_panel,
           opt_panel,
-          pca_panel
+          pca_panel,
+          biplot_panel
         )
       )
     })
