@@ -11,6 +11,7 @@ box::use(
   app/logic/pca/correlation_plot[compute_correlation_data],
   app/logic/pca/kmo[calculate_kmo],
   app/logic/pca/na_handling[clean_na_rows],
+  app/logic/pca/optimal_components[calculate_optimal_components],
   app/logic/pca/pca[validate_inputs, run_analysis],
   app/logic/pca/scaling[scale_data],
   app/view/components/sidebar_tabs,
@@ -20,6 +21,7 @@ box::use(
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
   app/view/pca/na_summary,
+  app/view/pca/optimal_components,
   app/view/pca/plotting_controls,
 )
 
@@ -56,6 +58,7 @@ server <- function(id, input_data, data_version) {
     result <- shiny$reactiveVal(NULL)
     correlation_result <- shiny$reactiveVal(NULL)
     kmo_result <- shiny$reactiveVal(NULL)
+    optimal_result <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
@@ -64,6 +67,7 @@ server <- function(id, input_data, data_version) {
       last_error(NULL)
       correlation_result(NULL)
       kmo_result(NULL)
+      optimal_result(NULL)
       na_info(NULL)
       rhino$log$info("PCA: state reset for new data")
     }, ignoreInit = TRUE)
@@ -87,6 +91,7 @@ server <- function(id, input_data, data_version) {
       result(NULL)
       correlation_result(NULL)
       kmo_result(NULL)
+      optimal_result(NULL)
       na_info(NULL)
 
       data <- input_data()
@@ -171,6 +176,18 @@ server <- function(id, input_data, data_version) {
       ]
       kmo_res <- calculate_kmo(numeric_subset)
       kmo_result(kmo_res)
+
+      # Compute optimal number of components
+      rhino$log$info(
+        "PCA: computing optimal components",
+        " ({length(measure_cols)} columns)"
+      )
+      is_scaled <- !is.null(scale_method) &&
+        scale_method == "scale_center"
+      opt_res <- calculate_optimal_components(
+        numeric_subset, scale = is_scaled
+      )
+      optimal_result(opt_res)
 
       # Mark that we have results to display
       result(TRUE)
@@ -264,6 +281,35 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Optimal components panel content
+      opt_res <- optimal_result()
+      opt_content <- if (
+        !is.null(opt_res) && !opt_res$success
+      ) {
+        error_display$error_alert_structured(
+          opt_res$error, type = "danger"
+        )
+      } else if (!is.null(opt_res)) {
+        optimal_components$render_optimal_components(
+          opt_res$result, ns
+        )
+      } else {
+        NULL
+      }
+
+      opt_panel <- if (!is.null(opt_content)) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "sliders", class = "me-1"
+            ),
+            "Optimal Number of Components"
+          ),
+          value = "optimal_panel",
+          opt_content
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -280,8 +326,19 @@ server <- function(id, input_data, data_version) {
             value = "correlation_panel",
             corr_content
           ),
-          kmo_panel
+          kmo_panel,
+          opt_panel
         )
+      )
+    })
+
+    # Render optimal components scree plot
+    output$optimal_scree_plot <- ggiraph$renderGirafe({
+      opt_res <- optimal_result()
+      if (is.null(opt_res)) return(NULL)
+      if (!opt_res$success) return(NULL)
+      optimal_components$render_scree_girafe(
+        opt_res$result
       )
     })
 
