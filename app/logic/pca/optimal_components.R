@@ -36,7 +36,7 @@ calculate_optimal_components <- function(data, scale = TRUE) {
   eig_result <- error_handling$safe_execute(
     expr = {
       cor_matrix <- stats$cor(data, use = "pairwise.complete.obs")
-      stats$eigen(cor_matrix, symmetric = TRUE, only.values = TRUE)$values
+      eigen(cor_matrix, symmetric = TRUE, only.values = TRUE)$values
     },
     operation_name = "Eigenvalue Computation",
     context = error_context,
@@ -196,7 +196,7 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
       stats$rnorm(n * p), nrow = n, ncol = p
     )
     cor_matrix <- stats$cor(random_data)
-    random_eigs[i, ] <- stats$eigen(
+    random_eigs[i, ] <- eigen(
       cor_matrix, symmetric = TRUE, only.values = TRUE
     )$values
   }
@@ -208,7 +208,7 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
 
   # Compute actual eigenvalues from correlation matrix
   actual_cor <- stats$cor(data)
-  actual_eigs <- stats$eigen(
+  actual_eigs <- eigen(
     actual_cor, symmetric = TRUE, only.values = TRUE
   )$values
 
