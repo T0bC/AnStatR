@@ -208,8 +208,8 @@ if (phat == 0 || phat == 1) flag <- FALSE
 dhat <- 1 - 2 * phat
 df <- (S1sq / n2 + S2sq / n1)^2 /
   ((S1sq / n2)^2 / (n1 - 1) + (S2sq / n1)^2 / (n2 - 1))
-sig <- 2 * (1 - pt(abs(bmtest), df))
-if (is.na(crit)) vv <- qt(alpha / 2, df)
+sig <- 2 * (1 - stats::pt(abs(bmtest), df))
+if (is.na(crit)) vv <- stats::qt(alpha / 2, df)
 if (!is.na(crit)) vv <- crit
 ci.p <- c(phat + vv * se / N, phat - vv * se / N)
 ci.p[1] <- max(0, ci.p[1])
