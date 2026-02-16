@@ -73,9 +73,12 @@ render_output <- function(input, output, session,
 
     if (!plot_res$success) return(NULL)
 
-    n_dims <- min(ncp, ncol(pca_res$result$var$contrib))
-    width_svg <- 7
-    height_svg <- 6
+    # SVG sizing for heatmap: width scales with dims,
+    # height scales with variables.
+    n_vars <- nrow(pca_res$result$var$contrib)
+    n_dims_vis <- min(ncp, ncol(pca_res$result$var$contrib))
+    width_svg <- min(max(n_dims_vis * 1.2 + 3, 6), 12)
+    height_svg <- min(max(n_vars * 0.4 + 2, 4), 16)
 
     ggiraph$girafe(
       ggobj = plot_res$result,
