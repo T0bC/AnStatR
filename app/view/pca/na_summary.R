@@ -66,7 +66,6 @@ render_na_summary <- function(na_result) {
   meas_section <- if (has_meas_na) {
     shiny$tags$details(
       class = "mt-1",
-      open = if (na_result$rows_removed > 0) NA,
       shiny$tags$summary(
         class = "small",
         paste0(
