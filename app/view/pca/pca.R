@@ -97,10 +97,18 @@ server <- function(id, input_data, data_version) {
       pca_result = pca_result
     )
 
+    # Reactive: display_ncp for downstream renderers
+    display_ncp <- shiny$reactive({
+      compute_display_ncp(
+        optimal_result(), pca_result()
+      )
+    })
+
     # Delegate variable contribution chart rendering
     var_contrib$render_output(
       input, output, session,
-      pca_result = pca_result
+      pca_result = pca_result,
+      display_ncp = display_ncp
     )
 
     # Handle Compute PCA button
@@ -481,8 +489,14 @@ server <- function(id, input_data, data_version) {
       var_contrib_content <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
-        ggiraph$girafeOutput(
-          ns("var_contrib"), height = "auto"
+        shiny$tagList(
+          ggiraph$girafeOutput(
+            ns("var_contrib"), height = "auto"
+          ),
+          shiny$tags$hr(class = "my-3"),
+          ggiraph$girafeOutput(
+            ns("var_contrib_overview"), height = "auto"
+          )
         )
       }
 
