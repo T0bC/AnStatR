@@ -489,14 +489,8 @@ server <- function(id, input_data, data_version) {
       var_contrib_content <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
-        shiny$tagList(
-          ggiraph$girafeOutput(
-            ns("var_contrib"), height = "auto"
-          ),
-          shiny$tags$hr(class = "my-3"),
-          ggiraph$girafeOutput(
-            ns("var_contrib_overview"), height = "auto"
-          )
+        ggiraph$girafeOutput(
+          ns("var_contrib_circles"), height = "auto"
         )
       }
 
