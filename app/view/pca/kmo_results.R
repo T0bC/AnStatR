@@ -21,38 +21,27 @@ render_kmo_results <- function(kmo_result) {
   overall_kmo <- kmo_result$overall
   individual_kmo <- kmo_result$individual
 
-  bslib$accordion(
-    id = "kmo_accordion",
-    open = "overall_kmo",
-    bslib$accordion_panel(
-      title = shiny$tags$span(
-        bsicons$bs_icon("speedometer2", class = "me-2"),
-        "Overall KMO"
-      ),
-      value = "overall_kmo",
+  shiny$tagList(
+    shiny$tags$div(
+      class = "d-flex align-items-center gap-3 mb-3",
       shiny$tags$div(
-        class = "d-flex align-items-center gap-3",
-        shiny$tags$div(
-          class = paste(
-            "badge fs-5",
-            kmo$kmo_badge_class(overall_kmo)
-          ),
-          sprintf("%.3f", overall_kmo)
+        class = paste(
+          "badge fs-5",
+          kmo$kmo_badge_class(overall_kmo)
         ),
-        shiny$tags$span(
-          class = "text-muted",
-          kmo$kmo_interpretation(overall_kmo)
-        )
+        sprintf("%.3f", overall_kmo)
+      ),
+      shiny$tags$span(
+        class = "text-muted",
+        kmo$kmo_interpretation(overall_kmo)
       )
     ),
-    bslib$accordion_panel(
-      title = shiny$tags$span(
-        bsicons$bs_icon("list-ul", class = "me-2"),
-        "Individual Variable KMO"
-      ),
-      value = "individual_kmo",
-      render_kmo_table(individual_kmo)
-    )
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("list-ul", class = "me-1"),
+      "Individual Variable KMO"
+    ),
+    render_kmo_table(individual_kmo)
   )
 }
 
