@@ -20,6 +20,7 @@ box::use(
   app/view/pca/actions,
   app/view/pca/biplot,
   app/view/pca/correlation_plot[render_output],
+  app/view/pca/eigencorplot,
   app/view/pca/var_contrib,
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
@@ -106,6 +107,13 @@ server <- function(id, input_data, data_version) {
 
     # Delegate variable contribution chart rendering
     var_contrib$render_output(
+      input, output, session,
+      pca_result = pca_result,
+      display_ncp = display_ncp
+    )
+
+    # Delegate eigencorrelation plot rendering
+    eigencorplot$render_output(
       input, output, session,
       pca_result = pca_result,
       display_ncp = display_ncp
@@ -509,6 +517,42 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Eigencorrelation panel: PC dims vs metadata
+      has_real_meta <- if (
+        !is.null(pca_res) && isTRUE(pca_res$success)
+      ) {
+        meta <- pca_res$result$ind$meta
+        !is.null(meta) &&
+          !("Row" %in% names(meta) && ncol(meta) == 1)
+      } else {
+        FALSE
+      }
+
+      eigencor_content <- if (
+        !is.null(pca_res) &&
+        isTRUE(pca_res$success) &&
+        has_real_meta
+      ) {
+        ggiraph$girafeOutput(
+          ns("eigencorplot"), height = "auto"
+        )
+      }
+
+      eigencor_panel <- if (
+        !is.null(eigencor_content)
+      ) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "grid-1x2-fill", class = "me-1"
+            ),
+            "Dimension\u2013Metadata Correlation"
+          ),
+          value = "eigencor_panel",
+          eigencor_content
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -529,7 +573,8 @@ server <- function(id, input_data, data_version) {
           opt_panel,
           pca_panel,
           biplot_panel,
-          var_contrib_panel
+          var_contrib_panel,
+          eigencor_panel
         )
       )
     })
