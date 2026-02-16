@@ -71,10 +71,14 @@ render_output <- function(input, output, session,
 
     if (!plot_res$success) return(NULL)
 
+    # Adaptive height: ~0.4in per variable, clamped [3, 20]
+    n_vars <- nrow(pca_res$result$var$contrib)
+    height_svg <- min(max(n_vars * 0.4 + 1, 3), 20)
+
     ggiraph$girafe(
       ggobj = plot_res$result,
       width_svg = 7,
-      height_svg = 5,
+      height_svg = height_svg,
       options = list(
         ggiraph$opts_hover(
           css = paste0(
