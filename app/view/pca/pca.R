@@ -440,7 +440,7 @@ server <- function(id, input_data, data_version) {
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
         ggiraph$girafeOutput(
-          ns("var_contrib"), height = "450px"
+          ns("var_contrib"), height = "auto"
         )
       }
 
