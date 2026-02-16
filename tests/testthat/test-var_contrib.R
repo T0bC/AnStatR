@@ -5,10 +5,12 @@ box::use(
 
 box::use(
   app/logic/pca/var_contrib,
+  app/logic/pca/var_contrib_legacy,
   app/logic/pca/pca,
 )
 
 impl <- attr(var_contrib, "namespace")
+legacy_impl <- attr(var_contrib_legacy, "namespace")
 
 # =============================================================================
 # Shared test fixtures
@@ -37,7 +39,7 @@ describe("create_var_contrib_plot", {
   pca_res <- make_pca_result()
 
   it("returns a ggplot for Dim.1", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       pca_res, dim = "Dim.1"
     )
     expect_true(res$success)
@@ -45,7 +47,7 @@ describe("create_var_contrib_plot", {
   })
 
   it("returns a ggplot for Dim.2", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       pca_res, dim = "Dim.2"
     )
     expect_true(res$success)
@@ -53,7 +55,7 @@ describe("create_var_contrib_plot", {
   })
 
   it("includes title when show_title = TRUE", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       pca_res, dim = "Dim.1", show_title = TRUE
     )
     expect_true(res$success)
@@ -61,7 +63,7 @@ describe("create_var_contrib_plot", {
   })
 
   it("omits title when show_title = FALSE", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       pca_res, dim = "Dim.1", show_title = FALSE
     )
     expect_true(res$success)
@@ -77,7 +79,7 @@ describe("create_var_contrib_plot error cases", {
   pca_res <- make_pca_result()
 
   it("returns error for NULL pca_result", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       NULL, dim = "Dim.1"
     )
     expect_false(res$success)
@@ -85,7 +87,7 @@ describe("create_var_contrib_plot error cases", {
   })
 
   it("returns error for invalid dimension", {
-    res <- var_contrib$create_var_contrib_plot(
+    res <- var_contrib_legacy$create_var_contrib_plot(
       pca_res, dim = "Dim.99"
     )
     expect_false(res$success)
@@ -131,7 +133,7 @@ describe("build_var_contrib_data", {
   pca_res <- make_pca_result()
 
   it("returns data frame with expected columns", {
-    df <- impl$build_var_contrib_data(pca_res, "Dim.1")
+    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
     expect_true(is.data.frame(df))
     expect_true(all(c(
       "variable", "contrib", "above_avg",
@@ -141,8 +143,8 @@ describe("build_var_contrib_data", {
   })
 
   it("above_avg reflects expected average threshold", {
-    df <- impl$build_var_contrib_data(pca_res, "Dim.1")
-    threshold <- impl$expected_average(pca_res)
+    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
+    threshold <- legacy_impl$expected_average(pca_res)
     above <- df$contrib >= threshold
     expect_equal(
       df$above_avg == "Above average",
@@ -151,7 +153,7 @@ describe("build_var_contrib_data", {
   })
 
   it("contributions are non-negative", {
-    df <- impl$build_var_contrib_data(pca_res, "Dim.1")
+    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
     expect_true(all(df$contrib >= 0))
   })
 })
@@ -169,7 +171,7 @@ describe("axis_label_with_variance", {
   pca_res <- make_pca_result()
 
   it("includes variance percentage", {
-    label <- impl$axis_label_with_variance(
+    label <- legacy_impl$axis_label_with_variance(
       "Dim.1", pca_res$eig
     )
     expect_true(grepl("Dim\\.1", label))
@@ -177,7 +179,7 @@ describe("axis_label_with_variance", {
   })
 
   it("falls back for unknown dimension", {
-    label <- impl$axis_label_with_variance(
+    label <- legacy_impl$axis_label_with_variance(
       "Dim.99", pca_res$eig
     )
     expect_equal(label, "Dim.99")
