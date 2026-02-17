@@ -369,7 +369,41 @@ server <- function(id, input_data, data_version) {
         )
       }
 
-      # Results placeholder
+      # Cluster results panel
+      res <- result()
+      cluster_results_panel <- if (!is.null(res)) {
+        algo_label <- switch(
+          res$details$variant,
+          kmeans = "K-Means",
+          pam    = "K-Means (PAM)",
+          hclust = "Hierarchical",
+          dbscan = "DBSCAN",
+          res$algorithm
+        )
+        results_title <- shiny$tags$span(
+          bsicons$bs_icon(
+            "pie-chart", class = "me-1"
+          ),
+          "Cluster Results",
+          shiny$tags$span(
+            class = "mx-1", "\u2014"
+          ),
+          shiny$tags$span(
+            class = "badge bg-success me-1",
+            algo_label
+          ),
+          shiny$tags$span(
+            class = "badge bg-primary",
+            paste0("k=", res$n_clusters)
+          )
+        )
+        bslib$accordion_panel(
+          title = results_title,
+          value = "cluster_results",
+          cluster_results$render_cluster_results(res)
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
