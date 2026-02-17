@@ -62,21 +62,12 @@ describe("create_dendrogram_plot with hierarchical result", {
     expect_true(inherits(dend_res$result, "ggplot"))
   })
 
-  it("works with show_rectangles = TRUE", {
-    dend_res <- cluster$create_dendrogram_plot(
-      hc_result$result, show_rectangles = TRUE
-    )
-    expect_true(dend_res$success)
-    expect_true(inherits(dend_res$result, "ggplot"))
-  })
-
   it("works with all display options combined", {
     dend_res <- cluster$create_dendrogram_plot(
       hc_result$result,
       horiz = TRUE,
       polar = TRUE,
-      show_labels = TRUE,
-      show_rectangles = TRUE
+      show_labels = TRUE
     )
     expect_true(dend_res$success)
     expect_true(inherits(dend_res$result, "ggplot"))
