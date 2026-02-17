@@ -6,14 +6,13 @@ box::use(
 )
 
 box::use(
+  app/view/cluster/clustering_settings,
+  app/view/cluster/data_selection,
+  app/view/cluster/display_options,
   app/logic/cluster,
   app/logic/error_handling,
   app/view/components/sidebar_tabs,
   app/view/error_display,
-  app/view/cluster/data_selection,
-  app/view/cluster/clustering_settings,
-  app/view/cluster/display_options,
-  app/view/cluster/actions,
 )
 
 #' @export
@@ -26,8 +25,7 @@ ui <- function(id) {
     tabs = list(
       data_selection$tab_ui(ns),
       clustering_settings$tab_ui(ns),
-      display_options$tab_ui(ns),
-      actions$tab_ui(ns)
+      display_options$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$actionButton(
