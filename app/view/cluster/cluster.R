@@ -3,6 +3,7 @@ box::use(
   bslib,
   ggiraph,
   ggplot2,
+  openxlsx,
   rhino,
   shiny,
 )
@@ -52,6 +53,7 @@ server <- function(id, input_data, data_version) {
 
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
+    membership_data <- shiny$reactiveVal(NULL)
     hopkins_result <- shiny$reactiveVal(NULL)
     optimal_result <- shiny$reactiveVal(NULL)
     last_optimal_plot <- shiny$reactiveVal(NULL)
@@ -62,6 +64,7 @@ server <- function(id, input_data, data_version) {
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
       result(NULL)
+      membership_data(NULL)
       last_error(NULL)
       hopkins_result(NULL)
       optimal_result(NULL)
@@ -237,6 +240,14 @@ server <- function(id, input_data, data_version) {
 
       if (clustering_result$success) {
         result(clustering_result$result)
+
+        # Build membership data from RAW cleaned data
+        # Only include user-selected metadata + measure cols
+        keep_cols <- c(meta_cols, measure_cols)
+        md <- cleaned_data[, keep_cols, drop = FALSE]
+        md$Cluster <- clustering_result$result$clusters
+        membership_data(md)
+
         rhino$log$info(
           "Cluster: clustering completed successfully"
         )
@@ -400,7 +411,9 @@ server <- function(id, input_data, data_version) {
         bslib$accordion_panel(
           title = results_title,
           value = "cluster_results",
-          cluster_results$render_cluster_results(res)
+          cluster_results$render_cluster_results(
+            res, ns, membership_df = membership_data()
+          )
         )
       }
 
@@ -436,6 +449,45 @@ server <- function(id, input_data, data_version) {
     register_plot_downloads(
       output, input, "optimal",
       last_optimal_plot, "Optimal_Clusters"
+    )
+
+    # Download handler: Excel with Membership + Profile sheets
+    output$cluster_dl_excel <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "cluster_results_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".xlsx"
+        )
+      },
+      content = function(file) {
+        res <- result()
+        md <- membership_data()
+        shiny$req(res, md)
+
+        # Build profile sheet
+        cs <- res$cluster_summary
+        profile_df <- as.data.frame(
+          round(cs$means, 4)
+        )
+        profile_df <- cbind(
+          Cluster = cs$cluster_ids,
+          n = cs$n_per_cluster,
+          profile_df
+        )
+
+        wb <- openxlsx$createWorkbook()
+        openxlsx$addWorksheet(wb, "Membership")
+        openxlsx$writeData(wb, "Membership", md)
+        openxlsx$addWorksheet(wb, "Cluster Profile")
+        openxlsx$writeData(
+          wb, "Cluster Profile", profile_df
+        )
+        openxlsx$saveWorkbook(wb, file)
+        rhino$log$info(
+          "Download: Cluster results Excel"
+        )
+      }
     )
 
     # Return for downstream modules (or invisible(NULL) if none)
