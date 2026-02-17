@@ -23,6 +23,7 @@ box::use(
   app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],
   app/view/pca/eigencorplot,
+  app/view/pca/ind_contrib,
   app/view/pca/var_contrib,
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
@@ -115,6 +116,13 @@ server <- function(id, input_data, data_version) {
 
     # Delegate variable contribution chart rendering
     var_contrib$render_output(
+      input, output, session,
+      pca_result = pca_result,
+      display_ncp = display_ncp
+    )
+
+    # Delegate individual contribution plot rendering
+    ind_contrib$render_output(
       input, output, session,
       pca_result = pca_result,
       display_ncp = display_ncp
@@ -558,6 +566,30 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Individual contribution jitter plot panel
+      ind_contrib_content <- if (
+        !is.null(pca_res) && isTRUE(pca_res$success)
+      ) {
+        ggiraph$girafeOutput(
+          ns("ind_contrib_plot"), height = "auto"
+        )
+      }
+
+      ind_contrib_panel <- if (
+        !is.null(ind_contrib_content)
+      ) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "people-fill", class = "me-1"
+            ),
+            "Individual Contributions"
+          ),
+          value = "ind_contrib_panel",
+          ind_contrib_content
+        )
+      }
+
       # Eigencorrelation panel: PC dims vs metadata
       has_real_meta <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
@@ -616,6 +648,7 @@ server <- function(id, input_data, data_version) {
           biplot_panel,
           biplot3d_panel,
           var_contrib_panel,
+          ind_contrib_panel,
           eigencor_panel
         )
       )
