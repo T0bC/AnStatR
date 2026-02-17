@@ -6,12 +6,12 @@ library(cluster)
 library(dbscan)
 
 # ── Settings (change these) ──────────────────────────────────────────────────
-file_path <- "data/test/PCA_TestData_group_size.xlsx"
+file_path <- "C:/Users/meissnerto/Desktop/TexAn2.0/data/test/PCA_TestData_group_size.xlsx"
 measure_cols <- c("value1", "value2", "value3", "value4",
                   "value5", "value6", "value7", "value8")
-meta_cols <- c("group", "size")
+meta_cols <- c("GROUP", "TREATMENT")
 
-algorithm <- "kmeans"        # "kmeans", "hierarchical", "dbscan"
+algorithm <- "dbscan"        # "kmeans", "hierarchical", "dbscan"
 n_clusters <- 2
 metric <- "euclidean"        # "euclidean", "manhattan"
 hc_method <- "ward.D2"       # ward.D2, single, complete, average, mcquitty, median, centroid
@@ -62,6 +62,10 @@ if (algorithm == "kmeans") {
   cat("── DBSCAN ──\n")
   print(str(db))
 }
+
+summary(db)
+
+summary(hc)
 
 cat("\nCluster assignments:\n")
 print(table(clusters))
