@@ -67,14 +67,12 @@ render_output <- function(input, output, session,
     horiz <- isTRUE(input$horizDendro)
     polar <- isTRUE(input$polarDend)
     show_labels <- isTRUE(input$showLabels)
-    show_rect <- isTRUE(input$showRectangles)
 
     plot_result <- create_dendrogram_plot(
       res,
       horiz = horiz,
       polar = polar,
-      show_labels = show_labels,
-      show_rectangles = show_rect
+      show_labels = show_labels
     )
 
     if (!plot_result$success) {
