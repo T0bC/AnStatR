@@ -12,6 +12,7 @@ box::use(
   app/logic/error_handling,
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
+  app/view/cluster/cluster_results,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
   app/view/cluster/display_options,
@@ -377,37 +378,7 @@ server <- function(id, input_data, data_version) {
           multiple = TRUE,
           hopkins_panel,
           opt_panel,
-          bslib$accordion_panel(
-            title = shiny$tags$span(
-              bsicons$bs_icon("pie-chart", class = "me-1"),
-              "Cluster Results"
-            ),
-            value = "cluster_results",
-            shiny$tags$div(
-              class = "text-center p-4",
-              shiny$tags$p("Cluster analysis results will be displayed here."),
-              shiny$tags$div(
-                class = "row g-2",
-                shiny$tags$div(
-                  class = "col-md-6",
-                  shiny$tags$p(
-                    "Algorithm: ", shiny$tags$code(result()$algorithm),
-                    ", Clusters: ", shiny$tags$code(result()$n_clusters)
-                  )
-                ),
-                shiny$tags$div(
-                  class = "col-md-6",
-                  shiny$tags$p(
-                    "Metric: ", shiny$tags$code(input$cluster_metric),
-                    ", Method: ", shiny$tags$code(input$cluster_method)
-                  )
-                )
-              ),
-              shiny$tags$p(
-                "Data points clustered: ", shiny$tags$code(nrow(result()$data))
-              )
-            )
-          )
+          cluster_results_panel
         )
       )
     })
