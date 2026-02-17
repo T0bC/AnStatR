@@ -2,6 +2,7 @@ box::use(
   bsicons,
   bslib,
   ggiraph,
+  plotly,
   rhino,
   shiny,
 )
@@ -19,6 +20,7 @@ box::use(
   app/view/error_display,
   app/view/pca/actions,
   app/view/pca/biplot,
+  app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],
   app/view/pca/eigencorplot,
   app/view/pca/var_contrib,
@@ -94,6 +96,12 @@ server <- function(id, input_data, data_version) {
 
     # Delegate biplot rendering
     biplot$render_output(
+      input, output, session,
+      pca_result = pca_result
+    )
+
+    # Delegate 3D biplot rendering
+    biplot3d_state <- biplot3d$render_output(
       input, output, session,
       pca_result = pca_result
     )
@@ -493,6 +501,39 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # 3D Biplot panel content
+      biplot3d_err <- biplot3d_state$error()
+      biplot3d_content <- if (
+        error_handling$is_app_error(biplot3d_err)
+      ) {
+        error_display$error_alert_structured(
+          biplot3d_err, type = "danger"
+        )
+      } else if (
+        !is.null(pca_res) &&
+        isTRUE(pca_res$success) &&
+        ncol(pca_res$result$var$coord) >= 3
+      ) {
+        plotly$plotlyOutput(
+          ns("biplot3d"), height = "600px"
+        )
+      }
+
+      biplot3d_panel <- if (
+        !is.null(biplot3d_content)
+      ) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "badge-3d", class = "me-1"
+            ),
+            "3D Biplot"
+          ),
+          value = "biplot3d_panel",
+          biplot3d_content
+        )
+      }
+
       # Variable contribution chart panel
       var_contrib_content <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
@@ -573,6 +614,7 @@ server <- function(id, input_data, data_version) {
           opt_panel,
           pca_panel,
           biplot_panel,
+          biplot3d_panel,
           var_contrib_panel,
           eigencor_panel
         )
