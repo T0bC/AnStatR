@@ -10,6 +10,8 @@ box::use(
 box::use(
   app/logic/cluster,
   app/logic/error_handling,
+  app/logic/pca/na_handling[clean_na_rows],
+  app/logic/pca/scaling[scale_data],
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
   app/view/cluster/display_options,
@@ -89,27 +91,79 @@ server <- function(id, input_data, data_version) {
       distance_result(NULL)
 
       data <- input_data()
-      selected_columns <- input$measureVar
+      measure_cols <- input$measureVar
       n_clusters <- input$n_clusters
       algorithm <- input$algorithm
       cluster_metric <- input$cluster_metric
       scale_method <- input$scale_method
 
       # Validate inputs
-      validation <- cluster$validate_inputs(selected_columns, data)
+      validation <- cluster$validate_inputs(measure_cols, data)
       if (!validation$valid) {
         last_error(validation$error)
         return()
       }
 
-      # Compute distance matrix
+      # Clean NAs in measurement columns (following PCA pattern)
+      meta_cols <- input$metaData
+      if (is.null(meta_cols)) meta_cols <- character(0)
+      
+      rhino$log$info(
+        "Cluster: cleaning NA rows",
+        " ({length(measure_cols)} measurement columns)"
+      )
+      na_result <- clean_na_rows(
+        data, measure_cols, meta_cols
+      )
+      cleaned_data <- na_result$data
+
+      if (nrow(cleaned_data) < 2) {
+        last_error(error_handling$simple_error(
+          message = paste(
+            "After removing rows with missing values,",
+            "fewer than 2 rows remain.",
+            "Consider deselecting columns with many NAs."
+          ),
+          operation_name = "Cluster Data Preparation",
+          context = list(
+            rows_before = na_result$rows_before,
+            rows_removed = na_result$rows_removed,
+            rows_after = na_result$rows_after
+          )
+        ))
+        return()
+      }
+
+      # Scale data based on user selection (following PCA pattern)
+      analysis_data <- cleaned_data
+      if (!is.null(scale_method) && scale_method != "none") {
+        do_center <- scale_method %in%
+          c("scale_center", "center_only")
+        do_scale <- scale_method == "scale_center"
+        
+        rhino$log$info(
+          "Cluster: scaling data",
+          " (center={do_center}, scale={do_scale})"
+        )
+        scale_res <- scale_data(
+          cleaned_data, measure_cols,
+          center = do_center, scale = do_scale
+        )
+        if (!scale_res$success) {
+          last_error(scale_res$error)
+          return()
+        }
+        analysis_data <- scale_res$result
+      }
+
+      # Compute distance matrix on prepared data
       rhino$log$info(
         "Cluster: computing distance matrix",
-        " ({length(selected_columns)} columns,",
-        " {nrow(data)} samples, {cluster_metric} metric)"
+        " ({length(measure_cols)} columns,",
+        " {nrow(analysis_data)} samples, {cluster_metric} metric)"
       )
       dist_res <- cluster$compute_distance_matrix(
-        data, selected_columns, cluster_metric, scale_method
+        analysis_data, measure_cols, cluster_metric
       )
       distance_result(dist_res)
 
@@ -118,9 +172,9 @@ server <- function(id, input_data, data_version) {
         return()
       }
 
-      # Run clustering analysis
+      # Run clustering analysis on prepared data
       clustering_result <- cluster$run_clustering(
-        data, selected_columns, n_clusters, algorithm
+        analysis_data, measure_cols, n_clusters, algorithm
       )
 
       if (clustering_result$success) {
