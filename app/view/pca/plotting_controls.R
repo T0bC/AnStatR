@@ -246,7 +246,7 @@ tab_ui <- function(ns) {
               )
             )
           ),
-          value = 8,
+          value = 16,
           min = 1,
           max = 50
         )
@@ -270,7 +270,7 @@ tab_ui <- function(ns) {
               )
             )
           ),
-          value = 8,
+          value = 10,
           min = 1,
           max = 50
         )
