@@ -25,6 +25,8 @@ render_output <- function(input, output, session,
                           pca_result) {
   ns <- session$ns
 
+  last_plot <- shiny$reactiveVal(NULL)
+
   # Unified debounced params: bundle all sidebar inputs
   # into one reactive with a single debounce to avoid
   # oscillation when inputs change in quick succession.
@@ -112,6 +114,8 @@ render_output <- function(input, output, session,
 
     if (!plot_res$success) return(NULL)
 
+    last_plot(plot_res$result)
+
     ggiraph$girafe(
       ggobj = plot_res$result,
       width_svg = 7,
@@ -136,4 +140,6 @@ render_output <- function(input, output, session,
       )
     )
   })
+
+  list(plot = last_plot)
 }
