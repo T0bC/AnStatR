@@ -221,13 +221,42 @@ server <- function(id, input_data, data_version) {
       # Hopkins clusterability panel content
       h_res <- hopkins_result()
       hopkins_panel <- if (!is.null(h_res)) {
-        bslib$accordion_panel(
-          title = shiny$tags$span(
+        hopkins_title <- if (isTRUE(h_res$success)) {
+          interp <- h_res$result$interpretation
+          badge_class <- switch(
+            interp$level,
+            success = "bg-success",
+            warning = "bg-warning text-dark",
+            danger  = "bg-danger",
+            "bg-secondary"
+          )
+          shiny$tags$span(
+            bsicons$bs_icon(
+              "clipboard-data", class = "me-1"
+            ),
+            "Clusterability (Hopkins)",
+            shiny$tags$span(
+              class = "mx-1", "\u2014"
+            ),
+            shiny$tags$span(
+              class = paste("badge", badge_class),
+              sprintf("%.4f", h_res$result$H)
+            ),
+            shiny$tags$small(
+              class = "text-muted ms-1",
+              interp$label
+            )
+          )
+        } else {
+          shiny$tags$span(
             bsicons$bs_icon(
               "clipboard-data", class = "me-1"
             ),
             "Clusterability (Hopkins)"
-          ),
+          )
+        }
+        bslib$accordion_panel(
+          title = hopkins_title,
           value = "hopkins_panel",
           shiny$uiOutput(ns("hopkins_panel"))
         )
