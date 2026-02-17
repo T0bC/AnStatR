@@ -15,8 +15,7 @@ box::use(
 #'   (the $result field, not the wrapper)
 #' @return Shiny tagList with formatted cluster display
 #' @export
-render_cluster_results <- function(cluster_result, ns,
-                                   membership_df = NULL) {
+render_cluster_results <- function(cluster_result, ns) {
   if (is.null(cluster_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
