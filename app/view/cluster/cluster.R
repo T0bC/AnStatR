@@ -226,8 +226,12 @@ server <- function(id, input_data, data_version) {
       }
 
       # Run clustering analysis on prepared data
+      cluster_method <- input$cluster_method
       clustering_result <- cluster$run_clustering(
-        analysis_data, measure_cols, n_clusters, algorithm
+        analysis_data, measure_cols, n_clusters,
+        algorithm = algorithm,
+        metric = cluster_metric,
+        method = cluster_method
       )
 
       if (clustering_result$success) {
