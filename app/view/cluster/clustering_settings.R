@@ -23,7 +23,11 @@ tab_ui <- function(ns) {
         "Number of clusters ",
         bslib$tooltip(
           bsicons$bs_icon("info-circle", class = "text-muted"),
-          "Specify the number of clusters to create."
+          paste(
+            "Number of clusters for the analysis.",
+            "Automatically set to the optimal value",
+            "on first run. Change manually to override."
+          )
         )
       ),
       value = 3,
