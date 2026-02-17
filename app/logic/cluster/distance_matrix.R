@@ -7,7 +7,6 @@ box::use(
 
 box::use(
   app/logic/error_handling,
-  app/logic/pca/scaling,
 )
 
 # =============================================================================
@@ -17,17 +16,16 @@ box::use(
 
 #' Compute distance matrix data for plotting
 #'
-#' Validates inputs, scales data, and computes the distance matrix with
-#' hierarchical clustering. Returns a safe_execute result with
-#' dist_long (long-format data frame) and ordered_samples.
+#' Validates inputs and computes the distance matrix with
+#' hierarchical clustering. Expects data to be already cleaned
+#' (NAs removed) and scaled as needed by the caller.
 #'
-#' @param data Data frame containing the measurement columns
+#' @param data Data frame containing the measurement columns (already cleaned and scaled)
 #' @param measurement_cols Character vector of column names
 #' @param metric Character, distance metric ("euclidean" or "manhattan")
-#' @param scale_method Character, scaling method ("scale_center", "center_only", "none")
 #' @return List with $success, $result or $error
 #' @export
-compute_distance_matrix <- function(data, measurement_cols, metric, scale_method) {
+compute_distance_matrix <- function(data, measurement_cols, metric) {
   error_handling$safe_execute(
     expr = {
       validate_distance_inputs(data, measurement_cols, metric)
@@ -35,11 +33,8 @@ compute_distance_matrix <- function(data, measurement_cols, metric, scale_method
       # Extract measurement data
       dist_data <- data[, measurement_cols, drop = FALSE]
       
-      # Apply scaling
-      scaled_data <- apply_scaling(dist_data, scale_method)
-      
       # Compute distance matrix
-      dist_matrix <- compute_dist_matrix(scaled_data, metric)
+      dist_matrix <- compute_dist_matrix(dist_data, metric)
       
       # Order samples using hierarchical clustering
       ordered_samples <- cluster_samples(dist_matrix)
@@ -62,8 +57,7 @@ compute_distance_matrix <- function(data, measurement_cols, metric, scale_method
     context = list(
       n_samples = nrow(data),
       n_columns = length(measurement_cols),
-      metric = metric,
-      scale_method = scale_method
+      metric = metric
     ),
     error_parser = distance_error_parser
   )
@@ -287,13 +281,8 @@ validate_distance_inputs <- function(data, measurement_cols, metric) {
     ))
   }
   
-  complete_rows <- stats$complete.cases(dist_data)
-  if (sum(complete_rows) < 2) {
-    stop(
-      "Not enough complete observations ",
-      "(need at least 2) to compute distances"
-    )
-  }
+  # Note: NA checks removed - data should be cleaned upstream
+  # following PCA module pattern
   
   valid_metrics <- c("euclidean", "manhattan")
   if (!metric %in% valid_metrics) {
@@ -306,37 +295,21 @@ validate_distance_inputs <- function(data, measurement_cols, metric) {
   invisible(TRUE)
 }
 
-apply_scaling <- function(data, scale_method) {
-  if (is.null(scale_method) || scale_method == "none") {
-    return(data)
-  }
-  
-  if (scale_method == "scale_center") {
-    return(as.data.frame(scale(data, center = TRUE, scale = TRUE)))
-  } else if (scale_method == "center_only") {
-    return(as.data.frame(scale(data, center = TRUE, scale = FALSE)))
-  }
-  
-  data
-}
-
 compute_dist_matrix <- function(data, metric) {
-  # Remove rows with any NA values
-  complete_data <- data[stats$complete.cases(data), ]
-  
-  if (nrow(complete_data) < 2) {
-    stop("Not enough complete observations after removing NAs")
+  # Data should already be cleaned (NAs removed) and scaled upstream
+  if (nrow(data) < 2) {
+    stop("Not enough observations to compute distances")
   }
   
   # Compute distance matrix
-  dist_obj <- stats$dist(complete_data, method = metric)
+  dist_obj <- stats$dist(data, method = metric)
   dist_matrix <- as.matrix(dist_obj)
   
   # Set row and column names
-  if (is.null(rownames(complete_data))) {
-    sample_names <- paste0("Sample_", seq_len(nrow(complete_data)))
+  if (is.null(rownames(data))) {
+    sample_names <- paste0("Sample_", seq_len(nrow(data)))
   } else {
-    sample_names <- rownames(complete_data)
+    sample_names <- rownames(data)
   }
   
   rownames(dist_matrix) <- sample_names
