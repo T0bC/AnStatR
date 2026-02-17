@@ -110,55 +110,36 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
         has_alpha_map <- "alpha_val" %in% names(ind_data)
         has_size_map <- "size_val" %in% names(ind_data)
 
-        # Build aes for individuals
-        ind_aes <- if (has_group && has_alpha_map &&
-                       has_size_map) {
+        # Ensure fill column exists for shape 21
+        if (!has_group) {
+          ind_data$group <- factor("All")
+        }
+
+        # Build aes for individuals (fill for shape 21)
+        ind_aes <- if (has_alpha_map && has_size_map) {
           ggplot2$aes(
             x = x, y = y,
             tooltip = tooltip, data_id = data_id,
-            color = group,
-            alpha = alpha_val, size = size_val
-          )
-        } else if (has_group && has_alpha_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            color = group, alpha = alpha_val
-          )
-        } else if (has_group && has_size_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            color = group, size = size_val
-          )
-        } else if (has_group) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            color = group
-          )
-        } else if (has_alpha_map && has_size_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
+            fill = group,
             alpha = alpha_val, size = size_val
           )
         } else if (has_alpha_map) {
           ggplot2$aes(
             x = x, y = y,
             tooltip = tooltip, data_id = data_id,
-            alpha = alpha_val
+            fill = group, alpha = alpha_val
           )
         } else if (has_size_map) {
           ggplot2$aes(
             x = x, y = y,
             tooltip = tooltip, data_id = data_id,
-            size = size_val
+            fill = group, size = size_val
           )
         } else {
           ggplot2$aes(
             x = x, y = y,
-            tooltip = tooltip, data_id = data_id
+            tooltip = tooltip, data_id = data_id,
+            fill = group
           )
         }
 
@@ -174,10 +155,27 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
         p <- p + do.call(
           ggiraph$geom_point_interactive,
           c(
-            list(data = ind_data, mapping = ind_aes),
+            list(
+              data = ind_data,
+              mapping = ind_aes,
+              shape = 21,
+              color = "white",
+              stroke = 0.6
+            ),
             fixed_aes
           )
         )
+
+        # Hide legend when no real grouping
+        if (!has_group) {
+          p <- p +
+            ggplot2$scale_fill_manual(
+              values = "steelblue"
+            ) +
+            ggplot2$guides(fill = "none")
+        } else {
+          p <- p + ggplot2$labs(fill = "Group")
+        }
 
         # Scale guides for contribution mapping
         if (has_alpha_map) {
@@ -236,10 +234,14 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
               p <- p + ggplot2$stat_ellipse(
                 data = ellipse_data,
                 ggplot2$aes(
-                  x = x, y = y, color = group
+                  x = x, y = y, colour = group
                 ),
                 level = 0.95,
                 show.legend = FALSE
+              )
+              # Sync ellipse colour scale with fill scale
+              p <- p + ggplot2$scale_color_discrete(
+                guide = "none"
               )
             }
           }
