@@ -2,6 +2,7 @@ box::use(
   bsicons,
   bslib,
   ggiraph,
+  ggplot2,
   plotly,
   rhino,
   shiny,
@@ -90,13 +91,13 @@ server <- function(id, input_data, data_version) {
     )
 
     # Delegate correlation plot rendering
-    render_output(
+    corr_state <- render_output(
       input, output, session,
       correlation_result = correlation_result
     )
 
     # Delegate biplot rendering
-    biplot$render_output(
+    biplot_state <- biplot$render_output(
       input, output, session,
       pca_result = pca_result
     )
@@ -115,24 +116,46 @@ server <- function(id, input_data, data_version) {
     })
 
     # Delegate variable contribution chart rendering
-    var_contrib$render_output(
+    var_contrib_state <- var_contrib$render_output(
       input, output, session,
       pca_result = pca_result,
       display_ncp = display_ncp
     )
 
     # Delegate individual contribution plot rendering
-    ind_contrib$render_output(
+    ind_contrib_state <- ind_contrib$render_output(
       input, output, session,
       pca_result = pca_result,
       display_ncp = display_ncp
     )
 
     # Delegate eigencorrelation plot rendering
-    eigencorplot$render_output(
+    eigencor_state <- eigencorplot$render_output(
       input, output, session,
       pca_result = pca_result,
       display_ncp = display_ncp
+    )
+
+    # Register plot download handlers
+    register_plot_downloads(
+      output, input, "corr",
+      corr_state$plot, "Correlation_Matrix"
+    )
+    register_plot_downloads(
+      output, input, "biplot",
+      biplot_state$plot, "Biplot"
+    )
+    register_plot_downloads(
+      output, input, "var_contrib",
+      var_contrib_state$plot, "Variable_Contributions"
+    )
+    register_plot_downloads(
+      output, input, "ind_contrib",
+      ind_contrib_state$plot, "Individual_Contributions"
+    )
+    register_plot_downloads(
+      output, input, "eigencor",
+      eigencor_state$plot, "Dimension_Metadata_Correlation"
     )
 
     # Handle Compute PCA button
@@ -505,7 +528,8 @@ server <- function(id, input_data, data_version) {
             "Biplot"
           ),
           value = "biplot_panel",
-          biplot_content
+          biplot_content,
+          download_buttons(ns, "biplot")
         )
       }
 
@@ -562,7 +586,8 @@ server <- function(id, input_data, data_version) {
             "Variable Contributions"
           ),
           value = "var_contrib_panel",
-          var_contrib_content
+          var_contrib_content,
+          download_buttons(ns, "var_contrib")
         )
       }
 
@@ -586,7 +611,8 @@ server <- function(id, input_data, data_version) {
             "Individual Contributions"
           ),
           value = "ind_contrib_panel",
-          ind_contrib_content
+          ind_contrib_content,
+          download_buttons(ns, "ind_contrib")
         )
       }
 
@@ -622,7 +648,8 @@ server <- function(id, input_data, data_version) {
             "Dimension\u2013Metadata Correlation"
           ),
           value = "eigencor_panel",
-          eigencor_content
+          eigencor_content,
+          download_buttons(ns, "eigencor")
         )
       }
 
@@ -640,7 +667,8 @@ server <- function(id, input_data, data_version) {
               "Correlation Matrix"
             ),
             value = "correlation_panel",
-            corr_content
+            corr_content,
+            download_buttons(ns, "corr")
           ),
           kmo_panel,
           opt_panel,
@@ -746,4 +774,84 @@ compute_display_ncp <- function(opt_res, pca_res) {
   }
 
   as.integer(display)
+}
+
+#' Create SVG + PNG download buttons for an accordion panel
+#'
+#' @param ns Namespace function
+#' @param id_prefix Character, e.g. "corr", "biplot"
+#' @return tagList with two download buttons
+download_buttons <- function(ns, id_prefix) {
+  shiny$tags$div(
+    class = "d-flex gap-2 mt-2",
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_svg")),
+      label = shiny$tags$span(
+        bsicons$bs_icon("filetype-svg", class = "me-1"),
+        "SVG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    ),
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_png")),
+      label = shiny$tags$span(
+        bsicons$bs_icon("filetype-png", class = "me-1"),
+        "PNG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    )
+  )
+}
+
+#' Register SVG + PNG download handlers for a plot
+#'
+#' @param output Shiny output object
+#' @param input Shiny input object
+#' @param id_prefix Character, e.g. "corr", "biplot"
+#' @param plot_reactive reactiveVal returning a ggplot
+#' @param filename_base Character, base name for the file
+register_plot_downloads <- function(output, input,
+                                    id_prefix,
+                                    plot_reactive,
+                                    filename_base) {
+  output[[paste0(id_prefix, "_dl_svg")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".svg")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "svg",
+          width = w, height = h, units = "cm"
+        )
+        rhino$log$info(
+          "Download: SVG '{filename_base}'"
+        )
+      }
+    )
+
+  output[[paste0(id_prefix, "_dl_png")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".png")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "png",
+          width = w, height = h,
+          units = "cm", dpi = 600
+        )
+        rhino$log$info(
+          "Download: PNG '{filename_base}'"
+        )
+      }
+    )
 }
