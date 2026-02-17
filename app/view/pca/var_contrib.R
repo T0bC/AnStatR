@@ -24,6 +24,8 @@ render_output <- function(input, output, session,
                           pca_result, display_ncp = NULL) {
   ns <- session$ns
 
+  last_plot <- shiny$reactiveVal(NULL)
+
   # Debounced params for title input
   cached_params <- shiny$reactiveVal(NULL)
 
@@ -73,6 +75,8 @@ render_output <- function(input, output, session,
 
     if (!plot_res$success) return(NULL)
 
+    last_plot(plot_res$result)
+
     # SVG sizing for heatmap: width scales with dims,
     # height scales with variables.
     n_vars <- nrow(pca_res$result$var$contrib)
@@ -104,4 +108,6 @@ render_output <- function(input, output, session,
       )
     )
   })
+
+  list(plot = last_plot)
 }
