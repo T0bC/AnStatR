@@ -1,6 +1,8 @@
 box::use(
   bsicons,
   bslib,
+  ggiraph,
+  ggplot2,
   rhino,
   shiny,
 )
@@ -14,6 +16,7 @@ box::use(
   app/view/cluster/data_selection,
   app/view/cluster/display_options,
   app/view/cluster/hopkins,
+  app/view/cluster/optimal_clusters,
   app/view/components/sidebar_tabs,
   app/view/error_display,
   app/view/pca/na_summary,
@@ -49,6 +52,8 @@ server <- function(id, input_data, data_version) {
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
     hopkins_result <- shiny$reactiveVal(NULL)
+    optimal_result <- shiny$reactiveVal(NULL)
+    last_optimal_plot <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
@@ -56,6 +61,8 @@ server <- function(id, input_data, data_version) {
       result(NULL)
       last_error(NULL)
       hopkins_result(NULL)
+      optimal_result(NULL)
+      last_optimal_plot(NULL)
       na_info(NULL)
       rhino$log$info("Cluster: state reset for new data")
     }, ignoreInit = TRUE)
@@ -90,6 +97,7 @@ server <- function(id, input_data, data_version) {
       last_error(NULL)
       result(NULL)
       hopkins_result(NULL)
+      optimal_result(NULL)
 
       data <- input_data()
       measure_cols <- input$measureVar
@@ -174,6 +182,17 @@ server <- function(id, input_data, data_version) {
         return()
       }
 
+      # Compute optimal number of clusters
+      rhino$log$info(
+        "Cluster: computing optimal clusters",
+        " ({length(measure_cols)} columns,",
+        " {nrow(analysis_data)} samples)"
+      )
+      opt_res <- cluster$compute_optimal_clusters(
+        analysis_data, measure_cols
+      )
+      optimal_result(opt_res)
+
       # Run clustering analysis on prepared data
       clustering_result <- cluster$run_clustering(
         analysis_data, measure_cols, n_clusters, algorithm
@@ -218,7 +237,7 @@ server <- function(id, input_data, data_version) {
         na_summary$render_na_summary(na_res)
       }
 
-      # Hopkins clusterability panel content
+      # Hopkins clusterability panel
       h_res <- hopkins_result()
       hopkins_panel <- if (!is.null(h_res)) {
         hopkins_title <- if (isTRUE(h_res$success)) {
@@ -262,6 +281,57 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Optimal clusters panel
+      opt_res <- optimal_result()
+      opt_content <- if (
+        !is.null(opt_res) && !opt_res$success
+      ) {
+        error_display$error_alert_structured(
+          opt_res$error, type = "danger"
+        )
+      } else if (!is.null(opt_res)) {
+        optimal_clusters$render_optimal_clusters(
+          opt_res$result, ns
+        )
+      } else {
+        NULL
+      }
+
+      opt_panel <- if (!is.null(opt_content)) {
+        opt_title <- if (
+          !is.null(opt_res) &&
+          isTRUE(opt_res$success) &&
+          !is.null(opt_res$result$summary$median_k)
+        ) {
+          shiny$tags$span(
+            bsicons$bs_icon(
+              "sliders", class = "me-1"
+            ),
+            "Optimal Number of Clusters",
+            shiny$tags$span(
+              class = "mx-1", "\u2014"
+            ),
+            shiny$tags$span(
+              class = "badge bg-primary",
+              opt_res$result$summary$median_k
+            )
+          )
+        } else {
+          shiny$tags$span(
+            bsicons$bs_icon(
+              "sliders", class = "me-1"
+            ),
+            "Optimal Number of Clusters"
+          )
+        }
+        bslib$accordion_panel(
+          title = opt_title,
+          value = "optimal_panel",
+          opt_content,
+          download_buttons(ns, "optimal")
+        )
+      }
+
       # Results placeholder
       shiny$tagList(
         na_banner,
@@ -270,6 +340,7 @@ server <- function(id, input_data, data_version) {
           open = "hopkins_panel",
           multiple = TRUE,
           hopkins_panel,
+          opt_panel,
           bslib$accordion_panel(
             title = shiny$tags$span(
               bsicons$bs_icon("pie-chart", class = "me-1"),
@@ -305,7 +376,108 @@ server <- function(id, input_data, data_version) {
       )
     })
 
+    # Render optimal clusters plot
+    output$optimal_clusters_plot <- ggiraph$renderGirafe({
+      opt_res <- optimal_result()
+      if (is.null(opt_res)) return(NULL)
+      if (!opt_res$success) return(NULL)
+      last_optimal_plot(
+        cluster$create_optimal_clusters_ggplot(
+          opt_res$result
+        )
+      )
+      optimal_clusters$render_optimal_girafe(
+        opt_res$result
+      )
+    })
+
+    # Register plot download handlers
+    register_plot_downloads(
+      output, input, "optimal",
+      last_optimal_plot, "Optimal_Clusters"
+    )
+
     # Return for downstream modules (or invisible(NULL) if none)
     invisible(NULL)
   })
+}
+
+#' Create SVG + PNG download buttons for an accordion panel
+#'
+#' @param ns Namespace function
+#' @param id_prefix Character, e.g. "optimal", "biplot"
+#' @return tagList with two download buttons
+download_buttons <- function(ns, id_prefix) {
+  shiny$tags$div(
+    class = "d-flex gap-2 mt-2",
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_svg")),
+      label = shiny$tags$span(
+        bsicons$bs_icon("filetype-svg", class = "me-1"),
+        "SVG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    ),
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_png")),
+      label = shiny$tags$span(
+        bsicons$bs_icon("filetype-png", class = "me-1"),
+        "PNG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    )
+  )
+}
+
+#' Register SVG and PNG download handlers for a plot
+#'
+#' @param output Shiny output object
+#' @param input Shiny input object
+#' @param id_prefix Character, e.g. "optimal", "biplot"
+#' @param plot_reactive reactiveVal returning a ggplot
+#' @param filename_base Character, base name for the file
+register_plot_downloads <- function(output, input,
+                                    id_prefix,
+                                    plot_reactive,
+                                    filename_base) {
+  output[[paste0(id_prefix, "_dl_svg")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".svg")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "svg",
+          width = w, height = h, units = "cm"
+        )
+        rhino$log$info(
+          "Download: SVG '{filename_base}'"
+        )
+      }
+    )
+
+  output[[paste0(id_prefix, "_dl_png")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".png")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "png",
+          width = w, height = h,
+          units = "cm", dpi = 600
+        )
+        rhino$log$info(
+          "Download: PNG '{filename_base}'"
+        )
+      }
+    )
 }
