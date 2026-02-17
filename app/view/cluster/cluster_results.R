@@ -1,5 +1,6 @@
 box::use(
   bsicons,
+  DT,
   shiny,
 )
 
@@ -34,7 +35,7 @@ render_cluster_results <- function(cluster_result, ns,
       render_algorithm_details(cluster_result)
     ),
     render_cluster_profile(cluster_result),
-    render_membership_preview(membership_df),
+    render_membership_placeholder(ns),
     render_download_section(ns)
   )
 }
@@ -119,7 +120,13 @@ render_cluster_sizes <- function(res) {
         "Noise"
       )
     } else {
-      paste("Cluster", cid)
+      shiny$tagList(
+        cluster_badge_tag(cid),
+        shiny$tags$span(
+          class = "ms-1",
+          paste("Cluster", cid)
+        )
+      )
     }
 
     row_class <- if (is_noise) {
@@ -439,10 +446,7 @@ render_cluster_profile <- function(res) {
       cells <- c(
         list(
           shiny$tags$td(
-            shiny$tags$span(
-              class = "badge bg-primary",
-              cluster_ids[i]
-            )
+            cluster_badge_tag(cluster_ids[i])
           ),
           shiny$tags$td(
             class = "text-end text-muted",
@@ -520,60 +524,7 @@ render_cluster_profile <- function(res) {
   )
 }
 
-render_membership_preview <- function(md) {
-  if (is.null(md)) return(NULL)
-
-  n_show <- min(nrow(md), 10)
-  preview <- md[seq_len(n_show), , drop = FALSE]
-
-  col_names <- names(preview)
-  header_cells <- lapply(col_names, function(cn) {
-    cls <- if (cn == "Cluster") {
-      "text-center"
-    } else if (is.numeric(preview[[cn]])) {
-      "text-end"
-    } else {
-      ""
-    }
-    shiny$tags$th(class = cls, cn)
-  })
-
-  body_rows <- lapply(
-    seq_len(n_show),
-    function(i) {
-      cells <- lapply(col_names, function(cn) {
-        val <- preview[i, cn]
-        if (cn == "Cluster") {
-          shiny$tags$td(
-            class = "text-center",
-            shiny$tags$span(
-              class = "badge bg-primary",
-              val
-            )
-          )
-        } else if (is.numeric(val)) {
-          shiny$tags$td(
-            class = "text-end",
-            sprintf("%.3f", val)
-          )
-        } else {
-          shiny$tags$td(as.character(val))
-        }
-      })
-      shiny$tags$tr(cells)
-    }
-  )
-
-  more_note <- if (nrow(md) > n_show) {
-    shiny$tags$small(
-      class = "text-muted mt-1 d-block",
-      sprintf(
-        "Showing %d of %d rows. Download Excel for full data.",
-        n_show, nrow(md)
-      )
-    )
-  }
-
+render_membership_placeholder <- function(ns) {
   shiny$tags$div(
     class = "mt-3",
     shiny$tags$h6(
@@ -588,22 +539,71 @@ render_membership_preview <- function(md) {
         "Download for further analysis or plotting."
       )
     ),
-    shiny$tags$div(
-      class = "table-responsive",
-      style = "max-height: 300px; overflow-y: auto;",
-      shiny$tags$table(
-        class = paste(
-          "table table-sm table-striped",
-          "table-hover mb-0"
+    DT$dataTableOutput(ns("membership_table"))
+  )
+}
+
+#' Render membership DT datatable with colored cluster badges
+#'
+#' Call this from the parent server to populate the
+#' membership_table DT output.
+#'
+#' @param md Data frame with a Cluster column
+#' @return DT datatable object
+#' @export
+render_membership_dt <- function(md) {
+  if (is.null(md)) return(NULL)
+
+  display_df <- md
+
+  # Round numeric columns for display
+  num_cols <- vapply(
+    display_df, is.numeric, logical(1)
+  )
+  # Don't round the Cluster column
+  num_cols["Cluster"] <- FALSE
+  for (cn in names(num_cols)[num_cols]) {
+    display_df[[cn]] <- round(display_df[[cn]], 3)
+  }
+
+  # Replace Cluster values with colored badge HTML
+  cluster_vals <- display_df$Cluster
+  display_df$Cluster <- cluster_badge_html(
+    cluster_vals
+  )
+
+  n_rows <- nrow(display_df)
+  n_cols <- ncol(display_df)
+
+  # Find index of numeric columns (0-based for DT)
+  num_targets <- which(num_cols) - 1L
+
+  DT$datatable(
+    display_df,
+    escape = FALSE,
+    rownames = FALSE,
+    options = list(
+      pageLength = 10,
+      scrollX = TRUE,
+      dom = "tip",
+      order = list(),
+      columnDefs = list(
+        list(
+          className = "dt-right",
+          targets = as.list(num_targets)
         ),
-        shiny$tags$thead(
-          class = "sticky-top bg-white",
-          shiny$tags$tr(header_cells)
-        ),
-        shiny$tags$tbody(body_rows)
+        list(
+          className = "dt-center",
+          targets = list(
+            which(names(display_df) == "Cluster") - 1L
+          )
+        )
       )
     ),
-    more_note
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
   )
 }
 
@@ -658,6 +658,39 @@ interpret_silhouette <- function(sil_val) {
       badge_class = "bg-danger"
     )
   }
+}
+
+cluster_color <- function(cluster_id) {
+  palette <- c(
+    "#0d6efd", "#198754", "#dc3545", "#fd7e14",
+    "#6f42c1", "#20c997", "#d63384", "#0dcaf0",
+    "#6610f2", "#ffc107"
+  )
+  idx <- ((as.integer(cluster_id) - 1L) %%
+    length(palette)) + 1L
+  palette[idx]
+}
+
+cluster_badge_html <- function(cluster_vals) {
+  vapply(cluster_vals, function(v) {
+    col <- cluster_color(v)
+    sprintf(
+      paste0(
+        "<span class=\"badge\" style=\"",
+        "background-color:%s;\">%s</span>"
+      ),
+      col, v
+    )
+  }, character(1))
+}
+
+cluster_badge_tag <- function(cluster_id) {
+  col <- cluster_color(cluster_id)
+  shiny$tags$span(
+    class = "badge",
+    style = paste0("background-color:", col, ";"),
+    cluster_id
+  )
 }
 
 format_method_label <- function(method) {
