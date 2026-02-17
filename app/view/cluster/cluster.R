@@ -1,6 +1,7 @@
 box::use(
   bsicons,
   bslib,
+  DT,
   ggiraph,
   ggplot2,
   openxlsx,
@@ -411,9 +412,7 @@ server <- function(id, input_data, data_version) {
         bslib$accordion_panel(
           title = results_title,
           value = "cluster_results",
-          cluster_results$render_cluster_results(
-            res, ns, membership_df = membership_data()
-          )
+          cluster_results$render_cluster_results(res, ns)
         )
       }
 
@@ -450,6 +449,13 @@ server <- function(id, input_data, data_version) {
       output, input, "optimal",
       last_optimal_plot, "Optimal_Clusters"
     )
+
+    # Render membership DT table with colored cluster badges
+    output$membership_table <- DT$renderDataTable({
+      md <- membership_data()
+      shiny$req(md)
+      cluster_results$render_membership_dt(md)
+    })
 
     # Download handler: Excel with Membership + Profile sheets
     output$cluster_dl_excel <- shiny$downloadHandler(
