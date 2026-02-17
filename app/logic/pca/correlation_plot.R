@@ -39,7 +39,8 @@ compute_correlation_data <- function(data, measurement_cols) {
 
       list(
         cor_long = cor_long,
-        ordered_cols = ordered_cols
+        ordered_cols = ordered_cols,
+        n_cols = length(measurement_cols)
       )
     },
     operation_name = "Correlation Plot",
@@ -55,13 +56,40 @@ compute_correlation_data <- function(data, measurement_cols) {
 #'
 #' Takes pre-computed correlation data and renders it as an
 #' interactive ggiraph heatmap. Should not fail if
-#' compute_correlation_data() succeeded.
+#' compute_correlation_data() succeeded. Text sizes, axis
+#' label sizes, and SVG dimensions adapt to the number of
+#' variables.
 #'
-#' @param cor_data List with $cor_long and $ordered_cols
+#' @param cor_data List with $cor_long, $ordered_cols, $n_cols
 #' @return ggiraph interactive plot object
 #' @export
 render_correlation_girafe <- function(cor_data) {
   cor_long <- cor_data$cor_long
+  n_cols <- cor_data$n_cols
+
+  # Adaptive text size for cell labels
+  cell_text_size <- if (n_cols <= 6) {
+    4.5
+  } else if (n_cols <= 10) {
+    4
+  } else if (n_cols <= 15) {
+    3.5
+  } else if (n_cols <= 20) {
+    3
+  } else {
+    2.5
+  }
+
+  # Adaptive axis label size
+  axis_text_size <- if (n_cols <= 10) {
+    12
+  } else if (n_cols <= 15) {
+    11
+  } else if (n_cols <= 20) {
+    10
+  } else {
+    9
+  }
 
   p <- ggplot2$ggplot(
     cor_long,
@@ -85,14 +113,17 @@ render_correlation_girafe <- function(cor_data) {
       color = ifelse(
         abs(cor_long$correlation) > 0.5, "white", "black"
       ),
-      size = 4
+      size = cell_text_size
     ) +
     ggplot2$theme_minimal() +
     ggplot2$theme(
       axis.text.x = ggplot2$element_text(
-        angle = 45, hjust = 1, vjust = 1, size = 12
+        angle = 45, hjust = 1, vjust = 1,
+        size = axis_text_size
       ),
-      axis.text.y = ggplot2$element_text(size = 12),
+      axis.text.y = ggplot2$element_text(
+        size = axis_text_size
+      ),
       axis.title = ggplot2$element_blank(),
       panel.grid = ggplot2$element_blank(),
       legend.position = "right",
@@ -101,10 +132,14 @@ render_correlation_girafe <- function(cor_data) {
     ) +
     ggplot2$coord_fixed()
 
+  # Adaptive SVG dimensions
+  width_svg <- min(max(n_cols * 0.9 + 3, 6), 14)
+  height_svg <- min(max(n_cols * 0.9 + 2, 5), 14)
+
   ggiraph$girafe(
     ggobj = p,
-    width_svg = 7,
-    height_svg = 6,
+    width_svg = width_svg,
+    height_svg = height_svg,
     options = list(
       ggiraph$opts_hover(
         css = paste0(
