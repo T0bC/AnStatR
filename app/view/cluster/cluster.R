@@ -18,6 +18,7 @@ box::use(
   app/view/cluster/distance_matrix,
   app/view/components/sidebar_tabs,
   app/view/error_display,
+  app/view/pca/na_summary,
 )
 
 #' @export
@@ -50,12 +51,14 @@ server <- function(id, input_data, data_version) {
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
     distance_result <- shiny$reactiveVal(NULL)
+    na_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
       result(NULL)
       last_error(NULL)
       distance_result(NULL)
+      na_info(NULL)
       rhino$log$info("Cluster: state reset for new data")
     }, ignoreInit = TRUE)
 
@@ -115,6 +118,7 @@ server <- function(id, input_data, data_version) {
       na_result <- clean_na_rows(
         data, measure_cols, meta_cols
       )
+      na_info(na_result)
       cleaned_data <- na_result$data
 
       if (nrow(cleaned_data) < 2) {
