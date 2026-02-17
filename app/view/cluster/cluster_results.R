@@ -14,16 +14,14 @@ box::use(
 #'   (the $result field, not the wrapper)
 #' @return Shiny tagList with formatted cluster display
 #' @export
-render_cluster_results <- function(cluster_result) {
+render_cluster_results <- function(cluster_result, ns,
+                                   membership_df = NULL) {
   if (is.null(cluster_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
       "No cluster results available."
     ))
   }
-
-  algorithm <- cluster_result$algorithm
-  details <- cluster_result$details
 
   shiny$tagList(
     render_summary_banner(cluster_result),
@@ -35,7 +33,9 @@ render_cluster_results <- function(cluster_result) {
       class = "mt-3",
       render_algorithm_details(cluster_result)
     ),
-    render_centers_section(cluster_result)
+    render_cluster_profile(cluster_result),
+    render_membership_preview(membership_df),
+    render_download_section(ns)
   )
 }
 
@@ -178,80 +178,39 @@ render_cluster_sizes <- function(res) {
 
 render_algorithm_details <- function(res) {
   d <- res$details
-  variant <- d$variant
 
-  detail_items <- switch(
-    variant,
-    kmeans = render_kmeans_details(d),
-    pam    = render_pam_details(d),
-    hclust = render_hclust_details(d),
-    dbscan = render_dbscan_details(d),
+  # Shared quality metrics (computed for all algorithms)
+  shared_items <- render_shared_quality_metrics(d)
+
+  # Algorithm-specific extras
+  extra_items <- switch(
+    d$variant,
+    kmeans = NULL,
+    pam    = render_pam_extras(d),
+    hclust = render_hclust_extras(d),
+    dbscan = render_dbscan_extras(d),
     NULL
   )
-
-  if (is.null(detail_items)) return(NULL)
 
   shiny$tags$div(
     shiny$tags$h6(
       class = "mb-2",
-      bsicons$bs_icon("info-circle", class = "me-1"),
-      "Algorithm Details"
+      bsicons$bs_icon("bar-chart-line", class = "me-1"),
+      "Cluster Quality"
     ),
-    detail_items
+    shared_items,
+    extra_items
   )
 }
 
-render_kmeans_details <- function(d) {
-  bss_tss <- if (
-    !is.null(d$betweenss) && !is.null(d$totss) &&
-    d$totss > 0
+render_shared_quality_metrics <- function(d) {
+  items <- list()
+
+  # Silhouette
+  if (
+    !is.null(d$silhouette_avg) &&
+    !is.na(d$silhouette_avg)
   ) {
-    round(d$betweenss / d$totss * 100, 1)
-  } else {
-    NA
-  }
-
-  items <- list()
-  if (!is.na(bss_tss)) {
-    items <- c(items, list(
-      detail_row(
-        "BSS / TSS",
-        paste0(bss_tss, "%"),
-        paste(
-          "Between-cluster variance as percentage",
-          "of total variance. Higher is better."
-        )
-      )
-    ))
-  }
-  if (!is.null(d$tot_withinss)) {
-    items <- c(items, list(
-      detail_row(
-        "Total Within-SS",
-        sprintf("%.2f", d$tot_withinss),
-        paste(
-          "Total within-cluster sum of squares.",
-          "Lower indicates tighter clusters."
-        )
-      )
-    ))
-  }
-  if (!is.null(d$size)) {
-    items <- c(items, list(
-      detail_row(
-        "Cluster Sizes",
-        paste(d$size, collapse = ", "),
-        NULL
-      )
-    ))
-  }
-
-  render_detail_card(items)
-}
-
-render_pam_details <- function(d) {
-  items <- list()
-  if (!is.null(d$silhouette_avg)) {
     sil_val <- round(d$silhouette_avg, 4)
     sil_interp <- interpret_silhouette(sil_val)
     items <- c(items, list(
@@ -268,12 +227,59 @@ render_pam_details <- function(d) {
           )
         ),
         paste(
-          "Measures how well each object fits",
-          "its cluster. Range: -1 to 1."
+          "How well each object fits its cluster.",
+          "Range: -1 to 1. Higher is better."
         )
       )
     ))
   }
+
+  # BSS / TSS
+  if (
+    !is.null(d$bss_tss) && !is.na(d$bss_tss)
+  ) {
+    items <- c(items, list(
+      detail_row(
+        "BSS / TSS",
+        paste0(round(d$bss_tss * 100, 1), "%"),
+        paste(
+          "Between-cluster variance as percentage",
+          "of total variance. Higher is better."
+        )
+      )
+    ))
+  }
+
+  # Total Within-SS
+  if (!is.null(d$tot_withinss)) {
+    items <- c(items, list(
+      detail_row(
+        "Total Within-SS",
+        sprintf("%.2f", d$tot_withinss),
+        paste(
+          "Sum of within-cluster sum of squares.",
+          "Lower indicates tighter clusters."
+        )
+      )
+    ))
+  }
+
+  # Cluster Sizes
+  if (!is.null(d$size) && length(d$size) > 0) {
+    items <- c(items, list(
+      detail_row(
+        "Cluster Sizes",
+        paste(d$size, collapse = ", "),
+        NULL
+      )
+    ))
+  }
+
+  render_detail_card(items)
+}
+
+render_pam_extras <- function(d) {
+  items <- list()
   if (!is.null(d$objective)) {
     items <- c(items, list(
       detail_row(
@@ -285,11 +291,20 @@ render_pam_details <- function(d) {
       )
     ))
   }
+  if (length(items) == 0) return(NULL)
 
-  render_detail_card(items)
+  shiny$tags$div(
+    class = "mt-3",
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("info-circle", class = "me-1"),
+      "PAM Details"
+    ),
+    render_detail_card(items)
+  )
 }
 
-render_hclust_details <- function(d) {
+render_hclust_extras <- function(d) {
   items <- list(
     detail_row(
       "Linkage Method",
@@ -303,10 +318,18 @@ render_hclust_details <- function(d) {
     )
   )
 
-  render_detail_card(items)
+  shiny$tags$div(
+    class = "mt-3",
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("info-circle", class = "me-1"),
+      "Hierarchical Details"
+    ),
+    render_detail_card(items)
+  )
 }
 
-render_dbscan_details <- function(d) {
+render_dbscan_extras <- function(d) {
   items <- list()
   if (!is.null(d$eps)) {
     items <- c(items, list(
@@ -330,20 +353,29 @@ render_dbscan_details <- function(d) {
     ))
   }
   if (!is.null(d$n_noise)) {
-    n_total <- d$n_clusters_found
     items <- c(items, list(
       detail_row(
         "Noise Points",
         paste0(
           d$n_noise,
-          " (", d$n_clusters_found, " clusters found)"
+          " (", d$n_clusters_found,
+          " clusters found)"
         ),
         "Points not assigned to any cluster."
       )
     ))
   }
+  if (length(items) == 0) return(NULL)
 
-  render_detail_card(items)
+  shiny$tags$div(
+    class = "mt-3",
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("info-circle", class = "me-1"),
+      "DBSCAN Details"
+    ),
+    render_detail_card(items)
+  )
 }
 
 detail_row <- function(label, value, description) {
@@ -386,51 +418,45 @@ render_detail_card <- function(items) {
   )
 }
 
-render_centers_section <- function(res) {
-  d <- res$details
-  variant <- d$variant
+render_cluster_profile <- function(res) {
+  cs <- res$cluster_summary
+  if (is.null(cs)) return(NULL)
 
-  if (variant == "kmeans" && !is.null(d$centers)) {
-    render_centers_table(
-      d$centers, "Cluster Centers"
-    )
-  } else if (variant == "pam" && !is.null(d$medoids)) {
-    render_centers_table(
-      d$medoids, "Cluster Medoids"
-    )
-  } else {
-    NULL
-  }
-}
-
-render_centers_table <- function(centers_mat, title) {
-  if (is.null(centers_mat)) return(NULL)
-
-  centers_df <- as.data.frame(round(centers_mat, 3))
-  col_names <- names(centers_df)
-  n_clusters <- nrow(centers_df)
+  means_df <- as.data.frame(round(cs$means, 3))
+  col_names <- colnames(cs$means)
+  cluster_ids <- cs$cluster_ids
+  n_per <- cs$n_per_cluster
 
   header_cells <- c(
-    list(shiny$tags$th("Cluster")),
+    list(
+      shiny$tags$th("Cluster"),
+      shiny$tags$th(class = "text-end", "n")
+    ),
     lapply(col_names, function(cn) {
       shiny$tags$th(class = "text-end", cn)
     })
   )
 
   body_rows <- lapply(
-    seq_len(n_clusters),
+    seq_along(cluster_ids),
     function(i) {
       cells <- c(
-        list(shiny$tags$td(
-          shiny$tags$span(
-            class = "badge bg-primary",
-            i
+        list(
+          shiny$tags$td(
+            shiny$tags$span(
+              class = "badge bg-primary",
+              cluster_ids[i]
+            )
+          ),
+          shiny$tags$td(
+            class = "text-end text-muted",
+            n_per[i]
           )
-        )),
+        ),
         lapply(col_names, function(cn) {
           shiny$tags$td(
             class = "text-end",
-            sprintf("%.3f", centers_df[i, cn])
+            sprintf("%.3f", means_df[i, cn])
           )
         })
       )
@@ -438,24 +464,177 @@ render_centers_table <- function(centers_mat, title) {
     }
   )
 
+  # Overall mean row
+  overall_cells <- c(
+    list(
+      shiny$tags$td(
+        class = "fw-semibold text-muted",
+        "Overall"
+      ),
+      shiny$tags$td(
+        class = "text-end text-muted",
+        sum(n_per)
+      )
+    ),
+    lapply(col_names, function(cn) {
+      shiny$tags$td(
+        class = "text-end text-muted",
+        sprintf("%.3f", round(cs$overall_mean[cn], 3))
+      )
+    })
+  )
+  overall_row <- shiny$tags$tr(
+    class = "table-light",
+    overall_cells
+  )
+
   shiny$tags$div(
     class = "mt-3",
     shiny$tags$h6(
       class = "mb-2",
       bsicons$bs_icon("bullseye", class = "me-1"),
-      title
+      "Cluster Profile (Variable Means)"
+    ),
+    shiny$tags$small(
+      class = "text-muted d-block mb-2",
+      paste(
+        "Mean of each variable per cluster.",
+        "Compare against the overall mean to",
+        "characterize what distinguishes each cluster."
+      )
     ),
     shiny$tags$div(
       class = "table-responsive",
+      style = "max-height: 400px; overflow-y: auto;",
       shiny$tags$table(
         class = paste(
           "table table-sm table-striped",
           "table-hover mb-0"
         ),
         shiny$tags$thead(
+          class = "sticky-top bg-white",
+          shiny$tags$tr(header_cells)
+        ),
+        shiny$tags$tbody(
+          body_rows,
+          overall_row
+        )
+      )
+    )
+  )
+}
+
+render_membership_preview <- function(md) {
+  if (is.null(md)) return(NULL)
+
+  n_show <- min(nrow(md), 10)
+  preview <- md[seq_len(n_show), , drop = FALSE]
+
+  col_names <- names(preview)
+  header_cells <- lapply(col_names, function(cn) {
+    cls <- if (cn == "Cluster") {
+      "text-center"
+    } else if (is.numeric(preview[[cn]])) {
+      "text-end"
+    } else {
+      ""
+    }
+    shiny$tags$th(class = cls, cn)
+  })
+
+  body_rows <- lapply(
+    seq_len(n_show),
+    function(i) {
+      cells <- lapply(col_names, function(cn) {
+        val <- preview[i, cn]
+        if (cn == "Cluster") {
+          shiny$tags$td(
+            class = "text-center",
+            shiny$tags$span(
+              class = "badge bg-primary",
+              val
+            )
+          )
+        } else if (is.numeric(val)) {
+          shiny$tags$td(
+            class = "text-end",
+            sprintf("%.3f", val)
+          )
+        } else {
+          shiny$tags$td(as.character(val))
+        }
+      })
+      shiny$tags$tr(cells)
+    }
+  )
+
+  more_note <- if (nrow(md) > n_show) {
+    shiny$tags$small(
+      class = "text-muted mt-1 d-block",
+      sprintf(
+        "Showing %d of %d rows. Download Excel for full data.",
+        n_show, nrow(md)
+      )
+    )
+  }
+
+  shiny$tags$div(
+    class = "mt-3",
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("table", class = "me-1"),
+      "Cluster Membership"
+    ),
+    shiny$tags$small(
+      class = "text-muted d-block mb-2",
+      paste(
+        "Original data with cluster assignments.",
+        "Download for further analysis or plotting."
+      )
+    ),
+    shiny$tags$div(
+      class = "table-responsive",
+      style = "max-height: 300px; overflow-y: auto;",
+      shiny$tags$table(
+        class = paste(
+          "table table-sm table-striped",
+          "table-hover mb-0"
+        ),
+        shiny$tags$thead(
+          class = "sticky-top bg-white",
           shiny$tags$tr(header_cells)
         ),
         shiny$tags$tbody(body_rows)
+      )
+    ),
+    more_note
+  )
+}
+
+render_download_section <- function(ns) {
+  shiny$tags$div(
+    class = "mt-3",
+    shiny$tags$h6(
+      class = "mb-2",
+      bsicons$bs_icon("download", class = "me-1"),
+      "Download Results"
+    ),
+    shiny$downloadButton(
+      ns("cluster_dl_excel"),
+      label = shiny$tags$span(
+        bsicons$bs_icon(
+          "file-earmark-excel", class = "me-1"
+        ),
+        "Download Excel"
+      ),
+      class = "btn btn-outline-primary btn-sm"
+    ),
+    shiny$tags$small(
+      class = "text-muted mt-1 d-block",
+      paste(
+        "Excel file with two sheets:",
+        "Membership (raw data + cluster assignments)",
+        "and Cluster Profile (per-cluster variable means)."
       )
     )
   )
