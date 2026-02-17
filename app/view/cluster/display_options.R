@@ -60,6 +60,27 @@ tab_ui <- function(ns) {
           ),
           value = FALSE
         )
+      ),
+      shiny$tags$div(
+        class = "col-6",
+        shiny$checkboxInput(
+          inputId = ns("showRectangles"),
+          label = shiny$tags$span(
+            "Cluster Rect ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Draw dashed rectangles around",
+                "each cluster in the dendrogram.",
+                "Not available in polar layout."
+              )
+            )
+          ),
+          value = FALSE
+        )
       )
     ),
     shiny$tags$hr(),
@@ -162,6 +183,10 @@ tab_server <- function(input, output, session,
     )
     shiny$updateCheckboxInput(
       session, "polarDend",
+      value = FALSE
+    )
+    shiny$updateCheckboxInput(
+      session, "showRectangles",
       value = FALSE
     )
     shiny$updateNumericInput(
