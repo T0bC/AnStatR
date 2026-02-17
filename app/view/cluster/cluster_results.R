@@ -15,7 +15,8 @@ box::use(
 #'   (the $result field, not the wrapper)
 #' @return Shiny tagList with formatted cluster display
 #' @export
-render_cluster_results <- function(cluster_result, ns) {
+render_cluster_results <- function(cluster_result, ns,
+                                   cluster_summary = NULL) {
   if (is.null(cluster_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
@@ -33,7 +34,7 @@ render_cluster_results <- function(cluster_result, ns) {
       class = "mt-3",
       render_algorithm_details(cluster_result)
     ),
-    render_cluster_profile(cluster_result),
+    render_cluster_profile(cluster_summary),
     render_membership_placeholder(ns),
     render_download_section(ns)
   )
@@ -420,8 +421,7 @@ render_detail_card <- function(items) {
   )
 }
 
-render_cluster_profile <- function(res) {
-  cs <- res$cluster_summary
+render_cluster_profile <- function(cs) {
   if (is.null(cs)) return(NULL)
 
   means_df <- as.data.frame(round(cs$means, 3))
