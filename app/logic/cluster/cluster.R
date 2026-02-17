@@ -17,6 +17,17 @@ box::use(
 #' @return List with $valid (logical) and $error (app_error or NULL)
 #' @export
 validate_inputs <- function(columns, data) {
+  if (is.null(data) || !is.data.frame(data)) {
+    rhino$log$warn("Cluster: data not available for validation")
+    return(list(
+      valid = FALSE,
+      error = error_handling$simple_error(
+        message = "No data available. Please load data first.",
+        operation_name = "cluster_validate_inputs"
+      )
+    ))
+  }
+
   if (is.null(columns) || length(columns) == 0) {
     rhino$log$warn("Cluster: no columns selected")
     return(list(
