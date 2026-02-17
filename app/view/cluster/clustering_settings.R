@@ -72,23 +72,37 @@ tab_ui <- function(ns) {
       choices = c("euclidean", "manhattan"),
       selected = "euclidean"
     ),
-    # Clustering Method
-    shiny$selectInput(
-      inputId = ns("cluster_method"),
-      label = shiny$tags$span(
-        "Cluster Algorithm ",
-        bslib$tooltip(
-          bsicons$bs_icon("info-circle", class = "text-muted"),
-          paste0(
-            "The six methods implemented are 'average'",  
-            "([unweighted pair-]group [arithMetic] average method",
-            ", aka 'UPGMA'), 'single' (single linkage), 'complete'",
-            "(complete linkage) and 'ward' (Ward's method)"
-          )
-        )
+    # Linkage Method (only visible for hierarchical)
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("algorithm"), "'] == ",
+        "'hierarchical'"
       ),
-      choices = c("ward", "single", "complete", "average", "mcquitty", "median", "centroid"),
-      selected = "ward"
+      shiny$selectInput(
+        inputId = ns("cluster_method"),
+        label = shiny$tags$span(
+          "Linkage Method ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste0(
+              "Linkage method for hierarchical ",
+              "clustering. 'ward' (Ward's method), ",
+              "'single' (single linkage), 'complete' ",
+              "(complete linkage), 'average' (UPGMA), ",
+              "'mcquitty' (WPGMA), 'median' (WPGMC), ",
+              "'centroid' (UPGMC)."
+            )
+          )
+        ),
+        choices = c(
+          "ward", "single", "complete",
+          "average", "mcquitty", "median",
+          "centroid"
+        ),
+        selected = "ward"
+      )
     )
   )
 }
