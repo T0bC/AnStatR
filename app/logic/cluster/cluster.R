@@ -127,11 +127,6 @@ run_clustering <- function(data, columns, n_clusters,
       )
       res$details <- c(res$details, shared_stats)
 
-      # Cluster profile: per-cluster variable means
-      cluster_summary <- compute_cluster_summary(
-        num_data, res$clusters
-      )
-
       rhino$log$info(
         "Cluster: {algorithm} complete ",
         "({length(columns)} cols, ",
@@ -145,8 +140,7 @@ run_clustering <- function(data, columns, n_clusters,
         metric = metric,
         method = method,
         columns = columns,
-        details = res$details,
-        cluster_summary = cluster_summary
+        details = res$details
       )
     },
     operation_name = "Cluster Analysis",
@@ -261,6 +255,13 @@ validate_clustering_inputs <- function(num_data,
   invisible(TRUE)
 }
 
+#' Compute per-cluster variable means
+#'
+#' @param num_data Numeric matrix or data frame
+#' @param clusters Integer vector of cluster assignments
+#' @return List with means matrix, overall_mean, cluster_ids,
+#'   n_per_cluster
+#' @export
 compute_cluster_summary <- function(num_data, clusters) {
   valid_mask <- clusters > 0
   valid_clusters <- clusters[valid_mask]
