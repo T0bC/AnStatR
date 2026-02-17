@@ -296,6 +296,56 @@ render_pam_extras <- function(d) {
   }
   if (length(items) == 0) return(NULL)
 
+  # Medoids table
+  medoids_ui <- NULL
+  if (!is.null(d$medoids)) {
+    med_df <- as.data.frame(round(d$medoids, 3))
+    col_names <- colnames(med_df)
+    header <- shiny$tags$tr(
+      shiny$tags$th("Medoid"),
+      lapply(col_names, function(cn) {
+        shiny$tags$th(class = "text-end", cn)
+      })
+    )
+    body_rows <- lapply(
+      seq_len(nrow(med_df)),
+      function(i) {
+        shiny$tags$tr(
+          shiny$tags$td(
+            cluster_badge_tag(i)
+          ),
+          lapply(col_names, function(cn) {
+            shiny$tags$td(
+              class = "text-end",
+              sprintf("%.3f", med_df[i, cn])
+            )
+          })
+        )
+      }
+    )
+    medoids_ui <- shiny$tags$div(
+      class = "mt-2",
+      shiny$tags$small(
+        class = "text-muted d-block mb-1",
+        paste(
+          "Medoids: representative observations",
+          "closest to each cluster center."
+        )
+      ),
+      shiny$tags$div(
+        class = "table-responsive",
+        shiny$tags$table(
+          class = paste(
+            "table table-sm table-striped",
+            "table-hover mb-0"
+          ),
+          shiny$tags$thead(header),
+          shiny$tags$tbody(body_rows)
+        )
+      )
+    )
+  }
+
   shiny$tags$div(
     class = "mt-3",
     shiny$tags$h6(
@@ -303,7 +353,8 @@ render_pam_extras <- function(d) {
       bsicons$bs_icon("info-circle", class = "me-1"),
       "PAM Details"
     ),
-    render_detail_card(items)
+    render_detail_card(items),
+    medoids_ui
   )
 }
 
@@ -320,6 +371,38 @@ render_hclust_extras <- function(d) {
       NULL
     )
   )
+
+  if (!is.null(d$merge)) {
+    n_merges <- nrow(d$merge)
+    items <- c(items, list(
+      detail_row(
+        "Merge Steps",
+        n_merges,
+        paste(
+          "Number of agglomerative merge steps.",
+          "Negative values = individual observations,",
+          "positive = previously formed clusters."
+        )
+      )
+    ))
+  }
+
+  if (!is.null(d$height) && length(d$height) > 0) {
+    items <- c(items, list(
+      detail_row(
+        "Height Range",
+        sprintf(
+          "%.3f \u2013 %.3f",
+          min(d$height), max(d$height)
+        ),
+        paste(
+          "Distance at which clusters were merged.",
+          "Large jumps suggest natural cluster",
+          "boundaries."
+        )
+      )
+    ))
+  }
 
   shiny$tags$div(
     class = "mt-3",
@@ -365,6 +448,27 @@ render_dbscan_extras <- function(d) {
           " clusters found)"
         ),
         "Points not assigned to any cluster."
+      )
+    ))
+  }
+  if (!is.null(d$border_points)) {
+    items <- c(items, list(
+      detail_row(
+        "Border Points",
+        if (d$border_points) "Enabled" else "Disabled",
+        paste(
+          "Whether border points are assigned",
+          "to clusters or treated as noise."
+        )
+      )
+    ))
+  }
+  if (!is.null(d$db_metric)) {
+    items <- c(items, list(
+      detail_row(
+        "Distance Metric",
+        d$db_metric,
+        NULL
       )
     ))
   }
