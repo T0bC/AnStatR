@@ -2,6 +2,9 @@
 box::use(
   app/logic/pca/biplot[create_biplot, biplot_error_parser],
   app/logic/pca/biplot3d[create_biplot3d, biplot3d_error_parser],
+  app/logic/pca/ind_contrib[
+    create_ind_contrib_plot, ind_contrib_error_parser
+  ],
   app/logic/pca/eigencorplot[
     compute_eigencor_data, create_eigencor_plot,
     eigencor_error_parser
