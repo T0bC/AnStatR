@@ -68,24 +68,30 @@ render_correlation_girafe <- function(cor_data) {
   n_cols <- cor_data$n_cols
 
   # Adaptive text size for cell labels
+  # Hide labels when grid is extremely dense
+  show_labels <- n_cols <= 35
   cell_text_size <- if (n_cols <= 6) {
-    4.5
+    5
   } else if (n_cols <= 10) {
-    4
+    4.5
   } else if (n_cols <= 15) {
-    3.5
+    4
   } else if (n_cols <= 20) {
-    3
+    3.8
+  } else if (n_cols <= 30) {
+    3.5
   } else {
-    2.5
+    3
   }
 
   # Adaptive axis label size
   axis_text_size <- if (n_cols <= 10) {
-    12
+    13
   } else if (n_cols <= 15) {
-    11
+    12
   } else if (n_cols <= 20) {
+    11
+  } else if (n_cols <= 30) {
     10
   } else {
     9
@@ -108,13 +114,15 @@ render_correlation_girafe <- function(cor_data) {
       limits = c(-1, 1),
       name = "Correlation"
     ) +
-    ggplot2$geom_text(
-      ggplot2$aes(label = sprintf("%.2f", correlation)),
-      color = ifelse(
-        abs(cor_long$correlation) > 0.5, "white", "black"
-      ),
-      size = cell_text_size
-    ) +
+    { if (show_labels) {
+      ggplot2$geom_text(
+        ggplot2$aes(label = sprintf("%.2f", correlation)),
+        color = ifelse(
+          abs(cor_long$correlation) > 0.5, "white", "black"
+        ),
+        size = cell_text_size
+      )
+    } } +
     ggplot2$theme_minimal() +
     ggplot2$theme(
       axis.text.x = ggplot2$element_text(
@@ -129,12 +137,12 @@ render_correlation_girafe <- function(cor_data) {
       legend.position = "right",
       legend.title = ggplot2$element_text(size = 12),
       legend.text = ggplot2$element_text(size = 10)
-    ) +
-    ggplot2$coord_fixed()
+    )
 
-  # Adaptive SVG dimensions
-  width_svg <- min(max(n_cols * 0.9 + 3, 6), 14)
-  height_svg <- min(max(n_cols * 0.9 + 2, 5), 14)
+  # Adaptive SVG dimensions — smaller SVG = larger text
+  # after browser scales it to fit the panel
+  width_svg <- min(max(n_cols * 0.5 + 2, 6), 10)
+  height_svg <- min(max(n_cols * 0.4 + 2, 5), 8)
 
   ggiraph$girafe(
     ggobj = p,
@@ -303,6 +311,11 @@ cor_matrix_to_long <- function(cor_matrix, ordered_cols) {
 
   cor_long$Var1 <- factor(cor_long$Var1, levels = ordered_cols)
   cor_long$Var2 <- factor(cor_long$Var2, levels = ordered_cols)
+
+  # Keep only lower triangle (including diagonal)
+  cor_long <- cor_long[
+    as.integer(cor_long$Var1) >= as.integer(cor_long$Var2),
+  ]
 
   cor_long$tooltip <- sprintf(
     "<b>%s</b> vs <b>%s</b><br/>r = %.3f",
