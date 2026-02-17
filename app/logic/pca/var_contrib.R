@@ -137,9 +137,9 @@ create_var_contrib_circles_plot <- function(pca_result,
 
       # Adaptive text size based on grid dimensions
       text_size <- if (n_vars <= 10 && n_dims <= 5) {
-        6
-      } else if (n_vars <= 20) {
         5
+      } else if (n_vars <= 20) {
+        4.5
       } else if (n_vars <= 30) {
         4
       } else {
