@@ -32,12 +32,15 @@ CLUSTER_PALETTE <- c(
 #' @param horiz Logical, display dendrogram horizontally
 #' @param polar Logical, display in polar coordinates
 #' @param show_labels Logical, show leaf labels
+#' @param show_rectangles Logical, draw semi-transparent
+#'   rectangles around each cluster
 #' @return List with $success, $result (ggplot) or $error
 #' @export
 create_dendrogram_plot <- function(cluster_result,
                                    horiz = FALSE,
                                    polar = FALSE,
-                                   show_labels = FALSE) {
+                                   show_labels = FALSE,
+                                   show_rectangles = FALSE) {
   if (is.null(cluster_result)) {
     return(list(
       success = FALSE,
@@ -81,6 +84,17 @@ create_dendrogram_plot <- function(cluster_result,
       colors <- CLUSTER_PALETTE[seq_len(n_colors)]
 
       dend <- stats$as.dendrogram(hc)
+
+      # Highlight branches: gradient from dark (root)
+      # to lighter colors toward leaves
+      dend <- dendextend$highlight_branches_col(
+        dend
+      )
+      dend <- dendextend$highlight_branches_lwd(
+        dend
+      )
+
+      # Color branches and labels by cluster
       dend <- dendextend$set(
         dend, "branches_k_color",
         k = n_clusters, value = colors
@@ -88,9 +102,6 @@ create_dendrogram_plot <- function(cluster_result,
       dend <- dendextend$set(
         dend, "labels_colors",
         k = n_clusters, value = colors
-      )
-      dend <- dendextend$set(
-        dend, "branches_lwd", 0.5
       )
       dend <- dendextend$set(
         dend, "labels_cex", 0.6
@@ -127,13 +138,29 @@ create_dendrogram_plot <- function(cluster_result,
           plot.title = ggplot2$element_text(
             size = 12, face = "bold"
           ),
-          panel.grid.minor = ggplot2$element_blank()
+          panel.grid.minor =
+            ggplot2$element_blank()
         )
+
+      # Add cluster rectangles if requested
+      if (show_rectangles && !polar) {
+        rect_colors <- paste0(colors, "33")
+        p <- p +
+          dendextend$rect_dendrogram(
+            dend,
+            k = n_clusters,
+            border = colors,
+            lty = 2,
+            lwd = 0.8,
+            horiz = horiz
+          )
+      }
 
       rhino$log$info(
         "Dendrogram: plot created ",
         "(k={n_clusters}, horiz={horiz}, ",
-        "polar={polar}, labels={show_labels})"
+        "polar={polar}, labels={show_labels}, ",
+        "rectangles={show_rectangles})"
       )
 
       p
@@ -143,7 +170,8 @@ create_dendrogram_plot <- function(cluster_result,
       n_clusters = cluster_result$n_clusters,
       horiz = horiz,
       polar = polar,
-      show_labels = show_labels
+      show_labels = show_labels,
+      show_rectangles = show_rectangles
     ),
     error_parser = dendrogram_error_parser
   )
