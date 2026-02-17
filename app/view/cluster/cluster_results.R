@@ -62,11 +62,7 @@ render_summary_banner <- function(res) {
     substring(res$metric, 2)
   )
 
-  n_obs <- if (is.data.frame(res$data)) {
-    nrow(res$data)
-  } else {
-    length(res$clusters)
-  }
+  n_obs <- length(res$clusters)
 
   shiny$tags$div(
     class = paste(
