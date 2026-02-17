@@ -6,11 +6,11 @@ box::use(
 )
 
 box::use(
+  app/logic/cluster,
+  app/logic/error_handling,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
   app/view/cluster/display_options,
-  app/logic/cluster,
-  app/logic/error_handling,
   app/view/components/sidebar_tabs,
   app/view/error_display,
 )
