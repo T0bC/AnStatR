@@ -254,11 +254,13 @@ tab_server <- function(input, output, session,
     if (is.null(selected_meta)) {
       selected_meta <- character(0)
     }
+    cluster_option <- "CLUSTER"
+    all_choices <- unique(c(selected_meta, cluster_option))
     shiny$updateSelectizeInput(
       session, "groupBiplot",
-      choices = selected_meta,
+      choices = all_choices,
       selected = input$groupBiplot[
-        input$groupBiplot %in% selected_meta
+        input$groupBiplot %in% all_choices
       ]
     )
   })
