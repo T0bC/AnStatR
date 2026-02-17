@@ -36,25 +36,6 @@ tab_ui <- function(ns) {
       shiny$tags$div(
         class = "col-6",
         shiny$checkboxInput(
-          inputId = ns("scale_data"),
-          label = shiny$tags$span(
-            "Scale Data ",
-            bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              paste0(
-                "Scale the data before performing the cluster analysis.",
-                "If the different measurements are of different magnitude", 
-                " (very small and very large),",
-                "scaling the data can help to improve the results."
-              )
-            )
-          ),
-          value = TRUE
-        )
-      ),
-      shiny$tags$div(
-        class = "col-6",
-        shiny$checkboxInput(
           inputId = ns("showLabels"),
           label = shiny$tags$span(
             "Show Labels ",
@@ -176,10 +157,6 @@ tab_server <- function(input, output, session,
       value = FALSE
     )
     shiny$updateCheckboxInput(
-      session, "scale_data",
-      value = TRUE
-    )
-    shiny$updateCheckboxInput(
       session, "showLabels",
       value = FALSE
     )
@@ -197,21 +174,5 @@ tab_server <- function(input, output, session,
     )
   }, ignoreInit = TRUE)
 
-  # Update GroupBiplot choices when metadata changes
-  shiny$observe({
-    selected_meta <- input$metaData
-    if (is.null(selected_meta)) {
-      selected_meta <- character(0)
-    }
-    
-    # Add "CLUSTER" option if not present
-    cluster_option <- "CLUSTER"
-    all_choices <- c(selected_meta, cluster_option)
-    
-    shiny$updateSelectizeInput(
-      session, "groupBiplot",
-      choices = all_choices,
-      selected = input$groupBiplot[input$groupBiplot %in% all_choices]
-    )
-  })
+  # GroupBiplot choices are updated in data_selection to avoid conflicts.
 }
