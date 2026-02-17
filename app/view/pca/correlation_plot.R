@@ -5,7 +5,10 @@ box::use(
 
 box::use(
   app/logic/error_handling,
-  app/logic/pca/correlation_plot[render_correlation_girafe],
+  app/logic/pca/correlation_plot[
+    create_correlation_ggplot,
+    render_correlation_girafe,
+  ],
   app/view/error_display,
 )
 
@@ -26,10 +29,15 @@ render_output <- function(input, output, session,
                           correlation_result) {
   ns <- session$ns
 
+  last_plot <- shiny$reactiveVal(NULL)
+
   output$correlation_plot <- ggiraph$renderGirafe({
     result <- correlation_result()
     if (is.null(result)) return(NULL)
     if (!result$success) return(NULL)
+    last_plot(create_correlation_ggplot(result$result))
     render_correlation_girafe(result$result)
   })
+
+  list(plot = last_plot)
 }
