@@ -271,10 +271,10 @@ describe("shared quality metrics", {
 })
 
 # =============================================================================
-# Cluster summary and membership data (all algorithms)
+# Cluster summary and result structure (all algorithms)
 # =============================================================================
 
-describe("cluster_summary and membership_data", {
+describe("cluster_summary and result structure", {
   it("kmeans returns cluster_summary with means", {
     data <- make_cluster_data()
     r <- cluster$run_clustering(
@@ -306,18 +306,6 @@ describe("cluster_summary and membership_data", {
     expect_equal(nrow(cs$means), 2)
   })
 
-  it("membership_data has Cluster column", {
-    data <- make_cluster_data()
-    r <- cluster$run_clustering(
-      data, c("a", "b"), 2,
-      algorithm = "kmeans", metric = "euclidean"
-    )
-    md <- r$result$membership_data
-    expect_true("Cluster" %in% names(md))
-    expect_equal(nrow(md), nrow(data))
-    expect_true(all(md$Cluster >= 1))
-  })
-
   it("columns field is returned", {
     data <- make_cluster_data()
     r <- cluster$run_clustering(
@@ -325,6 +313,16 @@ describe("cluster_summary and membership_data", {
       algorithm = "kmeans", metric = "euclidean"
     )
     expect_equal(r$result$columns, c("a", "b"))
+  })
+
+  it("result does not contain raw data", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    expect_null(r$result$data)
+    expect_null(r$result$membership_data)
   })
 })
 
