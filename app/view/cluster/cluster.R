@@ -55,6 +55,8 @@ server <- function(id, input_data, data_version) {
     optimal_result <- shiny$reactiveVal(NULL)
     last_optimal_plot <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
+    user_modified_k <- shiny$reactiveVal(FALSE)
+    updating_k_programmatically <- shiny$reactiveVal(FALSE)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
@@ -64,6 +66,8 @@ server <- function(id, input_data, data_version) {
       optimal_result(NULL)
       last_optimal_plot(NULL)
       na_info(NULL)
+      user_modified_k(FALSE)
+      updating_k_programmatically(TRUE)
       rhino$log$info("Cluster: state reset for new data")
     }, ignoreInit = TRUE)
 
@@ -85,6 +89,15 @@ server <- function(id, input_data, data_version) {
       input_data = input_data,
       data_version = data_version
     )
+
+    # Track user vs programmatic changes to n_clusters
+    shiny$observeEvent(input$n_clusters, {
+      if (updating_k_programmatically()) {
+        updating_k_programmatically(FALSE)
+      } else {
+        user_modified_k(TRUE)
+      }
+    }, ignoreInit = TRUE)
 
     # Delegate Hopkins statistic rendering
     hopkins$render_output(
@@ -192,6 +205,25 @@ server <- function(id, input_data, data_version) {
         analysis_data, measure_cols
       )
       optimal_result(opt_res)
+
+      # Auto-fill n_clusters from optimal median if user
+      # hasn't manually changed the value
+      if (
+        isTRUE(opt_res$success) &&
+        !user_modified_k()
+      ) {
+        median_k <- opt_res$result$summary$median_k
+        updating_k_programmatically(TRUE)
+        shiny$updateNumericInput(
+          session, "n_clusters",
+          value = median_k
+        )
+        n_clusters <- median_k
+        rhino$log$info(
+          "Cluster: auto-set n_clusters={median_k}",
+          " from optimal median"
+        )
+      }
 
       # Run clustering analysis on prepared data
       clustering_result <- cluster$run_clustering(
