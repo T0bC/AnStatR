@@ -193,6 +193,142 @@ describe("run_clustering dbscan", {
 })
 
 # =============================================================================
+# Shared quality metrics (all algorithms)
+# =============================================================================
+
+describe("shared quality metrics", {
+  it("kmeans returns silhouette, bss_tss, withinss", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    expect_true(r$success)
+    d <- r$result$details
+    expect_true(!is.na(d$silhouette_avg))
+    expect_true(d$silhouette_avg >= -1 && d$silhouette_avg <= 1)
+    expect_true(!is.na(d$bss_tss))
+    expect_true(d$bss_tss >= 0 && d$bss_tss <= 1)
+    expect_true(!is.null(d$tot_withinss))
+    expect_true(!is.null(d$size))
+  })
+
+  it("hierarchical returns silhouette, bss_tss, withinss", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "hierarchical",
+      metric = "euclidean", method = "ward"
+    )
+    expect_true(r$success)
+    d <- r$result$details
+    expect_true(!is.na(d$silhouette_avg))
+    expect_true(!is.na(d$bss_tss))
+    expect_true(!is.null(d$tot_withinss))
+    expect_true(!is.null(d$size))
+  })
+
+  it("pam returns silhouette, bss_tss, withinss", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "manhattan"
+    )
+    expect_true(r$success)
+    d <- r$result$details
+    expect_true(!is.na(d$silhouette_avg))
+    expect_true(!is.na(d$bss_tss))
+    expect_true(!is.null(d$tot_withinss))
+  })
+
+  it("dbscan returns silhouette, bss_tss, withinss", {
+    data <- make_cluster_data(n = 50)
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "dbscan", metric = "euclidean"
+    )
+    expect_true(r$success)
+    d <- r$result$details
+    # silhouette may be NA if only 1 cluster found
+    expect_true(!is.null(d$silhouette_avg))
+    expect_true(!is.null(d$bss_tss))
+    expect_true(!is.null(d$tot_withinss))
+  })
+
+  it("bss + withinss equals totss", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    d <- r$result$details
+    expect_equal(
+      d$betweenss + d$tot_withinss,
+      d$totss,
+      tolerance = 1e-6
+    )
+  })
+})
+
+# =============================================================================
+# Cluster summary and membership data (all algorithms)
+# =============================================================================
+
+describe("cluster_summary and membership_data", {
+  it("kmeans returns cluster_summary with means", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    expect_true(r$success)
+    cs <- r$result$cluster_summary
+    expect_true(!is.null(cs))
+    expect_equal(nrow(cs$means), 2)
+    expect_equal(ncol(cs$means), 2)
+    expect_equal(length(cs$cluster_ids), 2)
+    expect_equal(length(cs$n_per_cluster), 2)
+    expect_equal(
+      sum(cs$n_per_cluster), nrow(data)
+    )
+    expect_true(!is.null(cs$overall_mean))
+  })
+
+  it("hierarchical returns cluster_summary", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "hierarchical",
+      metric = "euclidean", method = "ward"
+    )
+    cs <- r$result$cluster_summary
+    expect_true(!is.null(cs))
+    expect_equal(nrow(cs$means), 2)
+  })
+
+  it("membership_data has Cluster column", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    md <- r$result$membership_data
+    expect_true("Cluster" %in% names(md))
+    expect_equal(nrow(md), nrow(data))
+    expect_true(all(md$Cluster >= 1))
+  })
+
+  it("columns field is returned", {
+    data <- make_cluster_data()
+    r <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    expect_equal(r$result$columns, c("a", "b"))
+  })
+})
+
+# =============================================================================
 # run_clustering — Error cases
 # =============================================================================
 
