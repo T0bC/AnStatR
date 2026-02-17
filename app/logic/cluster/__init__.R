@@ -1,9 +1,10 @@
 #' @export
 box::use(
   app/logic/cluster/cluster[
-    validate_inputs,
-    run_clustering,
     cluster_error_parser,
+    compute_cluster_summary,
+    run_clustering,
+    validate_inputs,
   ],
   app/logic/cluster/hopkins[compute_hopkins],
   app/logic/cluster/optimal_clusters[
