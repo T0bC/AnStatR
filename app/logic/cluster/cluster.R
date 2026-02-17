@@ -454,7 +454,9 @@ run_dbscan <- function(num_data, metric) {
       eps = eps,
       min_pts = min_pts,
       n_noise = sum(clusters == 0),
-      n_clusters_found = n_found
+      n_clusters_found = n_found,
+      border_points = db_res$borderPoints,
+      db_metric = metric
     )
   )
 }
