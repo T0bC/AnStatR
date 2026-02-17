@@ -7,7 +7,7 @@ box::use(
 box::use(
   app/logic/logging,
   app/logic/settings,
-  app/view/cluster/cluster,
+  app/view/cluster,
   app/view/help_modal,
   app/view/load_data,
   app/view/median,
