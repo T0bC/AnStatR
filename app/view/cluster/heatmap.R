@@ -13,9 +13,9 @@ box::use(
 #' Render heatmap panel content
 #'
 #' Returns UI for the cluster heatmap accordion panel.
-#' For hierarchical clustering: plotlyOutput.
-#' For other algorithms: info alert explaining heatmap
-#' is only available for hierarchical clustering.
+#' For hierarchical clustering: plotlyOutput with native
+#' dendrograms. For other algorithms: plotlyOutput with
+#' independently computed dendrograms and an info banner.
 #'
 #' @param cluster_result Result from run_clustering()
 #'   (the $result field, not the wrapper)
@@ -31,11 +31,13 @@ render_heatmap_content <- function(cluster_result, ns) {
   }
 
   variant <- cluster_result$details$variant
-  if (variant != "hclust") {
-    return(render_non_hierarchical_message(variant))
+
+  info_banner <- if (variant != "hclust") {
+    render_non_hierarchical_note(variant)
   }
 
   shiny$tagList(
+    info_banner,
     shiny$tags$div(
       class = "mt-2",
       plotly$plotlyOutput(
@@ -67,7 +69,6 @@ render_output <- function(input, output, session,
   output$heatmap_plot <- plotly$renderPlotly({
     res <- cluster_result_rv()
     if (is.null(res)) return(NULL)
-    if (res$details$variant != "hclust") return(NULL)
 
     analysis_data <- analysis_data_rv()
     measure_cols <- measure_cols_rv()
@@ -134,7 +135,7 @@ render_output <- function(input, output, session,
 # Internal helpers (not exported)
 # =============================================================================
 
-render_non_hierarchical_message <- function(variant) {
+render_non_hierarchical_note <- function(variant) {
   algo_label <- switch(
     variant,
     kmeans = "K-Means",
@@ -146,7 +147,7 @@ render_non_hierarchical_message <- function(variant) {
   shiny$tags$div(
     class = paste(
       "alert alert-info",
-      "d-flex align-items-start"
+      "d-flex align-items-start mb-2"
     ),
     bsicons$bs_icon(
       "info-circle-fill",
@@ -154,25 +155,23 @@ render_non_hierarchical_message <- function(variant) {
     ),
     shiny$tags$div(
       shiny$tags$strong(
-        "Cluster heatmap not available"
+        paste0(
+          "Dendrograms computed independently ",
+          "(", algo_label, ")"
+        )
       ),
       shiny$tags$p(
         class = "mb-0 mt-1",
         paste0(
-          "The cluster heatmap uses hierarchical ",
-          "dendrograms for row and column ordering ",
-          "and is only available for hierarchical ",
-          "clustering. The current analysis uses ",
-          algo_label, ", which does not produce a ",
-          "merge hierarchy."
-        )
-      ),
-      shiny$tags$small(
-        class = "text-muted d-block mt-1",
-        paste(
-          "To generate a cluster heatmap, select",
-          "'Hierarchical' as the clustering",
-          "algorithm and re-run the analysis."
+          algo_label, " does not produce a merge ",
+          "hierarchy. The dendrograms shown here ",
+          "are computed independently from the data ",
+          "using Ward's method to provide meaningful ",
+          "row and column ordering. The heatmap ",
+          "still reveals feature patterns across ",
+          "the assigned clusters and helps validate ",
+          "whether cluster assignments correspond ",
+          "to distinct data profiles."
         )
       )
     )
