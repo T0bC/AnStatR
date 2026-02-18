@@ -1,4 +1,5 @@
 box::use(
+  ggiraph,
   ggplot2,
   grDevices,
   rhino,
@@ -57,14 +58,13 @@ create_cluster_biplot <- function(data, measure_cols,
     )
   )
 
-  # Guard: only PCA is implemented
-
-  if (reduction_method != "pca") {
+  # Guard: only PCA and raw are implemented
+  if (!reduction_method %in% c("pca", "raw")) {
     return(error_handling$simple_error(
       message = paste0(
         "Reduction method '", reduction_method,
         "' is not implemented yet. ",
-        "Please select PCA."
+        "Please select PCA or Raw Data."
       ),
       operation_name = "Cluster Biplot",
       context = error_context
@@ -73,97 +73,31 @@ create_cluster_biplot <- function(data, measure_cols,
 
   error_handling$safe_execute(
     expr = {
-      # Run PCA on the cluster data
-      pca_res <- run_pca(
-        data, measure_cols,
-        meta_cols = meta_cols
-      )
-      if (!pca_res$success) {
-        stop(pca_res$error$message)
-      }
-      pca_result <- pca_res$result
-
-      # Build the base biplot (individuals only)
-      # show_convex_hull controls group ellipses/hulls
-      biplot_res <- create_biplot(
-        pca_result = pca_result,
-        dim_x = dim_x,
-        dim_y = dim_y,
-        layer = "individuals",
-        group_cols = group_cols,
-        show_convex_hull = show_convex_hull,
-        point_alpha = point_alpha,
-        point_size = point_size,
-        show_title = show_title
-      )
-      if (!biplot_res$success) {
-        stop(biplot_res$error$message)
-      }
-      p <- biplot_res$result
-
-      # Override title for cluster context
-      if (show_title) {
-        p <- p + ggplot2$ggtitle(
-          "Cluster Biplot (PCA Projection)"
+      if (reduction_method == "pca") {
+        p <- build_pca_biplot(
+          data, measure_cols, meta_cols,
+          clusters, dim_x, dim_y,
+          group_cols, show_convex_hull,
+          point_alpha, point_size, show_title
         )
-      }
-
-      # Build cluster polygon overlay
-      ind_coord <- pca_result$ind$coord
-      hull_data <- build_cluster_hull_data(
-        ind_coord, clusters, dim_x, dim_y
-      )
-
-      if (!is.null(hull_data) && nrow(hull_data) > 0) {
-        p <- p + ggplot2$geom_polygon(
-          data = hull_data,
-          ggplot2$aes(
-            x = x, y = y,
-            colour = cluster_label,
-            group = cluster_label
-          ),
-          fill = NA,
-          linewidth = 1.0,
-          linetype = "dashed",
-          alpha = 0.8,
-          show.legend = TRUE
+      } else {
+        p <- build_raw_biplot(
+          data, measure_cols, meta_cols,
+          clusters, dim_x, dim_y,
+          group_cols, show_convex_hull,
+          point_alpha, point_size, show_title
         )
-
-        # Add cluster labels at hull centroids
-        centroid_data <- build_cluster_centroids(
-          ind_coord, clusters, dim_x, dim_y
-        )
-        if (!is.null(centroid_data) &&
-            nrow(centroid_data) > 0) {
-          p <- p + ggplot2$geom_label(
-            data = centroid_data,
-            ggplot2$aes(
-              x = x, y = y,
-              label = cluster_label,
-              colour = cluster_label
-            ),
-            fill = "white",
-            alpha = 0.8,
-            size = 3.5,
-            fontface = "bold",
-            label.padding = ggplot2$unit(0.2, "lines"),
-            show.legend = FALSE
-          )
-        }
-
-        p <- p + ggplot2$labs(colour = "Cluster")
       }
 
       rhino$log$info(
         "Cluster Biplot: complete ",
         "({dim_x} vs {dim_y}, ",
-        "{length(unique(clusters[clusters > 0]))} clusters)"
+        "method={reduction_method}, ",
+        "{length(unique(clusters[clusters > 0]))}",
+        " clusters)"
       )
 
-      list(
-        plot = p,
-        pca_result = pca_result
-      )
+      list(plot = p)
     },
     operation_name = "Cluster Biplot",
     context = error_context,
@@ -215,6 +149,295 @@ cluster_biplot_error_parser <- function(
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+#' Build the PCA-based biplot with cluster overlays
+build_pca_biplot <- function(data, measure_cols,
+                              meta_cols, clusters,
+                              dim_x, dim_y,
+                              group_cols,
+                              show_convex_hull,
+                              point_alpha, point_size,
+                              show_title) {
+  pca_res <- run_pca(
+    data, measure_cols,
+    meta_cols = meta_cols
+  )
+  if (!pca_res$success) {
+    stop(pca_res$error$message)
+  }
+  pca_result <- pca_res$result
+
+  biplot_res <- create_biplot(
+    pca_result = pca_result,
+    dim_x = dim_x,
+    dim_y = dim_y,
+    layer = "individuals",
+    group_cols = group_cols,
+    show_convex_hull = show_convex_hull,
+    point_alpha = point_alpha,
+    point_size = point_size,
+    show_title = show_title
+  )
+  if (!biplot_res$success) {
+    stop(biplot_res$error$message)
+  }
+  p <- biplot_res$result
+
+  if (show_title) {
+    p <- p + ggplot2$ggtitle(
+      "Cluster Biplot (PCA Projection)"
+    )
+  }
+
+  ind_coord <- pca_result$ind$coord
+  add_cluster_overlays(
+    p, ind_coord, clusters, dim_x, dim_y
+  )
+}
+
+#' Build the raw-data scatter plot with cluster overlays
+build_raw_biplot <- function(data, measure_cols,
+                              meta_cols, clusters,
+                              dim_x, dim_y,
+                              group_cols,
+                              show_convex_hull,
+                              point_alpha, point_size,
+                              show_title) {
+  # Validate that dim_x and dim_y are actual columns
+  if (!dim_x %in% names(data)) {
+    stop(paste0(
+      "Column '", dim_x,
+      "' not found in the data."
+    ))
+  }
+  if (!dim_y %in% names(data)) {
+    stop(paste0(
+      "Column '", dim_y,
+      "' not found in the data."
+    ))
+  }
+
+  # Build plot data frame
+  plot_df <- data.frame(
+    x = data[[dim_x]],
+    y = data[[dim_y]],
+    stringsAsFactors = FALSE
+  )
+
+  # Resolve group column for point coloring
+  has_group <- !is.null(group_cols) &&
+    length(group_cols) > 0
+  if (has_group) {
+    # Combine multiple group cols into one label
+    group_vals <- lapply(group_cols, function(gc) {
+      if (gc %in% names(data)) {
+        as.character(data[[gc]])
+      } else {
+        rep("NA", nrow(data))
+      }
+    })
+    if (length(group_vals) == 1) {
+      plot_df$group <- group_vals[[1]]
+    } else {
+      plot_df$group <- do.call(
+        paste, c(group_vals, sep = " | ")
+      )
+    }
+    plot_df$group <- as.factor(plot_df$group)
+  }
+
+  # Build tooltip
+  plot_df$tooltip <- paste0(
+    dim_x, ": ",
+    round(plot_df$x, 3), "<br>",
+    dim_y, ": ",
+    round(plot_df$y, 3)
+  )
+  if (has_group) {
+    plot_df$tooltip <- paste0(
+      plot_df$tooltip, "<br>Group: ",
+      plot_df$group
+    )
+  }
+
+  # Resolve alpha and size
+  alpha_val <- if (is.character(point_alpha) &&
+      point_alpha == "Contribution") {
+    0.7
+  } else {
+    as.numeric(point_alpha)
+  }
+  size_val <- if (is.character(point_size) &&
+      point_size == "Contribution") {
+    3
+  } else {
+    as.numeric(point_size)
+  }
+
+  # Build ggplot
+  if (has_group) {
+    p <- ggplot2$ggplot(
+      plot_df,
+      ggplot2$aes(x = x, y = y)
+    ) +
+      ggiraph$geom_point_interactive(
+        ggplot2$aes(
+          fill = group,
+          tooltip = tooltip,
+          data_id = tooltip
+        ),
+        shape = 21,
+        colour = "grey30",
+        alpha = alpha_val,
+        size = size_val,
+        stroke = 0.3
+      ) +
+      ggplot2$labs(fill = "Group")
+
+    # Add ellipses or convex hulls for groups
+    if (show_convex_hull) {
+      hull_grp <- build_group_hull_data(
+        plot_df, "group"
+      )
+      if (!is.null(hull_grp) &&
+          nrow(hull_grp) > 0) {
+        p <- p + ggplot2$geom_polygon(
+          data = hull_grp,
+          ggplot2$aes(
+            x = x, y = y,
+            fill = group_label
+          ),
+          alpha = 0.1,
+          show.legend = FALSE
+        )
+      }
+    }
+  } else {
+    p <- ggplot2$ggplot(
+      plot_df,
+      ggplot2$aes(x = x, y = y)
+    ) +
+      ggiraph$geom_point_interactive(
+        ggplot2$aes(
+          tooltip = tooltip,
+          data_id = tooltip
+        ),
+        shape = 21,
+        fill = "steelblue",
+        colour = "grey30",
+        alpha = alpha_val,
+        size = size_val,
+        stroke = 0.3
+      )
+  }
+
+  p <- p +
+    ggplot2$labs(
+      x = dim_x,
+      y = dim_y
+    ) +
+    ggplot2$theme_minimal() +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank()
+    )
+
+  if (show_title) {
+    p <- p + ggplot2$ggtitle(
+      paste0(
+        "Cluster Scatter (",
+        dim_x, " vs ", dim_y, ")"
+      )
+    )
+  }
+
+  # Build coordinate matrix for cluster overlays
+  ind_coord <- as.matrix(
+    data.frame(x = plot_df$x, y = plot_df$y)
+  )
+  colnames(ind_coord) <- c(dim_x, dim_y)
+
+  add_cluster_overlays(
+    p, ind_coord, clusters, dim_x, dim_y
+  )
+}
+
+#' Add cluster polygon overlays and centroid labels
+add_cluster_overlays <- function(p, ind_coord,
+                                  clusters,
+                                  dim_x, dim_y) {
+  hull_data <- build_cluster_hull_data(
+    ind_coord, clusters, dim_x, dim_y
+  )
+
+  if (!is.null(hull_data) && nrow(hull_data) > 0) {
+    p <- p + ggplot2$geom_polygon(
+      data = hull_data,
+      ggplot2$aes(
+        x = x, y = y,
+        colour = cluster_label,
+        group = cluster_label
+      ),
+      fill = NA,
+      linewidth = 1.0,
+      linetype = "dashed",
+      alpha = 0.8,
+      show.legend = TRUE
+    )
+
+    centroid_data <- build_cluster_centroids(
+      ind_coord, clusters, dim_x, dim_y
+    )
+    if (!is.null(centroid_data) &&
+        nrow(centroid_data) > 0) {
+      p <- p + ggplot2$geom_label(
+        data = centroid_data,
+        ggplot2$aes(
+          x = x, y = y,
+          label = cluster_label,
+          colour = cluster_label
+        ),
+        fill = "white",
+        alpha = 0.8,
+        size = 3.5,
+        fontface = "bold",
+        label.padding = ggplot2$unit(
+          0.2, "lines"
+        ),
+        show.legend = FALSE
+      )
+    }
+
+    p <- p + ggplot2$labs(colour = "Cluster")
+  }
+
+  p
+}
+
+#' Build convex hull data for group coloring
+#' (used in raw data mode)
+build_group_hull_data <- function(plot_df,
+                                   group_col) {
+  groups <- unique(plot_df[[group_col]])
+  hull_list <- lapply(groups, function(g) {
+    sub <- plot_df[plot_df[[group_col]] == g, ]
+    if (nrow(sub) < 3) return(NULL)
+    hull_idx <- grDevices$chull(sub$x, sub$y)
+    hull_idx <- c(hull_idx, hull_idx[1])
+    data.frame(
+      x = sub$x[hull_idx],
+      y = sub$y[hull_idx],
+      group_label = g,
+      stringsAsFactors = FALSE
+    )
+  })
+  result <- do.call(rbind, hull_list)
+  if (!is.null(result)) {
+    result$group_label <- as.factor(
+      result$group_label
+    )
+  }
+  result
+}
 
 #' Build convex hull data for each cluster
 #'
