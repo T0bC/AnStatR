@@ -75,6 +75,7 @@ render_output <- function(input, output, session,
       params$dim_y,
       paste(params$group_cols, collapse = ","),
       params$reduction_method,
+      params$show_group_shapes,
       params$show_hull,
       params$point_alpha,
       params$point_size,
@@ -88,6 +89,7 @@ render_output <- function(input, output, session,
       dim_y = input$clusterBiplotDimY,
       group_cols = input$groupBiplot,
       reduction_method = input$reductionMethod,
+      show_group_shapes = input$showGroupShapes,
       show_hull = input$showConvexHull,
       point_alpha = input$pointAlpha,
       point_size = input$pointSize
@@ -150,7 +152,13 @@ render_output <- function(input, output, session,
       group_cols <- NULL
     }
 
-    show_hull <- isTRUE(params$show_hull)
+    # show_convex_hull is only active when
+    # showGroupShapes is enabled
+    show_group_shapes <- isTRUE(
+      params$show_group_shapes
+    )
+    show_hull <- show_group_shapes &&
+      isTRUE(params$show_hull)
     point_alpha <- params$point_alpha %||% 1
     point_size <- params$point_size %||% 3
 
@@ -201,6 +209,7 @@ render_output <- function(input, output, session,
       dim_y = dim_y,
       group_cols = group_cols,
       show_convex_hull = show_hull,
+      show_group_shapes = show_group_shapes,
       point_alpha = point_alpha,
       point_size = point_size,
       reduction_method = reduction_method,
