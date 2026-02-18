@@ -14,6 +14,28 @@ box::use(
 # No Shiny dependencies allowed in this file.
 # =============================================================================
 
+#' Shared cluster color palette
+#'
+#' Used consistently across biplot, heatmap, and results.
+#' Supports up to 10 clusters; wraps around for more.
+#' @export
+CLUSTER_PALETTE <- c(
+  "#0d6efd", "#198754", "#dc3545", "#fd7e14",
+  "#6f42c1", "#20c997", "#d63384", "#0dcaf0",
+  "#6610f2", "#ffc107"
+)
+
+#' Get color for a cluster ID
+#'
+#' @param cluster_id Integer cluster ID (1-based)
+#' @return Hex color string
+#' @export
+cluster_color <- function(cluster_id) {
+  idx <- ((as.integer(cluster_id) - 1L) %%
+    length(CLUSTER_PALETTE)) + 1L
+  CLUSTER_PALETTE[idx]
+}
+
 #' Validate clustering inputs before computation
 #' @param columns Character vector of selected column names
 #' @param data Data frame to validate against
