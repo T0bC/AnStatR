@@ -7,6 +7,7 @@ box::use(
 )
 
 box::use(
+  app/logic/cluster/cluster[CLUSTER_PALETTE],
   app/logic/error_handling,
 )
 
@@ -14,13 +15,6 @@ box::use(
 # Pure logic functions for cluster heatmap visualization
 # No Shiny dependencies allowed in this file.
 # =============================================================================
-
-# Palette matching cluster_results.R cluster_color()
-CLUSTER_PALETTE <- c(
-  "#0d6efd", "#198754", "#dc3545", "#fd7e14",
-  "#6f42c1", "#20c997", "#d63384", "#0dcaf0",
-  "#6610f2", "#ffc107"
-)
 
 SERIATION_CHOICES <- c(
   "OLO" = "OLO",
