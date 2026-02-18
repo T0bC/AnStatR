@@ -42,6 +42,9 @@ create_cluster_biplot <- function(data, measure_cols,
                                    dim_x = "Dim.1",
                                    dim_y = "Dim.2",
                                    group_cols = NULL,
+                                   show_convex_hull = FALSE,
+                                   point_alpha = 1,
+                                   point_size = 3,
                                    reduction_method = "pca",
                                    show_title = TRUE) {
   error_context <- list(
@@ -80,16 +83,17 @@ create_cluster_biplot <- function(data, measure_cols,
       }
       pca_result <- pca_res$result
 
-      # Build the base biplot (individuals only, no hull)
+      # Build the base biplot (individuals only)
+      # show_convex_hull controls group ellipses/hulls
       biplot_res <- create_biplot(
         pca_result = pca_result,
         dim_x = dim_x,
         dim_y = dim_y,
         layer = "individuals",
         group_cols = group_cols,
-        show_convex_hull = FALSE,
-        point_alpha = 1,
-        point_size = 3,
+        show_convex_hull = show_convex_hull,
+        point_alpha = point_alpha,
+        point_size = point_size,
         show_title = show_title
       )
       if (!biplot_res$success) {
