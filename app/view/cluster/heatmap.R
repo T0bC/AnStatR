@@ -1,6 +1,7 @@
 box::use(
   bsicons,
   plotly,
+  shinycssloaders,
   shiny,
 )
 
@@ -40,8 +41,13 @@ render_heatmap_content <- function(cluster_result, ns) {
     info_banner,
     shiny$tags$div(
       class = "mt-2",
-      plotly$plotlyOutput(
-        ns("heatmap_plot"), height = "600px"
+      shinycssloaders$withSpinner(
+        plotly$plotlyOutput(
+          ns("heatmap_plot"),
+          height = "600px"
+        ),
+        type = 6,
+        color = "#0d6efd"
       )
     )
   )
