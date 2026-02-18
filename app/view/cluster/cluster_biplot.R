@@ -48,12 +48,15 @@ render_biplot_content <- function(cluster_result, ns) {
 #' @param membership_data_rv reactiveVal with membership
 #'   data frame (includes metadata columns + Cluster)
 #' @param analysis_data_rv reactiveVal with scaled data
+#' @param cleaned_data_rv reactiveVal with raw unscaled
+#'   cleaned data (used for "raw" reduction method)
 #' @param measure_cols_rv reactiveVal with measure col names
 #' @export
 render_output <- function(input, output, session,
                           cluster_result_rv,
                           membership_data_rv,
                           analysis_data_rv,
+                          cleaned_data_rv,
                           measure_cols_rv) {
   last_plot <- shiny$reactiveVal(NULL)
   last_error <- shiny$reactiveVal(NULL)
@@ -104,6 +107,7 @@ render_output <- function(input, output, session,
     if (is.null(res)) return(NULL)
 
     analysis_data <- analysis_data_rv()
+    raw_data <- cleaned_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
         is.null(measure_cols)) {
@@ -134,10 +138,19 @@ render_output <- function(input, output, session,
     point_alpha <- params$point_alpha %||% 1
     point_size <- params$point_size %||% 3
 
+    # Choose data source: scaled for PCA, raw for
+    # raw data mode
+    base_data <- if (reduction_method == "raw" &&
+        !is.null(raw_data)) {
+      raw_data
+    } else {
+      analysis_data
+    }
+
     # Resolve "CLUSTER" pseudo-column: inject cluster
     # assignments as a real column in the data
     meta_cols <- character(0)
-    plot_data <- analysis_data
+    plot_data <- base_data
 
     if (!is.null(group_cols)) {
       md <- membership_data_rv()
@@ -153,7 +166,8 @@ render_output <- function(input, output, session,
                      !gc %in% names(plot_data)) {
             plot_data[[gc]] <- md[[gc]]
             meta_cols <- c(meta_cols, gc)
-          } else if (gc %in% names(plot_data)) {
+          } else if (
+            gc %in% names(plot_data)) {
             meta_cols <- c(meta_cols, gc)
           }
         }
