@@ -233,12 +233,47 @@ server <- function(id, input_data, data_version) {
         }
 
         # Step 4: Optimal number of clusters
+        # This step involves bootstrapping and can
+        # take a long time. Show a persistent
+        # notification so the user sees activity
+        # even while the progress bar is frozen.
         shiny$incProgress(
           0.15,
           detail = paste(
             "Computing optimal number",
-            "of clusters..."
+            "of clusters (bootstrapping,",
+            "this may take a moment)..."
           )
+        )
+        opt_note_id <- shiny$showNotification(
+          shiny$tagList(
+            shiny$tags$div(
+              class = paste(
+                "d-flex align-items-center",
+                "gap-2"
+              ),
+              shiny$tags$div(
+                class = paste(
+                  "spinner-border",
+                  "spinner-border-sm",
+                  "text-primary"
+                ),
+                role = "status"
+              ),
+              shiny$tags$span(
+                paste(
+                  "Computing optimal clusters",
+                  "(bootstrapping",
+                  nrow(analysis_data),
+                  "samples)...",
+                  "This may take a moment."
+                )
+              )
+            )
+          ),
+          duration = NULL,
+          closeButton = FALSE,
+          type = "message"
         )
         rhino$log$info(
           "Cluster: computing optimal clusters",
@@ -248,6 +283,7 @@ server <- function(id, input_data, data_version) {
         opt_res <- cluster$compute_optimal_clusters(
           analysis_data, measure_cols
         )
+        shiny$removeNotification(opt_note_id)
         optimal_result(opt_res)
 
         if (
