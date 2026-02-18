@@ -1,5 +1,6 @@
 box::use(
   ggiraph,
+  shinycssloaders,
   shiny,
 )
 
@@ -27,9 +28,13 @@ render_biplot_content <- function(cluster_result, ns) {
   shiny$tagList(
     shiny$tags$div(
       class = "mt-2",
-      ggiraph$girafeOutput(
-        ns("cluster_biplot_plot"),
-        height = "600px"
+      shinycssloaders$withSpinner(
+        ggiraph$girafeOutput(
+          ns("cluster_biplot_plot"),
+          height = "600px"
+        ),
+        type = 6,
+        color = "#0d6efd"
       )
     )
   )
