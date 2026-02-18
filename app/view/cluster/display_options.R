@@ -118,21 +118,42 @@ tab_ui <- function(ns) {
       )
     ),
     shiny$checkboxInput(
-      inputId = ns("showConvexHull"),
+      inputId = ns("showGroupShapes"),
       label = shiny$tags$span(
-        "Use Convex Hull ",
+        "Show Ellipses / Hulls ",
         bslib$tooltip(
           bsicons$bs_icon(
             "info-circle", class = "text-muted"
           ),
           paste(
-            "Select if you want to show the",
-            "convex hull instead of the",
-            "95% ellipse."
+            "Show 95% confidence ellipses or",
+            "convex hulls around the groups",
+            "selected in 'Group Biplot'."
           )
         )
       ),
       value = FALSE
+    ),
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("showGroupShapes"), "']"
+      ),
+      shiny$checkboxInput(
+        inputId = ns("showConvexHull"),
+        label = shiny$tags$span(
+          "Use Convex Hull ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Use convex hull instead of the",
+              "95% confidence ellipse."
+            )
+          )
+        ),
+        value = FALSE
+      )
     ),
     shiny$fluidRow(
       shiny$column(
@@ -392,6 +413,10 @@ tab_server <- function(input, output, session,
     shiny$updateNumericInput(
       session, "height",
       value = 10
+    )
+    shiny$updateCheckboxInput(
+      session, "showGroupShapes",
+      value = FALSE
     )
     shiny$updateCheckboxInput(
       session, "showConvexHull",
