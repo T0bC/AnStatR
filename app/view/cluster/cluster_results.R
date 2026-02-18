@@ -4,6 +4,10 @@ box::use(
   shiny,
 )
 
+box::use(
+  app/logic/cluster/cluster[cluster_color],
+)
+
 #' Render cluster analysis results
 #'
 #' Dispatches to algorithm-specific renderers based on the
@@ -761,17 +765,6 @@ interpret_silhouette <- function(sil_val) {
       badge_class = "bg-danger"
     )
   }
-}
-
-cluster_color <- function(cluster_id) {
-  palette <- c(
-    "#0d6efd", "#198754", "#dc3545", "#fd7e14",
-    "#6f42c1", "#20c997", "#d63384", "#0dcaf0",
-    "#6610f2", "#ffc107"
-  )
-  idx <- ((as.integer(cluster_id) - 1L) %%
-    length(palette)) + 1L
-  palette[idx]
 }
 
 cluster_badge_html <- function(cluster_vals) {
