@@ -4,9 +4,12 @@ box::use(
   DT,
   ggiraph,
   ggplot2,
+  htmlwidgets,
   openxlsx,
+  plotly,
   rhino,
   shiny,
+  webshot,
 )
 
 box::use(
@@ -17,7 +20,7 @@ box::use(
   app/view/cluster/cluster_results,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
-  app/view/cluster/dendrogram,
+  app/view/cluster/heatmap,
   app/view/cluster/display_options,
   app/view/cluster/hopkins,
   app/view/cluster/optimal_clusters,
@@ -60,7 +63,8 @@ server <- function(id, input_data, data_version) {
     hopkins_result <- shiny$reactiveVal(NULL)
     optimal_result <- shiny$reactiveVal(NULL)
     last_optimal_plot <- shiny$reactiveVal(NULL)
-    last_dendrogram_plot <- shiny$reactiveVal(NULL)
+    analysis_data_store <- shiny$reactiveVal(NULL)
+    measure_cols_store <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
     user_modified_k <- shiny$reactiveVal(FALSE)
     updating_k_programmatically <- shiny$reactiveVal(FALSE)
@@ -74,7 +78,8 @@ server <- function(id, input_data, data_version) {
       hopkins_result(NULL)
       optimal_result(NULL)
       last_optimal_plot(NULL)
-      last_dendrogram_plot(NULL)
+      analysis_data_store(NULL)
+      measure_cols_store(NULL)
       na_info(NULL)
       user_modified_k(FALSE)
       updating_k_programmatically(TRUE)
@@ -246,6 +251,8 @@ server <- function(id, input_data, data_version) {
 
       if (clustering_result$success) {
         result(clustering_result$result)
+        analysis_data_store(analysis_data)
+        measure_cols_store(measure_cols)
 
         # Build membership data from RAW cleaned data
         # Only include user-selected metadata + measure cols
@@ -435,26 +442,26 @@ server <- function(id, input_data, data_version) {
         )
       }
 
-      # Dendrogram visualization panel
-      dendro_panel <- if (!is.null(res)) {
+      # Cluster heatmap panel
+      heatmap_panel <- if (!is.null(res)) {
         is_hclust <- res$details$variant == "hclust"
-        dendro_title <- shiny$tags$span(
+        heatmap_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "diagram-3", class = "me-1"
+            "grid-3x3-gap", class = "me-1"
           ),
-          "Cluster Dendrogram"
+          "Cluster Heatmap"
         )
-        dendro_content <- dendrogram$render_dendrogram_content(
+        heatmap_content <- heatmap$render_heatmap_content(
           res, ns
         )
-        dendro_downloads <- if (is_hclust) {
-          download_buttons(ns, "dendrogram")
+        heatmap_downloads <- if (is_hclust) {
+          heatmap_download_button(ns)
         }
         bslib$accordion_panel(
-          title = dendro_title,
-          value = "dendrogram_panel",
-          dendro_content,
-          dendro_downloads
+          title = heatmap_title,
+          value = "heatmap_panel",
+          heatmap_content,
+          heatmap_downloads
         )
       }
 
@@ -467,7 +474,7 @@ server <- function(id, input_data, data_version) {
           hopkins_panel,
           opt_panel,
           cluster_results_panel,
-          dendro_panel
+          heatmap_panel
         )
       )
     })
@@ -493,17 +500,127 @@ server <- function(id, input_data, data_version) {
       last_optimal_plot, "Optimal_Clusters"
     )
 
-    # Delegate dendrogram rendering
-    dendrogram$render_output(
+    # Delegate heatmap rendering
+    heatmap$render_output(
       input, output, session,
       cluster_result_rv = result,
-      last_plot_rv = last_dendrogram_plot
+      membership_data_rv = membership_data,
+      analysis_data_rv = analysis_data_store,
+      measure_cols_rv = measure_cols_store
     )
 
-    # Register dendrogram download handlers
-    register_plot_downloads(
-      output, input, "dendrogram",
-      last_dendrogram_plot, "Dendrogram"
+    # Helper: build current heatmap from reactive state
+    build_heatmap_for_download <- function() {
+      res <- result()
+      shiny$req(res)
+      shiny$req(res$details$variant == "hclust")
+
+      ad <- analysis_data_store()
+      mc <- measure_cols_store()
+      shiny$req(ad, mc)
+
+      show_labels <- isTRUE(input$showLabels)
+      seriation <- input$seriation %||% "OLO"
+
+      custom_labels <- NULL
+      label_col <- input$labelColumn
+      if (show_labels && !is.null(label_col) &&
+          nzchar(label_col)) {
+        md <- membership_data()
+        if (!is.null(md) &&
+            label_col %in% names(md)) {
+          custom_labels <- as.character(
+            md[[label_col]]
+          )
+        }
+      }
+
+      row_side_colors_df <- NULL
+      side_cols <- input$rowSideColors
+      if (!is.null(side_cols) &&
+          length(side_cols) > 0) {
+        md <- membership_data()
+        if (!is.null(md)) {
+          valid_cols <- intersect(
+            side_cols, names(md)
+          )
+          if (length(valid_cols) > 0) {
+            row_side_colors_df <- md[
+              , valid_cols, drop = FALSE
+            ]
+          }
+        }
+      }
+
+      cluster$create_cluster_heatmap(
+        res,
+        data = ad,
+        measure_cols = mc,
+        show_labels = show_labels,
+        custom_labels = custom_labels,
+        seriation = seriation,
+        row_side_colors_df = row_side_colors_df,
+        scale_heatmap = "none"
+      )
+    }
+
+    # Helper: save heatmap widget to a temp HTML file
+    save_heatmap_html <- function(hm_result) {
+      tmp_html <- tempfile(fileext = ".html")
+      htmlwidgets$saveWidget(
+        hm_result$result, tmp_html,
+        selfcontained = TRUE
+      )
+      tmp_html
+    }
+
+    # Heatmap HTML download handler
+    output$heatmap_dl_html <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "Cluster_Heatmap_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".html"
+        )
+      },
+      content = function(file) {
+        hm_result <- build_heatmap_for_download()
+        if (isTRUE(hm_result$success)) {
+          htmlwidgets$saveWidget(
+            hm_result$result, file,
+            selfcontained = TRUE
+          )
+          rhino$log$info(
+            "Download: Cluster Heatmap HTML"
+          )
+        }
+      }
+    )
+
+    # Heatmap PNG download handler
+    output$heatmap_dl_png <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "Cluster_Heatmap_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".png"
+        )
+      },
+      content = function(file) {
+        hm_result <- build_heatmap_for_download()
+        if (isTRUE(hm_result$success)) {
+          tmp_html <- save_heatmap_html(hm_result)
+          on.exit(unlink(tmp_html), add = TRUE)
+          webshot$webshot(
+            tmp_html, file,
+            vwidth = 1200, vheight = 900,
+            delay = 2
+          )
+          rhino$log$info(
+            "Download: Cluster Heatmap PNG"
+          )
+        }
+      }
     )
 
     # Render membership DT table with colored cluster badges
@@ -577,6 +694,36 @@ download_buttons <- function(ns, id_prefix) {
       label = shiny$tags$span(
         bsicons$bs_icon("filetype-png", class = "me-1"),
         "PNG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    )
+  )
+}
+
+#' Create download buttons for the heatmap panel
+#'
+#' @param ns Namespace function
+#' @return tagList with PNG, PDF, and HTML download buttons
+heatmap_download_button <- function(ns) {
+  shiny$tags$div(
+    class = "d-flex gap-2 mt-2",
+    shiny$downloadButton(
+      ns("heatmap_dl_png"),
+      label = shiny$tags$span(
+        bsicons$bs_icon(
+          "filetype-png", class = "me-1"
+        ),
+        "PNG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    ),
+    shiny$downloadButton(
+      ns("heatmap_dl_html"),
+      label = shiny$tags$span(
+        bsicons$bs_icon(
+          "filetype-html", class = "me-1"
+        ),
+        "HTML"
       ),
       class = "btn btn-outline-secondary btn-sm"
     )
