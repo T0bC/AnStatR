@@ -16,50 +16,92 @@ tab_ui <- function(ns) {
     tooltip_text = "Display Options",
     value = "display_tab",
     shiny$h6(class = "text-muted mb-3", "Display Options"),
-    # Display options row
-    shiny$tags$div(
-      class = "row g-2",
-      shiny$tags$div(
-        class = "col-6",
-        shiny$checkboxInput(
-          inputId = ns("horizDendro"),
-          label = shiny$tags$span(
-            "Horizontal Dend ",
-            bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              "Display the dendrogram horizontally."
-            )
+    # Heatmap display options
+    shiny$checkboxInput(
+      inputId = ns("showLabels"),
+      label = shiny$tags$span(
+        "Show Labels ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
           ),
-          value = FALSE
+          "Show row labels on the heatmap."
         )
       ),
-      shiny$tags$div(
-        class = "col-6",
-        shiny$checkboxInput(
-          inputId = ns("showLabels"),
-          label = shiny$tags$span(
-            "Show Labels ",
-            bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              "Show the labels on Plots"
+      value = FALSE
+    ),
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("showLabels"), "']"
+      ),
+      shiny$selectizeInput(
+        inputId = ns("labelColumn"),
+        label = shiny$tags$span(
+          "Label Column ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle",
+              class = "text-muted"
+            ),
+            paste(
+              "Select a metadata column to use",
+              "as row labels in the heatmap.",
+              "If empty, row numbers are shown."
             )
+          )
+        ),
+        choices = NULL,
+        multiple = FALSE,
+        options = list(
+          placeholder = "Select label column...",
+          allowEmptyOption = TRUE
+        )
+      )
+    ),
+    shiny$selectInput(
+      inputId = ns("seriation"),
+      label = shiny$tags$span(
+        "Seriation (leaf ordering) ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
           ),
-          value = FALSE
+          paste(
+            "Controls how dendrogram leaves are",
+            "reordered in the heatmap. OLO gives",
+            "the best visual clarity."
+          )
         )
       ),
-      shiny$tags$div(
-        class = "col-6",
-        shiny$checkboxInput(
-          inputId = ns("polarDend"),
-          label = shiny$tags$span(
-            "Polar Dend ",
-            bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              "Display the dendrogram in a polar layout."
-            )
+      choices = c(
+        "OLO (optimal)" = "OLO",
+        "GW (fast heuristic)" = "GW",
+        "Mean" = "mean",
+        "None (raw order)" = "none"
+      ),
+      selected = "OLO"
+    ),
+    shiny$selectizeInput(
+      inputId = ns("rowSideColors"),
+      label = shiny$tags$span(
+        "Row Side Colors ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
           ),
-          value = FALSE
+          paste(
+            "Select metadata columns to display",
+            "as colored bars alongside heatmap",
+            "rows. Useful for seeing whether",
+            "metadata explains the clustering."
+          )
         )
+      ),
+      choices = NULL,
+      multiple = TRUE,
+      options = list(
+        placeholder = "Select side color columns...",
+        closeAfterSelect = FALSE
       )
     ),
     shiny$tags$hr(),
@@ -153,16 +195,22 @@ tab_server <- function(input, output, session,
     )
     # Reset to default values
     shiny$updateCheckboxInput(
-      session, "horizDendro",
-      value = FALSE
-    )
-    shiny$updateCheckboxInput(
       session, "showLabels",
       value = FALSE
     )
-    shiny$updateCheckboxInput(
-      session, "polarDend",
-      value = FALSE
+    shiny$updateSelectizeInput(
+      session, "labelColumn",
+      choices = character(0),
+      selected = character(0)
+    )
+    shiny$updateSelectInput(
+      session, "seriation",
+      selected = "OLO"
+    )
+    shiny$updateSelectizeInput(
+      session, "rowSideColors",
+      choices = character(0),
+      selected = character(0)
     )
     shiny$updateNumericInput(
       session, "width",
@@ -174,5 +222,35 @@ tab_server <- function(input, output, session,
     )
   }, ignoreInit = TRUE)
 
-  # GroupBiplot choices are updated in data_selection to avoid conflicts.
+  # Update labelColumn choices from selected metaData
+  shiny$observe({
+    meta <- input$metaData
+    if (is.null(meta)) meta <- character(0)
+    cur <- shiny$isolate(input$labelColumn)
+    sel <- if (!is.null(cur) && cur %in% meta) {
+      cur
+    } else {
+      character(0)
+    }
+    shiny$updateSelectizeInput(
+      session, "labelColumn",
+      choices = meta, selected = sel
+    )
+  })
+
+  # Update rowSideColors choices from selected metaData
+  shiny$observe({
+    meta <- input$metaData
+    if (is.null(meta)) meta <- character(0)
+    cur <- shiny$isolate(input$rowSideColors)
+    sel <- if (!is.null(cur)) {
+      intersect(cur, meta)
+    } else {
+      character(0)
+    }
+    shiny$updateSelectizeInput(
+      session, "rowSideColors",
+      choices = meta, selected = sel
+    )
+  })
 }
