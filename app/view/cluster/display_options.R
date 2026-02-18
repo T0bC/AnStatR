@@ -237,7 +237,7 @@ tab_ui <- function(ns) {
               )
             )
           ),
-          value = 8,
+          value = 16,
           min = 1,
           max = 50
         )
@@ -262,7 +262,7 @@ tab_ui <- function(ns) {
               )
             )
           ),
-          value = 8,
+          value = 10,
           min = 1,
           max = 50
         )
@@ -309,11 +309,11 @@ tab_server <- function(input, output, session,
     )
     shiny$updateNumericInput(
       session, "width",
-      value = 8
+      value = 16
     )
     shiny$updateNumericInput(
       session, "height",
-      value = 8
+      value = 10
     )
     shiny$updateSelectInput(
       session, "reductionMethod",
