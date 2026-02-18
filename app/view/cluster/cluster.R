@@ -15,6 +15,7 @@ box::use(
   app/logic/error_handling,
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
+  app/view/cluster/cluster_biplot,
   app/view/cluster/cluster_results,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
@@ -270,6 +271,39 @@ server <- function(id, input_data, data_version) {
           )
         )
 
+        # Update biplot dimension choices based on
+        # the number of measurement columns (PCA dims)
+        n_dims <- min(
+          length(measure_cols),
+          nrow(analysis_data) - 1
+        )
+        dim_choices <- paste0(
+          "Dim.", seq_len(n_dims)
+        )
+        for (dim_id in c(
+          "clusterBiplotDimX",
+          "clusterBiplotDimY"
+        )) {
+          current <- input[[dim_id]]
+          sel <- if (!is.null(current) &&
+                     current %in% dim_choices) {
+            current
+          } else {
+            dim_choices[min(
+              which(dim_id == c(
+                "clusterBiplotDimX",
+                "clusterBiplotDimY"
+              )),
+              length(dim_choices)
+            )]
+          }
+          shiny$updateSelectizeInput(
+            session, dim_id,
+            choices = dim_choices,
+            selected = sel
+          )
+        }
+
         rhino$log$info(
           "Cluster: clustering completed successfully"
         )
@@ -459,6 +493,34 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # Cluster biplot panel
+      biplot_err <- biplot_state$error()
+      biplot_panel <- if (!is.null(res)) {
+        biplot_title <- shiny$tags$span(
+          bsicons$bs_icon(
+            "diagram-2", class = "me-1"
+          ),
+          "Cluster Biplot"
+        )
+        biplot_content <- if (
+          error_handling$is_app_error(biplot_err)
+        ) {
+          error_display$error_alert_structured(
+            biplot_err, type = "danger"
+          )
+        } else {
+          cluster_biplot$render_biplot_content(
+            res, ns
+          )
+        }
+        bslib$accordion_panel(
+          title = biplot_title,
+          value = "cluster_biplot_panel",
+          biplot_content,
+          download_buttons(ns, "cluster_biplot")
+        )
+      }
+
       shiny$tagList(
         na_banner,
         bslib$accordion(
@@ -468,7 +530,8 @@ server <- function(id, input_data, data_version) {
           hopkins_panel,
           opt_panel,
           cluster_results_panel,
-          heatmap_panel
+          heatmap_panel,
+          biplot_panel
         )
       )
     })
@@ -501,6 +564,21 @@ server <- function(id, input_data, data_version) {
       membership_data_rv = membership_data,
       analysis_data_rv = analysis_data_store,
       measure_cols_rv = measure_cols_store
+    )
+
+    # Delegate cluster biplot rendering
+    biplot_state <- cluster_biplot$render_output(
+      input, output, session,
+      cluster_result_rv = result,
+      membership_data_rv = membership_data,
+      analysis_data_rv = analysis_data_store,
+      measure_cols_rv = measure_cols_store
+    )
+
+    # Register cluster biplot download handlers
+    register_plot_downloads(
+      output, input, "cluster_biplot",
+      biplot_state$plot, "Cluster_Biplot"
     )
 
     # Helper: build current heatmap from reactive state
