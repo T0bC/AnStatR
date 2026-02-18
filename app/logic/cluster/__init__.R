@@ -6,6 +6,9 @@ box::use(
     run_clustering,
     validate_inputs,
   ],
+  app/logic/cluster/cluster_biplot[
+    create_cluster_biplot,
+  ],
   app/logic/cluster/heatmap[
     create_cluster_heatmap,
   ],
