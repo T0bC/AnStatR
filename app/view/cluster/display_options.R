@@ -116,6 +116,83 @@ tab_ui <- function(ns) {
         closeAfterSelect = FALSE
       )
     ),
+    shiny$checkboxInput(
+      inputId = ns("showConvexHull"),
+      label = shiny$tags$span(
+        "Use Convex Hull ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Select if you want to show the",
+            "convex hull instead of the",
+            "95% ellipse."
+          )
+        )
+      ),
+      value = FALSE
+    ),
+    shiny$fluidRow(
+      shiny$column(
+        6,
+        shiny$selectInput(
+          inputId = ns("pointAlpha"),
+          label = shiny$tags$span(
+            "Point Alpha ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the alpha value for",
+                "the points. Can be set to the",
+                "contribution of the individual",
+                "to Dim.1, or a fixed value."
+              )
+            )
+          ),
+          choices = c(
+            "Contrib." = "Contribution",
+            "0.25" = 0.25,
+            "0.5" = 0.5,
+            "0.75" = 0.75,
+            "1.0" = 1.0
+          ),
+          selected = 1.0
+        )
+      ),
+      shiny$column(
+        6,
+        shiny$selectInput(
+          inputId = ns("pointSize"),
+          label = shiny$tags$span(
+            "Point Size ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the point size. Can be",
+                "set to the contribution of the",
+                "individual to Dim.1, or a",
+                "fixed value."
+              )
+            )
+          ),
+          choices = c(
+            "Contrib." = "Contribution",
+            "1" = 1, "2" = 2, "3" = 3,
+            "4" = 4, "5" = 5, "6" = 6,
+            "7" = 7, "8" = 8, "9" = 9,
+            "10" = 10
+          ),
+          selected = 3
+        )
+      )
+    ),
     shiny$tags$hr(),
     # --- Heatmap display options ---
     shiny$h6(
@@ -314,6 +391,18 @@ tab_server <- function(input, output, session,
     shiny$updateNumericInput(
       session, "height",
       value = 10
+    )
+    shiny$updateCheckboxInput(
+      session, "showConvexHull",
+      value = FALSE
+    )
+    shiny$updateSelectInput(
+      session, "pointAlpha",
+      selected = "1"
+    )
+    shiny$updateSelectInput(
+      session, "pointSize",
+      selected = "3"
     )
     shiny$updateSelectInput(
       session, "reductionMethod",
