@@ -38,6 +38,7 @@ tab_ui <- function(ns) {
       ),
       choices = c(
         "PCA" = "pca",
+        "Raw Data" = "raw",
         "t-SNE (not implemented)" = "tsne",
         "UMAP (not implemented)" = "umap"
       ),
