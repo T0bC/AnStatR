@@ -16,7 +16,112 @@ tab_ui <- function(ns) {
     tooltip_text = "Display Options",
     value = "display_tab",
     shiny$h6(class = "text-muted mb-3", "Display Options"),
-    # Heatmap display options
+    # --- Cluster Biplot settings ---
+    shiny$h6(
+      class = "text-muted mb-2 mt-1",
+      "Cluster Biplot"
+    ),
+    shiny$selectInput(
+      inputId = ns("reductionMethod"),
+      label = shiny$tags$span(
+        "Reduction Method ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Dimensionality reduction method",
+            "used to project the data for the",
+            "cluster biplot."
+          )
+        )
+      ),
+      choices = c(
+        "PCA" = "pca",
+        "t-SNE (not implemented)" = "tsne",
+        "UMAP (not implemented)" = "umap"
+      ),
+      selected = "pca"
+    ),
+    shiny$fluidRow(
+      shiny$column(
+        6,
+        shiny$selectizeInput(
+          inputId = ns("clusterBiplotDimX"),
+          label = shiny$tags$span(
+            "Dim.X ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the dimension for the",
+                "x-axis of the cluster biplot."
+              )
+            )
+          ),
+          choices = c(
+            "Dim.1", "Dim.2", "Dim.3"
+          ),
+          selected = "Dim.1"
+        )
+      ),
+      shiny$column(
+        6,
+        shiny$selectizeInput(
+          inputId = ns("clusterBiplotDimY"),
+          label = shiny$tags$span(
+            "Dim.Y ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the dimension for the",
+                "y-axis of the cluster biplot."
+              )
+            )
+          ),
+          choices = c(
+            "Dim.1", "Dim.2", "Dim.3"
+          ),
+          selected = "Dim.2"
+        )
+      )
+    ),
+    shiny$selectizeInput(
+      inputId = ns("groupBiplot"),
+      label = shiny$tags$span(
+        "Group Biplot ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Select columns that potentially",
+            "group your data into different",
+            "clusters or categories. This will",
+            "color code the Biplot according",
+            "to the selected column."
+          )
+        )
+      ),
+      choices = NULL,
+      multiple = TRUE,
+      selected = "CLUSTER",
+      options = list(
+        placeholder = "Select grouping columns...",
+        closeAfterSelect = FALSE
+      )
+    ),
+    shiny$tags$hr(),
+    # --- Heatmap display options ---
+    shiny$h6(
+      class = "text-muted mb-2 mt-1",
+      "Heatmap"
+    ),
     shiny$checkboxInput(
       inputId = ns("showLabels"),
       label = shiny$tags$span(
@@ -105,106 +210,11 @@ tab_ui <- function(ns) {
       )
     ),
     shiny$tags$hr(),
-    # Cluster Biplot settings
-    shiny$h6(
-      class = "text-muted mb-2 mt-1",
-      "Cluster Biplot"
+    # --- Plot export size ---
+    shiny$helpText(
+      "Customize the plot size when clicking",
+      "on the download button."
     ),
-    shiny$selectInput(
-      inputId = ns("reductionMethod"),
-      label = shiny$tags$span(
-        "Reduction Method ",
-        bslib$tooltip(
-          bsicons$bs_icon(
-            "info-circle", class = "text-muted"
-          ),
-          paste(
-            "Dimensionality reduction method",
-            "used to project the data for the",
-            "cluster biplot."
-          )
-        )
-      ),
-      choices = c(
-        "PCA" = "pca",
-        "t-SNE (not implemented)" = "tsne",
-        "UMAP (not implemented)" = "umap"
-      ),
-      selected = "pca"
-    ),
-    shiny$fluidRow(
-      shiny$column(
-        6,
-        shiny$selectizeInput(
-          inputId = ns("clusterBiplotDimX"),
-          label = shiny$tags$span(
-            "Dim.X ",
-            bslib$tooltip(
-              bsicons$bs_icon(
-                "info-circle",
-                class = "text-muted"
-              ),
-              paste(
-                "Select the dimension for the",
-                "x-axis of the cluster biplot."
-              )
-            )
-          ),
-          choices = c(
-            "Dim.1", "Dim.2", "Dim.3"
-          ),
-          selected = "Dim.1"
-        )
-      ),
-      shiny$column(
-        6,
-        shiny$selectizeInput(
-          inputId = ns("clusterBiplotDimY"),
-          label = shiny$tags$span(
-            "Dim.Y ",
-            bslib$tooltip(
-              bsicons$bs_icon(
-                "info-circle",
-                class = "text-muted"
-              ),
-              paste(
-                "Select the dimension for the",
-                "y-axis of the cluster biplot."
-              )
-            )
-          ),
-          choices = c(
-            "Dim.1", "Dim.2", "Dim.3"
-          ),
-          selected = "Dim.2"
-        )
-      )
-    ),
-    # Group Biplot
-    shiny$selectizeInput(
-      inputId = ns("groupBiplot"),
-      label = shiny$tags$span(
-        "Group Biplot ",
-        bslib$tooltip(
-          bsicons$bs_icon("info-circle", class = "text-muted"),
-          paste0(
-            "Select columns that potentially group your data into",
-            "different clusters or categories. This will color code the",
-            "Biplot according to the selected column."
-          )
-        )
-      ),
-      choices = NULL,
-      multiple = TRUE,
-      selected = "CLUSTER",
-      options = list(
-        placeholder = "Select grouping columns...",
-        closeAfterSelect = FALSE
-      )
-    ),
-    shiny$tags$hr(),
-    # Plot export size
-    shiny$helpText("Customize the plot size when clicking on the download button."),
     shiny$tags$div(
       class = "row g-2",
       shiny$tags$div(
@@ -214,11 +224,16 @@ tab_ui <- function(ns) {
           label = shiny$tags$span(
             "Width (cm) ",
             bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              paste0(
-                "Set the width of the plot in centimeters for export.",
-                "A value of 16 cm of width correlates with the page",
-                "with in typical Microsoft Word documents."
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Set the width of the plot in",
+                "centimeters for export. A value",
+                "of 16 cm correlates with the",
+                "page width in typical Microsoft",
+                "Word documents."
               )
             )
           ),
@@ -234,11 +249,16 @@ tab_ui <- function(ns) {
           label = shiny$tags$span(
             "Height (cm) ",
             bslib$tooltip(
-              bsicons$bs_icon("info-circle", class = "text-muted"),
-              paste0(
-                "Set the height of the plot in centimeters for export.",
-                "In combination with a width of 16 cm, a good value could",
-                "be 10 cm. That make a nice ratio."
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Set the height of the plot in",
+                "centimeters for export. In",
+                "combination with a width of",
+                "16 cm, a good value could be",
+                "10 cm."
               )
             )
           ),
