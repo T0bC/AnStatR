@@ -63,6 +63,7 @@ server <- function(id, input_data, data_version) {
     optimal_result <- shiny$reactiveVal(NULL)
     last_optimal_plot <- shiny$reactiveVal(NULL)
     analysis_data_store <- shiny$reactiveVal(NULL)
+    cleaned_data_store <- shiny$reactiveVal(NULL)
     measure_cols_store <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
     user_modified_k <- shiny$reactiveVal(FALSE)
@@ -78,6 +79,7 @@ server <- function(id, input_data, data_version) {
       optimal_result(NULL)
       last_optimal_plot(NULL)
       analysis_data_store(NULL)
+      cleaned_data_store(NULL)
       measure_cols_store(NULL)
       na_info(NULL)
       user_modified_k(FALSE)
@@ -153,6 +155,7 @@ server <- function(id, input_data, data_version) {
       )
       na_info(na_result)
       cleaned_data <- na_result$data
+      cleaned_data_store(cleaned_data)
 
       if (nrow(cleaned_data) < 2) {
         last_error(error_handling$simple_error(
@@ -572,6 +575,7 @@ server <- function(id, input_data, data_version) {
       cluster_result_rv = result,
       membership_data_rv = membership_data,
       analysis_data_rv = analysis_data_store,
+      cleaned_data_rv = cleaned_data_store,
       measure_cols_rv = measure_cols_store
     )
 
