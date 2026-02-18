@@ -1,10 +1,6 @@
-linters: linters_with_defaults(
-    line_length_linter(120),
-    object_length_linter = NULL,  # Disable if causing issues
-    commented_code_linter = NULL,
-    cyclocomp_linter = NULL
-  )
-exclusions: list(
-    "renv",
-    "packrat"
+linters:
+  linters_with_defaults(
+    defaults = box.linters::rhino_default_linters,
+    line_length_linter = line_length_linter(120),
+    commented_code_linter = NULL
   )

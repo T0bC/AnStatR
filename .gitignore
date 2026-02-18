@@ -1,19 +1,16 @@
-# Log files
-logs/
-*.log
-
-# R session data
-.RData
-.Rhistory
+# Rhino defaults
 .Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+node_modules/
 
-# Temporary files
-*.tmp
-*.bak
-*~
 
-# OS files
-.DS_Store
-Thumbs.db
-Rplots.pdf
-.vscode/settings.json
+# Log file
+app.log
+
+# Legacy reference code (read-only, not part of new codebase)
+#legacy_texan2/
+
+

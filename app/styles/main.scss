@@ -1,0 +1,348 @@
+// TexAn 2.0 Custom Styles
+// Only styles for currently implemented modules are included here.
+// Add module-specific styles as modules are built.
+
+// =============================================================================
+// Global: Sidebar Layout
+// =============================================================================
+
+// Responsive sidebar width for all bslib sidebar layouts
+.bslib-sidebar-layout {
+  --_sidebar-width: clamp(320px, 33vw, 450px) !important;
+  position: relative;
+}
+
+// Sidebar shadow for visual distinction
+.bslib-sidebar-layout>.sidebar {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+// Reduce spacing in sidebar header (title + collapse button)
+.bslib-sidebar-layout .sidebar-title {
+  padding-top: 0.1rem;
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+// Reduce top padding inside sidebar to move title closer to top
+.bslib-sidebar-layout>.sidebar>.sidebar-content {
+  padding-top: 0.25rem !important;
+}
+
+// Move collapse icon to top-right of sidebar when open
+.bslib-sidebar-layout:not(.sidebar-collapsed)>.collapse-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: auto;
+  left: calc(var(--_sidebar-width) - 2.5rem);
+  z-index: 10;
+}
+
+// Keep collapse icon visible when sidebar is collapsed
+.bslib-sidebar-layout.sidebar-collapsed>.collapse-toggle {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+}
+
+// =============================================================================
+// Global: Settings Gear Icon
+// =============================================================================
+
+// Settings gear icon in navbar
+.settings-gear {
+  color: inherit;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+    text-decoration: none;
+  }
+}
+
+// =============================================================================
+// Global: Sidebar Tabs (.texan-sidebar) — shared by ALL tab modules
+// =============================================================================
+
+// Remove gap spacing from tab panes that use tagList wrappers
+.tab-pane.bslib-gap-spacing {
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+// Ensure layout_sidebar fills the tab pane without extra margins
+.tab-pane>.bslib-sidebar-layout {
+  margin: 0 !important;
+}
+
+// Position tabs at top of sidebar like a title bar
+.texan-sidebar .nav-tabs {
+  margin: -0.25rem -1rem 0.5rem -1rem;
+  padding: 0.25rem 1rem 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+}
+
+// Distribute tabs evenly
+.texan-sidebar .nav-tabs .nav-item {
+  flex: 1;
+  text-align: center;
+}
+
+// Style the tab links
+.sidebar-content .texan-sidebar .nav-tabs .nav-link,
+.texan-sidebar .nav-tabs .nav-link {
+  padding: 0.5rem 0.25rem;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0;
+  color: var(--bs-secondary) !important;
+  background: transparent !important;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+// Active tab styling
+.sidebar-content .texan-sidebar .nav-tabs .nav-link.active,
+.texan-sidebar .nav-tabs .nav-link.active {
+  background: transparent !important;
+  border-bottom-color: var(--bs-primary) !important;
+  color: var(--bs-primary) !important;
+}
+
+// Hover state
+.sidebar-content .texan-sidebar .nav-tabs .nav-link:hover:not(.active),
+.texan-sidebar .nav-tabs .nav-link:hover:not(.active) {
+  border-bottom-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+// Ensure icons are centered
+.texan-sidebar .nav-tabs .nav-link svg {
+  vertical-align: middle;
+}
+
+// Overflow visible for popups/dropdowns (color pickers, etc.)
+.texan-sidebar,
+.texan-sidebar .accordion,
+.texan-sidebar .accordion-item,
+.texan-sidebar .accordion-body,
+.texan-sidebar .accordion-collapse,
+.texan-sidebar .tab-content,
+.texan-sidebar .tab-pane {
+  overflow: visible !important;
+}
+
+// =============================================================================
+// Global: Responsive Plot & Card Styles
+// =============================================================================
+
+// Scrollable content wrapper — breaks out of bslib fill behavior so the
+// main content area scrolls instead of constraining individual cards.
+.scrollable-content {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+// Plot card — adaptive height, grows with content
+.plot-card {
+  width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex;
+  flex-direction: column;
+}
+
+// Plot card body — natural flow, no internal scrollbar
+.plot-card-body {
+  padding: 0.5rem !important;
+  overflow: visible !important;
+  max-height: none !important;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+// Override bslib card_body fill behavior inside plot cards
+.plot-card>.card-body {
+  overflow: visible !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+}
+
+// Responsive plot container
+.responsive-plot {
+  width: 100%;
+  min-width: 200px;
+}
+
+// ggiraph widget — with opts_sizing(rescale = FALSE), ggiraph
+// renders the SVG at exact pixel dimensions. We override the inline
+// width so the SVG scales to fit any container (IDE preview or browser).
+.responsive-plot .girafe,
+.responsive-plot .html-widget,
+.girafe,
+.html-widget.girafe {
+  width: 100% !important;
+}
+
+// Inner container — block layout, no overflow clipping
+.responsive-plot .girafe_container_std,
+.girafe_container_std {
+  width: 100%;
+  overflow: visible;
+}
+
+// SVG — override ggiraph's inline width/height attributes.
+// width:100% makes the SVG fill its container (scales down in narrow
+// IDE preview, fills in wide browsers). height:auto preserves the
+// aspect ratio from the SVG viewBox. This works cross-browser.
+.responsive-plot .girafe_container_std svg,
+.girafe_container_std svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
+// =============================================================================
+// Global: Recalculating State
+// =============================================================================
+
+// Prevent graying out / opacity flash during Shiny recalculation
+.recalculating {
+  opacity: inherit !important;
+}
+
+// =============================================================================
+// Global: Disabled Tab State (locked tabs)
+// =============================================================================
+
+// Grayed out appearance for tabs that require prerequisites
+.nav-link.disabled-tab {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  color: var(--bs-secondary) !important;
+}
+
+// Lock icon indicator
+.nav-link.disabled-tab::after {
+  content: " \1F512";
+  font-size: 0.7em;
+  vertical-align: super;
+}
+
+// Prevent hover effects on disabled tab
+.nav-link.disabled-tab:hover {
+  background-color: transparent !important;
+  color: var(--bs-secondary) !important;
+}
+
+// =============================================================================
+// Error Display: app-error-* classes (used by app/view/error_display.R)
+// =============================================================================
+
+// Container for app error with stack trace
+.app-error-container {
+  width: 100%;
+}
+
+// Error message - always visible
+.app-error-message {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+// Expandable details section
+.app-error-details,
+.alert details.app-error-details,
+details.app-error-details.mt-2 {
+  margin-top: 0.5rem;
+  border: 1px solid rgba(220, 53, 69, 0.3) !important;
+  border-radius: 4px;
+  background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+// Summary (clickable header)
+.app-error-details summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: inherit;
+  opacity: 0.8;
+  user-select: none;
+}
+
+.app-error-details summary:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+// Details content area
+.app-error-details-content {
+  padding: 0.75rem;
+  background-color: rgba(220, 53, 69, 0.15) !important;
+  border-top: 1px solid rgba(220, 53, 69, 0.3);
+  max-height: 300px;
+  overflow: auto;
+}
+
+// Context info section
+.app-error-context-info {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.app-error-context-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.app-error-context-item {
+  font-size: 0.8rem !important;
+  padding: 0.15rem 0 !important;
+  margin-left: 1rem !important;
+  display: flex !important;
+  gap: 0.5rem;
+}
+
+.app-error-context-key {
+  color: inherit !important;
+  opacity: 0.7;
+  min-width: 130px !important;
+  flex-shrink: 0;
+}
+
+.app-error-context-value {
+  font-family: var(--bs-font-monospace) !important;
+  color: inherit !important;
+}
+
+// Stack trace wrapper
+.app-error-trace-wrapper {
+  margin-top: 0;
+}
+
+// Pre-formatted trace output
+.app-error-trace-pre {
+  margin: 0;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: inherit;
+  border-radius: 4px;
+}

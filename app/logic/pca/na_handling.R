@@ -1,0 +1,133 @@
+box::use(
+  rhino,
+  stats,
+)
+
+# =============================================================================
+# Pure logic functions for NA handling in PCA
+# No Shiny dependencies allowed in this file.
+# =============================================================================
+
+#' Analyse NA distribution in measurement columns
+#'
+#' Returns per-column NA counts and percentages for the selected
+#' measurement columns. This information is shown to the user
+#' before row removal so they can decide whether to deselect
+#' columns with many NAs.
+#'
+#' @param data Data frame
+#' @param measurement_cols Character vector of measurement column names
+#' @return Data frame with columns: column, na_count, na_percent,
+#'   sorted by na_count descending. Only includes columns that
+#'   have at least one NA.
+#' @export
+analyse_na <- function(data, measurement_cols) {
+  subset <- data[, measurement_cols, drop = FALSE]
+  n_rows <- nrow(subset)
+
+  na_info <- vapply(subset, function(x) sum(is.na(x)), integer(1))
+  cols_with_na <- na_info[na_info > 0]
+
+  if (length(cols_with_na) == 0) {
+    return(data.frame(
+      column = character(0),
+      na_count = integer(0),
+      na_percent = numeric(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  result <- data.frame(
+    column = names(cols_with_na),
+    na_count = as.integer(cols_with_na),
+    na_percent = round(cols_with_na / n_rows * 100, 1),
+    stringsAsFactors = FALSE
+  )
+  result <- result[order(-result$na_count), ]
+  rownames(result) <- NULL
+  result
+}
+
+#' Remove rows with NAs in measurement columns only
+#'
+#' Removes rows where any of the selected measurement columns
+#' contain NA. Metadata columns are ignored for row removal
+#' but their NA distribution is reported for user awareness.
+#'
+#' @param data Data frame (full, including metadata columns)
+#' @param measurement_cols Character vector of measurement column names
+#' @param meta_cols Character vector of descriptive column names
+#'   (optional). NAs in these columns are reported but do not
+#'   trigger row removal.
+#' @return List with:
+#'   - $data: cleaned data frame (all columns preserved)
+#'   - $rows_before: integer, original row count
+#'   - $rows_after: integer, row count after removal
+#'   - $rows_removed: integer, number of rows removed
+#'   - $na_summary: data frame from analyse_na (measurement cols)
+#'   - $meta_na_summary: data frame from analyse_na (descriptive cols)
+#' @export
+clean_na_rows <- function(data, measurement_cols,
+                          meta_cols = character(0)) {
+  rows_before <- nrow(data)
+  na_summary <- analyse_na(data, measurement_cols)
+
+  # Analyse descriptive columns (informational only)
+  meta_na_summary <- if (length(meta_cols) > 0) {
+    analyse_na(data, meta_cols)
+  } else {
+    data.frame(
+      column = character(0),
+      na_count = integer(0),
+      na_percent = numeric(0),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  subset <- data[, measurement_cols, drop = FALSE]
+  complete <- stats$complete.cases(subset)
+  cleaned <- data[complete, , drop = FALSE]
+
+  rows_after <- nrow(cleaned)
+  rows_removed <- rows_before - rows_after
+
+  if (rows_removed > 0) {
+    rhino$log$info(
+      "PCA NA handling: removed {rows_removed} of",
+      " {rows_before} rows",
+      " ({round(rows_removed / rows_before * 100, 1)}%)"
+    )
+    if (nrow(na_summary) > 0) {
+      col_info <- paste(
+        na_summary$column,
+        paste0("(", na_summary$na_count, " NAs)"),
+        collapse = ", "
+      )
+      rhino$log$info(
+        "PCA NA handling: measurement NAs: {col_info}"
+      )
+    }
+  } else {
+    rhino$log$info("PCA NA handling: no NAs found, 0 rows removed")
+  }
+
+  if (nrow(meta_na_summary) > 0) {
+    meta_info <- paste(
+      meta_na_summary$column,
+      paste0("(", meta_na_summary$na_count, " NAs)"),
+      collapse = ", "
+    )
+    rhino$log$info(
+      "PCA NA handling: descriptive column NAs: {meta_info}"
+    )
+  }
+
+  list(
+    data = cleaned,
+    rows_before = rows_before,
+    rows_after = rows_after,
+    rows_removed = rows_removed,
+    na_summary = na_summary,
+    meta_na_summary = meta_na_summary
+  )
+}
