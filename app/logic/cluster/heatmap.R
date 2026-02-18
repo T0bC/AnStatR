@@ -69,31 +69,6 @@ create_cluster_heatmap <- function(
     ))
   }
 
-  variant <- cluster_result$details$variant
-  if (variant != "hclust") {
-    algo_label <- switch(
-      variant,
-      kmeans = "K-Means",
-      pam    = "K-Means (PAM)",
-      dbscan = "DBSCAN",
-      variant
-    )
-    return(list(
-      success = FALSE,
-      error = error_handling$simple_error(
-        message = paste0(
-          "Cluster heatmap visualization is not ",
-          "available for ", algo_label,
-          " clustering. The heatmap uses ",
-          "hierarchical dendrograms for row and ",
-          "column ordering, which are only produced ",
-          "by hierarchical clustering algorithms."
-        ),
-        operation_name = "Cluster Heatmap"
-      )
-    ))
-  }
-
   if (is.null(data) || !is.data.frame(data)) {
     return(list(
       success = FALSE,
@@ -106,9 +81,28 @@ create_cluster_heatmap <- function(
 
   error_handling$safe_execute(
     expr = {
-      hc <- cluster_result$details$hclust_obj
-      dist_method <- cluster_result$details$metric
-      hclust_method <- cluster_result$details$method
+      variant <- cluster_result$details$variant
+
+      # Use the clustering's own dendrogram when
+      # available (hclust), otherwise compute one
+      # independently from the data.
+      dist_method <- cluster_result$details$metric %||%
+        cluster_result$details$db_metric %||%
+        "euclidean"
+      hclust_method <- cluster_result$details$method %||%
+        "ward.D2"
+      dist_mat_rows <- stats$dist(
+        as.matrix(data[, measure_cols, drop = FALSE]),
+        method = dist_method
+      )
+      hc <- if (variant == "hclust" &&
+                !is.null(
+                  cluster_result$details$hclust_obj
+                )) {
+        cluster_result$details$hclust_obj
+      } else {
+        stats$hclust(dist_mat_rows, method = hclust_method)
+      }
 
       # Build numeric matrix from measurement columns
       num_mat <- as.matrix(
@@ -154,9 +148,6 @@ create_cluster_heatmap <- function(
           )
         }
       }
-
-      # Compute distance matrix for heatmaply
-      dist_mat <- stats$dist(num_mat, method = dist_method)
 
       # Build hclust for columns (use same method)
       col_dist <- stats$dist(
