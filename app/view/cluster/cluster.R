@@ -442,7 +442,6 @@ server <- function(id, input_data, data_version) {
 
       # Cluster heatmap panel
       heatmap_panel <- if (!is.null(res)) {
-        is_hclust <- res$details$variant == "hclust"
         heatmap_title <- shiny$tags$span(
           bsicons$bs_icon(
             "grid-3x3-gap", class = "me-1"
@@ -452,14 +451,11 @@ server <- function(id, input_data, data_version) {
         heatmap_content <- heatmap$render_heatmap_content(
           res, ns
         )
-        heatmap_downloads <- if (is_hclust) {
-          heatmap_download_button(ns)
-        }
         bslib$accordion_panel(
           title = heatmap_title,
           value = "heatmap_panel",
           heatmap_content,
-          heatmap_downloads
+          heatmap_download_button(ns)
         )
       }
 
@@ -511,7 +507,6 @@ server <- function(id, input_data, data_version) {
     build_heatmap_for_download <- function() {
       res <- result()
       shiny$req(res)
-      shiny$req(res$details$variant == "hclust")
 
       ad <- analysis_data_store()
       mc <- measure_cols_store()
