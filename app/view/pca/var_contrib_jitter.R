@@ -83,8 +83,8 @@ render_output <- function(input, output, session,
     # height is generous to spread points vertically
     n_vars <- nrow(pca_res$result$var$contrib)
     n_dims_vis <- min(ncp, ncol(pca_res$result$var$contrib))
-    width_svg <- min(max(n_dims_vis * 2.5 + 3, 8), 16)
-    height_svg <- min(max(n_vars * 0.25 + 3, 6), 10)
+    width_svg <- min(max(n_dims_vis * 2.5 + 3, 8), 12)
+    height_svg <- min(max(n_vars * 0.25 + 3, 6), 8)
 
     ggiraph$girafe(
       ggobj = plot_res$result,
