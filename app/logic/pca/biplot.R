@@ -93,8 +93,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
 
       p <- ggplot2$ggplot() +
         biplot_theme() +
-        ggplot2$labs(x = x_label, y = y_label) +
-        ggplot2$coord_fixed()
+        ggplot2$labs(x = x_label, y = y_label)
 
       # Title
       if (show_title) {
@@ -110,48 +109,34 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
       # Individual layers
       if (show_ind && !is.null(ind_data)) {
         has_group <- "group" %in% names(ind_data)
-        has_alpha_map <- "alpha_val" %in% names(ind_data)
-        has_size_map <- "size_val" %in% names(ind_data)
+        has_contrib <- "contrib" %in% names(ind_data)
+        map_alpha <- has_contrib &&
+          identical(point_alpha, "Contribution")
+        map_size <- has_contrib &&
+          identical(point_size, "Contribution")
 
         # Ensure fill column exists for shape 21
         if (!has_group) {
           ind_data$group <- factor("All")
         }
 
-        # Build aes for individuals (fill for shape 21)
-        ind_aes <- if (has_alpha_map && has_size_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            fill = group,
-            alpha = alpha_val, size = size_val
-          )
-        } else if (has_alpha_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            fill = group, alpha = alpha_val
-          )
-        } else if (has_size_map) {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            fill = group, size = size_val
-          )
-        } else {
-          ggplot2$aes(
-            x = x, y = y,
-            tooltip = tooltip, data_id = data_id,
-            fill = group
-          )
-        }
+        # Build aes dynamically
+        aes_args <- list(
+          x = quote(x), y = quote(y),
+          tooltip = quote(tooltip),
+          data_id = quote(data_id),
+          fill = quote(group)
+        )
+        if (map_alpha) aes_args$alpha <- quote(contrib)
+        if (map_size) aes_args$size <- quote(contrib)
+        ind_aes <- do.call(ggplot2$aes, aes_args)
 
-        # Fixed aesthetics
+        # Fixed aesthetics (when not mapping)
         fixed_aes <- list()
-        if (!has_alpha_map) {
+        if (!map_alpha) {
           fixed_aes$alpha <- as.numeric(point_alpha)
         }
-        if (!has_size_map) {
+        if (!map_size) {
           fixed_aes$size <- as.numeric(point_size)
         }
 
@@ -180,20 +165,52 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
           p <- p + ggplot2$labs(fill = "Group")
         }
 
-        # Scale guides for contribution mapping
-        if (has_alpha_map) {
+        # Contribution scales — use matching breaks so
+        # ggplot2 merges alpha + size into one legend
+        contrib_breaks <- c(0, 0.25, 0.5, 0.75, 1)
+        contrib_labels <- c(
+          "Low", "", "Med", "", "High"
+        )
+
+        # Build shared override.aes for visible keys
+        override <- list(
+          color = "grey40", stroke = 0.4
+        )
+        if (!map_alpha) override$alpha <- 1
+        if (!map_size) override$size <- 3
+
+        contrib_guide <- ggplot2$guide_legend(
+          title = "Contribution",
+          override.aes = override
+        )
+
+        if (map_alpha) {
           p <- p + ggplot2$scale_alpha_continuous(
             range = c(0.3, 1),
-            guide = ggplot2$guide_legend(
-              title = "Contribution"
-            )
+            breaks = contrib_breaks,
+            labels = contrib_labels,
+            guide = contrib_guide
           )
         }
-        if (has_size_map) {
+        if (map_size) {
           p <- p + ggplot2$scale_size_continuous(
             range = c(1, 6),
-            guide = ggplot2$guide_legend(
-              title = "Contribution"
+            breaks = contrib_breaks,
+            labels = contrib_labels,
+            guide = contrib_guide
+          )
+        }
+
+        # Override fill legend keys to be visible too
+        if (has_group) {
+          p <- p + ggplot2$guides(
+            fill = ggplot2$guide_legend(
+              override.aes = list(
+                color = "grey40",
+                stroke = 0.4,
+                size = 3,
+                alpha = 1
+              )
             )
           )
         }
@@ -396,14 +413,10 @@ build_ind_plot_data <- function(pca_result, dim_x, dim_y,
     contrib_scaled <- rep(0.5, length(contrib_vals))
   }
 
-  # Alpha mapping
-  if (identical(point_alpha, "Contribution")) {
-    df$alpha_val <- contrib_scaled * 0.7 + 0.3
-  }
-
-  # Size mapping
-  if (identical(point_size, "Contribution")) {
-    df$size_val <- contrib_scaled * 5 + 1
+  # Store normalised contribution for alpha/size mapping
+  if (identical(point_alpha, "Contribution") ||
+      identical(point_size, "Contribution")) {
+    df$contrib <- contrib_scaled
   }
 
   # Group column(s) — use interaction() for multi-level designs
@@ -514,9 +527,11 @@ biplot_theme <- function() {
       plot.title = ggplot2$element_text(
         hjust = 0.5, size = 14, face = "bold"
       ),
+      aspect.ratio = 1,
       axis.title = ggplot2$element_text(size = 12),
       axis.text = ggplot2$element_text(size = 10),
       legend.position = "right",
+      legend.box = "vertical",
       legend.title = ggplot2$element_text(size = 11),
       legend.text = ggplot2$element_text(size = 10),
       panel.grid.minor = ggplot2$element_blank()
