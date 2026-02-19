@@ -338,7 +338,7 @@ describe("build_ind_plot_data", {
     expect_true(is.data.frame(df))
     expect_true(all(c(
       "x", "y", "label", "tooltip", "data_id",
-      "alpha_val", "size_val", "group"
+      "contrib", "group"
     ) %in% names(df)))
     expect_equal(nrow(df), 10)
   })
@@ -349,8 +349,7 @@ describe("build_ind_plot_data", {
       NULL, 0.5, 3
     )
     expect_false("group" %in% names(df))
-    expect_false("alpha_val" %in% names(df))
-    expect_false("size_val" %in% names(df))
+    expect_false("contrib" %in% names(df))
   })
 
   it("creates interaction group for multiple columns", {
