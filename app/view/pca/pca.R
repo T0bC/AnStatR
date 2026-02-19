@@ -584,7 +584,7 @@ server <- function(id, input_data, data_version) {
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "people-fill", class = "me-1"
+              "diagram-3", class = "me-1"
             ),
             "Variable Contributions"
           ),
