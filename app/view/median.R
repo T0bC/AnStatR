@@ -1,6 +1,7 @@
 box::use(
   bslib,
   DT,
+  openxlsx,
   rhino,
   shiny,
 )
@@ -70,7 +71,12 @@ ui <- function(id) {
         shiny$uiOutput(ns("quality_filter_options"))
       )
     ),
-    main_content = shiny$uiOutput(ns("main_content"))
+    main_content = shiny$uiOutput(ns("main_content")),
+    action_button = shiny$downloadButton(
+      outputId = ns("downloadData"),
+      label = "Download Filtered Data",
+      class = "btn-primary btn-sm w-100"
+    )
   )
 }
 
@@ -425,8 +431,23 @@ server <- function(id, input_data, data_version) {
     # --- Median results table ---
     output$median_table <- DT$renderDataTable({
       shiny$req(median_results())
+      display_df <- median_results()
+
+      # Cast metadata columns to factor for dropdown filters,
+      # but skip the quality column so it stays filterable
+      # by numeric value as before.
+      quality_col <- cached_params()$quality_settings$column
+      desc_cols <- column_utils$get_descriptive_cols(
+        display_df
+      )
+      for (col in desc_cols) {
+        if (!identical(col, quality_col)) {
+          display_df[[col]] <- as.factor(display_df[[col]])
+        }
+      }
+
       DT$datatable(
-        median_results(),
+        display_df,
         filter = "top",
         options = list(
           pageLength = 25,
@@ -441,8 +462,40 @@ server <- function(id, input_data, data_version) {
       )
     })
 
-    # Return median results for downstream modules
-    shiny$reactive({ median_results() })
+    # --- DT-filtered data reactive (used for download + return) ---
+    dt_filtered_data <- shiny$reactive({
+      data <- median_results()
+      if (is.null(data)) return(NULL)
+      filtered_rows <- input$median_table_rows_all
+      if (is.null(filtered_rows)) return(data)
+      data[filtered_rows, , drop = FALSE]
+    })
+
+    # --- Download handler: filtered data as Excel ---
+    output$downloadData <- shiny$downloadHandler(
+      filename = function() {
+        paste0("median_filtered_", Sys.Date(), ".xlsx")
+      },
+      content = function(file) {
+        data <- dt_filtered_data()
+        if (is.null(data) || nrow(data) == 0) {
+          wb <- openxlsx$createWorkbook()
+          openxlsx$addWorksheet(wb, "No Data")
+          openxlsx$writeData(
+            wb, "No Data", "No filtered data available."
+          )
+          openxlsx$saveWorkbook(wb, file, overwrite = TRUE)
+          return()
+        }
+        openxlsx$write.xlsx(data, file, rowNames = FALSE)
+        rhino$log$info(
+          "Download: median filtered data ({nrow(data)} rows)"
+        )
+      }
+    )
+
+    # Return DT-filtered median results for downstream modules
+    dt_filtered_data
   })
 }
 
