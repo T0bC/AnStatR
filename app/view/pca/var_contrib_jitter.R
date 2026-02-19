@@ -177,9 +177,8 @@ build_caption <- function(meta) {
 
     parts[[length(parts) + 1]] <- shiny$tags$span(
       paste0(
-        " See the ",
-        "Variable Contributions heatmap or PCA Results ",
-        "tables for unfiltered data."
+        " See the PCA Results tables ",
+        "for unfiltered data."
       )
     )
   } else {
