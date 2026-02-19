@@ -172,47 +172,54 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
           "Low", "", "Med", "", "High"
         )
 
-        # Build shared override.aes for visible keys
-        override <- list(
-          color = "grey40", stroke = 0.4
-        )
-        if (!map_alpha) override$alpha <- 1
-        if (!map_size) override$size <- 3
-
-        contrib_guide <- ggplot2$guide_legend(
-          title = "Contribution",
-          override.aes = override
-        )
-
         if (map_alpha) {
           p <- p + ggplot2$scale_alpha_continuous(
             range = c(0.3, 1),
             breaks = contrib_breaks,
-            labels = contrib_labels,
-            guide = contrib_guide
+            labels = contrib_labels
           )
         }
         if (map_size) {
           p <- p + ggplot2$scale_size_continuous(
             range = c(1, 6),
             breaks = contrib_breaks,
-            labels = contrib_labels,
-            guide = contrib_guide
+            labels = contrib_labels
           )
         }
 
-        # Override fill legend keys to be visible too
+        # Build override.aes for visible legend keys
+        # Applied once via guides() to avoid duplication
+        override <- list(
+          color = "grey40", stroke = 0.4
+        )
+        if (!map_alpha) override$alpha <- 1
+        if (!map_size) override$size <- 3
+
+        guide_args <- list()
+        if (map_alpha) {
+          guide_args$alpha <- ggplot2$guide_legend(
+            title = "Contribution",
+            override.aes = override
+          )
+        }
+        if (map_size) {
+          guide_args$size <- ggplot2$guide_legend(
+            title = "Contribution",
+            override.aes = override
+          )
+        }
         if (has_group) {
-          p <- p + ggplot2$guides(
-            fill = ggplot2$guide_legend(
-              override.aes = list(
-                color = "grey40",
-                stroke = 0.4,
-                size = 3,
-                alpha = 1
-              )
+          guide_args$fill <- ggplot2$guide_legend(
+            override.aes = list(
+              color = "grey40",
+              stroke = 0.4,
+              size = 3,
+              alpha = 1
             )
           )
+        }
+        if (length(guide_args) > 0) {
+          p <- p + do.call(ggplot2$guides, guide_args)
         }
 
         # Ellipses or convex hulls (only when grouped
