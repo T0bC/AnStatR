@@ -19,7 +19,6 @@ box::use(
   app/logic/pca/scaling[scale_data],
   app/view/components/sidebar_tabs,
   app/view/error_display,
-  app/view/pca/actions,
   app/view/pca/biplot,
   app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],
@@ -43,8 +42,7 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
-      plotting_controls$tab_ui(ns),
-      actions$tab_ui(ns)
+      plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$tagList(
