@@ -29,32 +29,6 @@ render_output <- function(input, output, session,
   last_plot <- shiny$reactiveVal(NULL)
   last_meta <- shiny$reactiveVal(NULL)
 
-  # Debounced params for title input
-  cached_params <- shiny$reactiveVal(NULL)
-
-  make_fingerprint <- function(params) {
-    paste(params$show_title, sep = "|")
-  }
-
-  shiny$observe({
-    new_params <- list(
-      show_title = input$title
-    )
-
-    current <- cached_params()
-    new_fp <- make_fingerprint(new_params)
-    old_fp <- if (!is.null(current)) {
-      make_fingerprint(current)
-    } else {
-      ""
-    }
-    if (new_fp != old_fp) {
-      cached_params(new_params)
-    }
-  }) |> shiny$debounce(400)
-
-  vcj_params <- shiny$reactive({ cached_params() })
-
   output$var_contrib_jitter <- ggiraph$renderGirafe({
     pca_res <- pca_result()
     if (is.null(pca_res)) return(NULL)
@@ -67,12 +41,10 @@ render_output <- function(input, output, session,
     }
     if (is.null(ncp)) ncp <- 5L
 
-    show_title <- isTRUE(vcj_params()$show_title)
-
     plot_res <- create_var_contrib_jitter_plot(
       pca_result = pca_res$result,
       display_ncp = ncp,
-      show_title = show_title
+      show_title = TRUE
     )
 
     if (!plot_res$success) return(NULL)
