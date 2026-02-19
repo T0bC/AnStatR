@@ -25,7 +25,6 @@ box::use(
   app/view/pca/correlation_plot[render_output],
   app/view/pca/eigencorplot,
   app/view/pca/ind_contrib,
-  app/view/pca/var_contrib,
   app/view/pca/var_contrib_jitter,
   app/view/pca/data_selection,
   app/view/pca/kmo_results,
@@ -116,13 +115,6 @@ server <- function(id, input_data, data_version) {
       )
     })
 
-    # Delegate variable contribution chart rendering
-    var_contrib_state <- var_contrib$render_output(
-      input, output, session,
-      pca_result = pca_result,
-      display_ncp = display_ncp
-    )
-
     # Delegate variable contribution jitter plot rendering
     var_contrib_jitter_state <- var_contrib_jitter$render_output(
       input, output, session,
@@ -155,7 +147,7 @@ server <- function(id, input_data, data_version) {
     )
     register_plot_downloads(
       output, input, "var_contrib",
-      var_contrib_state$plot, "Variable_Contributions"
+      var_contrib_jitter_state$plot, "Variable_Contributions"
     )
     register_plot_downloads(
       output, input, "ind_contrib",
@@ -574,32 +566,7 @@ server <- function(id, input_data, data_version) {
         )
       }
 
-      # Variable contribution chart panel
-      var_contrib_content <- if (
-        !is.null(pca_res) && isTRUE(pca_res$success)
-      ) {
-        ggiraph$girafeOutput(
-          ns("var_contrib_circles"), height = "auto"
-        )
-      }
-
-      var_contrib_panel <- if (
-        !is.null(var_contrib_content)
-      ) {
-        bslib$accordion_panel(
-          title = shiny$tags$span(
-            bsicons$bs_icon(
-              "bar-chart-fill", class = "me-1"
-            ),
-            "Variable Contributions"
-          ),
-          value = "var_contrib_panel",
-          var_contrib_content,
-          download_buttons(ns, "var_contrib")
-        )
-      }
-
-      # Variable contribution jitter plot panel (TEST)
+      # Variable contribution jitter plot panel
       var_contrib_jitter_content <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
@@ -619,10 +586,11 @@ server <- function(id, input_data, data_version) {
             bsicons$bs_icon(
               "people-fill", class = "me-1"
             ),
-            "Variable Contributions TEST"
+            "Variable Contributions"
           ),
           value = "var_contrib_jitter_panel",
-          var_contrib_jitter_content
+          var_contrib_jitter_content,
+          download_buttons(ns, "var_contrib")
         )
       }
 
@@ -710,7 +678,6 @@ server <- function(id, input_data, data_version) {
           pca_panel,
           biplot_panel,
           biplot3d_panel,
-          var_contrib_panel,
           var_contrib_jitter_panel,
           ind_contrib_panel,
           eigencor_panel
