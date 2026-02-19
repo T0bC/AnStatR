@@ -55,7 +55,7 @@ render_output <- function(input, output, session,
       show_hull = input$showConvexHull,
       point_alpha = input$pointAlpha,
       point_size = input$pointSize,
-      show_title = input$title
+      show_title = TRUE
     )
 
     current <- cached_params()
