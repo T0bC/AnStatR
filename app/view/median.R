@@ -448,7 +448,10 @@ server <- function(id, input_data, data_version) {
 
       DT$datatable(
         display_df,
-        filter = "top",
+        filter = list(
+          position = "top",
+          settings = list(select = list(maxOptions = 2000))
+        ),
         options = list(
           pageLength = 25,
           lengthMenu = list(
@@ -456,7 +459,50 @@ server <- function(id, input_data, data_version) {
             c("10", "25", "50", "100", "All")
           ),
           scrollX = TRUE,
-          dom = "ltip"
+          dom = "ltip",
+          drawCallback = DT$JS("
+            function(settings) {
+              var api = this.api();
+              var tableId = settings.sTableId;
+              if (window['_dtSelAll_' + tableId]) return;
+              setTimeout(function() {
+                var wrapper = $('#' + tableId + '_wrapper');
+                var filterRow = wrapper.find(
+                  '.dataTable thead tr.odd, ' +
+                  '.dataTable thead tr:nth-child(2)'
+                );
+                if (filterRow.length === 0) {
+                  filterRow = $(api.table().header())
+                    .closest('thead').find('tr').last();
+                }
+                if (filterRow.length === 0) return;
+                var injected = false;
+                filterRow.find('td, th').each(function() {
+                  var cell = $(this);
+                  if (cell.find('.dt-sel-all').length) return;
+                  var selEl = cell.find('select')[0];
+                  if (!selEl || !selEl.selectize) return;
+                  var sz = selEl.selectize;
+                  var link = $(
+                    '<a href=\"#\" class=\"dt-sel-all\" ' +
+                    'style=\"font-size:11px;display:block;' +
+                    'margin-bottom:2px;\">All</a>'
+                  );
+                  link.on('click', function(e) {
+                    e.preventDefault();
+                    var opts = Object.keys(sz.options);
+                    sz.setValue(opts, true);
+                    api.draw();
+                  });
+                  cell.prepend(link);
+                  injected = true;
+                });
+                if (injected) {
+                  window['_dtSelAll_' + tableId] = true;
+                }
+              }, 500);
+            }
+          ")
         ),
         rownames = FALSE
       )
