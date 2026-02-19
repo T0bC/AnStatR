@@ -603,8 +603,11 @@ server <- function(id, input_data, data_version) {
       var_contrib_jitter_content <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
-        ggiraph$girafeOutput(
-          ns("var_contrib_jitter"), height = "auto"
+        shiny$tagList(
+          ggiraph$girafeOutput(
+            ns("var_contrib_jitter"), height = "auto"
+          ),
+          shiny$uiOutput(ns("var_contrib_jitter_caption"))
         )
       }
 
