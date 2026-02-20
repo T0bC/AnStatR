@@ -212,6 +212,7 @@ build_1d_plot <- function(scores, meta, grouping_col,
 }
 
 
+#' @export
 get_group_values <- function(meta, grouping_col) {
   if (
     !is.null(grouping_col) &&
@@ -225,6 +226,7 @@ get_group_values <- function(meta, grouping_col) {
 }
 
 
+#' @export
 build_tooltips <- function(scores, meta, grouping_col,
                            dim_x, dim_y) {
   n <- nrow(scores)
@@ -287,6 +289,7 @@ build_tooltips <- function(scores, meta, grouping_col,
 }
 
 
+#' @export
 axis_label <- function(dim_name, proportion_of_trace) {
   if (is.null(proportion_of_trace)) {
     return(dim_name)
@@ -303,6 +306,7 @@ axis_label <- function(dim_name, proportion_of_trace) {
 }
 
 
+#' @export
 ld_theme <- function() {
   ggplot2$theme_minimal() +
     ggplot2$theme(
