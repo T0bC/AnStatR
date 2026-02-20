@@ -545,13 +545,24 @@ server <- function(id, input_data, data_version,
           )
 
           # Update biplot dimension choices
-          n_dims <- min(
-            length(measure_cols),
-            nrow(analysis_data) - 1
-          )
-          dim_choices <- paste0(
-            "Dim.", seq_len(n_dims)
-          )
+          if (is_reduced) {
+            # Already-reduced data: use actual column
+            # names as axis choices (e.g. Dim.1 for PCA,
+            # ld1 for LDA) and force raw scatter mode
+            shiny$updateSelectInput(
+              session, "reductionMethod",
+              selected = "raw"
+            )
+            dim_choices <- measure_cols
+          } else {
+            n_dims <- min(
+              length(measure_cols),
+              nrow(analysis_data) - 1
+            )
+            dim_choices <- paste0(
+              "Dim.", seq_len(n_dims)
+            )
+          }
           for (dim_id in c(
             "clusterBiplotDimX",
             "clusterBiplotDimY"
