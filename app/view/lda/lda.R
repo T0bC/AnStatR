@@ -14,7 +14,6 @@ box::use(
     detect_skewness, transform_skewed
   ],
   app/view/components/sidebar_tabs,
-  app/view/components/transform_summary,
   app/view/error_display,
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
@@ -301,20 +300,14 @@ server <- function(id, input_data, data_version) {
         ))
       }
 
-      # NA summary banner
+      # Preprocessing summary banner (NA + skewness)
       na_res <- na_info()
-      na_banner <- if (!is.null(na_res)) {
-        na_summary$render_na_summary(na_res)
-      }
-
-      # Skewness transformation banner
       tf_res <- transform_info()
-      transform_banner <- if (!is.null(tf_res)) {
-        transform_summary$render_transform_summary(
-          tf_res,
-          n_total = length(input$measureVar)
-        )
-      }
+      preprocess_banner <- na_summary$render_na_summary(
+        na_res,
+        transform_result = tf_res,
+        n_measure_cols = length(input$measureVar)
+      )
 
       # Validation warnings banner
       warns <- validation_warnings()
@@ -332,8 +325,7 @@ server <- function(id, input_data, data_version) {
       }
 
       shiny$tagList(
-        na_banner,
-        transform_banner,
+        preprocess_banner,
         warn_banner,
         bslib$accordion(
           id = ns("results_accordion"),
