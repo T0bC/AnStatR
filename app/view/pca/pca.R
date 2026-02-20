@@ -757,8 +757,8 @@ server <- function(id, input_data, data_version) {
       }
     )
 
-    # Return for downstream modules
-    invisible(NULL)
+    # Return PCA result for downstream modules (e.g. LDA)
+    pca_result
   })
 }
 
