@@ -159,9 +159,11 @@ server <- function(id) {
     cluster$server(
       "cluster",
       input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version())
+      data_version = shiny$reactive(plotting_data_version()),
+      pca_result = pca_result,
+      lda_result = lda_result
     )
-    lda$server(
+    lda_result <- lda$server(
       "lda",
       input_data = plotting_data,
       data_version = shiny$reactive(plotting_data_version()),
