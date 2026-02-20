@@ -1,6 +1,8 @@
 box::use(
   bsicons,
   bslib,
+  ggiraph,
+  ggplot2,
   rhino,
   shiny,
 )
@@ -21,8 +23,13 @@ box::use(
   app/view/error_display,
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
+  app/view/lda/plotting_controls,
   app/view/lda/results_display,
   app/view/pca/na_summary,
+)
+
+box::use(
+  app/logic/lda/ld_plot[create_ld_plot],
 )
 
 #' @export
@@ -34,7 +41,8 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
-      analysis_settings$tab_ui(ns)
+      analysis_settings$tab_ui(ns),
+      plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$tagList(
@@ -81,6 +89,13 @@ server <- function(id, input_data, data_version) {
       input, output, session,
       data_version = data_version
     )
+    plotting_controls$tab_server(
+      input, output, session,
+      lda_result = result
+    )
+
+    # Reactive: last LD plot for download
+    last_ld_plot <- shiny$reactiveVal(NULL)
 
     # Handle Compute LDA/QDA button
     shiny$observeEvent(input$compute_lda_button, {
@@ -393,6 +408,30 @@ server <- function(id, input_data, data_version) {
         lda_content
       )
 
+      # LD scores plot panel (LDA only, model mode)
+      res <- result()
+      ld_plot_panel <- NULL
+      if (
+        !is.null(res) &&
+        res$analysis_type == "lda" &&
+        !is.null(res$scores) &&
+        ncol(res$scores) > 0
+      ) {
+        ld_plot_panel <- bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "scatter", class = "me-1"
+            ),
+            "LD Scores Plot"
+          ),
+          value = "ld_plot_panel",
+          ggiraph$girafeOutput(
+            ns("ld_plot"), height = "500px"
+          ),
+          download_buttons(ns, "ld_plot")
+        )
+      }
+
       shiny$tagList(
         preprocess_banner,
         warn_banner,
@@ -400,6 +439,7 @@ server <- function(id, input_data, data_version) {
           id = ns("results_accordion"),
           open = FALSE,
           multiple = TRUE,
+          ld_plot_panel,
           lda_panel
         )
       )
@@ -442,7 +482,151 @@ server <- function(id, input_data, data_version) {
       }
     )
 
+    # LD scores plot renderer
+    output$ld_plot <- ggiraph$renderGirafe({
+      res <- result()
+      if (is.null(res)) return(NULL)
+      if (res$analysis_type != "lda") return(NULL)
+      if (is.null(res$scores)) return(NULL)
+
+      dim_x <- input$ldDimX %||% "LD1"
+      dim_y <- input$ldDimY %||% "LD2"
+
+      plot_res <- create_ld_plot(
+        lda_result = res,
+        dim_x = dim_x,
+        dim_y = dim_y
+      )
+
+      if (!plot_res$success) return(NULL)
+
+      last_ld_plot(plot_res$result)
+
+      ggiraph$girafe(
+        ggobj = plot_res$result,
+        width_svg = 10,
+        height_svg = 7,
+        options = list(
+          ggiraph$opts_sizing(
+            rescale = TRUE, width = 1
+          ),
+          ggiraph$opts_hover(
+            css = paste0(
+              "fill-opacity:0.8;",
+              "stroke:black;stroke-width:2px;"
+            )
+          ),
+          ggiraph$opts_tooltip(
+            css = paste0(
+              "background-color:white;",
+              "padding:8px;",
+              "border-radius:4px;",
+              "border:1px solid #ccc;",
+              "font-family:sans-serif;"
+            ),
+            use_fill = FALSE
+          ),
+          ggiraph$opts_selection(type = "none")
+        )
+      )
+    })
+
+    # Register LD plot download handlers
+    register_plot_downloads(
+      output, input, "ld_plot",
+      last_ld_plot, "LD_Scores_Plot"
+    )
+
     # Return for downstream modules
     invisible(NULL)
   })
+}
+
+
+# =============================================================================
+# Local helpers (not exported)
+# =============================================================================
+
+#' Build SVG + PNG download buttons for a plot
+#'
+#' @param ns Namespace function
+#' @param id_prefix Character, e.g. "ld_plot"
+#' @return tagList with two download buttons
+download_buttons <- function(ns, id_prefix) {
+  shiny$tags$div(
+    class = "d-flex gap-2 mt-2",
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_svg")),
+      label = shiny$tags$span(
+        bsicons$bs_icon(
+          "filetype-svg", class = "me-1"
+        ),
+        "SVG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    ),
+    shiny$downloadButton(
+      ns(paste0(id_prefix, "_dl_png")),
+      label = shiny$tags$span(
+        bsicons$bs_icon(
+          "filetype-png", class = "me-1"
+        ),
+        "PNG"
+      ),
+      class = "btn btn-outline-secondary btn-sm"
+    )
+  )
+}
+
+#' Register SVG + PNG download handlers for a plot
+#'
+#' @param output Shiny output object
+#' @param input Shiny input object
+#' @param id_prefix Character, e.g. "ld_plot"
+#' @param plot_reactive reactiveVal returning a ggplot
+#' @param filename_base Character, base name for the file
+register_plot_downloads <- function(output, input,
+                                    id_prefix,
+                                    plot_reactive,
+                                    filename_base) {
+  output[[paste0(id_prefix, "_dl_svg")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".svg")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "svg",
+          width = w, height = h, units = "cm"
+        )
+        rhino$log$info(
+          "Download: SVG '{filename_base}'"
+        )
+      }
+    )
+
+  output[[paste0(id_prefix, "_dl_png")]] <-
+    shiny$downloadHandler(
+      filename = function() {
+        paste0(filename_base, "_", Sys.Date(), ".png")
+      },
+      content = function(file) {
+        p <- plot_reactive()
+        shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
+        ggplot2$ggsave(
+          file, plot = p, device = "png",
+          width = w, height = h,
+          units = "cm", dpi = 600
+        )
+        rhino$log$info(
+          "Download: PNG '{filename_base}'"
+        )
+      }
+    )
 }
