@@ -133,6 +133,27 @@ tab_ui <- function(ns) {
           " preprocessed or on the same scale."
         )
       )
+    ),
+    shiny$tags$hr(),
+    shiny$checkboxInput(
+      inputId = ns("correct_skewness"),
+      label = shiny$tags$span(
+        "Correct skewed variables ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Automatically detect and transform",
+            "highly skewed variables (|skewness| > 1)",
+            "using log or Box-Cox transformation.",
+            "This reduces the influence of outliers",
+            "on clustering results. Verify in Load Data",
+            "\u2192 Data Preview."
+          )
+        )
+      ),
+      value = TRUE
     )
   )
 }
