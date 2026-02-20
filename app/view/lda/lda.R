@@ -11,6 +11,7 @@ box::use(
   app/logic/lda/lda[
     run_lda, run_predict, run_qda, validate_inputs
   ],
+  app/logic/lda/lda_export[create_lda_excel],
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
   app/logic/skewness_transform[
@@ -384,6 +385,43 @@ server <- function(id, input_data, data_version) {
         )
       )
     })
+
+    # Download handler: Excel export
+    output$download_lda_excel <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "lda_results_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".xlsx"
+        )
+      },
+      content = function(file) {
+        res <- result()
+        shiny$req(res)
+        create_lda_excel(
+          res, file,
+          test_result = test_result()
+        )
+      }
+    )
+
+    # Download handler: RDS export
+    output$download_lda_rds <- shiny$downloadHandler(
+      filename = function() {
+        paste0(
+          "lda_object_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".rds"
+        )
+      },
+      content = function(file) {
+        res <- result()
+        shiny$req(res)
+        # Strip the model object for a cleaner RDS
+        # (model can be large); keep everything else
+        saveRDS(res, file)
+      }
+    )
 
     # Return for downstream modules
     invisible(NULL)
