@@ -546,12 +546,56 @@ tab_server <- function(input, output, session,
     }
   })
 
+  # Guard: when data source is already reduced
+  # (PCA/LDA scores), force reduction method to "raw"
+  # to avoid running PCA on already-reduced data.
+  shiny$observe({
+    src <- input$data_source
+    if (is.null(src)) return()
+
+    if (src %in% c("pca_scores", "lda_scores")) {
+      shiny$updateSelectInput(
+        session, "reductionMethod",
+        selected = "raw"
+      )
+    }
+  })
+
   # Guard: reset reduction method if not-implemented
-  # option is selected
+  # option is selected, or if user tries to select PCA
+  # while using already-reduced data
   shiny$observeEvent(input$reductionMethod, {
     method <- input$reductionMethod
-    if (!is.null(method) &&
-        method %in% c("tsne", "umap")) {
+    if (is.null(method)) return()
+
+    src <- input$data_source
+    is_reduced <- !is.null(src) &&
+      src %in% c("pca_scores", "lda_scores")
+
+    if (is_reduced && method == "pca") {
+      src_label <- if (src == "pca_scores") {
+        "PCA"
+      } else {
+        "LDA"
+      }
+      shiny$showNotification(
+        paste0(
+          "Data is already ",
+          src_label, "-reduced. ",
+          "Using direct axis plotting ",
+          "instead of running PCA again."
+        ),
+        type = "message",
+        duration = 4
+      )
+      shiny$updateSelectInput(
+        session, "reductionMethod",
+        selected = "raw"
+      )
+      return()
+    }
+
+    if (method %in% c("tsne", "umap")) {
       label <- switch(
         method,
         tsne = "t-SNE",
@@ -568,7 +612,7 @@ tab_server <- function(input, output, session,
       )
       shiny$updateSelectInput(
         session, "reductionMethod",
-        selected = "pca"
+        selected = if (is_reduced) "raw" else "pca"
       )
     }
   }, ignoreInit = TRUE)
