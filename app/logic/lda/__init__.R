@@ -6,6 +6,16 @@ box::use(
   app/logic/lda/ld_plot[
     create_ld_plot,
     ld_plot_error_parser,
+    get_group_values,
+    build_tooltips,
+    ld_theme,
+    axis_label,
+  ],
+  app/logic/lda/lda_diagnostics[
+    compute_pooled_vc,
+    generate_ellipse_points,
+    create_class_ellipses_plot,
+    create_pooled_vc_plot,
   ],
   app/logic/lda/lda[
     lda_error_parser,
