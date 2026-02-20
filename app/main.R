@@ -156,18 +156,18 @@ server <- function(id) {
       input_data = plotting_data,
       data_version = shiny$reactive(plotting_data_version())
     )
+    lda_result <- lda$server(
+      "lda",
+      input_data = plotting_data,
+      data_version = shiny$reactive(plotting_data_version()),
+      pca_result = pca_result
+    )
     cluster$server(
       "cluster",
       input_data = plotting_data,
       data_version = shiny$reactive(plotting_data_version()),
       pca_result = pca_result,
       lda_result = lda_result
-    )
-    lda_result <- lda$server(
-      "lda",
-      input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version()),
-      pca_result = pca_result
     )
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
