@@ -376,12 +376,31 @@ server <- function(id, input_data, data_version) {
         )
       }
 
+      # LDA results panel content (nested accordion)
+      lda_content <- results_display$render_lda_results(
+        result(), ns,
+        test_result = test_result()
+      )
+
+      lda_panel <- bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "bar-chart-line", class = "me-1"
+          ),
+          "LDA Results"
+        ),
+        value = "lda_panel",
+        lda_content
+      )
+
       shiny$tagList(
         preprocess_banner,
         warn_banner,
-        results_display$render_lda_results(
-          result(), ns,
-          test_result = test_result()
+        bslib$accordion(
+          id = ns("results_accordion"),
+          open = "lda_panel",
+          multiple = TRUE,
+          lda_panel
         )
       )
     })
