@@ -27,56 +27,7 @@ render_lda_results <- function(lda_result, ns,
   is_cv <- !is.null(lda_result$cv)
   is_split <- !is.null(test_result)
 
-  # --- Panel 1: Summary & Model Details ---
-  summary_content <- build_summary_badge(
-    lda_result, type_label, is_cv, is_split,
-    test_result
-  )
-
-  model_sections <- shiny$tagList(
-    # Prior probabilities
-    shiny$tags$h6(
-      class = "mt-3 mb-2", "Prior Probabilities"
-    ),
-    render_prior_table(lda_result$prior),
-
-    # Group means
-    shiny$tags$h6(
-      class = "mt-3 mb-2", "Group Means"
-    ),
-    render_means_table(lda_result$means)
-  )
-
-  # LD Coefficients (LDA only, model mode)
-  ld_section <- if (
-    lda_result$analysis_type == "lda" &&
-    !is.null(lda_result$scaling)
-  ) {
-    shiny$tagList(
-      shiny$tags$h6(
-        class = "mt-3 mb-2",
-        "Coefficients of Linear Discriminants"
-      ),
-      render_scaling_table(lda_result$scaling)
-    )
-  }
-
-  # Proportion of trace (LDA only, model mode)
-  trace_section <- if (
-    !is.null(lda_result$proportion_of_trace)
-  ) {
-    shiny$tagList(
-      shiny$tags$h6(
-        class = "mt-3 mb-2",
-        "Proportion of Trace"
-      ),
-      render_trace_table(
-        lda_result$proportion_of_trace
-      )
-    )
-  }
-
-  # --- Panel 2: Classification Results ---
+  # Gather classification data
   confusion <- get_confusion(
     lda_result, is_cv, test_result
   )
@@ -88,43 +39,15 @@ render_lda_results <- function(lda_result, ns,
   )
   meta <- get_meta(lda_result, test_result)
 
-  confusion_section <- if (!is.null(confusion)) {
-    render_confusion(confusion)
-  }
-
-  posterior_section <- if (!is.null(posterior)) {
-    post_label <- if (is_cv) {
-      "Posterior Probabilities (LOO-CV)"
-    } else if (is_split) {
-      "Posterior Probabilities (Test Set)"
-    } else {
-      "Posterior Probabilities (All Data)"
-    }
-    shiny$tagList(
-      shiny$tags$h6(
-        class = "mt-3 mb-2", post_label
-      ),
-      render_posterior_table(
-        posterior, pred_class, meta
-      )
-    )
-  }
-
-  split_section <- if (
-    is_split && !is.null(test_result)
-  ) {
-    render_split_info(test_result)
-  }
-
-  # Classification panel title with accuracy badge
-  cm_title_suffix <- if (is_cv) {
-    " (LOO-CV)"
+  # Accuracy label for summary sub-panel title
+  acc_label <- if (is_cv) {
+    "LOO-CV Accuracy"
   } else if (is_split) {
-    " (Test Set)"
+    "Test Accuracy"
   } else {
-    ""
+    "Resubstitution Accuracy"
   }
-  acc_inline <- if (!is.null(confusion)) {
+  acc_badge <- if (!is.null(confusion)) {
     acc_pct <- round(confusion$accuracy * 100, 1)
     acc_cls <- if (confusion$accuracy >= 0.9) {
       "bg-success"
@@ -142,56 +65,164 @@ render_lda_results <- function(lda_result, ns,
     )
   }
 
-  shiny$tagList(
-    bslib$accordion(
-      id = ns("lda_results_accordion"),
-      open = "model_panel",
-      multiple = TRUE,
+  # Build sub-panels list (dynamic, some conditional)
+  sub_panels <- list()
 
-      # Panel 1: Summary & Model Details
+  # 1. Summary / Accuracy
+  sub_panels[[length(sub_panels) + 1]] <-
+    bslib$accordion_panel(
+      title = shiny$tags$span(
+        bsicons$bs_icon(
+          "speedometer2", class = "me-2"
+        ),
+        acc_label,
+        acc_badge
+      ),
+      value = "summary_sub",
+      build_summary_badge(
+        lda_result, type_label, is_cv, is_split,
+        test_result
+      )
+    )
+
+  # 2. Prior Probabilities
+  sub_panels[[length(sub_panels) + 1]] <-
+    bslib$accordion_panel(
+      title = shiny$tags$span(
+        bsicons$bs_icon(
+          "pie-chart", class = "me-2"
+        ),
+        "Prior Probabilities"
+      ),
+      value = "prior_sub",
+      render_prior_table(lda_result$prior)
+    )
+
+  # 3. Group Means
+  sub_panels[[length(sub_panels) + 1]] <-
+    bslib$accordion_panel(
+      title = shiny$tags$span(
+        bsicons$bs_icon("table", class = "me-2"),
+        "Group Means"
+      ),
+      value = "means_sub",
+      render_means_table(lda_result$means)
+    )
+
+  # 4. LD Coefficients (LDA only, model mode)
+  if (
+    lda_result$analysis_type == "lda" &&
+    !is.null(lda_result$scaling)
+  ) {
+    sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
             "arrows-expand-vertical",
             class = "me-2"
           ),
-          paste(type_label, "Summary & Model Details")
+          "Coefficients of Linear Discriminants"
         ),
-        value = "model_panel",
-        summary_content,
-        model_sections,
-        ld_section,
-        trace_section
-      ),
+        value = "scaling_sub",
+        render_scaling_table(lda_result$scaling)
+      )
+  }
 
-      # Panel 2: Classification Results
+  # 5. Proportion of Trace (LDA only, model mode)
+  if (!is.null(lda_result$proportion_of_trace)) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "bar-chart-line", class = "me-2"
+          ),
+          "Proportion of Trace"
+        ),
+        value = "trace_sub",
+        render_trace_table(
+          lda_result$proportion_of_trace
+        )
+      )
+  }
+
+  # 6. Confusion Matrix
+  if (!is.null(confusion)) {
+    sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
             "grid-3x3", class = "me-2"
           ),
-          paste0(
-            "Classification Results",
-            cm_title_suffix
-          ),
-          acc_inline
+          "Confusion Matrix"
         ),
-        value = "classification_panel",
-        split_section,
-        confusion_section,
-        posterior_section
-      ),
+        value = "confusion_sub",
+        render_confusion(confusion)
+      )
+  }
 
-      # Panel 3: Download Results
+  # 7. Posterior Probabilities
+  if (!is.null(posterior)) {
+    post_label <- if (is_cv) {
+      "Posterior Probabilities (LOO-CV)"
+    } else if (is_split) {
+      "Posterior Probabilities (Test Set)"
+    } else {
+      "Posterior Probabilities (All Data)"
+    }
+    sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "download", class = "me-2"
+            "percent", class = "me-2"
           ),
-          "Download Results"
+          post_label
         ),
-        value = "downloads_panel",
-        render_download_buttons(ns)
+        value = "posterior_sub",
+        render_posterior_table(
+          posterior, pred_class, meta
+        )
+      )
+  }
+
+  # 8. Split Summary (train/test mode only)
+  if (is_split && !is.null(test_result)) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "scissors", class = "me-2"
+          ),
+          "Train / Test Split"
+        ),
+        value = "split_sub",
+        render_split_info(test_result)
+      )
+  }
+
+  # 9. Download Results
+  sub_panels[[length(sub_panels) + 1]] <-
+    bslib$accordion_panel(
+      title = shiny$tags$span(
+        bsicons$bs_icon(
+          "download", class = "me-2"
+        ),
+        "Download Results"
+      ),
+      value = "downloads_sub",
+      render_download_buttons(ns)
+    )
+
+  # Return nested accordion (like PCA pattern)
+  shiny$tagList(
+    do.call(
+      bslib$accordion,
+      c(
+        list(
+          id = ns("lda_results_accordion"),
+          open = "summary_sub",
+          multiple = TRUE
+        ),
+        unname(sub_panels)
       )
     )
   )
