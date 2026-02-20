@@ -9,6 +9,7 @@ box::use(
   app/logic/settings,
   app/view/cluster,
   app/view/help_modal,
+  app/view/lda,
   app/view/load_data,
   app/view/median,
   app/view/pca,
@@ -82,6 +83,14 @@ ui <- function(id) {
       value = "cluster",
       cluster$ui(ns("cluster"))
     ),
+    bslib$nav_panel(
+      title = shiny$tagList(
+        bsicons$bs_icon("arrows-expand-vertical"),
+        "LDA"
+      ),
+      value = "lda",
+      lda$ui(ns("lda"))
+    ),
     bslib$nav_spacer(),
     bslib$nav_item(
       help_modal$ui(ns("help"))
@@ -143,6 +152,11 @@ server <- function(id) {
       input_data = plotting_data,
       data_version = load_data_result$version
     )
+    lda$server(
+      "lda",
+      input_data = plotting_data,
+      data_version = load_data_result$version
+    )
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
@@ -160,6 +174,7 @@ server <- function(id) {
       toggle("active_page", target = "statistics")
       toggle("active_page", target = "pca")
       toggle("active_page", target = "cluster")
+      toggle("active_page", target = "lda")
     })
 
     # --- Statistics tab: grayed out with lock until plotting selections exist ---
