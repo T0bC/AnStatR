@@ -37,10 +37,11 @@ tab_ui <- function(ns) {
       ),
       choices = list(
         "Raw Data" = "raw",
-        "PCA Scores (coming soon)" = "pca_scores"
+        "PCA Scores" = "pca_scores"
       ),
       selected = "raw"
     ),
+    shiny$uiOutput(ns("pca_scores_hint")),
     shiny$tags$hr(),
     shiny$helpText(
       paste(
@@ -246,7 +247,94 @@ tab_ui <- function(ns) {
 #' @param data_version Reactive returning the data version counter
 #' @export
 tab_server <- function(input, output, session,
-                       input_data, data_version) {
+                       input_data, data_version,
+                       pca_scores_data = NULL) {
+  # Helper: get the active data frame for column detection
+  active_data <- shiny$reactive({
+    if (
+      !is.null(input$data_source) &&
+      input$data_source == "pca_scores" &&
+      !is.null(pca_scores_data)
+    ) {
+      pca_scores_data()
+    } else {
+      input_data()
+    }
+  })
+
+  # Show hint when PCA Scores is selected but unavailable
+  output$pca_scores_hint <- shiny$renderUI({
+    if (
+      is.null(input$data_source) ||
+      input$data_source != "pca_scores"
+    ) {
+      return(NULL)
+    }
+    pca_data <- if (!is.null(pca_scores_data)) {
+      pca_scores_data()
+    }
+    if (is.null(pca_data)) {
+      shiny$tags$div(
+        class = "alert alert-info py-1 px-2 small mb-2",
+        bsicons$bs_icon(
+          "info-circle", class = "me-1"
+        ),
+        "Run PCA first in the PCA tab, then",
+        " return here to use PCA scores."
+      )
+    } else {
+      shiny$tags$div(
+        class = "alert alert-success py-1 px-2 small mb-2",
+        bsicons$bs_icon("check-circle", class = "me-1"),
+        paste0(
+          "PCA scores loaded: ",
+          ncol(pca_data) - length(
+            column_utils$get_descriptive_cols(pca_data)
+          ),
+          " dimensions, ",
+          nrow(pca_data), " observations."
+        )
+      )
+    }
+  })
+
+  # When data_source changes, repopulate column selectors
+  shiny$observeEvent(input$data_source, {
+    data <- active_data()
+    if (is.null(data)) return()
+
+    desc_cols <- column_utils$get_descriptive_cols(data)
+    meas_cols <- column_utils$get_measurement_cols(data)
+
+    rhino$log$info(
+      "LDA data_selection: source='{input$data_source}',",
+      " {length(desc_cols)} descriptive,",
+      " {length(meas_cols)} measurement cols"
+    )
+
+    shiny$updateSelectizeInput(
+      session, "metaData",
+      choices = desc_cols,
+      selected = desc_cols
+    )
+    # For PCA scores, pre-select all dims
+    sel_meas <- if (input$data_source == "pca_scores") {
+      meas_cols
+    } else {
+      character(0)
+    }
+    shiny$updateSelectizeInput(
+      session, "measureVar",
+      choices = meas_cols,
+      selected = sel_meas
+    )
+    shiny$updateSelectizeInput(
+      session, "groupingCol",
+      choices = desc_cols,
+      selected = character(0)
+    )
+  }, ignoreInit = TRUE)
+
   # Smart retention on new data: keep selections that
   # still exist in the new dataset
   shiny$observeEvent(data_version(), {
@@ -306,9 +394,9 @@ tab_server <- function(input, output, session,
     )
   }, ignoreInit = TRUE)
 
-  # Update metaData choices when data changes
+  # Update metaData choices when active data changes
   shiny$observe({
-    data <- input_data()
+    data <- active_data()
     if (is.null(data)) return()
     cols <- column_utils$get_descriptive_cols(data)
     shiny$updateSelectizeInput(
@@ -320,9 +408,9 @@ tab_server <- function(input, output, session,
     )
   })
 
-  # Update measureVar choices when data changes
+  # Update measureVar choices when active data changes
   shiny$observe({
-    data <- input_data()
+    data <- active_data()
     if (is.null(data)) return()
     cols <- column_utils$get_measurement_cols(data)
     shiny$updateSelectizeInput(
@@ -336,7 +424,7 @@ tab_server <- function(input, output, session,
 
   # Select all measurement columns on link click
   shiny$observeEvent(input$select_all_measure, {
-    data <- input_data()
+    data <- active_data()
     if (is.null(data)) return()
     cols <- column_utils$get_measurement_cols(data)
     shiny$updateSelectizeInput(
