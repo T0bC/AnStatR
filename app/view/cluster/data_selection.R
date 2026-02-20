@@ -228,11 +228,14 @@ tab_ui <- function(ns) {
 #'   frame (metadata + Dim.1, Dim.2, …) or NULL
 #' @param lda_scores_data Reactive returning LDA scores data
 #'   frame (metadata + LD1, LD2, …) or NULL
+#' @param pca_result Reactive returning the full PCA result
+#'   (with $eig table for variance recommendation) or NULL
 #' @export
 tab_server <- function(input, output, session,
                        input_data, data_version,
                        pca_scores_data = NULL,
-                       lda_scores_data = NULL) {
+                       lda_scores_data = NULL,
+                       pca_result = NULL) {
   # Helper: get the active data frame for column detection
   active_data <- shiny$reactive({
     src <- input$data_source
@@ -272,24 +275,54 @@ tab_server <- function(input, output, session,
           " return here to use PCA scores."
         )
       } else {
-        shiny$tags$div(
-          class = paste(
-            "alert alert-success py-1",
-            "px-2 small mb-2"
-          ),
-          bsicons$bs_icon(
-            "check-circle", class = "me-1"
-          ),
-          paste0(
-            "PCA scores loaded: ",
-            ncol(pca_data) - length(
-              column_utils$get_descriptive_cols(
-                pca_data
-              )
-            ),
-            " dimensions, ",
-            nrow(pca_data), " observations."
+        n_dims <- ncol(pca_data) - length(
+          column_utils$get_descriptive_cols(
+            pca_data
           )
+        )
+        # Build variance recommendation
+        rec <- pca_dims_recommendation(
+          pca_result
+        )
+        shiny$tagList(
+          shiny$tags$div(
+            class = paste(
+              "alert alert-success py-1",
+              "px-2 small mb-2"
+            ),
+            bsicons$bs_icon(
+              "check-circle", class = "me-1"
+            ),
+            paste0(
+              "PCA scores loaded: ",
+              n_dims, " dimensions, ",
+              nrow(pca_data),
+              " observations."
+            )
+          ),
+          if (!is.null(rec)) {
+            shiny$tags$div(
+              class = paste(
+                "alert alert-info py-1",
+                "px-2 small mb-2"
+              ),
+              bsicons$bs_icon(
+                "lightbulb", class = "me-1"
+              ),
+              shiny$tags$strong(
+                "Recommendation: "
+              ),
+              paste0(
+                "Select the first ",
+                rec$n90, " dimensions",
+                " for \u226590% variance (",
+                rec$cum90, "%), or ",
+                rec$n95,
+                " for \u226595% (",
+                rec$cum95, "%)."
+              )
+            )
+          }
         )
       }
     } else if (src == "lda_scores") {
@@ -482,6 +515,42 @@ tab_server <- function(input, output, session,
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+#' Compute PCA dimension recommendation based on
+#' cumulative variance thresholds (90% and 95%).
+#'
+#' @param pca_result Reactive returning the full PCA
+#'   result or NULL
+#' @return List with n90, cum90, n95, cum95 or NULL
+pca_dims_recommendation <- function(pca_result) {
+  if (is.null(pca_result)) return(NULL)
+  pca_res <- tryCatch(
+    pca_result(),
+    error = function(e) NULL
+  )
+  if (
+    is.null(pca_res) ||
+    !isTRUE(pca_res$success) ||
+    is.null(pca_res$result$eig)
+  ) {
+    return(NULL)
+  }
+  eig <- pca_res$result$eig
+  cum_var <- eig[["cumulative.variance.percent"]]
+  if (is.null(cum_var) || length(cum_var) == 0) {
+    return(NULL)
+  }
+  n90 <- which(cum_var >= 90)[1]
+  n95 <- which(cum_var >= 95)[1]
+  if (is.na(n90)) n90 <- length(cum_var)
+  if (is.na(n95)) n95 <- length(cum_var)
+  list(
+    n90 = n90,
+    cum90 = round(cum_var[n90], 1),
+    n95 = n95,
+    cum95 = round(cum_var[n95], 1)
+  )
+}
 
 #' Build the hint UI for when LDA scores are unavailable
 #'
