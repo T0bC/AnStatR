@@ -184,7 +184,32 @@ render_lda_results <- function(lda_result, ns,
       )
   }
 
-  # 8. Split Summary (train/test mode only)
+  # 8. Classification Result
+  if (!is.null(pred_class)) {
+    class_label <- if (is_cv) {
+      "Classification Result (LOO-CV)"
+    } else if (is_split) {
+      "Classification Result (Test Set)"
+    } else {
+      "Classification Result (All Data)"
+    }
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "person-check", class = "me-2"
+          ),
+          class_label
+        ),
+        value = "classification_sub",
+        render_classification_table(
+          pred_class, meta,
+          lda_result, is_cv, test_result
+        )
+      )
+  }
+
+  # 9. Split Summary (train/test mode only)
   if (is_split && !is.null(test_result)) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
@@ -199,7 +224,7 @@ render_lda_results <- function(lda_result, ns,
       )
   }
 
-  # 9. Download Results
+  # 10. Download Results
   sub_panels[[length(sub_panels) + 1]] <-
     bslib$accordion_panel(
       title = shiny$tags$span(
@@ -518,6 +543,63 @@ render_posterior_table <- function(posterior,
 }
 
 
+render_classification_table <- function(
+    pred_class, meta, lda_result, is_cv,
+    test_result) {
+  # Build per-observation classification table
+  df <- data.frame(
+    Predicted = as.character(pred_class),
+    stringsAsFactors = FALSE
+  )
+
+  # Add true group column
+  true_group <- get_true_group(
+    lda_result, is_cv, test_result
+  )
+  if (!is.null(true_group) &&
+      length(true_group) == nrow(df)) {
+    df$True <- as.character(true_group)
+    df$Correct <- ifelse(
+      df$Predicted == df$True,
+      "\u2713", "\u2717"
+    )
+    # Reorder: True, Predicted, Correct
+    df <- df[, c("True", "Predicted", "Correct"),
+             drop = FALSE]
+  }
+
+  # Prepend metadata
+  if (!is.null(meta) && nrow(meta) == nrow(df)) {
+    has_real_meta <- !(
+      "Row" %in% names(meta) && ncol(meta) == 1
+    )
+    if (has_real_meta) {
+      df <- cbind(meta, df)
+    }
+  }
+  rownames(df) <- NULL
+
+  n_rows <- nrow(df)
+  too_many <- if (n_rows > 500) {
+    shiny$tags$div(
+      class = "alert alert-info mb-2 py-2",
+      bsicons$bs_icon(
+        "info-circle-fill", class = "me-2"
+      ),
+      sprintf(
+        "%d observations. Table is paginated.",
+        n_rows
+      )
+    )
+  }
+
+  shiny$tagList(
+    too_many,
+    make_dt(df, page_length = 10)
+  )
+}
+
+
 render_split_info <- function(test_result) {
   if (is.null(test_result$split_summary)) {
     return(NULL)
@@ -621,6 +703,19 @@ get_predicted_class <- function(lda_result, is_cv,
     !is.null(lda_result$predicted_class)
   ) {
     lda_result$predicted_class
+  } else {
+    NULL
+  }
+}
+
+
+get_true_group <- function(lda_result, is_cv,
+                           test_result) {
+  if (!is.null(test_result) &&
+      !is.null(test_result$true_group)) {
+    test_result$true_group
+  } else if (!is.null(lda_result$true_group)) {
+    lda_result$true_group
   } else {
     NULL
   }
