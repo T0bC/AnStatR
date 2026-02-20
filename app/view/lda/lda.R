@@ -420,7 +420,7 @@ server <- function(id, input_data, data_version) {
         ld_plot_panel <- bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "scatter", class = "me-1"
+              "graph-up", class = "me-1"
             ),
             "LD Scores Plot"
           ),
@@ -437,10 +437,10 @@ server <- function(id, input_data, data_version) {
         warn_banner,
         bslib$accordion(
           id = ns("results_accordion"),
-          open = FALSE,
+          open = "ld_plot_panel",
           multiple = TRUE,
-          ld_plot_panel,
-          lda_panel
+          lda_panel,
+          ld_plot_panel
         )
       )
     })
