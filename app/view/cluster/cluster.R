@@ -16,6 +16,9 @@ box::use(
   app/logic/error_handling,
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
+  app/logic/skewness_transform[
+    detect_skewness, transform_skewed
+  ],
   app/view/cluster/cluster_biplot,
   app/view/cluster/cluster_results,
   app/view/cluster/clustering_settings,
@@ -25,6 +28,7 @@ box::use(
   app/view/cluster/hopkins,
   app/view/cluster/optimal_clusters,
   app/view/components/sidebar_tabs,
+  app/view/components/transform_summary,
   app/view/error_display,
   app/view/pca/na_summary,
 )
@@ -67,6 +71,7 @@ server <- function(id, input_data, data_version) {
     cleaned_data_store <- shiny$reactiveVal(NULL)
     measure_cols_store <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
+    transform_info <- shiny$reactiveVal(NULL)
     user_modified_k <- shiny$reactiveVal(FALSE)
     updating_k_programmatically <- shiny$reactiveVal(FALSE)
 
@@ -90,6 +95,7 @@ server <- function(id, input_data, data_version) {
       cleaned_data_store(NULL)
       measure_cols_store(NULL)
       na_info(NULL)
+      transform_info(NULL)
       user_modified_k(FALSE)
       updating_k_programmatically(TRUE)
       cached_fingerprint(NULL)
@@ -138,6 +144,7 @@ server <- function(id, input_data, data_version) {
       result(NULL)
       hopkins_result(NULL)
       optimal_result(NULL)
+      transform_info(NULL)
 
       data <- input_data()
       measure_cols <- input$measureVar
@@ -192,6 +199,29 @@ server <- function(id, input_data, data_version) {
             )
           ))
           return()
+        }
+
+        # Step 1b: Skewness correction (if enabled)
+        if (isTRUE(input$correct_skewness)) {
+          skew_result <- detect_skewness(
+            cleaned_data, measure_cols
+          )
+          if (any(skew_result$is_skewed)) {
+            transform_res <- transform_skewed(
+              cleaned_data, measure_cols,
+              skew_result
+            )
+            if (transform_res$success) {
+              cleaned_data <- transform_res$result$data
+              transform_info(transform_res$result)
+            } else {
+              rhino$log$warn(
+                "Cluster: skewness correction",
+                " failed, proceeding with",
+                " untransformed data"
+              )
+            }
+          }
         }
 
         # Step 2: Scale data
@@ -474,6 +504,15 @@ server <- function(id, input_data, data_version) {
         na_summary$render_na_summary(na_res)
       }
 
+      # Skewness transformation banner
+      tf_res <- transform_info()
+      transform_banner <- if (!is.null(tf_res)) {
+        transform_summary$render_transform_summary(
+          tf_res,
+          n_total = length(input$measureVar)
+        )
+      }
+
       # Hopkins clusterability panel
       h_res <- hopkins_result()
       hopkins_panel <- if (!is.null(h_res)) {
@@ -656,6 +695,7 @@ server <- function(id, input_data, data_version) {
 
       shiny$tagList(
         na_banner,
+        transform_banner,
         bslib$accordion(
           id = ns("results_accordion"),
           open = "cluster_biplot_panel",

@@ -17,7 +17,11 @@ box::use(
   app/logic/pca/pca[validate_inputs, run_pca],
   app/logic/pca/pca_export[create_pca_excel],
   app/logic/pca/scaling[scale_data],
+  app/logic/skewness_transform[
+    detect_skewness, transform_skewed
+  ],
   app/view/components/sidebar_tabs,
+  app/view/components/transform_summary,
   app/view/error_display,
   app/view/pca/biplot,
   app/view/pca/biplot3d,
@@ -68,6 +72,7 @@ server <- function(id, input_data, data_version) {
     optimal_result <- shiny$reactiveVal(NULL)
     pca_result <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
+    transform_info <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
@@ -78,6 +83,7 @@ server <- function(id, input_data, data_version) {
       optimal_result(NULL)
       pca_result(NULL)
       na_info(NULL)
+      transform_info(NULL)
       rhino$log$info("PCA: state reset for new data")
     }, ignoreInit = TRUE)
 
@@ -165,6 +171,7 @@ server <- function(id, input_data, data_version) {
       optimal_result(NULL)
       pca_result(NULL)
       na_info(NULL)
+      transform_info(NULL)
 
       data <- input_data()
       measure_cols <- input$measureVar
@@ -201,6 +208,27 @@ server <- function(id, input_data, data_version) {
           )
         ))
         return()
+      }
+
+      # Skewness correction (if enabled)
+      if (isTRUE(input$correct_skewness)) {
+        skew_result <- detect_skewness(
+          cleaned_data, measure_cols
+        )
+        if (any(skew_result$is_skewed)) {
+          transform_res <- transform_skewed(
+            cleaned_data, measure_cols, skew_result
+          )
+          if (transform_res$success) {
+            cleaned_data <- transform_res$result$data
+            transform_info(transform_res$result)
+          } else {
+            rhino$log$warn(
+              "PCA: skewness correction failed,",
+              " proceeding with untransformed data"
+            )
+          }
+        }
       }
 
       # Scale data based on user selection
@@ -357,6 +385,15 @@ server <- function(id, input_data, data_version) {
       na_res <- na_info()
       na_banner <- if (!is.null(na_res)) {
         na_summary$render_na_summary(na_res)
+      }
+
+      # Skewness transformation banner
+      tf_res <- transform_info()
+      transform_banner <- if (!is.null(tf_res)) {
+        transform_summary$render_transform_summary(
+          tf_res,
+          n_total = length(input$measureVar)
+        )
       }
 
       corr_res <- correlation_result()
@@ -656,6 +693,7 @@ server <- function(id, input_data, data_version) {
 
       shiny$tagList(
         na_banner,
+        transform_banner,
         bslib$accordion(
           id = ns("results_accordion"),
           open = "biplot_panel",

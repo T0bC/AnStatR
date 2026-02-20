@@ -10,7 +10,11 @@ box::use(
   app/logic/lda/lda[validate_inputs, run_lda, run_qda],
   app/logic/pca/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
+  app/logic/skewness_transform[
+    detect_skewness, transform_skewed
+  ],
   app/view/components/sidebar_tabs,
+  app/view/components/transform_summary,
   app/view/error_display,
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
@@ -48,6 +52,7 @@ server <- function(id, input_data, data_version) {
     last_error <- shiny$reactiveVal(NULL)
     result <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
+    transform_info <- shiny$reactiveVal(NULL)
     validation_warnings <- shiny$reactiveVal(character(0))
 
     # Reset state when new data is loaded
@@ -55,6 +60,7 @@ server <- function(id, input_data, data_version) {
       result(NULL)
       last_error(NULL)
       na_info(NULL)
+      transform_info(NULL)
       validation_warnings(character(0))
       rhino$log$info("LDA: state reset for new data")
     }, ignoreInit = TRUE)
@@ -75,6 +81,7 @@ server <- function(id, input_data, data_version) {
       last_error(NULL)
       result(NULL)
       na_info(NULL)
+      transform_info(NULL)
       validation_warnings(character(0))
 
       data <- input_data()
@@ -121,9 +128,33 @@ server <- function(id, input_data, data_version) {
         return()
       }
 
+      # Skewness correction (if enabled, raw data only)
+      data_source <- input$data_source
+      if (
+        data_source == "raw" &&
+        isTRUE(input$correct_skewness)
+      ) {
+        skew_result <- detect_skewness(
+          cleaned_data, measure_cols
+        )
+        if (any(skew_result$is_skewed)) {
+          transform_res <- transform_skewed(
+            cleaned_data, measure_cols, skew_result
+          )
+          if (transform_res$success) {
+            cleaned_data <- transform_res$result$data
+            transform_info(transform_res$result)
+          } else {
+            rhino$log$warn(
+              "LDA: skewness correction failed,",
+              " proceeding with untransformed data"
+            )
+          }
+        }
+      }
+
       # Scale data based on user selection (raw data only)
       analysis_data <- cleaned_data
-      data_source <- input$data_source
       scale_method <- input$scale_method
       if (
         data_source == "raw" &&
@@ -276,6 +307,15 @@ server <- function(id, input_data, data_version) {
         na_summary$render_na_summary(na_res)
       }
 
+      # Skewness transformation banner
+      tf_res <- transform_info()
+      transform_banner <- if (!is.null(tf_res)) {
+        transform_summary$render_transform_summary(
+          tf_res,
+          n_total = length(input$measureVar)
+        )
+      }
+
       # Validation warnings banner
       warns <- validation_warnings()
       warn_banner <- if (length(warns) > 0) {
@@ -293,6 +333,7 @@ server <- function(id, input_data, data_version) {
 
       shiny$tagList(
         na_banner,
+        transform_banner,
         warn_banner,
         bslib$accordion(
           id = ns("results_accordion"),
