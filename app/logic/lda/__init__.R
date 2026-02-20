@@ -10,4 +10,7 @@ box::use(
     run_qda,
     validate_inputs,
   ],
+  app/logic/lda/lda_export[
+    create_lda_excel,
+  ],
 )
