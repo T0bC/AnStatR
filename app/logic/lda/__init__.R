@@ -3,6 +3,10 @@ box::use(
   app/logic/lda/data_splitting[
     create_stratified_split,
   ],
+  app/logic/lda/ld_plot[
+    create_ld_plot,
+    ld_plot_error_parser,
+  ],
   app/logic/lda/lda[
     lda_error_parser,
     run_lda,
