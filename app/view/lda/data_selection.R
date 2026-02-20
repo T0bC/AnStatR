@@ -245,10 +245,15 @@ tab_ui <- function(ns) {
 #' @param session Shiny session object from parent module
 #' @param input_data Reactive returning the current data frame
 #' @param data_version Reactive returning the data version counter
+#' @param pca_scores_data Reactive returning PCA scores data
+#'   frame (metadata + Dim.1, Dim.2, …) or NULL
+#' @param pca_result Reactive returning the full PCA result
+#'   (with $eig table for variance recommendation) or NULL
 #' @export
 tab_server <- function(input, output, session,
                        input_data, data_version,
-                       pca_scores_data = NULL) {
+                       pca_scores_data = NULL,
+                       pca_result = NULL) {
   # Helper: get the active data frame for column detection
   active_data <- shiny$reactive({
     if (
@@ -283,17 +288,52 @@ tab_server <- function(input, output, session,
         " return here to use PCA scores."
       )
     } else {
-      shiny$tags$div(
-        class = "alert alert-success py-1 px-2 small mb-2",
-        bsicons$bs_icon("check-circle", class = "me-1"),
-        paste0(
-          "PCA scores loaded: ",
-          ncol(pca_data) - length(
-            column_utils$get_descriptive_cols(pca_data)
+      n_dims <- ncol(pca_data) - length(
+        column_utils$get_descriptive_cols(pca_data)
+      )
+      # Build variance recommendation
+      rec <- pca_dims_recommendation(
+        pca_result
+      )
+      shiny$tagList(
+        shiny$tags$div(
+          class = paste(
+            "alert alert-success py-1",
+            "px-2 small mb-2"
           ),
-          " dimensions, ",
-          nrow(pca_data), " observations."
-        )
+          bsicons$bs_icon(
+            "check-circle", class = "me-1"
+          ),
+          paste0(
+            "PCA scores loaded: ",
+            n_dims, " dimensions, ",
+            nrow(pca_data),
+            " observations."
+          )
+        ),
+        if (!is.null(rec)) {
+          shiny$tags$div(
+            class = paste(
+              "alert alert-info py-1",
+              "px-2 small mb-2"
+            ),
+            bsicons$bs_icon(
+              "lightbulb", class = "me-1"
+            ),
+            shiny$tags$strong(
+              "Recommendation: "
+            ),
+            paste0(
+              "Select the first ",
+              rec$n90, " dimensions",
+              " for \u226590% variance (",
+              rec$cum90, "%), or ",
+              rec$n95,
+              " for \u226595% (",
+              rec$cum95, "%)."
+            )
+          )
+        }
       )
     }
   })
