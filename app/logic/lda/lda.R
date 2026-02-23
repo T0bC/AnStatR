@@ -443,8 +443,38 @@ build_prior <- function(prior_choice, grouping) {
   } else {
     # "proportional" — let MASS compute from data
     props <- table(grouping) / length(grouping)
-    as.numeric(props)
+    prior_vec <- as.numeric(props)
+    names(prior_vec) <- levels(grouping)
+    prior_vec
   }
+}
+
+
+fit_mda <- function(fit_data, subclasses, iter,
+                    dimension, eps) {
+  # mda::mda() uses formula interface which internally
+  # calls stats::model.frame(). In box's isolated
+  # environment this is not on the search path.
+  # Evaluate in an environment that has stats attached.
+  env <- new.env(parent = globalenv())
+  env$fit_data <- fit_data
+  env$subclasses <- subclasses
+  env$iter <- iter
+  env$dimension <- dimension
+  env$eps <- eps
+  eval(quote({
+    args <- list(
+      formula = .grouping. ~ .,
+      data = fit_data,
+      subclasses = subclasses,
+      iter = iter
+    )
+    if (!is.null(dimension)) {
+      args$dimension <- dimension
+    }
+    if (!is.null(eps)) args$eps <- eps
+    do.call(mda::mda, args)
+  }), envir = env)
 }
 
 
@@ -638,11 +668,16 @@ build_mda_result <- function(mda_obj, data, numeric_data,
   }
 
   # Proportion of trace from percent.explained
+  # NOTE: percent.explained is cumulative (e.g. 90, 97, 100)
   pct_explained <- mda_obj$percent.explained
   if (!is.null(pct_explained) && length(pct_explained) > 0) {
     n_dim <- length(pct_explained)
-    prop_vals <- pct_explained / 100
-    cum_vals <- cumsum(prop_vals)
+    cum_vals <- pct_explained / 100
+    # Individual proportions by differencing
+    prop_vals <- c(
+      cum_vals[1],
+      diff(cum_vals)
+    )
     proportion_of_trace <- data.frame(
       LD = paste0("LD", seq_len(n_dim)),
       `Proportion` = round(prop_vals, 4),
@@ -654,9 +689,14 @@ build_mda_result <- function(mda_obj, data, numeric_data,
   }
 
   # Scaling coefficients from the fit component
+  # coef.mda needs stats functions, so eval in globalenv
   scaling <- tryCatch(
     {
-      coefs <- coef(mda_obj)
+      env <- new.env(parent = globalenv())
+      env$mda_obj <- mda_obj
+      coefs <- eval(
+        quote(coef(mda_obj)), envir = env
+      )
       if (!is.null(coefs) && is.matrix(coefs)) {
         as.data.frame(coefs)
       } else {
@@ -744,19 +784,12 @@ build_mda_cv_result <- function(data, numeric_data,
     fit_data <- cbind(
       train_data, .grouping. = train_g
     )
-    args <- list(
-      formula = .grouping. ~ .,
-      data = fit_data,
-      subclasses = subclasses,
-      iter = iter
-    )
-    if (!is.null(dimension)) {
-      args$dimension <- dimension
-    }
-    if (!is.null(eps)) args$eps <- eps
 
     fold_fit <- tryCatch(
-      do.call(mda::mda, args),
+      fit_mda(
+        fit_data, subclasses, iter,
+        dimension, eps
+      ),
       error = function(e) NULL
     )
 
