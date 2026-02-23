@@ -293,13 +293,12 @@ add_boundaries_overlay <- function(p, lda_result,
   grid_df$class <- pred$class
   grid_df$class_num <- as.numeric(grid_df$class)
 
-  # Tile layer (soft fill) — inserted before points
-  # by rebuilding the plot with boundary layers first
   group_levels <- lda_result$group_levels
   grid_df$class <- factor(
     grid_df$class, levels = group_levels
   )
 
+  # Tile layer (soft fill)
   p <- p +
     ggplot2$geom_tile(
       data = grid_df,
@@ -308,16 +307,59 @@ add_boundaries_overlay <- function(p, lda_result,
       ),
       alpha = 0.15,
       inherit.aes = FALSE
-    ) +
-    ggplot2$geom_contour(
-      data = grid_df,
-      ggplot2$aes(
-        x = x, y = y, z = class_num
-      ),
-      colour = "grey30",
-      linewidth = 0.6,
-      inherit.aes = FALSE
     )
+
+  # Boundary segments: find adjacent cells that differ
+  dx <- x_seq[2] - x_seq[1]
+  dy <- y_seq[2] - y_seq[1]
+  class_mat <- matrix(
+    grid_df$class_num,
+    nrow = grid_n, ncol = grid_n
+  )
+
+  seg_list <- vector("list", 2 * grid_n * grid_n)
+  k <- 0L
+  for (i in seq_len(grid_n)) {
+    for (j in seq_len(grid_n)) {
+      # Horizontal neighbour (right)
+      if (i < grid_n &&
+          class_mat[i, j] != class_mat[i + 1, j]) {
+        k <- k + 1L
+        mid_x <- x_seq[i] + dx / 2
+        seg_list[[k]] <- data.frame(
+          x = mid_x, xend = mid_x,
+          y = y_seq[j] - dy / 2,
+          yend = y_seq[j] + dy / 2
+        )
+      }
+      # Vertical neighbour (above)
+      if (j < grid_n &&
+          class_mat[i, j] != class_mat[i, j + 1]) {
+        k <- k + 1L
+        mid_y <- y_seq[j] + dy / 2
+        seg_list[[k]] <- data.frame(
+          x = x_seq[i] - dx / 2,
+          xend = x_seq[i] + dx / 2,
+          y = mid_y, yend = mid_y
+        )
+      }
+    }
+  }
+
+  if (k > 0) {
+    seg_df <- do.call(rbind, seg_list[seq_len(k)])
+    p <- p +
+      ggplot2$geom_segment(
+        data = seg_df,
+        ggplot2$aes(
+          x = x, xend = xend,
+          y = y, yend = yend
+        ),
+        colour = "grey50",
+        linewidth = 0.45,
+        inherit.aes = FALSE
+      )
+  }
 
   p
 }
