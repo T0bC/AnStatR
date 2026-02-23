@@ -146,13 +146,20 @@ create_lda_excel <- function(lda_result, file,
     lda_result$analysis_type == "mda" &&
     !is.null(lda_result$sub_prior)
   ) {
-    sp_df <- data.frame(
-      Subclass = names(lda_result$sub_prior),
-      Prior = round(
-        as.numeric(lda_result$sub_prior), 6
-      ),
-      stringsAsFactors = FALSE
+    rows <- lapply(
+      names(lda_result$sub_prior),
+      function(grp) {
+        vals <- lda_result$sub_prior[[grp]]
+        data.frame(
+          Group = grp,
+          Subclass = names(vals),
+          Prior = round(as.numeric(vals), 6),
+          stringsAsFactors = FALSE
+        )
+      }
     )
+    sp_df <- do.call(rbind, rows)
+    rownames(sp_df) <- NULL
     add_sheet(wb, "Subclass Priors", sp_df)
     sheet_count <- sheet_count + 1
   }
