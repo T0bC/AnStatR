@@ -86,6 +86,48 @@ tab_ui <- function(ns) {
         )
       )
     ),
+    # Assumption diagnostics overlay toggle
+    shiny$checkboxInput(
+      inputId = ns("show_diagnostics"),
+      label = shiny$tags$span(
+        "Show Assumption Diagnostics ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle",
+            class = "text-muted"
+          ),
+          paste(
+            "Overlay per-group (solid) and pooled",
+            "within-group (dashed) covariance",
+            "ellipses on the LD Scores plot.",
+            "If both match, the equal-covariance",
+            "assumption holds."
+          )
+        )
+      ),
+      value = FALSE
+    ),
+    # Decision boundaries overlay toggle
+    shiny$checkboxInput(
+      inputId = ns("show_boundaries"),
+      label = shiny$tags$span(
+        "Show Decision Boundaries ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle",
+            class = "text-muted"
+          ),
+          paste(
+            "Overlay classification decision",
+            "regions and boundary lines on the",
+            "LD Scores plot. Shaded areas show",
+            "which group the model predicts for",
+            "each region of the LD space."
+          )
+        )
+      ),
+      value = FALSE
+    ),
     shiny$tags$hr(),
     # Plot dimensions for export
     shiny$fluidRow(
