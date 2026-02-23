@@ -304,18 +304,11 @@ run_mda <- function(data, columns, grouping_col,
         fit_data <- cbind(
           numeric_data, .grouping. = grouping
         )
-        args <- list(
-          formula = .grouping. ~ .,
-          data = fit_data,
-          subclasses = subclasses,
-          iter = iter
-        )
-        if (!is.null(dimension)) {
-          args$dimension <- dimension
-        }
-        if (!is.null(eps)) args$eps <- eps
 
-        mda_obj <- do.call(mda::mda, args)
+        mda_obj <- fit_mda(
+          fit_data, subclasses, iter,
+          dimension, eps
+        )
 
         build_mda_result(
           mda_obj, data, numeric_data, columns,
