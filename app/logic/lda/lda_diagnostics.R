@@ -1,4 +1,5 @@
 box::use(
+  colorspace,
   ggplot2,
   ggiraph,
   rhino,
@@ -93,20 +94,21 @@ generate_ellipse_points <- function(vc_matrix,
 }
 
 
-#' Create per-group covariance ellipses plot
+#' Create combined assumption diagnostics plot
 #'
-#' Overlays 1.5-SD ellipses (one per group, from each
-#' group's own covariance) on the LD scores scatter plot.
-#' Uses stat_ellipse with type = "norm".
+#' Shows per-group covariance ellipses (solid lines)
+#' and pooled within-group covariance ellipses (dashed
+#' lines, darker shade) on the same LD scores scatter
+#' plot, allowing direct comparison.
 #'
 #' @param lda_result Result list from run_lda()
 #' @param dim_x Character, LD column for x-axis
 #' @param dim_y Character, LD column for y-axis
 #' @return List with $success, $result (ggplot) or $error
 #' @export
-create_class_ellipses_plot <- function(lda_result,
-                                       dim_x = "LD1",
-                                       dim_y = "LD2") {
+create_assumption_plot <- function(lda_result,
+                                   dim_x = "LD1",
+                                   dim_y = "LD2") {
   error_handling$safe_execute(
     expr = {
       scores <- lda_result$scores
@@ -119,6 +121,11 @@ create_class_ellipses_plot <- function(lda_result,
         scores, meta, grouping_col, dim_x, dim_y
       )
 
+      group_vals <- get_group_values(
+        meta, grouping_col
+      )
+      groups <- as.factor(group_vals)
+
       x_label <- axis_label(
         dim_x, lda_result$proportion_of_trace
       )
@@ -130,6 +137,7 @@ create_class_ellipses_plot <- function(lda_result,
       # P(chi-sq(2) <= 1.5^2) = 1 - exp(-1.5^2/2) ≈ 0.6753
       ellipse_level <- 1 - exp(-1.5^2 / 2)
 
+      # --- Base plot: data points ---
       p <- ggplot2$ggplot(
         df,
         ggplot2$aes(x = x, y = y, fill = group)
@@ -143,10 +151,10 @@ create_class_ellipses_plot <- function(lda_result,
           color = "white",
           stroke = 0.6,
           size = 3,
-          alpha = 0.85
+          alpha = 0.75
         )
 
-      # Add ellipses only for groups with >= 4 points
+      # --- Per-group covariance ellipses (solid) ---
       group_counts <- table(df$group)
       valid_groups <- names(
         group_counts[group_counts >= 4]
@@ -174,74 +182,22 @@ create_class_ellipses_plot <- function(lda_result,
           ),
           type = "norm",
           level = ellipse_level,
-          linewidth = 0.8,
+          linewidth = 0.9,
+          linetype = "solid",
           show.legend = FALSE
-        ) +
-          ggplot2$scale_color_discrete(
-            guide = "none"
-          )
+        )
       }
 
-      p <- p +
-        ggplot2$labs(
-          x = x_label,
-          y = y_label,
-          fill = "Group",
-          title = paste0(
-            "Per-Group Covariance Ellipses (1.5 SD)"
-          ),
-          subtitle = paste0(dim_x, " vs ", dim_y)
-        ) +
-        ld_theme()
-
-      p
-    },
-    operation_name = "Class Ellipses Plot",
-    error_parser = diag_error_parser
-  )
-}
-
-
-#' Create pooled covariance ellipses plot
-#'
-#' Computes the pooled within-group VC in LD space,
-#' generates one 1.5-SD ellipse per group centered at
-#' the group mean, and overlays on the data.
-#'
-#' @param lda_result Result list from run_lda()
-#' @param dim_x Character, LD column for x-axis
-#' @param dim_y Character, LD column for y-axis
-#' @return List with $success, $result (ggplot) or $error
-#' @export
-create_pooled_vc_plot <- function(lda_result,
-                                  dim_x = "LD1",
-                                  dim_y = "LD2") {
-  error_handling$safe_execute(
-    expr = {
-      scores <- lda_result$scores
-      meta <- lda_result$meta
-      grouping_col <- lda_result$grouping_col
-
-      validate_diag_inputs(scores, dim_x, dim_y)
-
-      df <- build_diag_df(
-        scores, meta, grouping_col, dim_x, dim_y
-      )
-
-      group_vals <- get_group_values(
-        meta, grouping_col
-      )
-      groups <- as.factor(group_vals)
-
-      # Compute pooled VC in the 2D LD subspace
+      # --- Pooled covariance ellipses (dashed) ---
       scores_2d <- data.frame(
         x = scores[[dim_x]],
         y = scores[[dim_y]]
       )
-      pooled_vc <- compute_pooled_vc(scores_2d, groups)
+      pooled_vc <- compute_pooled_vc(
+        scores_2d, groups
+      )
 
-      # Generate ellipses centered at each group mean
-      ell_frames <- list()
+      pooled_frames <- list()
       for (g in levels(groups)) {
         idx <- which(groups == g)
         if (length(idx) < 2) next
@@ -254,86 +210,71 @@ create_pooled_vc_plot <- function(lda_result,
           n_points = 100, n_std = 1.5
         )
         ell_pts$group <- g
-        ell_frames[[length(ell_frames) + 1]] <- ell_pts
+        pooled_frames[[length(pooled_frames) + 1]] <-
+          ell_pts
       }
-      ell_df <- do.call(rbind, ell_frames)
-      ell_df$group <- factor(
-        ell_df$group, levels = levels(groups)
+      pooled_df <- do.call(rbind, pooled_frames)
+      pooled_df$group <- factor(
+        pooled_df$group, levels = levels(groups)
       )
 
-      x_label <- axis_label(
-        dim_x, lda_result$proportion_of_trace
+      # Darkened group colours for pooled ellipses
+      n_grp <- nlevels(groups)
+      default_hues <- scales::hue_pal()(n_grp)
+      dark_hues <- colorspace$darken(
+        default_hues, amount = 0.4
       )
-      y_label <- axis_label(
-        dim_y, lda_result$proportion_of_trace
-      )
+      names(dark_hues) <- levels(groups)
 
-      # Compute group means for cross markers
-      means_df <- do.call(rbind, lapply(
-        levels(groups), function(g) {
-          idx <- which(groups == g)
-          data.frame(
-            x = mean(scores_2d$x[idx]),
-            y = mean(scores_2d$y[idx]),
-            group = g
-          )
-        }
-      ))
-      means_df$group <- factor(
-        means_df$group, levels = levels(groups)
-      )
-
-      p <- ggplot2$ggplot(
-        df,
-        ggplot2$aes(x = x, y = y, fill = group)
-      ) +
-        ggiraph$geom_point_interactive(
-          ggplot2$aes(
-            tooltip = tooltip,
-            data_id = data_id
-          ),
-          shape = 21,
-          color = "white",
-          stroke = 0.6,
-          size = 3,
-          alpha = 0.65
-        ) +
-        ggplot2$geom_path(
-          data = ell_df,
-          ggplot2$aes(
-            x = x, y = y, colour = group
-          ),
-          linewidth = 1.0,
+      for (g in levels(groups)) {
+        g_data <- pooled_df[
+          pooled_df$group == g, , drop = FALSE
+        ]
+        if (nrow(g_data) == 0) next
+        p <- p + ggplot2$geom_path(
+          data = g_data,
+          ggplot2$aes(x = x, y = y),
+          colour = dark_hues[[g]],
+          linewidth = 1.1,
+          linetype = "dashed",
           inherit.aes = FALSE
-        ) +
-        ggplot2$geom_point(
-          data = means_df,
-          ggplot2$aes(
-            x = x, y = y, colour = group
-          ),
+        )
+      }
+
+      # --- Group mean markers (darkened) ---
+      for (g in levels(groups)) {
+        idx <- which(groups == g)
+        if (length(idx) < 2) next
+        g_mean_df <- data.frame(
+          x = mean(scores_2d$x[idx]),
+          y = mean(scores_2d$y[idx])
+        )
+        p <- p + ggplot2$geom_point(
+          data = g_mean_df,
+          ggplot2$aes(x = x, y = y),
+          colour = dark_hues[[g]],
           shape = 3, size = 4, stroke = 1.5,
           inherit.aes = FALSE
-        ) +
-        ggplot2$scale_color_discrete(
-          guide = "none"
-        ) +
+        )
+      }
+
+      p <- p +
         ggplot2$labs(
           x = x_label,
           y = y_label,
           fill = "Group",
-          title = paste0(
-            "Pooled Covariance Ellipses (1.5 SD)"
-          ),
+          title = "Assumption Diagnostics (1.5 SD)",
           subtitle = paste0(
             dim_x, " vs ", dim_y,
-            " \u2014 ellipses from pooled within-group VC"
+            " \u2014 solid: per-group VC,",
+            " dashed: pooled VC"
           )
         ) +
         ld_theme()
 
       p
     },
-    operation_name = "Pooled VC Plot",
+    operation_name = "Assumption Diagnostics Plot",
     error_parser = diag_error_parser
   )
 }
