@@ -78,18 +78,18 @@ ui <- function(id) {
     ),
     bslib$nav_panel(
       title = shiny$tagList(
-        bsicons$bs_icon("pie-chart"), "Cluster"
-      ),
-      value = "cluster",
-      cluster$ui(ns("cluster"))
-    ),
-    bslib$nav_panel(
-      title = shiny$tagList(
         bsicons$bs_icon("arrows-expand-vertical"),
         "LDA"
       ),
       value = "lda",
       lda$ui(ns("lda"))
+    ),
+    bslib$nav_panel(
+      title = shiny$tagList(
+        bsicons$bs_icon("pie-chart"), "Cluster"
+      ),
+      value = "cluster",
+      cluster$ui(ns("cluster"))
     ),
     bslib$nav_spacer(),
     bslib$nav_item(
