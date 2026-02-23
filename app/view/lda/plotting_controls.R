@@ -185,57 +185,115 @@ tab_ui <- function(ns) {
 
 #' Server logic for the LDA plotting controls sidebar tab
 #'
-#' Dynamically updates the LD dimension choices when a new
-#' LDA result becomes available.
+#' Dynamically updates the dimension choices when a new
+#' LDA or QDA result becomes available. For QDA, offers
+#' both LD axes (from companion LDA) and original
+#' numeric variables as axis options.
 #'
 #' @param input Shiny input object from parent module
 #' @param output Shiny output object from parent module
 #' @param session Shiny session object from parent module
-#' @param lda_result Reactive returning the LDA result list
+#' @param lda_result Reactive returning the LDA/QDA result list
 #' @export
 tab_server <- function(input, output, session,
                        lda_result) {
   shiny$observeEvent(lda_result(), {
     res <- lda_result()
-    if (
-      is.null(res) ||
-      is.null(res$scores) ||
-      ncol(res$scores) == 0
-    ) {
-      return()
-    }
+    if (is.null(res)) return()
 
-    ld_names <- colnames(res$scores)
-    n_ld <- length(ld_names)
-
-    rhino$log$info(
-      "LDA plotting_controls: updating dims — ",
-      "{n_ld} LD axes available"
-    )
-
-    # X defaults to LD1
-    shiny$updateSelectizeInput(
-      session, "ldDimX",
-      choices = ld_names,
-      selected = ld_names[1]
-    )
-
-    # Y defaults to LD2 (or LD1 if only 1)
-    shiny$updateSelectizeInput(
-      session, "ldDimY",
-      choices = ld_names,
-      selected = if (n_ld >= 2) ld_names[2] else ld_names[1]
-    )
-
-    # Z defaults to LD3 (or last available)
-    shiny$updateSelectizeInput(
-      session, "ldDimZ",
-      choices = ld_names,
-      selected = if (n_ld >= 3) {
-        ld_names[3]
-      } else {
-        ld_names[min(n_ld, 2)]
+    if (res$analysis_type == "lda") {
+      # LDA: use LD scores
+      if (
+        is.null(res$scores) ||
+        ncol(res$scores) == 0
+      ) {
+        return()
       }
-    )
+      ld_names <- colnames(res$scores)
+      n_ld <- length(ld_names)
+
+      rhino$log$info(
+        "plotting_controls: LDA — ",
+        "{n_ld} LD axes available"
+      )
+
+      shiny$updateSelectizeInput(
+        session, "ldDimX",
+        choices = ld_names,
+        selected = ld_names[1]
+      )
+      shiny$updateSelectizeInput(
+        session, "ldDimY",
+        choices = ld_names,
+        selected = if (n_ld >= 2) {
+          ld_names[2]
+        } else {
+          ld_names[1]
+        }
+      )
+      shiny$updateSelectizeInput(
+        session, "ldDimZ",
+        choices = ld_names,
+        selected = if (n_ld >= 3) {
+          ld_names[3]
+        } else {
+          ld_names[min(n_ld, 2)]
+        }
+      )
+    } else if (res$analysis_type == "qda") {
+      # QDA: offer LD axes (companion) + original vars
+      ld_names <- if (!is.null(res$lda_scores)) {
+        colnames(res$lda_scores)
+      } else {
+        character(0)
+      }
+      orig_names <- res$columns
+
+      # Build grouped choices list
+      choices <- list()
+      if (length(ld_names) > 0) {
+        choices[["LD Axes (LDA projection)"]] <-
+          ld_names
+      }
+      if (length(orig_names) > 0) {
+        choices[["Original Variables"]] <- orig_names
+      }
+
+      n_ld <- length(ld_names)
+      default_x <- if (n_ld >= 1) {
+        ld_names[1]
+      } else {
+        orig_names[1]
+      }
+      default_y <- if (n_ld >= 2) {
+        ld_names[2]
+      } else if (length(orig_names) >= 2) {
+        orig_names[2]
+      } else {
+        default_x
+      }
+
+      rhino$log$info(
+        "plotting_controls: QDA — ",
+        "{n_ld} LD axes + ",
+        "{length(orig_names)} original vars"
+      )
+
+      shiny$updateSelectizeInput(
+        session, "ldDimX",
+        choices = choices,
+        selected = default_x
+      )
+      shiny$updateSelectizeInput(
+        session, "ldDimY",
+        choices = choices,
+        selected = default_y
+      )
+      shiny$updateSelectizeInput(
+        session, "ldDimZ",
+        choices = choices,
+        selected = default_y
+      )
+    }
   }, ignoreNULL = TRUE)
 }
