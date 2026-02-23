@@ -23,6 +23,7 @@ box::use(
   app/logic/lda/lda[
     lda_error_parser,
     run_lda,
+    run_mda,
     run_predict,
     run_qda,
     validate_inputs,
