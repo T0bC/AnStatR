@@ -426,6 +426,7 @@ build_lda_result <- function(obj, data, columns,
     } else {
       # QDA has no scaling/svd
       numeric_data <- data[, columns, drop = FALSE]
+      result$numeric_data <- numeric_data
       pred_all <- stats::predict(obj, numeric_data)
       result$predicted_class <- pred_all$class
       result$posterior <- as.data.frame(
@@ -434,6 +435,45 @@ build_lda_result <- function(obj, data, columns,
       result$confusion <- build_confusion_stats(
         grouping, pred_all$class
       )
+
+      # Companion LDA fit for LD projection axes
+      # (allows QDA results to be visualised in LD space)
+      companion <- tryCatch(
+        MASS::lda(
+          grouping ~ .,
+          data = cbind(numeric_data, grouping = grouping)
+        ),
+        error = function(e) NULL
+      )
+      if (!is.null(companion)) {
+        result$lda_scaling <- as.data.frame(
+          companion$scaling
+        )
+        result$lda_svd <- companion$svd
+        n_ld <- length(companion$svd)
+        prop_trace <- companion$svd^2 /
+          sum(companion$svd^2)
+        result$lda_proportion_of_trace <- data.frame(
+          LD = paste0("LD", seq_len(n_ld)),
+          `Singular Value` = round(companion$svd, 4),
+          `Proportion` = round(prop_trace, 4),
+          `Cumulative` = round(
+            cumsum(prop_trace), 4
+          ),
+          check.names = FALSE
+        )
+        lda_pred <- stats::predict(
+          companion, numeric_data
+        )
+        result$lda_scores <- as.data.frame(
+          lda_pred$x
+        )
+        result$lda_model <- companion
+        rhino$log$info(
+          "QDA: companion LDA fit for LD projection ",
+          "({n_ld} axes)"
+        )
+      }
     }
 
     rhino$log$info(
