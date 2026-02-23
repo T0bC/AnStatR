@@ -441,14 +441,22 @@ render_scaling_table <- function(scaling) {
 render_mda_subclass_info <- function(lda_result) {
   parts <- list()
 
-  # Subclass priors
+  # Subclass priors (list of named vectors per group)
   sub_prior <- lda_result$sub_prior
-  if (!is.null(sub_prior)) {
-    sp_df <- data.frame(
-      Subclass = names(sub_prior),
-      Prior = round(as.numeric(sub_prior), 4),
-      stringsAsFactors = FALSE
+  if (!is.null(sub_prior) && is.list(sub_prior)) {
+    rows <- lapply(
+      names(sub_prior), function(grp) {
+        vals <- sub_prior[[grp]]
+        data.frame(
+          Group = grp,
+          Subclass = names(vals),
+          Prior = round(as.numeric(vals), 4),
+          stringsAsFactors = FALSE
+        )
+      }
     )
+    sp_df <- do.call(rbind, rows)
+    rownames(sp_df) <- NULL
     parts[[length(parts) + 1]] <- shiny$tagList(
       shiny$tags$h6(
         class = "mt-2 mb-2",
