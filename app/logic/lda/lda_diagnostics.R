@@ -250,6 +250,9 @@ add_boundaries_overlay <- function(p, lda_result,
   scores <- lda_result$scores
   scaling <- as.matrix(lda_result$scaling)
   columns <- lda_result$columns
+  is_mda <- identical(
+    lda_result$analysis_type, "mda"
+  )
 
   # Grid range with 5% padding
   x_range <- range(scores[[dim_x]])
@@ -279,18 +282,37 @@ add_boundaries_overlay <- function(p, lda_result,
   grid_ld[, dim_y] <- grid_df$y
 
   # Back-project: original = LD %*% ginv(scaling) + means
-  col_means <- colMeans(model$means)
+  # MDA scaling (from coef()) may have different dims
+  # than LDA scaling; use ginv for both.
+  col_means <- if (is_mda) {
+    colMeans(as.matrix(lda_result$means))
+  } else {
+    colMeans(model$means)
+  }
   scaling_inv <- MASS::ginv(scaling)
   original_grid <- grid_ld %*% scaling_inv
-  original_grid <- sweep(
-    original_grid, 2, col_means, "+"
-  )
+  # Ensure col_means length matches ncol(original_grid)
+  n_orig <- ncol(original_grid)
+  if (length(col_means) == n_orig) {
+    original_grid <- sweep(
+      original_grid, 2, col_means, "+"
+    )
+  }
   original_grid <- as.data.frame(original_grid)
   colnames(original_grid) <- columns
 
   # Predict class for each grid point
-  pred <- stats::predict(model, original_grid)
-  grid_df$class <- pred$class
+  # MDA predict() returns a factor directly;
+  # LDA predict() returns a list with $class
+  if (is_mda) {
+    pred_class <- stats::predict(
+      model, original_grid
+    )
+  } else {
+    pred <- stats::predict(model, original_grid)
+    pred_class <- pred$class
+  }
+  grid_df$class <- pred_class
   grid_df$class_num <- as.numeric(grid_df$class)
 
   group_levels <- lda_result$group_levels
@@ -379,7 +401,73 @@ compute_1d_boundary <- function(lda_result) {
   scores <- lda_result$scores
   dim_x <- colnames(scores)[1]
   columns <- lda_result$columns
+  is_mda <- identical(
+    lda_result$analysis_type, "mda"
+  )
 
+  if (is_mda) {
+    # MDA: grid-based boundary detection
+    # Scan along LD1, back-project, predict, find
+    # where the predicted class switches.
+    scaling <- as.matrix(lda_result$scaling)
+    col_means <- colMeans(
+      as.matrix(lda_result$means)
+    )
+    x_range <- range(scores[[dim_x]])
+    x_pad <- diff(x_range) * 0.05
+    x_seq <- seq(
+      x_range[1] - x_pad,
+      x_range[2] + x_pad,
+      length.out = 500
+    )
+
+    grid_ld <- matrix(
+      0, nrow = length(x_seq), ncol = 1
+    )
+    colnames(grid_ld) <- dim_x
+    grid_ld[, 1] <- x_seq
+
+    scaling_inv <- MASS::ginv(scaling)
+    original_grid <- grid_ld %*% scaling_inv
+    n_orig <- ncol(original_grid)
+    if (length(col_means) == n_orig) {
+      original_grid <- sweep(
+        original_grid, 2, col_means, "+"
+      )
+    }
+    original_grid <- as.data.frame(original_grid)
+    colnames(original_grid) <- columns
+
+    pred_class <- as.integer(
+      stats::predict(model, original_grid)
+    )
+
+    # Find first transition point
+    transitions <- which(
+      diff(pred_class) != 0
+    )
+    if (length(transitions) > 0) {
+      idx <- transitions[1]
+      boundary <- (x_seq[idx] + x_seq[idx + 1]) / 2
+    } else {
+      # No transition found — midpoint of group means
+      groups <- as.factor(
+        get_group_values(
+          lda_result$meta,
+          lda_result$grouping_col
+        )
+      )
+      ld_scores <- scores[[dim_x]]
+      g_means <- tapply(
+        ld_scores, groups, mean
+      )
+      boundary <- mean(g_means)
+    }
+
+    return(boundary)
+  }
+
+  # LDA: analytic boundary
   # Project group means to LD1
   group_means_orig <- as.data.frame(model$means)
   scaling <- as.matrix(model$scaling)
