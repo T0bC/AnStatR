@@ -11,7 +11,8 @@ box::use(
   app/logic/error_handling,
   app/logic/lda/data_splitting[create_stratified_split],
   app/logic/lda/lda[
-    run_lda, run_predict, run_qda, validate_inputs
+    run_lda, run_mda, run_predict, run_qda,
+    validate_inputs
   ],
   app/logic/lda/lda_export[create_lda_excel],
   app/logic/pca/na_handling[clean_na_rows],
@@ -48,7 +49,7 @@ ui <- function(id) {
     action_button = shiny$tagList(
       shiny$actionButton(
         inputId = ns("compute_lda_button"),
-        label = "Compute LDA / QDA",
+        label = "Compute LDA / QDA / MDA",
         class = "btn-primary btn-sm w-100",
         icon = bsicons$bs_icon("play-fill")
       )
@@ -248,8 +249,10 @@ server <- function(id, input_data, data_version,
       # Determine method based on analysis type
       method <- if (analysis_type == "lda") {
         input$method
-      } else {
+      } else if (analysis_type == "qda") {
         input$qda_method
+      } else {
+        "moment"  # MDA does not use MASS method
       }
 
       # Build prior and params
@@ -289,23 +292,38 @@ server <- function(id, input_data, data_version,
         " validation='{validation_method}')"
       )
 
-      # Run LDA or QDA
-      run_fn <- if (analysis_type == "lda") {
-        run_lda
+      # Run LDA, QDA, or MDA
+      if (analysis_type == "mda") {
+        mda_subclasses <- input$mda_subclasses %||% 3
+        mda_iter <- input$mda_iter %||% 5
+        lda_res <- run_mda(
+          data = train_data,
+          columns = measure_cols,
+          grouping_col = grouping_col,
+          prior = prior_choice,
+          cv = cv,
+          meta_cols = meta_cols,
+          subclasses = mda_subclasses,
+          iter = mda_iter
+        )
       } else {
-        run_qda
+        run_fn <- if (analysis_type == "lda") {
+          run_lda
+        } else {
+          run_qda
+        }
+        lda_res <- run_fn(
+          data = train_data,
+          columns = measure_cols,
+          grouping_col = grouping_col,
+          prior = prior_choice,
+          tol = tol,
+          method = method,
+          cv = cv,
+          nu = nu_val,
+          meta_cols = meta_cols
+        )
       }
-      lda_res <- run_fn(
-        data = train_data,
-        columns = measure_cols,
-        grouping_col = grouping_col,
-        prior = prior_choice,
-        tol = tol,
-        method = method,
-        cv = cv,
-        nu = nu_val,
-        meta_cols = meta_cols
-      )
 
       if (!lda_res$success) {
         last_error(lda_res$error)
@@ -394,7 +412,7 @@ server <- function(id, input_data, data_version,
                   "Configure options in the sidebar",
                   " and click ",
                   shiny$tags$strong(
-                    "Compute LDA / QDA"
+                    "Compute LDA / QDA / MDA"
                   ),
                   " to run the analysis."
                 ),
@@ -405,7 +423,9 @@ server <- function(id, input_data, data_version,
                     "of variables that maximize",
                     "separation between groups.",
                     "QDA allows each group to have",
-                    "its own covariance structure."
+                    "its own covariance structure.",
+                    "MDA models each group as a",
+                    "mixture of Gaussians."
                   )
                 )
               )
@@ -459,7 +479,7 @@ server <- function(id, input_data, data_version,
       res <- result()
       ld_plot_panel <- NULL
       has_lda_plot <- !is.null(res) &&
-        res$analysis_type == "lda" &&
+        res$analysis_type %in% c("lda", "mda") &&
         !is.null(res$scores) &&
         ncol(res$scores) > 0
       has_qda_plot <- !is.null(res) &&
@@ -545,7 +565,9 @@ server <- function(id, input_data, data_version,
       dim_y <- input$ldDimY %||% "LD2"
       show_bound <- isTRUE(input$show_boundaries)
 
-      plot_res <- if (res$analysis_type == "lda") {
+      plot_res <- if (
+        res$analysis_type %in% c("lda", "mda")
+      ) {
         if (is.null(res$scores)) return(NULL)
         show_diag <- isTRUE(input$show_diagnostics)
         create_ld_plot(
