@@ -357,4 +357,166 @@ describe("lda_error_parser", {
     )
     expect_true(grepl("failed", msg))
   })
+
+  it("parses convergence errors", {
+    msg <- lda$lda_error_parser(
+      "EM did not converge", "MDA"
+    )
+    expect_true(
+      grepl("converge", msg, ignore.case = TRUE)
+    )
+  })
+})
+
+# =============================================================================
+# run_mda
+# =============================================================================
+
+describe("run_mda", {
+  it("returns success with model for valid data", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(result$success)
+    expect_true(!is.null(result$result$model))
+    expect_true(!is.null(result$result$means))
+    expect_equal(result$result$analysis_type, "mda")
+    expect_equal(result$result$n_groups, 3)
+    expect_equal(result$result$n, 45)
+  })
+
+  it("returns confusion matrix with accuracy", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(!is.null(result$result$confusion))
+    expect_true(
+      result$result$confusion$accuracy > 0
+    )
+  })
+
+  it("computes discriminant scores", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(!is.null(result$result$scores))
+    expect_equal(nrow(result$result$scores), 45)
+  })
+
+  it("returns posterior probabilities", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(!is.null(result$result$posterior))
+    expect_equal(nrow(result$result$posterior), 45)
+    expect_equal(ncol(result$result$posterior), 3)
+  })
+
+  it("returns proportion of trace", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(
+      !is.null(result$result$proportion_of_trace)
+    )
+  })
+
+  it("works with LOO-CV", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2"), "species", cv = TRUE
+    )
+    expect_true(result$success)
+    expect_true(!is.null(result$result$cv))
+    expect_true(
+      result$result$cv$accuracy > 0
+    )
+    expect_true(is.null(result$result$model))
+  })
+
+  it("works with equal prior", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2"), "species",
+      prior = "equal"
+    )
+    expect_true(result$success)
+    priors <- result$result$prior
+    expect_true(
+      all(abs(priors - 1 / 3) < 0.001)
+    )
+  })
+
+  it("includes metadata when meta_cols given", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2"), "species",
+      meta_cols = c("species", "site")
+    )
+    expect_true(result$success)
+    expect_true("site" %in% names(
+      result$result$meta
+    ))
+  })
+
+  it("works with custom subclasses", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species",
+      subclasses = 2, iter = 10
+    )
+    expect_true(result$success)
+    expect_true(!is.null(result$result$model))
+  })
+
+  it("returns subclass priors", {
+    data <- make_test_data()
+    result <- lda$run_mda(
+      data, c("m1", "m2", "m3"), "species"
+    )
+    expect_true(
+      !is.null(result$result$sub_prior)
+    )
+  })
+})
+
+# =============================================================================
+# run_predict with MDA
+# =============================================================================
+
+describe("run_predict with MDA", {
+  it("predicts on test data from MDA model", {
+    data <- make_test_data()
+    train <- data[1:30, ]
+    test <- data[31:45, ]
+    fit <- lda$run_mda(
+      train, c("m1", "m2", "m3"), "species"
+    )
+    pred <- lda$run_predict(
+      fit$result, test, c("m1", "m2", "m3"),
+      grouping_col = "species"
+    )
+    expect_true(pred$success)
+    expect_equal(
+      length(pred$result$predicted_class), 15
+    )
+    expect_true(!is.null(pred$result$confusion))
+    expect_true(!is.null(pred$result$posterior))
+  })
+
+  it("fails when MDA model was fitted with CV", {
+    data <- make_test_data()
+    fit <- lda$run_mda(
+      data, c("m1", "m2"), "species", cv = TRUE
+    )
+    pred <- lda$run_predict(
+      fit$result, data, c("m1", "m2")
+    )
+    expect_true(!pred$success)
+  })
 })
