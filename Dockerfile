@@ -9,6 +9,7 @@ FROM rocker/r-ver:4.5.2
 # + gdtools/ggiraph/svglite: libcairo2-dev, libfreetype6-dev, libfontconfig1-dev
 # + ggiraph/png: libpng-dev
 # + magick:    libmagick++-dev
+# + textshaping: libharfbuzz-dev, libfribidi-dev
 # + httpuv:    zlib1g-dev
 # + stringi:   libicu-dev
 # + DataExplorer/rmarkdown: pandoc
@@ -24,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     libfontconfig1-dev \
     libpng-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
     libmagick++-dev \
     zlib1g-dev \
     libicu-dev \
