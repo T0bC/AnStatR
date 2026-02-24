@@ -12,7 +12,7 @@ FROM rocker/r-ver:4.5.2
 # + httpuv:    zlib1g-dev
 # + stringi:   libicu-dev
 # + DataExplorer/rmarkdown: pandoc
-# + igraph runtime: libglpk40
+# + summarytools: tcl8.6, tk8.6 (+ dev headers for tcltk.so)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gfortran \
@@ -28,12 +28,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     libicu-dev \
     pandoc \
+    tcl8.6 \
+    tk8.6 \
+    tcl8.6-dev \
+    tk8.6-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------- Set up app directory ----------
 WORKDIR /app
 
-# ---------- Restore R packages via renv (cached layer) ----------
+# ---------- Restore R packages via renv (with BuildKit cache) ----------
 # Copy only renv infrastructure first so Docker can cache this expensive layer.
 # The layer only rebuilds when renv.lock or activate.R change.
 COPY renv.lock renv.lock
@@ -43,8 +47,12 @@ COPY .Rprofile .Rprofile
 # Configure renv to install into a project-local library
 RUN mkdir -p renv/library
 
-# Restore all packages from the lockfile
-RUN R -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
+# Restore packages. The --mount=type=cache keeps a persistent renv cache across
+# builds so that only NEW or CHANGED packages are compiled — not everything.
+# Requires: DOCKER_BUILDKIT=1 (default on modern Docker)
+ENV RENV_PATHS_CACHE=/renv_cache
+RUN --mount=type=cache,target=/renv_cache \
+    R -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
 
 # ---------- Copy application code ----------
 COPY app.R app.R
