@@ -437,7 +437,7 @@ render_dbscan_extras <- function(d) {
         d$min_pts,
         paste(
           "Minimum points to form a dense region.",
-          "Set to dimensions + 1."
+          "Set to ln(n), capped at dimensions + 1."
         )
       )
     ))
