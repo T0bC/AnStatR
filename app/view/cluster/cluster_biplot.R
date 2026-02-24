@@ -136,14 +136,21 @@ render_output <- function(input, output, session,
     }
 
     # Guard: validate dims match the reduction method
-    # to avoid transient errors during method switching
-    if (reduction_method == "pca" &&
-        !grepl("^Dim\\.", dim_x)) {
-      return(NULL)
-    }
-    if (reduction_method == "raw" &&
-        grepl("^Dim\\.", dim_x)) {
-      return(NULL)
+    # to avoid transient errors during method switching.
+    # Skip guard when data source is already-reduced
+    # (pca_scores/lda_scores forced to "raw" mode).
+    data_source <- input$data_source
+    is_reduced_source <- !is.null(data_source) &&
+      data_source %in% c("pca_scores", "lda_scores")
+    if (!is_reduced_source) {
+      if (reduction_method == "pca" &&
+          !grepl("^Dim\\.", dim_x)) {
+        return(NULL)
+      }
+      if (reduction_method == "raw" &&
+          grepl("^Dim\\.", dim_x)) {
+        return(NULL)
+      }
     }
 
     group_cols <- params$group_cols
