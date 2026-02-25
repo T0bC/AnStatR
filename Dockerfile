@@ -50,12 +50,16 @@ COPY .Rprofile .Rprofile
 # Configure renv to install into a project-local library
 RUN mkdir -p renv/library
 
-# Restore packages. The --mount=type=cache keeps a persistent renv cache across
-# builds so that only NEW or CHANGED packages are compiled — not everything.
-# Requires: DOCKER_BUILDKIT=1 (default on modern Docker)
-ENV RENV_PATHS_CACHE=/renv_cache
-RUN --mount=type=cache,target=/renv_cache \
-    R -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
+# KEY FIX: Disable the global cache so packages install directly
+# into the project library (renv/library/) instead of symlinks to a cache.
+# This ensures packages survive into the runtime container.
+ENV RENV_CONFIG_CACHE_ENABLED=FALSE
+
+# Restore all packages - they now live in /app/renv/library/
+RUN R -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
+
+# ---------- Verify packages installed correctly ----------
+RUN R -e "library(shiny); cat('shiny version:', as.character(packageVersion('shiny')), '\n')"
 
 # ---------- Copy application code ----------
 COPY app.R app.R
