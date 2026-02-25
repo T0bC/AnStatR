@@ -374,6 +374,29 @@ server <- function(id, input_data, data_version) {
       })
     })
 
+    # --- Processed data: filtered + outlier/trim flag columns ---
+    # This reactive is consumed by downstream modules (Summary,
+    # Statistics) so they respect the same outlier/trim settings.
+    processed_data <- shiny$reactive({
+      params <- plot_params()
+      data <- filter_result$filtered_data()
+      shiny$req(data, nrow(data) > 0)
+      shiny$req(params$measure_cols, length(params$measure_cols) > 0)
+
+      data_processing$process_data(
+        data         = data,
+        measure_cols = params$measure_cols,
+        x_cols       = params$x_cols,
+        trim_percent = params$processing$trim_percent,
+        outlier_options = list(
+          enabled           = params$processing$outlier_enabled,
+          method            = params$processing$outlier_method,
+          factor            = params$processing$outlier_factor,
+          bootstrap_samples = params$processing$bootstrap_samples
+        )
+      )
+    })
+
     # --- Download handler: filtered data with processing columns ---
     output$downloadData <- shiny$downloadHandler(
       filename = function() {
@@ -395,19 +418,8 @@ server <- function(id, input_data, data_version) {
           return()
         }
 
-        params <- plot_params()
-        export_data <- data_processing$process_data(
-          data         = data,
-          measure_cols = params$measure_cols,
-          x_cols       = params$x_cols,
-          trim_percent = params$processing$trim_percent,
-          outlier_options = list(
-            enabled           = params$processing$outlier_enabled,
-            method            = params$processing$outlier_method,
-            factor            = params$processing$outlier_factor,
-            bootstrap_samples = params$processing$bootstrap_samples
-          )
-        )
+        export_data <- processed_data()
+        shiny$req(export_data)
 
         openxlsx$write.xlsx(export_data, file, rowNames = FALSE)
         rhino$log$info("Download: filtered data ({nrow(export_data)} rows)")
@@ -419,6 +431,7 @@ server <- function(id, input_data, data_version) {
       x_axis = shiny$reactive({ input$xAxis }),
       measure_cols = shiny$reactive({ input$measureVar }),
       trim_percent = shiny$reactive({ input$trim_slider %||% 0 }),
+      processed_data = processed_data,
       plot_objects = shiny$reactive({
         pl <- plots()
         if (is.null(pl)) return(NULL)
