@@ -9,8 +9,11 @@ box::use(
 )
 
 box::use(
+  app/logic/data_utils,
   app/logic/error_handling,
+  app/logic/plotting/assumption_checks,
   app/logic/plotting/data_processing,
+  app/logic/plotting/normalize,
   app/logic/plotting/scatter,
   app/view/components/sidebar_tabs,
   app/view/error_display,
@@ -125,7 +128,10 @@ server <- function(id, input_data, data_version) {
           } else {
             input$standardFactor %||% 1.5
           },
-          bootstrap_samples = input$bootstrapSamples %||% 1000
+          bootstrap_samples = input$bootstrapSamples %||% 1000,
+          normalize_enabled   = input$enableNormalize %||% FALSE,
+          normalize_threshold = (input$normalizeThreshold %||% 50) / 100,
+          show_transformed    = input$showTransformed %||% FALSE
         ),
         grid_legend   = list(
           legend_position   = input$legendPosition %||% "none",
@@ -152,21 +158,40 @@ server <- function(id, input_data, data_version) {
     # --- Build plots (one per measurement column) ---
     plots <- shiny$reactive({
       params <- plot_params()
-      data <- filter_result$filtered_data()
+      show_transformed <- isTRUE(params$processing$show_transformed) &&
+        isTRUE(params$processing$normalize_enabled) &&
+        params$processing$trim_percent <= 0
+
+      # Use processed data (with _normalized cols) when showing
+      # transformed values; otherwise use filtered raw data
+      data <- if (show_transformed) {
+        processed_data()
+      } else {
+        filter_result$filtered_data()
+      }
       shiny$req(data, nrow(data) > 0)
       shiny$req(params$measure_cols, length(params$measure_cols) > 0)
 
       rhino$log$info(
         "Plotting: rendering {length(params$measure_cols)} plot(s) ",
-        "for x={paste(params$x_cols, collapse = ' | ')}"
+        "for x={paste(params$x_cols, collapse = ' | ')}",
+        if (show_transformed) " [transformed]" else ""
       )
 
       lapply(params$measure_cols, function(y_col) {
+        # Swap to _normalized column when showing transformed data
+        plot_col <- if (show_transformed) {
+          norm_col <- paste0(y_col, "_normalized")
+          if (norm_col %in% names(data)) norm_col else y_col
+        } else {
+          y_col
+        }
+
         exec_result <- error_handling$safe_execute(
           scatter$create_scatter_plot(
             data            = data,
             x_cols          = params$x_cols,
-            y_col           = y_col,
+            y_col           = plot_col,
             color_map       = params$color_map,
             color_cols      = params$color_cols,
             tooltip_cols    = params$tooltip_cols,
@@ -178,7 +203,104 @@ server <- function(id, input_data, data_version) {
           ),
           operation_name = paste("Plot", y_col)
         )
+        # Keep y_col as the original name for card headers/diagnostics
         list(y_col = y_col, result = exec_result)
+      })
+    })
+
+    # --- Assumption diagnostics (per measurement column) ---
+    diagnostics <- shiny$reactive({
+      pd <- processed_data()
+      shiny$req(pd)
+      params <- plot_params()
+      shiny$req(params$measure_cols, length(params$measure_cols) > 0)
+      shiny$req(params$x_cols, length(params$x_cols) > 0)
+
+      # Build interaction term (same as in data_processing)
+      interaction_term <- if (all(params$x_cols %in% names(pd))) {
+        data_utils$create_interaction(pd, params$x_cols)
+      } else {
+        factor(rep("all", nrow(pd)))
+      }
+
+      threshold <- params$processing$normalize_threshold
+      norm_enabled <- isTRUE(params$processing$normalize_enabled) &&
+        params$processing$trim_percent <= 0
+      transform_info <- attr(pd, "transform_info")
+
+      lapply(params$measure_cols, function(col) {
+        # Per-group normality on raw data
+        norm_raw <- assumption_checks$check_normality(
+          pd, col, interaction_term
+        )
+        # Residual-based normality on raw data
+        resid_raw <- assumption_checks$check_normality_residuals(
+          pd, col, interaction_term
+        )
+        levene_raw <- assumption_checks$check_homogeneity(
+          pd, col, interaction_term
+        )
+        rec_raw <- assumption_checks$recommend_transformation(
+          norm_raw, threshold
+        )
+        banner_raw <- assumption_checks$build_recommendation_banner(
+          rec_raw, levene_raw
+        )
+
+        # If normalization was applied to this column, also check
+        # the normalized values
+        norm_col <- paste0(col, "_normalized")
+        has_normalized <- norm_col %in% names(pd)
+
+        norm_post <- NULL
+        resid_post <- NULL
+        levene_post <- NULL
+        rec_post <- NULL
+        banner_post <- NULL
+        transform_label <- NULL
+
+        if (has_normalized && norm_enabled) {
+          norm_post <- assumption_checks$check_normality(
+            pd, norm_col, interaction_term,
+            outlier_col = paste0(col, "_outlier"),
+            trimmed_col = paste0(col, "_trimmed")
+          )
+          resid_post <- assumption_checks$check_normality_residuals(
+            pd, norm_col, interaction_term,
+            outlier_col = paste0(col, "_outlier"),
+            trimmed_col = paste0(col, "_trimmed")
+          )
+          levene_post <- assumption_checks$check_homogeneity(
+            pd, norm_col, interaction_term,
+            outlier_col = paste0(col, "_outlier"),
+            trimmed_col = paste0(col, "_trimmed")
+          )
+          rec_post <- assumption_checks$recommend_transformation(
+            norm_post, threshold
+          )
+          banner_post <- assumption_checks$build_recommendation_banner(
+            rec_post, levene_post
+          )
+          transform_label <- normalize$get_transform_label(
+            transform_info, col
+          )
+        }
+
+        list(
+          col             = col,
+          normality_raw   = norm_raw,
+          residuals_raw   = resid_raw,
+          levene_raw      = levene_raw,
+          recommendation  = rec_raw,
+          banner          = banner_raw,
+          normality_post  = norm_post,
+          residuals_post  = resid_post,
+          levene_post     = levene_post,
+          recommendation_post = rec_post,
+          banner_post     = banner_post,
+          transform_label = transform_label,
+          has_normalized  = has_normalized
+        )
       })
     })
 
@@ -219,6 +341,8 @@ server <- function(id, input_data, data_version) {
         output_id <- paste0("plot_", safe_id)
         dl_svg_id <- paste0("dl_svg_", safe_id)
         dl_png_id <- paste0("dl_png_", safe_id)
+
+        diag_id <- paste0("diag_", safe_id)
 
         bslib$card(
           class = "mb-3 plot-card",
@@ -264,6 +388,10 @@ server <- function(id, input_data, data_version) {
                 width = "100%"
               )
             )
+          ),
+          bslib$card_footer(
+            class = "p-2",
+            shiny$uiOutput(ns(diag_id))
           )
         )
       })
@@ -374,6 +502,24 @@ server <- function(id, input_data, data_version) {
       })
     })
 
+    # --- Render diagnostics tables under each plot card ---
+    shiny$observe({
+      diag_list <- diagnostics()
+      shiny$req(diag_list)
+
+      lapply(diag_list, function(diag) {
+        local({
+          local_diag <- diag
+          safe_id <- make.names(local_diag$col)
+          diag_id <- paste0("diag_", safe_id)
+
+          output[[diag_id]] <- shiny$renderUI({
+            build_diagnostics_ui(local_diag)
+          })
+        })
+      })
+    })
+
     # --- Processed data: filtered + outlier/trim flag columns ---
     # This reactive is consumed by downstream modules (Summary,
     # Statistics) so they respect the same outlier/trim settings.
@@ -393,6 +539,10 @@ server <- function(id, input_data, data_version) {
           method            = params$processing$outlier_method,
           factor            = params$processing$outlier_factor,
           bootstrap_samples = params$processing$bootstrap_samples
+        ),
+        normalize_options = list(
+          enabled   = params$processing$normalize_enabled,
+          threshold = params$processing$normalize_threshold
         )
       )
     })
@@ -432,6 +582,15 @@ server <- function(id, input_data, data_version) {
       measure_cols = shiny$reactive({ input$measureVar }),
       trim_percent = shiny$reactive({ input$trim_slider %||% 0 }),
       processed_data = processed_data,
+      normalize_enabled = shiny$reactive({
+        isTRUE(input$enableNormalize) &&
+          (input$trim_slider %||% 0) <= 0
+      }),
+      transform_info = shiny$reactive({
+        pd <- processed_data()
+        if (is.null(pd)) return(NULL)
+        attr(pd, "transform_info")
+      }),
       plot_objects = shiny$reactive({
         pl <- plots()
         if (is.null(pl)) return(NULL)
@@ -446,4 +605,291 @@ server <- function(id, input_data, data_version) {
       })
     )
   })
+}
+
+
+# =============================================================================
+# Internal helpers — diagnostics UI rendering
+# =============================================================================
+
+#' Build the diagnostics UI for one measurement column
+#'
+#' Creates a pivoted HTML table (groups as columns) with Shapiro-Wilk
+#' results, Levene's test footer, and a recommendation banner.
+#'
+#' @param diag List from the diagnostics reactive
+#' @return shiny tagList
+build_diagnostics_ui <- function(diag) {
+  elements <- list()
+
+  # --- Shapiro-Wilk table (pivoted: groups as columns) ---
+  elements[[length(elements) + 1]] <- build_shapiro_table(
+    diag$normality_raw, "Shapiro-Wilk Normality Test"
+  )
+
+  # --- Levene's test line ---
+  elements[[length(elements) + 1]] <- build_levene_line(
+    diag$levene_raw
+  )
+
+  # --- Post-transformation results (if normalization was applied) ---
+  if (isTRUE(diag$has_normalized) && !is.null(diag$normality_post)) {
+    label <- if (!is.null(diag$transform_label)) {
+      paste0("After Transformation (", diag$transform_label, ")")
+    } else {
+      "After Transformation"
+    }
+    elements[[length(elements) + 1]] <- shiny$tags$hr(
+      class = "my-1"
+    )
+    elements[[length(elements) + 1]] <- build_shapiro_table(
+      diag$normality_post, label
+    )
+    elements[[length(elements) + 1]] <- build_levene_line(
+      diag$levene_post
+    )
+  }
+
+  # --- Recommendation banner ---
+  # Compare before/after when normalization was applied
+  if (isTRUE(diag$has_normalized) && !is.null(diag$recommendation_post)) {
+    n_bad_before <- diag$recommendation$n_non_normal
+    n_bad_after  <- diag$recommendation_post$n_non_normal
+    improved <- n_bad_after < n_bad_before
+    worsened <- n_bad_after > n_bad_before
+    same     <- n_bad_after == n_bad_before && n_bad_after > 0
+
+    if (worsened || same) {
+      # Transformation did not help — show warning
+      warn_text <- if (worsened) {
+        paste0(
+          "Transformation worsened normality (",
+          n_bad_before, " \u2192 ", n_bad_after,
+          " non-normal groups). ",
+          "Consider keeping raw data for this variable."
+        )
+      } else {
+        paste0(
+          "Transformation did not improve normality (",
+          n_bad_after, "/",
+          diag$recommendation_post$n_groups,
+          " groups still non-normal). ",
+          "Consider keeping raw data for this variable."
+        )
+      }
+      elements[[length(elements) + 1]] <- shiny$tags$div(
+        class = "alert alert-warning py-1 px-2 small mt-2 mb-0",
+        shiny$tags$div(
+          bsicons$bs_icon(
+            "exclamation-triangle-fill", class = "me-1"
+          ),
+          warn_text
+        ),
+        shiny$tags$div(
+          class = "text-muted",
+          diag$banner_post$variance_text
+        )
+      )
+    } else if (improved && n_bad_after == 0) {
+      # Transformation fixed normality
+      elements[[length(elements) + 1]] <- shiny$tags$div(
+        class = "alert alert-success py-1 px-2 small mt-2 mb-0",
+        shiny$tags$div(
+          bsicons$bs_icon(
+            "check-circle-fill", class = "me-1"
+          ),
+          paste0(
+            "Transformation improved normality (",
+            n_bad_before, " \u2192 0 non-normal groups)."
+          )
+        ),
+        shiny$tags$div(
+          class = "text-muted",
+          diag$banner_post$variance_text
+        )
+      )
+    } else {
+      # Partial improvement
+      elements[[length(elements) + 1]] <- shiny$tags$div(
+        class = "alert alert-info py-1 px-2 small mt-2 mb-0",
+        shiny$tags$div(
+          bsicons$bs_icon("info-circle-fill", class = "me-1"),
+          paste0(
+            "Transformation partially improved normality (",
+            n_bad_before, " \u2192 ", n_bad_after,
+            " non-normal groups)."
+          )
+        ),
+        shiny$tags$div(
+          class = "text-muted",
+          diag$banner_post$variance_text
+        )
+      )
+    }
+  } else {
+    # No normalization — show raw recommendation banner
+    banner <- diag$banner
+    elements[[length(elements) + 1]] <- shiny$tags$div(
+      class = paste0(
+        "alert alert-", banner$css_class,
+        " py-1 px-2 small mt-2 mb-0"
+      ),
+      shiny$tags$div(
+        bsicons$bs_icon(banner$icon, class = "me-1"),
+        banner$normality_text
+      ),
+      shiny$tags$div(
+        class = "text-muted",
+        banner$variance_text
+      )
+    )
+  }
+
+  do.call(shiny$tagList, elements)
+}
+
+
+#' Build a pivoted Shapiro-Wilk HTML table
+#'
+#' Groups as columns, statistics (n, W, p, status) as rows.
+#'
+#' @param norm_df Data frame from check_normality()
+#' @param title Character, table heading
+#' @return shiny tag (HTML table)
+build_shapiro_table <- function(norm_df, title) {
+  if (is.null(norm_df) || nrow(norm_df) == 0) {
+    return(shiny$tags$p(
+      class = "text-muted small fst-italic",
+      "No normality data available."
+    ))
+  }
+
+  groups <- norm_df$group
+
+  # Header row: empty cell + group names
+  header_cells <- c(
+    list(shiny$tags$th("")),
+    lapply(groups, function(g) {
+      shiny$tags$th(class = "text-center px-2", g)
+    })
+  )
+
+  # n row
+  n_cells <- c(
+    list(shiny$tags$td(
+      class = "fw-semibold text-muted", "n"
+    )),
+    lapply(norm_df$n, function(v) {
+      shiny$tags$td(class = "text-center px-2", v)
+    })
+  )
+
+  # W row
+  w_cells <- c(
+    list(shiny$tags$td(
+      class = "fw-semibold text-muted", "W"
+    )),
+    lapply(norm_df$W, function(v) {
+      shiny$tags$td(
+        class = "text-center px-2",
+        if (is.na(v)) "—" else format(round(v, 3), nsmall = 3)
+      )
+    })
+  )
+
+  # p row
+  p_cells <- c(
+    list(shiny$tags$td(
+      class = "fw-semibold text-muted", "p"
+    )),
+    lapply(norm_df$p_value, function(v) {
+      shiny$tags$td(
+        class = "text-center px-2",
+        assumption_checks$format_p(v)
+      )
+    })
+  )
+
+  # Status row (checkmark or X)
+  status_cells <- c(
+    list(shiny$tags$td(
+      class = "fw-semibold text-muted", ""
+    )),
+    lapply(norm_df$normal, function(v) {
+      if (is.na(v) || v == "identical values") {
+        icon <- bsicons$bs_icon(
+          "dash-circle", class = "text-muted"
+        )
+      } else if (v == "yes") {
+        icon <- bsicons$bs_icon(
+          "check-circle-fill", class = "text-success"
+        )
+      } else {
+        icon <- bsicons$bs_icon(
+          "x-circle-fill", class = "text-danger"
+        )
+      }
+      shiny$tags$td(class = "text-center px-2", icon)
+    })
+  )
+
+  shiny$tags$div(
+    shiny$tags$div(
+      class = "small fw-semibold text-muted mb-1", title
+    ),
+    shiny$tags$table(
+      class = "table table-sm table-borderless mb-1 small",
+      style = "font-size: 0.8rem;",
+      shiny$tags$thead(
+        do.call(shiny$tags$tr, header_cells)
+      ),
+      shiny$tags$tbody(
+        do.call(shiny$tags$tr, n_cells),
+        do.call(shiny$tags$tr, w_cells),
+        do.call(shiny$tags$tr, p_cells),
+        do.call(shiny$tags$tr, status_cells)
+      )
+    )
+  )
+}
+
+
+#' Build Levene's test result line
+#'
+#' @param levene List from check_homogeneity()
+#' @return shiny tag
+build_levene_line <- function(levene) {
+  if (is.null(levene) || is.na(levene$p_value)) {
+    return(shiny$tags$div(
+      class = "small text-muted fst-italic",
+      "Levene's test: insufficient data."
+    ))
+  }
+
+  icon <- if (levene$equal_variances == "yes") {
+    bsicons$bs_icon(
+      "check-circle-fill", class = "text-success me-1"
+    )
+  } else {
+    bsicons$bs_icon(
+      "x-circle-fill", class = "text-danger me-1"
+    )
+  }
+
+  label <- if (levene$equal_variances == "yes") {
+    "Equal variances"
+  } else {
+    "Unequal variances"
+  }
+
+  shiny$tags$div(
+    class = "small text-muted",
+    icon,
+    paste0(
+      "Levene's: F(", levene$df1, ", ", levene$df2, ") = ",
+      format(round(levene$F_statistic, 2), nsmall = 2),
+      ", p = ", assumption_checks$format_p(levene$p_value),
+      "  \u2014 ", label
+    )
+  )
 }
