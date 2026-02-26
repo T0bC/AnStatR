@@ -66,6 +66,79 @@ check_normality <- function(data, measure_col, group_col,
 }
 
 
+#' Check normality of residuals via Shapiro-Wilk test
+#'
+#' Fits a simple linear model (value ~ group) and runs Shapiro-Wilk
+#' on the residuals. This is the model-based approach: it tests
+#' whether the ANOVA residuals are normally distributed, which is
+#' the actual assumption underlying parametric group comparisons.
+#'
+#' @param data Data frame
+#' @param measure_col Character, measurement column name
+#' @param group_col Factor vector defining groups
+#' @param outlier_col Character, outlier flag column name (optional)
+#' @param trimmed_col Character, trimmed flag column name (optional)
+#' @return List with: n, W, p_value, normal
+#' @export
+check_normality_residuals <- function(data, measure_col, group_col,
+                                      outlier_col = NULL,
+                                      trimmed_col = NULL) {
+  if (is.null(outlier_col)) {
+    outlier_col <- paste0(measure_col, "_outlier")
+  }
+  if (is.null(trimmed_col)) {
+    trimmed_col <- paste0(measure_col, "_trimmed")
+  }
+
+  # Build exclusion mask
+  excluded <- rep(FALSE, nrow(data))
+  if (outlier_col %in% names(data)) {
+    excluded <- excluded | data[[outlier_col]]
+  }
+  if (trimmed_col %in% names(data)) {
+    excluded <- excluded | data[[trimmed_col]]
+  }
+
+  keep <- !excluded & !is.na(data[[measure_col]])
+  values <- data[[measure_col]][keep]
+  grp <- factor(as.character(group_col[keep]))
+
+  # Need at least 2 groups
+  if (nlevels(grp) < 2) {
+    return(list(
+      n       = length(values),
+      W       = NA_real_,
+      p_value = NA_real_,
+      normal  = NA_character_
+    ))
+  }
+
+  # Fit linear model and extract residuals
+  fit <- tryCatch(
+    stats::lm(values ~ grp),
+    error = function(e) NULL
+  )
+  if (is.null(fit)) {
+    return(list(
+      n       = length(values),
+      W       = NA_real_,
+      p_value = NA_real_,
+      normal  = NA_character_
+    ))
+  }
+
+  resid <- stats::residuals(fit)
+  result <- compute_shapiro(resid)
+
+  list(
+    n       = length(resid),
+    W       = result$W,
+    p_value = result$p_value,
+    normal  = result$normal
+  )
+}
+
+
 #' Check homogeneity of variances via manual Levene's test
 #'
 #' Implements Levene's test as a one-way ANOVA on absolute deviations
