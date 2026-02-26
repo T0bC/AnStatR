@@ -31,6 +31,9 @@ box::use(
   app/logic/lda/lda_export[
     create_lda_excel,
   ],
+  app/logic/lda/dimension_eval[
+    evaluate_dimensions,
+  ],
   app/logic/lda/lda_var_contrib[
     lda_to_pca_var_structure,
   ],
