@@ -135,17 +135,15 @@ describe("create_cluster_heatmap with kmeans result", {
     metric = "euclidean"
   )
 
-  it("returns an app_error for kmeans", {
+  it("succeeds with fallback dendrogram for kmeans", {
     expect_true(km_result$success)
     hm_res <- cluster$create_cluster_heatmap(
       km_result$result,
       data = data,
       measure_cols = c("a", "b")
     )
-    expect_false(hm_res$success)
-    expect_true(
-      error_handling$is_app_error(hm_res$error)
-    )
+    expect_true(hm_res$success)
+    expect_true(inherits(hm_res$result, "plotly"))
   })
 })
 
@@ -157,7 +155,7 @@ describe("create_cluster_heatmap with dbscan result", {
     metric = "euclidean"
   )
 
-  it("returns an app_error for dbscan", {
+  it("succeeds with fallback dendrogram for dbscan", {
     if (!db_result$success) {
       # DBSCAN may fail on small data; skip gracefully
       expect_true(TRUE)
@@ -167,10 +165,8 @@ describe("create_cluster_heatmap with dbscan result", {
         data = data,
         measure_cols = c("a", "b")
       )
-      expect_false(hm_res$success)
-      expect_true(
-        error_handling$is_app_error(hm_res$error)
-      )
+      expect_true(hm_res$success)
+      expect_true(inherits(hm_res$result, "plotly"))
     }
   })
 })
