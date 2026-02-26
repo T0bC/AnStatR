@@ -65,7 +65,10 @@ ui <- function(id) {
         )
       )
     ),
-    main_content = shiny$uiOutput(ns("main_content"))
+    main_content = shiny$tags$div(
+      class = "scrollable-content",
+      shiny$uiOutput(ns("main_content"))
+    )
   )
 }
 
