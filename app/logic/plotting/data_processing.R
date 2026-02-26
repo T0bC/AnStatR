@@ -4,6 +4,8 @@ box::use(
 
 box::use(
   app/logic/data_utils,
+  app/logic/plotting/assumption_checks,
+  app/logic/plotting/normalize,
 )
 
 # =============================================================================
@@ -125,6 +127,7 @@ mark_trimmed <- function(values, group_col, trim_percent = 0) {
 #'
 #' For each measurement column, adds `{col}_outlier` and `{col}_trimmed`
 #' logical flag columns. Trimming is applied only to non-outlier rows.
+#' Optionally runs normalization (mutually exclusive with trimming).
 #'
 #' @param data Data frame (typically the filtered data)
 #' @param measure_cols Character vector of measurement column names
@@ -132,11 +135,16 @@ mark_trimmed <- function(values, group_col, trim_percent = 0) {
 #' @param trim_percent Numeric 0-100
 #' @param outlier_options List with: enabled (logical), method (character),
 #'   factor (numeric), bootstrap_samples (integer)
-#' @return Data frame with added flag columns
+#' @param normalize_options List with: enabled (logical),
+#'   threshold (numeric 0-1, default 0.5)
+#' @return Data frame with added flag columns (and optionally
+#'   {col}_normalized columns). Attribute "transform_info" attached
+#'   when normalization was performed.
 #' @export
 process_data <- function(data, measure_cols, x_cols,
                          trim_percent = 0,
-                         outlier_options = list(enabled = FALSE)) {
+                         outlier_options = list(enabled = FALSE),
+                         normalize_options = list(enabled = FALSE)) {
   if (is.null(measure_cols) || length(measure_cols) == 0) {
     return(data)
   }
@@ -159,7 +167,7 @@ process_data <- function(data, measure_cols, x_cols,
     data[[outlier_col]] <- FALSE
     data[[trimmed_col]] <- FALSE
 
-    # Step 1: Outlier detection
+    # Step 1: Outlier detection (always on raw data)
     if (isTRUE(outlier_options$enabled)) {
       data[[outlier_col]] <- detect_outliers(
         data = data,
@@ -173,6 +181,7 @@ process_data <- function(data, measure_cols, x_cols,
     }
 
     # Step 2: Trimming (only non-outlier rows)
+    # Trimming and normalization are mutually exclusive
     if (trim_percent > 0) {
       non_outlier <- which(!data[[outlier_col]])
       if (length(non_outlier) > 0) {
@@ -183,6 +192,39 @@ process_data <- function(data, measure_cols, x_cols,
         )
       }
     }
+  }
+
+  # Step 3: Normalization (only when enabled AND no trimming)
+  normalize_enabled <- isTRUE(normalize_options$enabled)
+  if (normalize_enabled && trim_percent <= 0) {
+    norm_threshold <- normalize_options$threshold %||% 0.5
+
+    # Run normality checks per measure column
+    normality_results <- list()
+    for (col in measure_cols) {
+      if (!col %in% names(data)) next
+      normality_results[[col]] <- assumption_checks$check_normality(
+        data        = data,
+        measure_col = col,
+        group_col   = interaction_term
+      )
+    }
+
+    # Normalize columns that fail the threshold
+    norm_result <- normalize$normalize_columns(
+      data              = data,
+      measure_cols      = measure_cols,
+      normality_results = normality_results,
+      threshold         = norm_threshold
+    )
+    data <- norm_result$data
+    attr(data, "transform_info") <- norm_result$transform_info
+    attr(data, "normality_results") <- normality_results
+
+    rhino$log$info(
+      "Process: normalization applied to ",
+      "{nrow(norm_result$transform_info)} columns"
+    )
   }
 
   data
