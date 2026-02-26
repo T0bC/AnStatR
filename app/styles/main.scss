@@ -3,6 +3,44 @@
 // Add module-specific styles as modules are built.
 
 // =============================================================================
+// Global: Fixed Navigation Bar
+// =============================================================================
+
+// Sticky navbar: stays pinned at the top when the page scrolls.
+// Requires fillable = FALSE on page_navbar so the page uses normal
+// document flow instead of bslib's 100vh flex layout.
+.navbar {
+  position: sticky !important;
+  top: 0;
+  z-index: 1030;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+// Reduce vertical padding inside the navbar's own container-fluid
+.navbar>.container-fluid {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+// Remove padding on the container-fluid that wraps the tab content
+// DOM: body.bslib-page-navbar > nav.navbar + div.container-fluid > div.tab-content
+body.bslib-page-navbar>.container-fluid {
+  padding: 0 !important;
+}
+
+// Override bslib's --bslib-navbar-margin (defaults to 20px) which adds
+// margin-top on tab panes below the navbar
+body.bslib-page-navbar {
+  --bslib-navbar-margin: 0 !important;
+}
+
+.tab-pane {
+  margin-top: 0 !important;
+}
+
+// =============================================================================
 // Global: Sidebar Layout
 // =============================================================================
 
