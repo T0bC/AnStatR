@@ -31,4 +31,11 @@ box::use(
   app/logic/lda/lda_export[
     create_lda_excel,
   ],
+  app/logic/lda/lda_var_contrib[
+    lda_to_pca_var_structure,
+  ],
+  app/logic/pca/var_contrib_jitter[
+    create_var_contrib_jitter_plot,
+    var_contrib_jitter_error_parser,
+  ],
 )
