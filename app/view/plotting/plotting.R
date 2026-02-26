@@ -624,7 +624,12 @@ build_diagnostics_ui <- function(diag) {
 
   # --- Shapiro-Wilk table (pivoted: groups as columns) ---
   elements[[length(elements) + 1]] <- build_shapiro_table(
-    diag$normality_raw, "Shapiro-Wilk Normality Test"
+    diag$normality_raw, "Shapiro-Wilk Normality Test (per group)"
+  )
+
+  # --- Residual-based normality line ---
+  elements[[length(elements) + 1]] <- build_residuals_line(
+    diag$residuals_raw, label_prefix = "Residuals"
   )
 
   # --- Levene's test line ---
@@ -644,6 +649,9 @@ build_diagnostics_ui <- function(diag) {
     )
     elements[[length(elements) + 1]] <- build_shapiro_table(
       diag$normality_post, label
+    )
+    elements[[length(elements) + 1]] <- build_residuals_line(
+      diag$residuals_post, label_prefix = "Residuals"
     )
     elements[[length(elements) + 1]] <- build_levene_line(
       diag$levene_post
@@ -890,6 +898,50 @@ build_levene_line <- function(levene) {
       format(round(levene$F_statistic, 2), nsmall = 2),
       ", p = ", assumption_checks$format_p(levene$p_value),
       "  \u2014 ", label
+    )
+  )
+}
+
+
+#' Build residual-based normality test result line
+#'
+#' @param resid_result List from check_normality_residuals()
+#' @param label_prefix Character, prefix for the label (default "Residuals")
+#' @return shiny tag
+build_residuals_line <- function(resid_result,
+                                 label_prefix = "Residuals") {
+  if (is.null(resid_result) || is.na(resid_result$p_value)) {
+    return(shiny$tags$div(
+      class = "small text-muted fst-italic",
+      paste0(label_prefix, " (model-based): insufficient data.")
+    ))
+  }
+
+  icon <- if (resid_result$normal == "yes") {
+    bsicons$bs_icon(
+      "check-circle-fill", class = "text-success me-1"
+    )
+  } else {
+    bsicons$bs_icon(
+      "x-circle-fill", class = "text-danger me-1"
+    )
+  }
+
+  verdict <- if (resid_result$normal == "yes") {
+    "normal"
+  } else {
+    "non-normal"
+  }
+
+  shiny$tags$div(
+    class = "small text-muted",
+    icon,
+    paste0(
+      label_prefix, " (model-based): W = ",
+      format(round(resid_result$W, 3), nsmall = 3),
+      ", p = ", assumption_checks$format_p(resid_result$p_value),
+      ", n = ", resid_result$n,
+      "  \u2014 ", verdict
     )
   )
 }
