@@ -113,6 +113,89 @@ tab_ui <- function(ns) {
           step = 100
         )
       )
+    ),
+    shiny$tags$hr(),
+    # --- 3. Normalization ---
+    shiny$tags$label(
+      class = "small fw-semibold",
+      "3. Normalization"
+    ),
+    shiny$checkboxInput(
+      inputId = ns("enableNormalize"),
+      label = shiny$tags$span(
+        "Normalize data ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Applies bestNormalize to measurement",
+            "columns that fail the normality",
+            "threshold. Disabled when trimming is",
+            "active (robust tests don't need",
+            "normality)."
+          )
+        )
+      ),
+      value = FALSE
+    ),
+    # Normalization options (shown when enabled)
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("enableNormalize"),
+        "'] == true"
+      ),
+      shiny$sliderInput(
+        inputId = ns("normalizeThreshold"),
+        label = shiny$tags$span(
+          "Threshold (%) ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Transform when more than this",
+              "percentage of groups are non-normal."
+            )
+          )
+        ),
+        min = 10, max = 90, value = 50, step = 10,
+        post = "%"
+      ),
+      shiny$checkboxInput(
+        inputId = ns("showTransformed"),
+        label = shiny$tags$span(
+          "Show transformed values in plots ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "When enabled, plots display normalized",
+              "values. Raw values are typically",
+              "preferred for publication."
+            )
+          )
+        ),
+        value = FALSE
+      )
+    ),
+    # Warning when trimming disables normalization
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("trim_slider"), "'] > 0 && ",
+        "input['", ns("enableNormalize"),
+        "'] == true"
+      ),
+      shiny$tags$div(
+        class = "alert alert-info py-1 px-2 small mt-1",
+        shiny$tags$strong("Note: "),
+        paste(
+          "Normalization is skipped when trimming",
+          "is active. Robust tests do not require",
+          "normally distributed data."
+        )
+      )
     )
   )
 }
@@ -143,6 +226,15 @@ tab_server <- function(input, output, session, data_version) {
     )
     shiny$updateNumericInput(
       session, "bootstrapSamples", value = 1000
+    )
+    shiny$updateCheckboxInput(
+      session, "enableNormalize", value = FALSE
+    )
+    shiny$updateSliderInput(
+      session, "normalizeThreshold", value = 50
+    )
+    shiny$updateCheckboxInput(
+      session, "showTransformed", value = FALSE
     )
     rhino$log$info("Plotting processing: reset for new data")
   }, ignoreInit = TRUE)
