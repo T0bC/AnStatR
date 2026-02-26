@@ -620,140 +620,244 @@ server <- function(id, input_data, data_version) {
 #' @param diag List from the diagnostics reactive
 #' @return shiny tagList
 build_diagnostics_ui <- function(diag) {
-  elements <- list()
+  # =====================================================================
+  # 1. Build the BANNER (always visible compact summary)
+  # =====================================================================
+  has_post <- isTRUE(diag$has_normalized) &&
+    !is.null(diag$recommendation_post)
 
-  # --- Shapiro-Wilk table (pivoted: groups as columns) ---
-  elements[[length(elements) + 1]] <- build_shapiro_table(
-    diag$normality_raw, "Shapiro-Wilk Normality Test (per group)"
+  banner_ui <- if (has_post) {
+    build_comparison_banner(diag)
+  } else {
+    build_raw_banner(diag)
+  }
+
+  # Compact test summary lines (residuals + Levene's)
+  # Use post-transformation results when available
+  resid <- if (has_post) diag$residuals_post else diag$residuals_raw
+  levene <- if (has_post) diag$levene_post else diag$levene_raw
+
+  summary_lines <- shiny$tags$div(
+    class = "mt-1",
+    build_residuals_line(resid, label_prefix = "Residuals"),
+    build_levene_line(levene)
   )
 
-  # --- Residual-based normality line ---
-  elements[[length(elements) + 1]] <- build_residuals_line(
-    diag$residuals_raw, label_prefix = "Residuals"
-  )
+  # =====================================================================
+  # 2. Build the DETAIL tables (hidden in collapsible)
+  # =====================================================================
+  detail_elements <- list()
 
-  # --- Levene's test line ---
-  elements[[length(elements) + 1]] <- build_levene_line(
-    diag$levene_raw
-  )
+  # Raw per-group table
+  detail_elements[[length(detail_elements) + 1]] <-
+    build_shapiro_table(
+      diag$normality_raw,
+      "Shapiro-Wilk Normality Test (per group)"
+    )
+  detail_elements[[length(detail_elements) + 1]] <-
+    build_residuals_line(
+      diag$residuals_raw, label_prefix = "Residuals"
+    )
+  detail_elements[[length(detail_elements) + 1]] <-
+    build_levene_line(diag$levene_raw)
 
-  # --- Post-transformation results (if normalization was applied) ---
-  if (isTRUE(diag$has_normalized) && !is.null(diag$normality_post)) {
+  # Post-transformation tables (if applicable)
+  if (isTRUE(diag$has_normalized) &&
+      !is.null(diag$normality_post)) {
     label <- if (!is.null(diag$transform_label)) {
       paste0("After Transformation (", diag$transform_label, ")")
     } else {
       "After Transformation"
     }
-    elements[[length(elements) + 1]] <- shiny$tags$hr(
-      class = "my-1"
-    )
-    elements[[length(elements) + 1]] <- build_shapiro_table(
-      diag$normality_post, label
-    )
-    elements[[length(elements) + 1]] <- build_residuals_line(
-      diag$residuals_post, label_prefix = "Residuals"
-    )
-    elements[[length(elements) + 1]] <- build_levene_line(
-      diag$levene_post
-    )
+    detail_elements[[length(detail_elements) + 1]] <-
+      shiny$tags$hr(class = "my-1")
+    detail_elements[[length(detail_elements) + 1]] <-
+      build_shapiro_table(diag$normality_post, label)
+    detail_elements[[length(detail_elements) + 1]] <-
+      build_residuals_line(
+        diag$residuals_post, label_prefix = "Residuals"
+      )
+    detail_elements[[length(detail_elements) + 1]] <-
+      build_levene_line(diag$levene_post)
   }
 
-  # --- Recommendation banner ---
-  # Compare before/after when normalization was applied
-  if (isTRUE(diag$has_normalized) && !is.null(diag$recommendation_post)) {
-    n_bad_before <- diag$recommendation$n_non_normal
-    n_bad_after  <- diag$recommendation_post$n_non_normal
-    improved <- n_bad_after < n_bad_before
-    worsened <- n_bad_after > n_bad_before
-    same     <- n_bad_after == n_bad_before && n_bad_after > 0
-
-    if (worsened || same) {
-      # Transformation did not help — show warning
-      warn_text <- if (worsened) {
-        paste0(
-          "Transformation worsened normality (",
-          n_bad_before, " \u2192 ", n_bad_after,
-          " non-normal groups). ",
-          "Consider keeping raw data for this variable."
-        )
-      } else {
-        paste0(
-          "Transformation did not improve normality (",
-          n_bad_after, "/",
-          diag$recommendation_post$n_groups,
-          " groups still non-normal). ",
-          "Consider keeping raw data for this variable."
-        )
-      }
-      elements[[length(elements) + 1]] <- shiny$tags$div(
-        class = "alert alert-warning py-1 px-2 small mt-2 mb-0",
-        shiny$tags$div(
-          bsicons$bs_icon(
-            "exclamation-triangle-fill", class = "me-1"
-          ),
-          warn_text
-        ),
-        shiny$tags$div(
-          class = "text-muted",
-          diag$banner_post$variance_text
-        )
+  # =====================================================================
+  # 3. Assemble: banner + summary lines + collapsible details
+  # =====================================================================
+  shiny$tagList(
+    banner_ui,
+    summary_lines,
+    shiny$tags$details(
+      class = "mt-2 small",
+      shiny$tags$summary(
+        class = "text-muted",
+        style = "cursor: pointer;",
+        "Show detailed test results"
+      ),
+      shiny$tags$div(
+        class = "mt-1 ps-1",
+        do.call(shiny$tagList, detail_elements)
       )
-    } else if (improved && n_bad_after == 0) {
-      # Transformation fixed normality
-      elements[[length(elements) + 1]] <- shiny$tags$div(
-        class = "alert alert-success py-1 px-2 small mt-2 mb-0",
-        shiny$tags$div(
-          bsicons$bs_icon(
-            "check-circle-fill", class = "me-1"
-          ),
-          paste0(
-            "Transformation improved normality (",
-            n_bad_before, " \u2192 0 non-normal groups)."
-          )
-        ),
-        shiny$tags$div(
-          class = "text-muted",
-          diag$banner_post$variance_text
-        )
+    )
+  )
+}
+
+
+#' Build comparison banner (when normalization was applied)
+#'
+#' Uses residual normality as the primary ANOVA criterion.
+#' Per-group results are secondary context.
+#'
+#' @param diag Diagnostics list
+#' @return shiny tag
+build_comparison_banner <- function(diag) {
+  n_bad_before <- diag$recommendation$n_non_normal
+  n_bad_after  <- diag$recommendation_post$n_non_normal
+  n_groups     <- diag$recommendation_post$n_groups
+
+  resid_before <- diag$residuals_raw
+  resid_after  <- diag$residuals_post
+
+  resid_normal_before <- !is.na(resid_before$normal) &&
+    resid_before$normal == "yes"
+  resid_normal_after <- !is.null(resid_after) &&
+    !is.na(resid_after$normal) && resid_after$normal == "yes"
+
+  # Primary criterion: residual normality
+  if (resid_normal_after) {
+    # Residuals are normal after transformation → ANOVA OK
+    if (n_bad_after > 0) {
+      text <- paste0(
+        "Model residuals are normally distributed after ",
+        "transformation \u2014 classical ANOVA is valid. ",
+        "Per-group: ", n_bad_after, "/", n_groups,
+        " groups non-normal (see details)."
       )
     } else {
-      # Partial improvement
-      elements[[length(elements) + 1]] <- shiny$tags$div(
-        class = "alert alert-info py-1 px-2 small mt-2 mb-0",
-        shiny$tags$div(
-          bsicons$bs_icon("info-circle-fill", class = "me-1"),
-          paste0(
-            "Transformation partially improved normality (",
-            n_bad_before, " \u2192 ", n_bad_after,
-            " non-normal groups)."
-          )
-        ),
-        shiny$tags$div(
-          class = "text-muted",
-          diag$banner_post$variance_text
-        )
+      text <- paste0(
+        "Transformation achieved normality ",
+        "(residuals + all ", n_groups, " groups). ",
+        "Classical ANOVA is valid."
       )
     }
-  } else {
-    # No normalization — show raw recommendation banner
-    banner <- diag$banner
-    elements[[length(elements) + 1]] <- shiny$tags$div(
-      class = paste0(
-        "alert alert-", banner$css_class,
-        " py-1 px-2 small mt-2 mb-0"
-      ),
-      shiny$tags$div(
-        bsicons$bs_icon(banner$icon, class = "me-1"),
-        banner$normality_text
-      ),
-      shiny$tags$div(
-        class = "text-muted",
-        banner$variance_text
-      )
+    css <- "alert-success"
+    icon <- "check-circle-fill"
+  } else if (!resid_normal_after && resid_normal_before) {
+    # Residuals were normal before but not after → worsened
+    text <- paste0(
+      "Transformation worsened residual normality. ",
+      "Model residuals were normal before transformation ",
+      "but are non-normal after. ",
+      "Consider keeping raw data for this variable."
     )
+    css <- "alert-danger"
+    icon <- "x-circle-fill"
+  } else if (!resid_normal_after && !resid_normal_before) {
+    # Residuals non-normal before and after
+    grp_improved <- n_bad_after < n_bad_before
+    if (grp_improved) {
+      text <- paste0(
+        "Transformation improved per-group normality (",
+        n_bad_before, " \u2192 ", n_bad_after,
+        " non-normal groups) but residuals remain ",
+        "non-normal. Consider robust/non-parametric tests."
+      )
+      css <- "alert-warning"
+      icon <- "exclamation-triangle-fill"
+    } else {
+      text <- paste0(
+        "Residuals remain non-normal after transformation. ",
+        "Per-group: ", n_bad_after, "/", n_groups,
+        " non-normal. ",
+        "Consider robust or non-parametric tests."
+      )
+      css <- "alert-warning"
+      icon <- "exclamation-triangle-fill"
+    }
+  } else {
+    # Fallback
+    text <- paste0(
+      "Per-group: ", n_bad_after, "/", n_groups,
+      " non-normal after transformation."
+    )
+    css <- "alert-info"
+    icon <- "info-circle-fill"
   }
 
-  do.call(shiny$tagList, elements)
+  shiny$tags$div(
+    class = paste("alert", css, "py-1 px-2 small mb-0"),
+    shiny$tags$div(
+      bsicons$bs_icon(icon, class = "me-1"),
+      text
+    )
+  )
+}
+
+
+#' Build raw recommendation banner (no normalization)
+#'
+#' Uses residual normality as the primary ANOVA criterion.
+#' Per-group results provide supplementary context.
+#'
+#' @param diag Diagnostics list
+#' @return shiny tag
+build_raw_banner <- function(diag) {
+  rec <- diag$recommendation
+  resid <- diag$residuals_raw
+  n_groups <- rec$n_groups
+  n_bad <- rec$n_non_normal
+
+  resid_normal <- !is.null(resid) && !is.na(resid$normal) &&
+    resid$normal == "yes"
+
+  if (resid_normal && n_bad == 0) {
+    # Everything normal
+    text <- paste0(
+      "Assumptions met: residuals and all ", n_groups,
+      " groups are normally distributed. ",
+      "Classical ANOVA is valid."
+    )
+    css <- "alert-success"
+    icon <- "check-circle-fill"
+  } else if (resid_normal && n_bad > 0) {
+    # Residuals OK but some groups flagged
+    text <- paste0(
+      "Model residuals are normally distributed ",
+      "\u2014 classical ANOVA is valid. ",
+      "Per-group: ", n_bad, "/", n_groups,
+      " groups non-normal (see details)."
+    )
+    css <- "alert-success"
+    icon <- "check-circle-fill"
+  } else if (!resid_normal && n_bad == 0) {
+    # Groups OK individually but residuals flagged
+    text <- paste0(
+      "Per-group normality OK, but model residuals ",
+      "are non-normal. ANOVA may still be robust for ",
+      "balanced designs. Consider checking QQ-plot."
+    )
+    css <- "alert-warning"
+    icon <- "exclamation-triangle-fill"
+  } else {
+    # Both non-normal
+    text <- paste0(
+      n_bad, "/", n_groups,
+      " groups non-normal. ",
+      "Model residuals are also non-normal. ",
+      "Enable 'Normalize data' in Data Processing to attempt ",
+      "transformation, or use robust/non-parametric tests."
+    )
+    css <- "alert-danger"
+    icon <- "x-circle-fill"
+  }
+
+  shiny$tags$div(
+    class = paste0("alert ", css, " py-1 px-2 small mb-0"),
+    shiny$tags$div(
+      bsicons$bs_icon(icon, class = "me-1"),
+      text
+    )
+  )
 }
 
 
