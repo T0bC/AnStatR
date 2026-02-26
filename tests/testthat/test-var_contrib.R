@@ -4,13 +4,11 @@ box::use(
 )
 
 box::use(
-  app/logic/pca/var_contrib,
-  app/logic/pca/var_contrib_legacy,
+  app/logic/pca/var_contrib_jitter,
   app/logic/pca/pca,
 )
 
-impl <- attr(var_contrib, "namespace")
-legacy_impl <- attr(var_contrib_legacy, "namespace")
+impl <- attr(var_contrib_jitter, "namespace")
 
 # =============================================================================
 # Shared test fixtures
@@ -32,63 +30,62 @@ make_pca_result <- function(n = 20) {
 }
 
 # =============================================================================
-# create_var_contrib_plot
+# create_var_contrib_jitter_plot
 # =============================================================================
 
-describe("create_var_contrib_plot", {
+describe("create_var_contrib_jitter_plot", {
   pca_res <- make_pca_result()
 
-  it("returns a ggplot for Dim.1", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      pca_res, dim = "Dim.1"
+  it("returns a ggplot with default settings", {
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 2L
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
-  })
-
-  it("returns a ggplot for Dim.2", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      pca_res, dim = "Dim.2"
-    )
-    expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_true(inherits(res$result$plot, "ggplot"))
   })
 
   it("includes title when show_title = TRUE", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      pca_res, dim = "Dim.1", show_title = TRUE
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 2L, show_title = TRUE
     )
     expect_true(res$success)
-    expect_true(!is.null(res$result$labels$title))
+    expect_true(!is.null(res$result$plot$labels$title))
   })
 
   it("omits title when show_title = FALSE", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      pca_res, dim = "Dim.1", show_title = FALSE
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 2L, show_title = FALSE
     )
     expect_true(res$success)
-    expect_true(is.null(res$result$labels$title))
+    expect_true(is.null(res$result$plot$labels$title))
+  })
+
+  it("clamps display_ncp to available dims", {
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 10L
+    )
+    expect_true(res$success)
+    expect_true(res$result$n_dims_shown <= 4L)
+  })
+
+  it("returns filter metadata", {
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 3L
+    )
+    expect_true(res$success)
+    expect_true("filter_applied" %in% names(res$result))
+    expect_true("n_vars_total" %in% names(res$result))
   })
 })
 
 # =============================================================================
-# create_var_contrib_plot — error cases
+# create_var_contrib_jitter_plot — error cases
 # =============================================================================
 
-describe("create_var_contrib_plot error cases", {
-  pca_res <- make_pca_result()
-
+describe("create_var_contrib_jitter_plot error cases", {
   it("returns error for NULL pca_result", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      NULL, dim = "Dim.1"
-    )
-    expect_false(res$success)
-    expect_true(res$error$is_error)
-  })
-
-  it("returns error for invalid dimension", {
-    res <- var_contrib_legacy$create_var_contrib_plot(
-      pca_res, dim = "Dim.99"
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      NULL, display_ncp = 2L
     )
     expect_false(res$success)
     expect_true(res$error$is_error)
@@ -96,31 +93,31 @@ describe("create_var_contrib_plot error cases", {
 })
 
 # =============================================================================
-# var_contrib_error_parser
+# var_contrib_jitter_error_parser
 # =============================================================================
 
-describe("var_contrib_error_parser", {
+describe("var_contrib_jitter_error_parser", {
   it("parses dimension errors", {
-    msg <- var_contrib$var_contrib_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
       "Dimension not found: Dim.99"
     )
     expect_true(grepl("dimension", msg, ignore.case = TRUE))
   })
 
   it("parses NULL pca_result errors", {
-    msg <- var_contrib$var_contrib_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
       "pca_result is NULL"
     )
     expect_true(grepl("PCA result", msg, ignore.case = TRUE))
   })
 
   it("falls back for unknown errors", {
-    msg <- var_contrib$var_contrib_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
       "something unexpected"
     )
     expect_equal(
       msg,
-      "Variable Contribution Plot failed: something unexpected"
+      "Variable Contribution Jitter Plot failed: something unexpected"
     )
   })
 })
@@ -129,59 +126,16 @@ describe("var_contrib_error_parser", {
 # Internal helpers via namespace
 # =============================================================================
 
-describe("build_var_contrib_data", {
+describe("select_label_vars", {
   pca_res <- make_pca_result()
 
-  it("returns data frame with expected columns", {
-    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
-    expect_true(is.data.frame(df))
-    expect_true(all(c(
-      "variable", "contrib", "above_avg",
-      "tooltip", "data_id"
-    ) %in% names(df)))
-    expect_equal(nrow(df), 4)
-  })
-
-  it("above_avg reflects expected average threshold", {
-    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
-    threshold <- legacy_impl$expected_average(pca_res)
-    above <- df$contrib >= threshold
-    expect_equal(
-      df$above_avg == "Above average",
-      above
+  it("labels all variables when n_vars <= 10", {
+    res <- var_contrib_jitter$create_var_contrib_jitter_plot(
+      pca_res, display_ncp = 2L
     )
-  })
-
-  it("contributions are non-negative", {
-    df <- legacy_impl$build_var_contrib_data(pca_res, "Dim.1")
-    expect_true(all(df$contrib >= 0))
-  })
-})
-
-describe("expected_average", {
-  pca_res <- make_pca_result()
-
-  it("returns 100/p for 4 variables", {
-    avg <- impl$expected_average(pca_res)
-    expect_equal(avg, 25)
-  })
-})
-
-describe("axis_label_with_variance", {
-  pca_res <- make_pca_result()
-
-  it("includes variance percentage", {
-    label <- legacy_impl$axis_label_with_variance(
-      "Dim.1", pca_res$eig
-    )
-    expect_true(grepl("Dim\\.1", label))
-    expect_true(grepl("%", label))
-  })
-
-  it("falls back for unknown dimension", {
-    label <- legacy_impl$axis_label_with_variance(
-      "Dim.99", pca_res$eig
-    )
-    expect_equal(label, "Dim.99")
+    expect_true(res$success)
+    # 4 variables < 10, so all should get labels
+    plot_data <- res$result$plot$data
+    expect_true(all(plot_data$show_label))
   })
 })
