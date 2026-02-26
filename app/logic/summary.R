@@ -60,8 +60,10 @@ validate_inputs <- function(grouping_vars, data) {
 #'   non-trimmed) values
 #' @export
 get_filtered_values <- function(values, data, col_name) {
-  outlier_col <- paste0(col_name, "_outlier")
-  trimmed_col <- paste0(col_name, "_trimmed")
+  # Strip _normalized suffix for flag column lookup
+  base_col <- sub("_normalized$", "", col_name)
+  outlier_col <- paste0(base_col, "_outlier")
+  trimmed_col <- paste0(base_col, "_trimmed")
 
   outliers <- if (outlier_col %in% names(data)) {
     data[[outlier_col]]
@@ -109,8 +111,10 @@ compute_base_stats <- function(filtered) {
 #' @return Named list with n_outliers, n_trimmed
 count_exclusions <- function(data, col_name) {
   values <- data[[col_name]]
-  outlier_col <- paste0(col_name, "_outlier")
-  trimmed_col <- paste0(col_name, "_trimmed")
+  # Strip _normalized suffix for flag column lookup
+  base_col <- sub("_normalized$", "", col_name)
+  outlier_col <- paste0(base_col, "_outlier")
+  trimmed_col <- paste0(base_col, "_trimmed")
 
   outliers <- if (outlier_col %in% names(data)) {
     data[[outlier_col]]
