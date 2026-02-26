@@ -126,7 +126,7 @@ tab_ui <- function(ns) {
           )
         )
       ),
-      value = FALSE
+      value = TRUE
     ),
     shiny$tags$hr(),
     # Plot dimensions for export
