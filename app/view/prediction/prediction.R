@@ -31,6 +31,7 @@ box::use(
   app/view/prediction/results_display[
     render_prediction_results, build_results_table
   ],
+  app/view/prediction/plotting_controls,
   app/view/prediction/upload,
 )
 
@@ -42,7 +43,8 @@ ui <- function(id) {
     ns = ns,
     sidebar_id = "sidebar_tabs",
     tabs = list(
-      upload$tab_ui(ns)
+      upload$tab_ui(ns),
+      plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$tagList(
@@ -74,6 +76,13 @@ server <- function(id) {
       bundle_reactive = bundle,
       unknown_data_reactive = unknown_data,
       validation_reactive = validation_result
+    )
+
+    # Delegate plotting controls sidebar
+    plotting_controls$tab_server(
+      input, output, session,
+      bundle_reactive = bundle,
+      unknown_data_reactive = unknown_data
     )
 
     # Handle bundle file upload
@@ -397,8 +406,17 @@ server <- function(id) {
       unknown <- unknown_data()
       shiny$req(unknown)
 
-      dim_x <- input$dim_x
-      dim_y <- input$dim_y
+      analysis_type <- bdl$analysis_type
+      is_pca <- analysis_type == "pca"
+
+      # Dimension inputs differ by analysis type
+      if (is_pca) {
+        dim_x <- input$dim_x
+        dim_y <- input$dim_y
+      } else {
+        dim_x <- input$ldDimX
+        dim_y <- input$ldDimY
+      }
       shiny$req(dim_x, dim_y)
 
       meta_col <- input$label_col
@@ -422,6 +440,10 @@ server <- function(id) {
       biplot_layer <- input$biplot_layer %||%
         "individuals"
 
+      # LDA/MDA/QDA-specific plot controls
+      show_diag <- isTRUE(input$show_diagnostics)
+      show_bound <- isTRUE(input$show_boundaries)
+
       plot_res <- create_prediction_overlay_plot(
         bdl, pred, unknown,
         dim_x, dim_y, meta_col,
@@ -429,7 +451,9 @@ server <- function(id) {
         show_convex_hull = show_hull,
         point_alpha = pt_alpha,
         point_size = pt_size,
-        layer = biplot_layer
+        layer = biplot_layer,
+        show_diagnostics = show_diag,
+        show_boundaries = show_bound
       )
 
       if (!plot_res$success) return(NULL)
@@ -475,9 +499,11 @@ server <- function(id) {
       content = function(file) {
         p <- last_plot()
         shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
         ggplot2$ggsave(
           file, plot = p, device = "svg",
-          width = 16, height = 10, units = "cm"
+          width = w, height = h, units = "cm"
         )
       }
     )
@@ -491,9 +517,11 @@ server <- function(id) {
       content = function(file) {
         p <- last_plot()
         shiny$req(p)
+        w <- input$width %||% 16
+        h <- input$height %||% 10
         ggplot2$ggsave(
           file, plot = p, device = "png",
-          width = 16, height = 10,
+          width = w, height = h,
           units = "cm", dpi = 600
         )
       }
