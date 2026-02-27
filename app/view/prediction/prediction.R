@@ -417,6 +417,7 @@ server <- function(id) {
         dim_x <- input$ldDimX
         dim_y <- input$ldDimY
       }
+
       shiny$req(dim_x, dim_y)
 
       meta_col <- input$label_col
