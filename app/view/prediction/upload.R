@@ -62,6 +62,14 @@ tab_ui <- function(ns) {
     shiny$tags$hr(),
     # Plot settings
     shiny$uiOutput(ns("dim_selectors")),
+    # Biplot layer toggle (PCA only)
+    shiny$uiOutput(ns("layer_selector")),
+    # Group column selector (for PCA training data)
+    shiny$uiOutput(ns("group_selector")),
+    # Convex hull / ellipse toggle (PCA only)
+    shiny$uiOutput(ns("hull_toggle")),
+    # Point aesthetics (PCA only)
+    shiny$uiOutput(ns("point_controls")),
     # Label column selector (for unknowns)
     shiny$uiOutput(ns("label_selector"))
   )
@@ -224,6 +232,141 @@ tab_server <- function(input, output, session,
     )
   })
 
+  # Biplot layer selector (PCA only)
+  output$layer_selector <- shiny$renderUI({
+    bundle <- bundle_reactive()
+    if (is.null(bundle)) return(NULL)
+    if (bundle$analysis_type != "pca") return(NULL)
+
+    shiny$radioButtons(
+      inputId = ns("biplot_layer"),
+      label = shiny$tags$span(
+        "Biplot Layer ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Select which layers to display:",
+            "individual scores, variable loadings,",
+            "or both combined."
+          )
+        )
+      ),
+      choices = c(
+        "Individuals" = "individuals",
+        "Variables (Loadings)" = "variables",
+        "Combined" = "combined"
+      ),
+      selected = "individuals",
+      inline = TRUE
+    )
+  })
+
+  # Group column selector (PCA training data)
+  output$group_selector <- shiny$renderUI({
+    bundle <- bundle_reactive()
+    if (is.null(bundle)) return(NULL)
+    if (bundle$analysis_type != "pca") return(NULL)
+
+    meta_cols <- bundle$meta_cols
+    if (is.null(meta_cols) || length(meta_cols) == 0) {
+      return(NULL)
+    }
+
+    # Filter to columns actually present in used_data
+    available <- intersect(
+      meta_cols, names(bundle$used_data)
+    )
+    if (length(available) == 0) return(NULL)
+
+    shiny$selectizeInput(
+      inputId = ns("group_col"),
+      label = shiny$tags$span(
+        "Group training data ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Select metadata column(s) to group",
+            "the training data in the overlay",
+            "plot. Multiple columns are combined."
+          )
+        )
+      ),
+      choices = available,
+      multiple = TRUE,
+      options = list(
+        placeholder = "Select grouping column(s)..."
+      )
+    )
+  })
+
+  # Convex hull toggle (PCA only)
+  output$hull_toggle <- shiny$renderUI({
+    bundle <- bundle_reactive()
+    if (is.null(bundle)) return(NULL)
+    if (bundle$analysis_type != "pca") return(NULL)
+
+    shiny$checkboxInput(
+      inputId = ns("show_convex_hull"),
+      label = shiny$tags$span(
+        "Use Convex Hull ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Show convex hull instead of 95%",
+            "confidence ellipse around groups."
+          )
+        )
+      ),
+      value = FALSE
+    )
+  })
+
+  # Point controls (PCA only)
+  output$point_controls <- shiny$renderUI({
+    bundle <- bundle_reactive()
+    if (is.null(bundle)) return(NULL)
+    if (bundle$analysis_type != "pca") return(NULL)
+
+    shiny$tagList(
+      shiny$fluidRow(
+        shiny$column(
+          6,
+          shiny$selectInput(
+            inputId = ns("point_alpha"),
+            label = "Point Alpha",
+            choices = c(
+              "Contrib." = "Contribution",
+              "0.25" = 0.25,
+              "0.5" = 0.5,
+              "0.75" = 0.75,
+              "1.0" = 1.0
+            ),
+            selected = "Contribution"
+          )
+        ),
+        shiny$column(
+          6,
+          shiny$selectInput(
+            inputId = ns("point_size"),
+            label = "Point Size",
+            choices = c(
+              "Contrib." = "Contribution",
+              "1" = 1, "2" = 2, "3" = 3,
+              "4" = 4, "5" = 5, "6" = 6
+            ),
+            selected = "Contribution"
+          )
+        )
+      )
+    )
+  })
+
   # Label column selector
   output$label_selector <- shiny$renderUI({
     unknown <- unknown_data_reactive()
@@ -269,10 +412,10 @@ get_available_dims <- function(bundle) {
   analysis_type <- bundle$analysis_type
 
   if (analysis_type == "pca") {
-    # PC dimensions from model
+    # Dim.X format to match create_biplot convention
     model <- bundle$model
     n_pc <- ncol(model$rotation)
-    paste0("PC", seq_len(n_pc))
+    paste0("Dim.", seq_len(n_pc))
   } else if (analysis_type %in% c("lda", "mda")) {
     # LD dimensions from model
     model <- bundle$model
