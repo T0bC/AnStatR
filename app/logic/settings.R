@@ -2,6 +2,10 @@ box::use(
   bslib,
 )
 
+#' Application version string
+#' @export
+app_version <- "2.0.0"
+
 #' Available theme definitions
 #'
 #' Named list mapping display names to bslib theme objects.
