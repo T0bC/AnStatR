@@ -33,8 +33,10 @@ tab_ui <- function(ns) {
                 class = "text-muted"
               ),
               paste(
-                "Select the linear discriminant",
-                "for the x-axis of the LD plot."
+                "Select the discriminant dimension",
+                "for the x-axis (LD for LDA,",
+                "DC for MDA, or original variable",
+                "for QDA)."
               )
             )
           ),
@@ -54,8 +56,10 @@ tab_ui <- function(ns) {
                 class = "text-muted"
               ),
               paste(
-                "Select the linear discriminant",
-                "for the y-axis of the LD plot."
+                "Select the discriminant dimension",
+                "for the y-axis (LD for LDA,",
+                "DC for MDA, or original variable",
+                "for QDA)."
               )
             )
           ),
@@ -75,7 +79,7 @@ tab_ui <- function(ns) {
                 class = "text-muted"
               ),
               paste(
-                "Select the linear discriminant",
+                "Select the discriminant dimension",
                 "for the z-axis (reserved for",
                 "future 3D plot)."
               )
