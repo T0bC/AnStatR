@@ -14,6 +14,7 @@ box::use(
   app/view/median,
   app/view/pca,
   app/view/plotting,
+  app/view/prediction,
   app/view/settings_modal,
   app/view/statistics,
   app/view/summary,
@@ -91,6 +92,13 @@ ui <- function(id) {
       ),
       value = "cluster",
       cluster$ui(ns("cluster"))
+    ),
+    bslib$nav_panel(
+      title = shiny$tagList(
+        bsicons$bs_icon("crosshair2"), "Prediction"
+      ),
+      value = "prediction",
+      prediction$ui(ns("prediction"))
     ),
     bslib$nav_spacer(),
     bslib$nav_item(
@@ -187,6 +195,7 @@ server <- function(id) {
       pca_result = pca_result,
       lda_result = lda_result
     )
+    prediction$server("prediction")
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
