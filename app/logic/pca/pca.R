@@ -51,11 +51,13 @@ validate_inputs <- function(columns, data) {
 
 #' Run PCA using stats::prcomp
 #'
-#' Data is assumed to be already cleaned (no NAs) and optionally
-#' scaled upstream. Computes eigenvalues, variable coordinates /
-#' contributions / cos2, and individual coordinates / contributions
-#' / cos2. The returned structure mirrors FactoMineR::PCA output
-#' so that downstream renderers work with the same shape.
+#' Data is assumed to be already cleaned (no NAs). Centering
+#' and scaling are handled by prcomp() via the center and
+#' scale. arguments. Computes eigenvalues, variable coordinates
+#' / contributions / cos2, and individual coordinates /
+#' contributions / cos2. The returned structure mirrors
+#' FactoMineR::PCA output so that downstream renderers work
+#' with the same shape.
 #'
 #' @param data Data frame (full, may include metadata columns)
 #' @param columns Character vector of measurement column names
@@ -66,11 +68,16 @@ validate_inputs <- function(columns, data) {
 #'   retains all feasible components. The full result is always
 #'   stored; downstream renderers use a separate display_ncp
 #'   to limit what is shown in the UI.
+#' @param center Logical, whether to center variables before
+#'   PCA. Default FALSE for backward compatibility.
+#' @param scale. Logical, whether to scale variables to unit
+#'   variance before PCA. Default FALSE.
 #' @return List with $success, $result or $error.
 #'   $result contains $eig, $var, $ind, $ncp, $call_info.
 #' @export
 run_pca <- function(data, columns,
-                    meta_cols = character(0), ncp = NULL) {
+                    meta_cols = character(0), ncp = NULL,
+                    center = FALSE, scale. = FALSE) {
   error_context <- list(
     n_variables = length(columns),
     n_observations = nrow(data),
@@ -93,11 +100,14 @@ run_pca <- function(data, columns,
 
       pca_obj <- stats$prcomp(
         numeric_data,
-        center = FALSE,
-        scale. = FALSE
+        center = center,
+        scale. = scale.
       )
 
       result <- build_pca_result(pca_obj, max_ncp, n, p)
+
+      # Store raw prcomp object for predict() in bundle
+      result$pca_obj <- pca_obj
 
       # Attach metadata for individual labelling and grouping
       result$ind$meta <- build_ind_meta(
