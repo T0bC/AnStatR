@@ -144,9 +144,16 @@ predict_unknown <- function(bundle, preprocessed_data) {
 # =============================================================================
 
 predict_pca <- function(model, numeric_data) {
-  scores <- stats$predict(model, numeric_data)
+  scores <- as.data.frame(
+    stats$predict(model, numeric_data)
+  )
+  # Rename PC1..PCn to Dim.1..Dim.n to match
+  # the PCA biplot convention used by create_biplot
+  colnames(scores) <- paste0(
+    "Dim.", seq_len(ncol(scores))
+  )
   list(
-    scores = as.data.frame(scores),
+    scores = scores,
     predicted_class = NULL,
     posterior = NULL
   )
