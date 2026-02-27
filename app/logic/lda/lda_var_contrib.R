@@ -52,7 +52,8 @@ lda_to_pca_var_structure <- function(lda_result) {
   dim_names <- colnames(scaling_mat)
 
   if (is.null(dim_names)) {
-    dim_names <- paste0("LD", seq_len(n_dims))
+    prefix <- if (analysis_type == "mda") "DC" else "LD"
+    dim_names <- paste0(prefix, seq_len(n_dims))
   }
 
   # --- Coord: scaling values (LD coefficients) ---
