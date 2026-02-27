@@ -248,139 +248,181 @@ add_boundaries_overlay <- function(p, lda_result,
                                     grid_n = 150) {
   model <- lda_result$model
   scores <- lda_result$scores
-  scaling <- as.matrix(lda_result$scaling)
   columns <- lda_result$columns
   is_mda <- identical(
     lda_result$analysis_type, "mda"
   )
 
-  # Grid range with 5% padding
-  x_range <- range(scores[[dim_x]])
-  y_range <- range(scores[[dim_y]])
-  x_pad <- diff(x_range) * 0.05
-  y_pad <- diff(y_range) * 0.05
-
-  x_seq <- seq(
-    x_range[1] - x_pad, x_range[2] + x_pad,
-    length.out = grid_n
-  )
-  y_seq <- seq(
-    y_range[1] - y_pad, y_range[2] + y_pad,
-    length.out = grid_n
-  )
-  grid_df <- expand.grid(x = x_seq, y = y_seq)
-
-  # Build full LD matrix for grid points
-  # (all non-selected dims set to 0)
-  ld_names <- colnames(scores)
-  n_ld <- length(ld_names)
-  grid_ld <- matrix(
-    0, nrow = nrow(grid_df), ncol = n_ld
-  )
-  colnames(grid_ld) <- ld_names
-  grid_ld[, dim_x] <- grid_df$x
-  grid_ld[, dim_y] <- grid_df$y
-
-  # Back-project: original = LD %*% ginv(scaling) + means
-  # MDA scaling (from coef()) may have different dims
-  # than LDA scaling; use ginv for both.
-  col_means <- if (is_mda) {
-    colMeans(as.matrix(lda_result$means))
-  } else {
-    colMeans(model$means)
-  }
-  scaling_inv <- MASS::ginv(scaling)
-  original_grid <- grid_ld %*% scaling_inv
-  # Ensure col_means length matches ncol(original_grid)
-  n_orig <- ncol(original_grid)
-  if (length(col_means) == n_orig) {
-    original_grid <- sweep(
-      original_grid, 2, col_means, "+"
-    )
-  }
-  original_grid <- as.data.frame(original_grid)
-  colnames(original_grid) <- columns
-
-  # Predict class for each grid point
-  # MDA predict() returns a factor directly;
-  # LDA predict() returns a list with $class
   if (is_mda) {
-    pred_class <- stats::predict(
-      model, original_grid
+    # MDA: build grid in original variable space, predict
+    # classes there, then project to variate space.
+    # ginv(coef()) does NOT correctly invert the MDA
+    # variate projection, so back-projection is unreliable.
+    orig_data <- lda_result$numeric_data
+    if (is.null(orig_data)) {
+      return(p) # cannot draw boundaries without data
+    }
+
+    # Build grid over each original variable's range
+    col_ranges <- lapply(columns, function(col) {
+      rng <- range(orig_data[[col]])
+      pad <- diff(rng) * 0.05
+      seq(rng[1] - pad, rng[2] + pad,
+          length.out = grid_n)
+    })
+    names(col_ranges) <- columns
+    orig_grid <- expand.grid(col_ranges)
+
+    # Predict class in original space
+    pred_class <- stats::predict(model, orig_grid)
+
+    # Project grid points to variate space
+    variates <- stats::predict(
+      model, orig_grid, type = "variates"
     )
+    if (is.null(variates) ||
+        ncol(variates) < 2) {
+      return(p) # cannot map to 2D variate space
+    }
+    variates_df <- as.data.frame(variates)
+    colnames(variates_df) <- paste0(
+      "LD", seq_len(ncol(variates_df))
+    )
+
+    grid_df <- data.frame(
+      x = variates_df[[dim_x]],
+      y = variates_df[[dim_y]]
+    )
+    grid_df$class <- pred_class
+    grid_df$class_num <- as.numeric(grid_df$class)
   } else {
+    # LDA: back-project from LD space to original space
+    # (scaling from LDA is a true linear projection)
+    x_range <- range(scores[[dim_x]])
+    y_range <- range(scores[[dim_y]])
+    x_pad <- diff(x_range) * 0.05
+    y_pad <- diff(y_range) * 0.05
+
+    x_seq <- seq(
+      x_range[1] - x_pad, x_range[2] + x_pad,
+      length.out = grid_n
+    )
+    y_seq <- seq(
+      y_range[1] - y_pad, y_range[2] + y_pad,
+      length.out = grid_n
+    )
+    grid_df <- expand.grid(x = x_seq, y = y_seq)
+
+    ld_names <- colnames(scores)
+    n_ld <- length(ld_names)
+    grid_ld <- matrix(
+      0, nrow = nrow(grid_df), ncol = n_ld
+    )
+    colnames(grid_ld) <- ld_names
+    grid_ld[, dim_x] <- grid_df$x
+    grid_ld[, dim_y] <- grid_df$y
+
+    col_means <- colMeans(model$means)
+    scaling <- as.matrix(lda_result$scaling)
+    scaling_inv <- MASS::ginv(scaling)
+    original_grid <- grid_ld %*% scaling_inv
+    n_orig <- ncol(original_grid)
+    if (length(col_means) == n_orig) {
+      original_grid <- sweep(
+        original_grid, 2, col_means, "+"
+      )
+    }
+    original_grid <- as.data.frame(original_grid)
+    colnames(original_grid) <- columns
+
     pred <- stats::predict(model, original_grid)
     pred_class <- pred$class
+    grid_df$class <- pred_class
+    grid_df$class_num <- as.numeric(grid_df$class)
   }
-  grid_df$class <- pred_class
-  grid_df$class_num <- as.numeric(grid_df$class)
 
   group_levels <- lda_result$group_levels
   grid_df$class <- factor(
     grid_df$class, levels = group_levels
   )
 
-  # Tile layer (soft fill)
-  p <- p +
-    ggplot2$geom_tile(
-      data = grid_df,
-      ggplot2$aes(
-        x = x, y = y, fill = class
-      ),
-      alpha = 0.15,
-      inherit.aes = FALSE
-    )
-
-  # Boundary segments: find adjacent cells that differ
-  dx <- x_seq[2] - x_seq[1]
-  dy <- y_seq[2] - y_seq[1]
-  class_mat <- matrix(
-    grid_df$class_num,
-    nrow = grid_n, ncol = grid_n
-  )
-
-  seg_list <- vector("list", 2 * grid_n * grid_n)
-  k <- 0L
-  for (i in seq_len(grid_n)) {
-    for (j in seq_len(grid_n)) {
-      # Horizontal neighbour (right)
-      if (i < grid_n &&
-          class_mat[i, j] != class_mat[i + 1, j]) {
-        k <- k + 1L
-        mid_x <- x_seq[i] + dx / 2
-        seg_list[[k]] <- data.frame(
-          x = mid_x, xend = mid_x,
-          y = y_seq[j] - dy / 2,
-          yend = y_seq[j] + dy / 2
-        )
-      }
-      # Vertical neighbour (above)
-      if (j < grid_n &&
-          class_mat[i, j] != class_mat[i, j + 1]) {
-        k <- k + 1L
-        mid_y <- y_seq[j] + dy / 2
-        seg_list[[k]] <- data.frame(
-          x = x_seq[i] - dx / 2,
-          xend = x_seq[i] + dx / 2,
-          y = mid_y, yend = mid_y
-        )
-      }
-    }
-  }
-
-  if (k > 0) {
-    seg_df <- do.call(rbind, seg_list[seq_len(k)])
+  if (is_mda) {
+    # MDA: projected grid is irregular in variate space,
+    # so use small scatter points for decision regions
     p <- p +
-      ggplot2$geom_segment(
-        data = seg_df,
+      ggplot2$geom_point(
+        data = grid_df,
         ggplot2$aes(
-          x = x, xend = xend,
-          y = y, yend = yend
+          x = x, y = y, colour = class
         ),
-        colour = "grey50",
-        linewidth = 0.45,
+        size = 0.3,
+        alpha = 0.15,
+        shape = 15,
+        inherit.aes = FALSE
+      ) +
+      ggplot2$scale_colour_discrete(guide = "none")
+  } else {
+    # LDA: regular grid — use tiles + boundary segments
+    p <- p +
+      ggplot2$geom_tile(
+        data = grid_df,
+        ggplot2$aes(
+          x = x, y = y, fill = class
+        ),
+        alpha = 0.15,
         inherit.aes = FALSE
       )
+
+    dx <- x_seq[2] - x_seq[1]
+    dy <- y_seq[2] - y_seq[1]
+    class_mat <- matrix(
+      grid_df$class_num,
+      nrow = grid_n, ncol = grid_n
+    )
+
+    seg_list <- vector("list", 2 * grid_n * grid_n)
+    k <- 0L
+    for (i in seq_len(grid_n)) {
+      for (j in seq_len(grid_n)) {
+        # Horizontal neighbour (right)
+        if (i < grid_n &&
+            class_mat[i, j] != class_mat[i + 1, j]) {
+          k <- k + 1L
+          mid_x <- x_seq[i] + dx / 2
+          seg_list[[k]] <- data.frame(
+            x = mid_x, xend = mid_x,
+            y = y_seq[j] - dy / 2,
+            yend = y_seq[j] + dy / 2
+          )
+        }
+        # Vertical neighbour (above)
+        if (j < grid_n &&
+            class_mat[i, j] != class_mat[i, j + 1]) {
+          k <- k + 1L
+          mid_y <- y_seq[j] + dy / 2
+          seg_list[[k]] <- data.frame(
+            x = x_seq[i] - dx / 2,
+            xend = x_seq[i] + dx / 2,
+            y = mid_y, yend = mid_y
+          )
+        }
+      }
+    }
+
+    if (k > 0) {
+      seg_df <- do.call(rbind, seg_list[seq_len(k)])
+      p <- p +
+        ggplot2$geom_segment(
+          data = seg_df,
+          ggplot2$aes(
+            x = x, xend = xend,
+            y = y, yend = yend
+          ),
+          colour = "grey50",
+          linewidth = 0.45,
+          inherit.aes = FALSE
+        )
+    }
   }
 
   p
@@ -406,60 +448,81 @@ compute_1d_boundary <- function(lda_result) {
   )
 
   if (is_mda) {
-    # MDA: grid-based boundary detection
-    # Scan along LD1, back-project, predict, find
-    # where the predicted class switches.
-    scaling <- as.matrix(lda_result$scaling)
-    col_means <- colMeans(
-      as.matrix(lda_result$means)
-    )
-    x_range <- range(scores[[dim_x]])
-    x_pad <- diff(x_range) * 0.05
-    x_seq <- seq(
-      x_range[1] - x_pad,
-      x_range[2] + x_pad,
-      length.out = 500
-    )
-
-    grid_ld <- matrix(
-      0, nrow = length(x_seq), ncol = 1
-    )
-    colnames(grid_ld) <- dim_x
-    grid_ld[, 1] <- x_seq
-
-    scaling_inv <- MASS::ginv(scaling)
-    original_grid <- grid_ld %*% scaling_inv
-    n_orig <- ncol(original_grid)
-    if (length(col_means) == n_orig) {
-      original_grid <- sweep(
-        original_grid, 2, col_means, "+"
-      )
-    }
-    original_grid <- as.data.frame(original_grid)
-    colnames(original_grid) <- columns
-
-    pred_class <- as.integer(
-      stats::predict(model, original_grid)
-    )
-
-    # Find first transition point
-    transitions <- which(
-      diff(pred_class) != 0
-    )
-    if (length(transitions) > 0) {
-      idx <- transitions[1]
-      boundary <- (x_seq[idx] + x_seq[idx + 1]) / 2
-    } else {
-      # No transition found — midpoint of group means
+    # MDA: build grid in original variable space, predict
+    # classes, project to variate space, find transition
+    # on LD1.
+    orig_data <- lda_result$numeric_data
+    if (is.null(orig_data)) {
+      # Fallback: midpoint of group means in LD1
       groups <- as.factor(
         get_group_values(
           lda_result$meta,
           lda_result$grouping_col
         )
       )
-      ld_scores <- scores[[dim_x]]
       g_means <- tapply(
-        ld_scores, groups, mean
+        scores[[dim_x]], groups, mean
+      )
+      return(mean(g_means))
+    }
+
+    # Build a 1D scan grid using the first original
+    # variable, holding others at their mean
+    grid_n <- 500
+    col_ranges <- lapply(columns, function(col) {
+      rng <- range(orig_data[[col]])
+      pad <- diff(rng) * 0.05
+      seq(rng[1] - pad, rng[2] + pad,
+          length.out = grid_n)
+    })
+    names(col_ranges) <- columns
+    orig_grid <- expand.grid(col_ranges)
+
+    # Predict class in original space
+    pred_class <- as.integer(
+      stats::predict(model, orig_grid)
+    )
+
+    # Project to variate space to get LD1 values
+    variates <- stats::predict(
+      model, orig_grid, type = "variates"
+    )
+    if (is.null(variates) || ncol(variates) < 1) {
+      groups <- as.factor(
+        get_group_values(
+          lda_result$meta,
+          lda_result$grouping_col
+        )
+      )
+      g_means <- tapply(
+        scores[[dim_x]], groups, mean
+      )
+      return(mean(g_means))
+    }
+
+    ld1_vals <- variates[, 1]
+
+    # Sort by LD1 and find transition
+    ord <- order(ld1_vals)
+    ld1_sorted <- ld1_vals[ord]
+    pred_sorted <- pred_class[ord]
+    transitions <- which(
+      diff(pred_sorted) != 0
+    )
+
+    if (length(transitions) > 0) {
+      idx <- transitions[1]
+      boundary <- (ld1_sorted[idx] +
+        ld1_sorted[idx + 1]) / 2
+    } else {
+      groups <- as.factor(
+        get_group_values(
+          lda_result$meta,
+          lda_result$grouping_col
+        )
+      )
+      g_means <- tapply(
+        scores[[dim_x]], groups, mean
       )
       boundary <- mean(g_means)
     }
