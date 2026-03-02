@@ -190,67 +190,11 @@ t2way_config <- list(
   },
 
   format_results = function(results, x_axis, use_bootstrap) {
-    effect_labels <- c(
-      x_axis[1], x_axis[2],
-      paste0(x_axis[1], ":", x_axis[2])
+    validation_utils$format_multiway_results(
+      results, x_axis, use_bootstrap,
+      q_cols = c("Qa", "Qb", "Qab"),
+      p_cols = c("A.p.value", "B.p.value", "AB.p.value")
     )
-
-    q_cols <- c("Qa", "Qb", "Qab")
-    p_cols <- c("A.p.value", "B.p.value", "AB.p.value")
-
-    if (use_bootstrap) {
-      ci_bounds <- apply(results, 2, function(x) {
-        valid_x <- x[!is.na(x)]
-        if (length(valid_x) < 2) {
-          return(c(NA_real_, NA_real_))
-        }
-        stats$quantile(
-          valid_x, c(0.025, 0.975), na.rm = TRUE
-        )
-      })
-
-      q_stats <- vapply(q_cols, function(col) {
-        paste0(
-          signif(mean(results[[col]], na.rm = TRUE), 3),
-          " [",
-          signif(ci_bounds[1, col], 3), " - ",
-          signif(ci_bounds[2, col], 3), "]"
-        )
-      }, character(1))
-
-      p_vals <- vapply(p_cols, function(col) {
-        paste0(
-          signif(mean(results[[col]], na.rm = TRUE), 3),
-          " [",
-          signif(ci_bounds[1, col], 3), " - ",
-          signif(ci_bounds[2, col], 3), "]"
-        )
-      }, character(1))
-
-      data.frame(
-        Effect = effect_labels,
-        Q.Statistic = unname(q_stats),
-        p.value = unname(p_vals),
-        stringsAsFactors = FALSE
-      )
-    } else {
-      data.frame(
-        Effect = effect_labels,
-        Q.Statistic = signif(
-          c(results$Qa[1], results$Qb[1], results$Qab[1]),
-          3
-        ),
-        p.value = signif(
-          c(
-            results$A.p.value[1],
-            results$B.p.value[1],
-            results$AB.p.value[1]
-          ),
-          3
-        ),
-        stringsAsFactors = FALSE
-      )
-    }
   }
 )
 
@@ -371,88 +315,14 @@ t3way_config <- list(
   },
 
   format_results = function(results, x_axis, use_bootstrap) {
-    effect_labels <- c(
-      x_axis[1], x_axis[2], x_axis[3],
-      paste0(x_axis[1], ":", x_axis[2]),
-      paste0(x_axis[1], ":", x_axis[3]),
-      paste0(x_axis[2], ":", x_axis[3]),
-      paste0(
-        x_axis[1], ":", x_axis[2], ":", x_axis[3]
+    validation_utils$format_multiway_results(
+      results, x_axis, use_bootstrap,
+      q_cols = c("Qa", "Qb", "Qc", "Qab", "Qac", "Qbc", "Qabc"),
+      p_cols = c(
+        "A.p.value", "B.p.value", "C.p.value",
+        "AB.p.value", "AC.p.value", "BC.p.value", "ABC.p.value"
       )
     )
-
-    q_cols <- c(
-      "Qa", "Qb", "Qc",
-      "Qab", "Qac", "Qbc", "Qabc"
-    )
-    p_cols <- c(
-      "A.p.value", "B.p.value", "C.p.value",
-      "AB.p.value", "AC.p.value", "BC.p.value",
-      "ABC.p.value"
-    )
-
-    if (use_bootstrap) {
-      ci_bounds <- apply(results, 2, function(x) {
-        valid_x <- x[!is.na(x)]
-        if (length(valid_x) < 2) {
-          return(c(NA_real_, NA_real_))
-        }
-        stats$quantile(
-          valid_x, c(0.025, 0.975), na.rm = TRUE
-        )
-      })
-
-      q_stats <- vapply(q_cols, function(col) {
-        paste0(
-          signif(mean(results[[col]], na.rm = TRUE), 3),
-          " [",
-          signif(ci_bounds[1, col], 3), " - ",
-          signif(ci_bounds[2, col], 3), "]"
-        )
-      }, character(1))
-
-      p_vals <- vapply(p_cols, function(col) {
-        paste0(
-          signif(mean(results[[col]], na.rm = TRUE), 3),
-          " [",
-          signif(ci_bounds[1, col], 3), " - ",
-          signif(ci_bounds[2, col], 3), "]"
-        )
-      }, character(1))
-
-      data.frame(
-        Effect = effect_labels,
-        Q.Statistic = unname(q_stats),
-        p.value = unname(p_vals),
-        stringsAsFactors = FALSE
-      )
-    } else {
-      data.frame(
-        Effect = effect_labels,
-        Q.Statistic = signif(
-          c(
-            results$Qa[1], results$Qb[1],
-            results$Qc[1], results$Qab[1],
-            results$Qac[1], results$Qbc[1],
-            results$Qabc[1]
-          ),
-          3
-        ),
-        p.value = signif(
-          c(
-            results$A.p.value[1],
-            results$B.p.value[1],
-            results$C.p.value[1],
-            results$AB.p.value[1],
-            results$AC.p.value[1],
-            results$BC.p.value[1],
-            results$ABC.p.value[1]
-          ),
-          3
-        ),
-        stringsAsFactors = FALSE
-      )
-    }
   }
 )
 
