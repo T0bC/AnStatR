@@ -48,6 +48,8 @@ tab_ui <- function(ns) {
       ),
       selected = "robust"
     ),
+    # Non-parametric post-hoc method (shown only for nonparametric)
+    shiny$uiOutput(ns("np_posthoc_method_ui")),
     # Expandable info about approaches
     bslib$accordion(
       id = ns("test_approach_accordion"),
@@ -108,6 +110,41 @@ tab_server <- function(input, output, session,
           "Trim: ", tr_val, "%",
           " (from Plotting tab)"
         )
+      )
+    )
+  })
+
+  # --- Non-parametric post-hoc method radio (conditional) ---
+  output$np_posthoc_method_ui <- shiny$renderUI({
+    approach <- input$test_approach %||% "robust"
+    if (approach != "nonparametric") return(NULL)
+
+    shiny$tags$div(
+      class = "mt-2 mb-2",
+      shiny$radioButtons(
+        inputId = session$ns("np_posthoc_method"),
+        label = shiny$tags$span(
+          "1-Way Post-Hoc Method ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Dunn's test uses rank sums from the",
+              "Kruskal-Wallis test (standard post-hoc).",
+              "Pairwise Wilcoxon performs independent",
+              "rank-sum tests per pair (more conservative).",
+              "For 2/3-way designs, ART contrasts are",
+              "always used regardless of this setting."
+            )
+          )
+        ),
+        choices = list(
+          "Dunn's Test" = "dunn",
+          "Pairwise Wilcoxon" = "wilcox"
+        ),
+        selected = "dunn",
+        inline = TRUE
       )
     )
   })
