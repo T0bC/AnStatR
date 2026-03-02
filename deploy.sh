@@ -2,7 +2,7 @@
 set -e
 
 # ── Configuration ──────────────────────────────────────
-APP_DIR="/opt/shinyapps/texAn2.0"      # Change to your app path
+APP_DIR="/opt/shinyapps/texAn/texAn2.0"      # Change to your app path
 IMAGE_NAME="texan:latest"                   # Change to your image name
 # ───────────────────────────────────────────────────────
 
