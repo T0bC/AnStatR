@@ -10,6 +10,7 @@ box::use(
   app/logic/statistics/omnibus,
   app/logic/statistics/customWRS,
   app/logic/statistics/cliff_delta[cidmulv2_labelled],
+  app/logic/statistics/validation_utils,
 )
 
 # =============================================================================
@@ -22,50 +23,6 @@ box::use(
 # =============================================================================
 # Private helpers
 # =============================================================================
-
-#' Validate post-hoc inputs
-#'
-#' @param df Data frame
-#' @param x_axis Grouping columns
-#' @return NULL if valid, app_error otherwise
-validate_posthoc <- function(df, x_axis) {
-  if (length(x_axis) > 1) {
-    combined <- do.call(paste, c(df[x_axis], sep = "."))
-  } else {
-    combined <- df[[x_axis[1]]]
-  }
-  n_groups <- length(unique(combined))
-  if (n_groups < 2) {
-    return(error_handling$simple_error(
-      message = paste0(
-        "Post-hoc tests require at least 2 groups, found ",
-        n_groups, "."
-      ),
-      operation_name = "posthoc_validate",
-      context = list(n_groups = n_groups)
-    ))
-  }
-  NULL
-}
-
-#' Build error context for post-hoc tests
-#'
-#' @param df Data frame
-#' @param x_axis Grouping columns
-#' @param measure_col Measurement column
-#' @param tr_value Trim proportion
-#' @param use_bootstrap Logical
-#' @return List with context information
-build_posthoc_context <- function(df, x_axis, measure_col,
-                                  tr_value, use_bootstrap) {
-  list(
-    measure = measure_col,
-    grouping = paste(x_axis, collapse = ", "),
-    n_observations = nrow(df),
-    trim = tr_value,
-    bootstrap = use_bootstrap
-  )
-}
 
 #' Extract interaction labels from mcp2atm_TM / mcp3atm_TM contrast matrix
 #'
@@ -223,48 +180,6 @@ run_lincon_3way <- function(sample_data, x_axis, measure_col,
   flatten_mcp_effects(mcp_result)
 }
 
-#' Run single cliff iteration
-#'
-#' @param sample_data Data frame
-#' @param x_axis Grouping columns
-#' @param measure_col Measurement column
-#' @return Data frame with cliff results
-run_cliff_iteration <- function(sample_data, x_axis,
-                                measure_col) {
-  if (length(x_axis) > 1) {
-    sample_data$combinedGroups <- do.call(
-      paste, c(sample_data[x_axis], sep = ".")
-    )
-  } else {
-    sample_data$combinedGroups <- sample_data[[x_axis[1]]]
-  }
-  sample_data$combinedGroupsNum <- as.numeric(
-    as.factor(sample_data$combinedGroups)
-  )
-
-  cliff_result <- cidmulv2_labelled(
-    data = sample_data,
-    gcode = "combinedGroupsNum",
-    glab = "combinedGroups",
-    dp = measure_col,
-    alpha = 0.05,
-    CI.FWE = FALSE
-  )
-
-  test_df <- cliff_result$test
-  data.frame(
-    Interaction = paste(
-      test_df$Group.A, "vs.", test_df$Group.B
-    ),
-    Cliff.psihat = test_df$p.hat,
-    Cliff.ci.lower = test_df$p.ci.lower,
-    Cliff.ci.upper = test_df$p.ci.upper,
-    Cliff.p.value = test_df$p.value,
-    Cliff.p.crit = test_df$p.crit,
-    stringsAsFactors = FALSE
-  )
-}
-
 #' Aggregate bootstrap iterations into mean [CI] format
 #'
 #' @param results_list List of data frames from bootstrap iterations
@@ -343,47 +258,6 @@ format_posthoc_bootstrap <- function(results_list, value_cols) {
   do.call(rbind, result_rows)
 }
 
-#' Normalize interaction strings for consistent matching
-#'
-#' Extracts group names from "GroupA vs. GroupB" format and creates
-#' an alphabetized key for consistent matching between tests.
-#'
-#' @param df Data frame with Interaction column
-#' @return Data frame with added InteractionKey column
-normalize_interaction <- function(df) {
-  if (!"Interaction" %in% names(df)) return(df)
-
-  df$InteractionKey <- vapply(df$Interaction, function(int) {
-    parts <- trimws(strsplit(int, " vs\\. ")[[1]])
-    paste(sort(parts), collapse = " vs. ")
-  }, character(1))
-
-  df
-}
-
-#' Filter for valid comparisons in multi-factor designs
-#'
-#' Keeps only comparisons where groups differ by exactly one factor level.
-#'
-#' @param df Data frame with Interaction column
-#' @param x_axis Character vector of grouping columns
-#' @return Filtered data frame
-filter_valid_comparisons <- function(df, x_axis) {
-  if (is.null(x_axis) || length(x_axis) <= 1) return(df)
-
-  keep <- vapply(df$Interaction, function(int) {
-    parts <- trimws(strsplit(int, " vs\\. ")[[1]])
-    if (length(parts) != 2) return(FALSE)
-    a_parts <- strsplit(parts[1], "\\.")[[1]]
-    b_parts <- strsplit(parts[2], "\\.")[[1]]
-    if (length(a_parts) != length(b_parts)) return(FALSE)
-    sum(a_parts != b_parts) == 1
-  }, logical(1))
-
-  df[keep, , drop = FALSE]
-}
-
-
 #' Run lincon on combined groups (1-way style) for multi-way designs
 #'
 #' Combines multi-factor groups into a single factor using "." separator
@@ -456,7 +330,7 @@ perform_lincon_combined <- function(df, x_axis, measure_col,
     " factors='{paste(x_axis, collapse=\", \")}'"
   )
 
-  validation <- validate_posthoc(df, x_axis)
+  validation <- validation_utils$validate_posthoc(df, x_axis)
   if (error_handling$is_app_error(validation)) {
     return(validation)
   }
@@ -465,7 +339,7 @@ perform_lincon_combined <- function(df, x_axis, measure_col,
     df, x_axis, use_bootstrap, boot_samples, boot_sample_size
   )
 
-  error_context <- build_posthoc_context(
+  error_context <- validation_utils$build_posthoc_context(
     df, x_axis, measure_col, tr_value, use_bootstrap
   )
 
@@ -542,7 +416,7 @@ perform_lincon <- function(df, x_axis, measure_col, tr_value,
     " factors='{paste(x_axis, collapse=\", \")}'"
   )
 
-  validation <- validate_posthoc(df, x_axis)
+  validation <- validation_utils$validate_posthoc(df, x_axis)
   if (error_handling$is_app_error(validation)) {
     return(validation)
   }
@@ -551,7 +425,7 @@ perform_lincon <- function(df, x_axis, measure_col, tr_value,
     df, x_axis, use_bootstrap, boot_samples, boot_sample_size
   )
 
-  error_context <- build_posthoc_context(
+  error_context <- validation_utils$build_posthoc_context(
     df, x_axis, measure_col, tr_value, use_bootstrap
   )
 
@@ -637,7 +511,7 @@ perform_cliff <- function(df, x_axis, measure_col,
     " factors='{paste(x_axis, collapse=\", \")}'"
   )
 
-  validation <- validate_posthoc(df, x_axis)
+  validation <- validation_utils$validate_posthoc(df, x_axis)
   if (error_handling$is_app_error(validation)) {
     return(validation)
   }
@@ -646,7 +520,7 @@ perform_cliff <- function(df, x_axis, measure_col,
     df, x_axis, use_bootstrap, boot_samples, boot_sample_size
   )
 
-  error_context <- build_posthoc_context(
+  error_context <- validation_utils$build_posthoc_context(
     df, x_axis, measure_col, 0, use_bootstrap
   )
 
@@ -657,7 +531,7 @@ perform_cliff <- function(df, x_axis, measure_col,
         sample_data <- omnibus$sample_for_iteration(
           df, x_axis, use_bootstrap, boot_params$sample_size
         )
-        results_list[[i]] <- run_cliff_iteration(
+        results_list[[i]] <- validation_utils$run_cliff_iteration(
           sample_data, x_axis, measure_col
         )
       }
@@ -795,8 +669,8 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
     ))
   }
 
-  lincon_norm <- normalize_interaction(lincon_result)
-  cliff_norm <- normalize_interaction(cliff_result)
+  lincon_norm <- validation_utils$normalize_interaction(lincon_result)
+  cliff_norm <- validation_utils$normalize_interaction(cliff_result)
 
   if (debug) {
     cat("\n=== DEBUG: Lincon InteractionKeys ===", "\n")
@@ -833,7 +707,7 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
   merged$InteractionKey <- NULL
 
   if (filter_valid && length(x_axis) > 1) {
-    merged <- filter_valid_comparisons(merged, x_axis)
+    merged <- validation_utils$filter_valid_comparisons(merged, x_axis)
     if (nrow(merged) == 0) {
       return(error_handling$simple_error(
         message = "No valid comparisons remain after filtering.",
