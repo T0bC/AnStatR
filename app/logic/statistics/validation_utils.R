@@ -200,3 +200,84 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
     stringsAsFactors = FALSE
   )
 }
+
+
+#' Format multi-way robust ANOVA results
+#'
+#' Generic formatter for t2way and t3way results. Builds effect labels
+#' from x_axis and formats Q statistics and p-values with optional
+#' bootstrap confidence intervals.
+#'
+#' @param results Data frame with test results
+#' @param x_axis Character vector of grouping column names
+#' @param use_bootstrap Logical, whether bootstrap was used
+#' @param q_cols Character vector of Q statistic column names
+#' @param p_cols Character vector of p-value column names
+#' @return Formatted data frame with Effect, Q.Statistic, p.value columns
+#' @export
+format_multiway_results <- function(results, x_axis, use_bootstrap,
+                                    q_cols, p_cols) {
+  n <- length(x_axis)
+  effect_labels <- x_axis
+  if (n >= 2) {
+    effect_labels <- c(effect_labels, paste0(x_axis[1], ":", x_axis[2]))
+  }
+  if (n >= 3) {
+    effect_labels <- c(
+      effect_labels,
+      paste0(x_axis[1], ":", x_axis[3]),
+      paste0(x_axis[2], ":", x_axis[3]),
+      paste0(x_axis[1], ":", x_axis[2], ":", x_axis[3])
+    )
+  }
+
+  if (use_bootstrap) {
+    ci_bounds <- apply(results, 2, function(x) {
+      valid_x <- x[!is.na(x)]
+      if (length(valid_x) < 2) {
+        return(c(NA_real_, NA_real_))
+      }
+      stats$quantile(valid_x, c(0.025, 0.975), na.rm = TRUE)
+    })
+
+    q_stats <- vapply(q_cols, function(col) {
+      paste0(
+        signif(mean(results[[col]], na.rm = TRUE), 3),
+        " [",
+        signif(ci_bounds[1, col], 3), " - ",
+        signif(ci_bounds[2, col], 3), "]"
+      )
+    }, character(1))
+
+    p_vals <- vapply(p_cols, function(col) {
+      paste0(
+        signif(mean(results[[col]], na.rm = TRUE), 3),
+        " [",
+        signif(ci_bounds[1, col], 3), " - ",
+        signif(ci_bounds[2, col], 3), "]"
+      )
+    }, character(1))
+
+    data.frame(
+      Effect = effect_labels,
+      Q.Statistic = unname(q_stats),
+      p.value = unname(p_vals),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    q_vals <- vapply(q_cols, function(col) {
+      signif(results[[col]][1], 3)
+    }, numeric(1))
+
+    p_vals <- vapply(p_cols, function(col) {
+      signif(results[[col]][1], 3)
+    }, numeric(1))
+
+    data.frame(
+      Effect = effect_labels,
+      Q.Statistic = unname(q_vals),
+      p.value = unname(p_vals),
+      stringsAsFactors = FALSE
+    )
+  }
+}
