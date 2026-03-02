@@ -8,6 +8,10 @@ box::use(
   app/logic/statistics/omnibus,
 )
 
+box::use(
+  ARTool[art]
+)
+
 # =============================================================================
 # Non-parametric tests: Kruskal-Wallis (1-way), ART (2-way, 3-way).
 # No Shiny dependencies allowed in this file.
@@ -159,10 +163,15 @@ perform_kruskal1way <- function(df, x_axis, measure_col,
 #' @param data Data frame
 #' @return anova data frame from ART model
 run_art_anova <- function(formula_obj, data) {
-  suppressPackageStartupMessages(library(ARTool))
-  art_model <- ARTool::art(formula_obj, data = data)
-  anova_art <- get("anova.art", envir = asNamespace("ARTool"))
-  anova_art(art_model)
+  env <- new.env(parent = globalenv())
+  env$formula_obj <- formula_obj
+  env$data <- data
+  env$art <- art
+  env$anova_art <- get("anova.art", envir = asNamespace("ARTool"))
+  eval(quote({
+    art_model <- art(formula_obj, data = data)
+    anova_art(art_model)
+  }), envir = env)
 }
 
 
