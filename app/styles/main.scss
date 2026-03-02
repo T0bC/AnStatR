@@ -41,6 +41,30 @@ body.bslib-page-navbar {
 }
 
 // =============================================================================
+// Global: Full-viewport height — prevent content cut-off line
+// =============================================================================
+
+body.bslib-page-navbar {
+  min-height: 100vh;
+}
+
+body.bslib-page-navbar>.container-fluid {
+  min-height: calc(100vh - 40px);
+}
+
+.tab-content {
+  min-height: 100%;
+}
+
+.tab-pane {
+  min-height: 100%;
+}
+
+.bslib-sidebar-layout {
+  min-height: calc(100vh - 40px);
+}
+
+// =============================================================================
 // Global: Sidebar Layout
 // =============================================================================
 
