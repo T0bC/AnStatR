@@ -3,7 +3,7 @@ set -e
 
 # ── Configuration ──────────────────────────────────────
 APP_DIR="/opt/shinyapps/texAn/TexAn2.0"      # Change to your app path
-IMAGE_NAME="texan:latest"                   # Change to your image name
+IMAGE_NAME="texan"                   # Change to your image name
 # ───────────────────────────────────────────────────────
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -35,8 +35,26 @@ sudo systemctl restart shinyproxy
 
 # Clean up old images (keeps tagged versions for rollback)
 echo ""
-echo "[4/4] Cleaning up dangling images..."
-docker image prune -f
+echo "[4/4] Cleaning up old images (keeping 5 newest)..."
+
+# List all timestamp-tagged images, sorted newest first
+IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" \
+    | grep "^$IMAGE_NAME:" \
+    | grep -v "latest" \
+    | sort -r)
+
+# Keep only the first 5, delete the rest
+COUNT=0
+echo "$IMAGES" | while read -r IMG; do
+    COUNT=$((COUNT + 1))
+    if [ $COUNT -le 5 ]; then
+        echo "Keeping: $IMG"
+    else
+        echo "Removing: $IMG"
+        docker rmi "$IMG"
+    fi
+done
+
 
 echo ""
 echo "================================================"
