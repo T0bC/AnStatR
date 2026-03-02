@@ -267,6 +267,27 @@ art2way_config <- list(
         )
       )$message)
     }
+    
+    # Check for balanced design (ARTool requires balanced designs)
+    factor_vars <- all.vars(formula_obj)[-1]
+    cell_counts <- table(conversion$data[factor_vars])
+    min_cell_size <- min(cell_counts)
+    max_cell_size <- max(cell_counts)
+    if (min_cell_size < 3) {
+      stop(error_handling$simple_error(
+        message = paste0(
+          "ART requires a balanced design with at least 3 observations per cell. ",
+          "Found cells with ", min_cell_size, " to ", max_cell_size, " observations."
+        ),
+        operation_name = "art2way_validate",
+        context = list(
+          min_cell_size = min_cell_size,
+          max_cell_size = max_cell_size,
+          factor_combinations = length(cell_counts)
+        )
+      )$message)
+    }
+    
     run_art_anova(formula_obj, conversion$data)
   },
 
@@ -457,6 +478,27 @@ art3way_config <- list(
         )
       )$message)
     }
+    
+    # Check for balanced design (ARTool requires balanced designs)
+    factor_vars <- all.vars(formula_obj)[-1]
+    cell_counts <- table(conversion$data[factor_vars])
+    min_cell_size <- min(cell_counts)
+    max_cell_size <- max(cell_counts)
+    if (min_cell_size < 3) {
+      stop(error_handling$simple_error(
+        message = paste0(
+          "ART requires a balanced design with at least 3 observations per cell. ",
+          "Found cells with ", min_cell_size, " to ", max_cell_size, " observations."
+        ),
+        operation_name = "art3way_validate",
+        context = list(
+          min_cell_size = min_cell_size,
+          max_cell_size = max_cell_size,
+          factor_combinations = length(cell_counts)
+        )
+      )$message)
+    }
+    
     run_art_anova(formula_obj, conversion$data)
   },
 
