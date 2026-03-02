@@ -251,6 +251,22 @@ art2way_config <- list(
     if (!conversion$success) {
       stop(conversion$error$message)
     }
+    # Check for missing values in response variable (ARTool is sensitive to NAs)
+    response_var <- all.vars(formula_obj)[1]
+    if (any(is.na(conversion$data[[response_var]]))) {
+      n_missing <- sum(is.na(conversion$data[[response_var]]))
+      stop(error_handling$simple_error(
+        message = paste0(
+          "ART requires complete data. Found ", n_missing,
+          " missing values in the response variable."
+        ),
+        operation_name = "art2way_validate",
+        context = list(
+          n_missing = n_missing,
+          response_var = response_var
+        )
+      )$message)
+    }
     run_art_anova(formula_obj, conversion$data)
   },
 
@@ -424,6 +440,22 @@ art3way_config <- list(
     conversion <- omnibus$safe_factor_conversion(data, vars)
     if (!conversion$success) {
       stop(conversion$error$message)
+    }
+    # Check for missing values in response variable (ARTool is sensitive to NAs)
+    response_var <- all.vars(formula_obj)[1]
+    if (any(is.na(conversion$data[[response_var]]))) {
+      n_missing <- sum(is.na(conversion$data[[response_var]]))
+      stop(error_handling$simple_error(
+        message = paste0(
+          "ART requires complete data. Found ", n_missing,
+          " missing values in the response variable."
+        ),
+        operation_name = "art3way_validate",
+        context = list(
+          n_missing = n_missing,
+          response_var = response_var
+        )
+      )$message)
     }
     run_art_anova(formula_obj, conversion$data)
   },
