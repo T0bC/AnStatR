@@ -17,6 +17,7 @@ FROM rocker/r-ver:4.5.2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gfortran \
+    cmake \
     libglpk-dev \
     libxml2-dev \
     libcurl4-openssl-dev \
