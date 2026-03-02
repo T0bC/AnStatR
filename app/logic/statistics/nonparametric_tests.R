@@ -251,21 +251,16 @@ art2way_config <- list(
     if (!conversion$success) {
       stop(conversion$error$message)
     }
-    # Check for missing values in response variable (ARTool is sensitive to NAs)
+    # Remove rows with missing values in response variable (ARTool cannot handle NAs)
     response_var <- all.vars(formula_obj)[1]
-    if (any(is.na(conversion$data[[response_var]]))) {
-      n_missing <- sum(is.na(conversion$data[[response_var]]))
-      stop(error_handling$simple_error(
-        message = paste0(
-          "ART requires complete data. Found ", n_missing,
-          " missing values in the response variable."
-        ),
-        operation_name = "art2way_validate",
-        context = list(
-          n_missing = n_missing,
-          response_var = response_var
-        )
-      )$message)
+    na_mask <- is.na(conversion$data[[response_var]])
+    if (any(na_mask)) {
+      n_missing <- sum(na_mask)
+      rhino$log$warn(
+        "art2way: Dropping {n_missing} row(s) with NA in '{response_var}'",
+        " ({nrow(conversion$data)} -> {nrow(conversion$data) - n_missing} rows)"
+      )
+      conversion$data <- conversion$data[!na_mask, , drop = FALSE]
     }
     
     # Check for balanced design (ARTool requires balanced designs)
@@ -462,21 +457,16 @@ art3way_config <- list(
     if (!conversion$success) {
       stop(conversion$error$message)
     }
-    # Check for missing values in response variable (ARTool is sensitive to NAs)
+    # Remove rows with missing values in response variable (ARTool cannot handle NAs)
     response_var <- all.vars(formula_obj)[1]
-    if (any(is.na(conversion$data[[response_var]]))) {
-      n_missing <- sum(is.na(conversion$data[[response_var]]))
-      stop(error_handling$simple_error(
-        message = paste0(
-          "ART requires complete data. Found ", n_missing,
-          " missing values in the response variable."
-        ),
-        operation_name = "art3way_validate",
-        context = list(
-          n_missing = n_missing,
-          response_var = response_var
-        )
-      )$message)
+    na_mask <- is.na(conversion$data[[response_var]])
+    if (any(na_mask)) {
+      n_missing <- sum(na_mask)
+      rhino$log$warn(
+        "art3way: Dropping {n_missing} row(s) with NA in '{response_var}'",
+        " ({nrow(conversion$data)} -> {nrow(conversion$data) - n_missing} rows)"
+      )
+      conversion$data <- conversion$data[!na_mask, , drop = FALSE]
     }
     
     # Check for balanced design (ARTool requires balanced designs)
