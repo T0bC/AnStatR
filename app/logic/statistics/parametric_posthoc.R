@@ -6,6 +6,7 @@ box::use(
 box::use(
   app/logic/error_handling,
   app/logic/statistics/omnibus,
+  app/logic/statistics/validation_utils,
 )
 
 # =============================================================================
@@ -18,85 +19,6 @@ box::use(
 # =============================================================================
 # Private helpers
 # =============================================================================
-
-#' Validate post-hoc inputs
-#'
-#' @param df Data frame
-#' @param x_axis Grouping columns
-#' @return NULL if valid, app_error otherwise
-validate_posthoc <- function(df, x_axis) {
-  if (length(x_axis) > 1) {
-    combined <- do.call(paste, c(df[x_axis], sep = "."))
-  } else {
-    combined <- df[[x_axis[1]]]
-  }
-  n_groups <- length(unique(combined))
-  if (n_groups < 2) {
-    return(error_handling$simple_error(
-      message = paste0(
-        "Post-hoc tests require at least 2 groups, found ",
-        n_groups, "."
-      ),
-      operation_name = "posthoc_validate",
-      context = list(n_groups = n_groups)
-    ))
-  }
-  NULL
-}
-
-#' Build error context for post-hoc tests
-#'
-#' @param df Data frame
-#' @param x_axis Grouping columns
-#' @param measure_col Measurement column
-#' @return List with context information
-build_posthoc_context <- function(df, x_axis, measure_col) {
-  list(
-    measure = measure_col,
-    grouping = paste(x_axis, collapse = ", "),
-    n_observations = nrow(df)
-  )
-}
-
-#' Normalize interaction strings for consistent matching
-#'
-#' Extracts group names from "GroupA vs. GroupB" format and creates
-#' an alphabetized key for consistent matching between tests.
-#'
-#' @param df Data frame with Interaction column
-#' @return Data frame with added InteractionKey column
-normalize_interaction <- function(df) {
-  if (!"Interaction" %in% names(df)) return(df)
-
-  df$InteractionKey <- vapply(df$Interaction, function(int) {
-    parts <- trimws(strsplit(int, " vs\\. ")[[1]])
-    paste(sort(parts), collapse = " vs. ")
-  }, character(1))
-
-  df
-}
-
-#' Filter for valid comparisons in multi-factor designs
-#'
-#' Keeps only comparisons where groups differ by exactly one factor level.
-#'
-#' @param df Data frame with Interaction column
-#' @param x_axis Character vector of grouping columns
-#' @return Filtered data frame
-filter_valid_comparisons <- function(df, x_axis) {
-  if (is.null(x_axis) || length(x_axis) <= 1) return(df)
-
-  keep <- vapply(df$Interaction, function(int) {
-    parts <- trimws(strsplit(int, " vs\\. ")[[1]])
-    if (length(parts) != 2) return(FALSE)
-    a_parts <- strsplit(parts[1], "\\.")[[1]]
-    b_parts <- strsplit(parts[2], "\\.")[[1]]
-    if (length(a_parts) != length(b_parts)) return(FALSE)
-    sum(a_parts != b_parts) == 1
-  }, logical(1))
-
-  df[keep, , drop = FALSE]
-}
 
 #' Parse Tukey HSD comparison string into group pair
 #'
@@ -177,12 +99,12 @@ perform_tukey_hsd <- function(df, x_axis, measure_col) {
     " factors='{paste(x_axis, collapse=\", \")}'"
   )
 
-  validation <- validate_posthoc(df, x_axis)
+  validation <- validation_utils$validate_posthoc(df, x_axis)
   if (error_handling$is_app_error(validation)) {
     return(validation)
   }
 
-  error_context <- build_posthoc_context(df, x_axis, measure_col)
+  error_context <- validation_utils$build_posthoc_context(df, x_axis, measure_col)
 
   test_result <- error_handling$safe_execute(
     expr = {
@@ -287,12 +209,12 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
     " factors='{paste(x_axis, collapse=\", \")}'"
   )
 
-  validation <- validate_posthoc(df, x_axis)
+  validation <- validation_utils$validate_posthoc(df, x_axis)
   if (error_handling$is_app_error(validation)) {
     return(validation)
   }
 
-  error_context <- build_posthoc_context(df, x_axis, measure_col)
+  error_context <- validation_utils$build_posthoc_context(df, x_axis, measure_col)
 
   test_result <- error_handling$safe_execute(
     expr = {
@@ -460,8 +382,8 @@ perform_combined_parametric_posthoc <- function(
   }
 
   # Normalize interaction keys for matching
-  tukey_norm <- normalize_interaction(tukey_result)
-  cohen_norm <- normalize_interaction(cohen_result)
+  tukey_norm <- validation_utils$normalize_interaction(tukey_result)
+  cohen_norm <- validation_utils$normalize_interaction(cohen_result)
 
   # Merge by InteractionKey
   cohen_cols <- setdiff(
@@ -491,7 +413,7 @@ perform_combined_parametric_posthoc <- function(
 
   # Filter valid comparisons for multi-way designs
   if (filter_valid && length(x_axis) > 1) {
-    merged <- filter_valid_comparisons(merged, x_axis)
+    merged <- validation_utils$filter_valid_comparisons(merged, x_axis)
     if (nrow(merged) == 0) {
       return(error_handling$simple_error(
         message = paste0(
