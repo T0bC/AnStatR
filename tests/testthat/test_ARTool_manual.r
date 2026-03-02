@@ -1,0 +1,12 @@
+library(ARTool)
+set.seed(42)
+df <- expand.grid(f1 = c("A", "B"), f2 = c("X", "Y"), stringsAsFactors = FALSE)
+df <- df[rep(1:nrow(df), each = 10), ]
+df$f1 <- factor(df$f1)
+df$f2 <- factor(df$f2)
+df$measure <- rnorm(nrow(df))
+m <- art(measure ~ f1 * f2, data = df)
+a <- anova(m)
+cat("names:", names(a), "\n")
+cat("class:", class(a), "\n")
+print(a)
