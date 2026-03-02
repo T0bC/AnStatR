@@ -45,6 +45,7 @@ server <- function(id) {
             "More settings can be added here in the future."
           ),
           footer = shiny$tagList(
+            shiny$helpText(paste("Version:", settings$app_version)),
             shiny$modalButton("Close")
           )
         )
