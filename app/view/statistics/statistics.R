@@ -9,6 +9,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
+  app/logic/statistics/nonparametric_posthoc,
   app/logic/statistics/nonparametric_tests,
   app/logic/statistics/parametric_posthoc,
   app/logic/statistics/parametric_tests,
@@ -181,15 +182,24 @@ render_posthoc_result <- function(result, x_axis, params) {
   if (is.data.frame(result) && nrow(result) > 0) {
     display_df <- result
 
-    # Detect which prefix set is present (robust vs parametric)
+    # Detect which prefix set is present
     has_lincon <- any(grepl("^Lincon\\.", names(display_df)))
     has_tukey <- any(grepl("^Tukey\\.", names(display_df)))
+    has_dunn <- any(grepl("^Dunn\\.", names(display_df)))
+    has_wilcox <- any(grepl("^Wilcox\\.", names(display_df)))
+    has_art <- any(grepl("^ART\\.", names(display_df)))
 
     # Determine the p-adjusted column for filtering
     p_adj_col <- if (has_lincon) {
       "Lincon.p.adjusted"
     } else if (has_tukey) {
       "Tukey.p.adjusted"
+    } else if (has_dunn) {
+      "Dunn.p.adjusted"
+    } else if (has_wilcox) {
+      "Wilcox.p.adjusted"
+    } else if (has_art) {
+      "ART.p.adjusted"
     } else {
       NULL
     }
@@ -217,6 +227,21 @@ render_posthoc_result <- function(result, x_axis, params) {
       left_label <- "Lincon"
       right_prefix <- "Cliff"
       right_label <- "Cliff's Delta"
+    } else if (has_dunn) {
+      left_prefix <- "Dunn"
+      left_label <- "Dunn's Test"
+      right_prefix <- "Cliff"
+      right_label <- "Cliff's Delta"
+    } else if (has_wilcox) {
+      left_prefix <- "Wilcox"
+      left_label <- "Pairwise Wilcoxon"
+      right_prefix <- "Cliff"
+      right_label <- "Cliff's Delta"
+    } else if (has_art) {
+      left_prefix <- "ART"
+      left_label <- "ART Contrasts"
+      right_prefix <- "ART.d"
+      right_label <- "ART Cohen's d"
     } else {
       left_prefix <- "Tukey"
       left_label <- "Tukey HSD"
@@ -224,14 +249,28 @@ render_posthoc_result <- function(result, x_axis, params) {
       right_label <- "Cohen's d"
     }
 
-    left_cols <- grep(
-      paste0("^", left_prefix, "\\."),
-      names(display_df), value = TRUE
-    )
-    right_cols <- grep(
-      paste0("^", right_prefix, "\\."),
-      names(display_df), value = TRUE
-    )
+    # For ART results, left/right both start with "ART." so
+    # we split by explicit column names instead of prefix regex.
+    if (has_art) {
+      art_left_names <- c(
+        "ART.estimate", "ART.SE", "ART.df",
+        "ART.t.ratio", "ART.p.value", "ART.p.adjusted"
+      )
+      art_right_names <- c(
+        "ART.d", "ART.d.ci.lower", "ART.d.ci.upper"
+      )
+      left_cols <- intersect(art_left_names, names(display_df))
+      right_cols <- intersect(art_right_names, names(display_df))
+    } else {
+      left_cols <- grep(
+        paste0("^", left_prefix, "\\."),
+        names(display_df), value = TRUE
+      )
+      right_cols <- grep(
+        paste0("^", right_prefix, "\\."),
+        names(display_df), value = TRUE
+      )
+    }
 
     # Left table: Interaction + left columns, strip prefix
     left_df <- display_df[
@@ -243,9 +282,14 @@ render_posthoc_result <- function(result, x_axis, params) {
 
     # Right table: right columns only, strip prefix
     right_df <- display_df[, right_cols, drop = FALSE]
-    names(right_df) <- gsub(
-      paste0("^", right_prefix, "\\."), "", names(right_df)
-    )
+    if (has_art) {
+      names(right_df) <- gsub("^ART\\.d\\.", "", names(right_df))
+      names(right_df) <- gsub("^ART\\.d$", "d", names(right_df))
+    } else {
+      names(right_df) <- gsub(
+        paste0("^", right_prefix, "\\."), "", names(right_df)
+      )
+    }
 
     return(shiny$tags$div(
       class = "mt-3 px-2",
@@ -382,7 +426,9 @@ server <- function(id, input_data, data_version,
         filter_p_values =
           input$filter_p_values %||% FALSE,
         filter_valid_comparisons =
-          input$filter_valid_comparisons %||% FALSE
+          input$filter_valid_comparisons %||% FALSE,
+        np_posthoc_method =
+          input$np_posthoc_method %||% "dunn"
       )
     })
 
@@ -667,8 +713,23 @@ server <- function(id, input_data, data_version,
         names(ph) <- measures
         ph
       } else if (params$test_approach == "nonparametric") {
-        # Post-hoc for non-parametric: not yet implemented
-        NULL
+        ph <- lapply(measures, function(m) {
+          df_m <- filter_excluded_rows(data, m)
+          nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+            df = df_m,
+            x_axis = x_cols,
+            measure_col = m,
+            p_adjust_method =
+              params$p_val_cor_method,
+            filter_valid = isTRUE(
+              params$filter_valid_comparisons
+            ),
+            posthoc_method =
+              params$np_posthoc_method
+          )
+        })
+        names(ph) <- measures
+        ph
       } else {
         NULL
       }
