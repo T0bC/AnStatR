@@ -8,6 +8,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
+  app/logic/statistics/nonparametric_tests,
   app/logic/statistics/parametric_posthoc,
   app/logic/statistics/parametric_tests,
   app/logic/statistics/report,
@@ -43,6 +44,15 @@ render_omnibus_result <- function(result, x_axis, approach) {
         "Robust ", n_ways, "-Way ANOVA",
         " \u2014 Trimmed Means (t", n_ways, "way)"
       )
+    } else if (approach == "nonparametric") {
+      if (n_ways == 1) {
+        "Non-Parametric 1-Way \u2014 Kruskal-Wallis"
+      } else {
+        paste0(
+          "Non-Parametric ", n_ways,
+          "-Way \u2014 Aligned Rank Transform"
+        )
+      }
     } else {
       paste0(
         "Classical ", n_ways, "-Way ANOVA"
@@ -457,17 +467,6 @@ server <- function(id, input_data, data_version,
         return()
       }
 
-      # --- Non-parametric: not implemented yet ---
-      if (params$test_approach == "nonparametric") {
-        computation_status("done")
-        computation_results(list(
-          measures = measures,
-          x_axis = x_cols,
-          params = params,
-          not_implemented = TRUE
-        ))
-        return()
-      }
 
       computation_status("computing")
       rhino$log$info(
@@ -562,6 +561,38 @@ server <- function(id, input_data, data_version,
               operation_name = "statistics_compute"
             )
           }
+        } else if (params$test_approach == "nonparametric") {
+          if (n_ways == 1) {
+            nonparametric_tests$perform_kruskal1way(
+              df = df_m,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val
+            )
+          } else if (n_ways == 2) {
+            nonparametric_tests$perform_art2way(
+              df = df_m,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val
+            )
+          } else if (n_ways == 3) {
+            nonparametric_tests$perform_art3way(
+              df = df_m,
+              x_axis = x_cols,
+              measure_col = m,
+              tr_value = tr_val
+            )
+          } else {
+            error_handling$simple_error(
+              message = paste0(
+                n_ways,
+                "-way non-parametric test is not ",
+                "supported."
+              ),
+              operation_name = "statistics_compute"
+            )
+          }
         } else {
           error_handling$simple_error(
             message = paste0(
@@ -613,6 +644,9 @@ server <- function(id, input_data, data_version,
         })
         names(ph) <- measures
         ph
+      } else if (params$test_approach == "nonparametric") {
+        # Post-hoc for non-parametric: not yet implemented
+        NULL
       } else {
         NULL
       }
@@ -859,50 +893,6 @@ server <- function(id, input_data, data_version,
                 ),
                 " ",
                 results$error
-              )
-            )
-          )
-        )
-      }
-
-      # Not-implemented placeholder for non-parametric
-      if (status == "done" &&
-          isTRUE(results$not_implemented)) {
-        return(
-          bslib$card(
-            bslib$card_header(
-              "Statistical Test Results"
-            ),
-            bslib$card_body(
-              class = paste(
-                "d-flex align-items-center",
-                "justify-content-center"
-              ),
-              style = "min-height: 300px;",
-              shiny$tags$div(
-                class = "text-center text-muted",
-                shiny$tags$p(
-                  bsicons$bs_icon(
-                    "cone-striped",
-                    size = "3em",
-                    class = "mb-3 text-warning"
-                  )
-                ),
-                shiny$tags$h5(
-                  class = "text-warning",
-                  "Not Implemented Yet"
-                ),
-                shiny$tags$p(
-                  "Non-parametric tests are planned",
-                  " but not yet available."
-                ),
-                shiny$tags$p(
-                  class = "small",
-                  paste(
-                    "Please use Robust Tests or",
-                    "Parametric Tests in the meantime."
-                  )
-                )
               )
             )
           )
