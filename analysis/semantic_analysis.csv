@@ -1,0 +1,2084 @@
+function_name,file_path,module,line_number,signature,doc_comment,doc_first_line,semantic_category
+cluster_color,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,33,function(cluster_id),"#' Get color for a cluster ID
+#'
+#' @param cluster_id Integer cluster ID (1-based)
+#' @return Hex color string
+#' @export",Get color for a cluster ID,export
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,44,"function(columns, data)","#' Validate clustering inputs before computation
+#' @param columns Character vector of selected column names
+#' @param data Data frame to validate against
+#' @return List with $valid (logical) and $error (app_error or NULL)
+#' @export",Validate clustering inputs before computation,"validation, export, filtering, error_handling"
+run_clustering,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,105,NA,"#' Run clustering analysis
+#'
+#' Dispatches to the appropriate algorithm based on user settings.
+#' - kmeans + euclidean: stats$kmeans
+#' - kmeans + manhattan: cluster$pam (partitioning around medoids)
+#' - hierarchical: stats$dist + stats$hclust + stats$cutree
+#' - dbscan: dbscan$dbscan (n_clusters is ignored, eps auto-computed)
+#'
+#' @param data Data frame (already cleaned and scaled)
+#' @param columns Character vector of measurement column names
+#' @param n_clusters Integer, number of clusters (ignored for DBSCAN)
+#' @param algorithm Character, one of ""kmeans"", ""hierarchical"", ""dbscan""
+#' @param metric Character, distance metric: ""euclidean"" or ""manhattan""
+#' @param method Character, linkage method for hierarchical clustering
+#'   (e.g. ""ward"", ""single"", ""complete"", ""average"", ""mcquitty"",
+#'   ""median"", ""centroid""). Ignored for other algorithms.
+#' @return List with $success, $result or $error
+#' @export",Run clustering analysis,"computation, export, transformation, error_handling, data_prep"
+cluster_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,180,NA,"#' Error parser for clustering errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for clustering errors,"export, error_handling"
+validate_clustering_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,243,NA,NA,NA,undocumented
+compute_cluster_summary,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,287,"function(num_data, clusters)","#' Compute per-cluster variable means
+#'
+#' @param num_data Numeric matrix or data frame
+#' @param clusters Integer vector of cluster assignments
+#' @return List with means matrix, overall_mean, cluster_ids,
+#'   n_per_cluster
+#' @export",Compute per-cluster variable means,"computation, export"
+compute_cluster_stats,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,319,NA,NA,NA,undocumented
+run_kmeans,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,373,"function(num_data, n_clusters, metric)",NA,NA,undocumented
+run_hierarchical,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,406,NA,NA,NA,undocumented
+run_dbscan,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,432,"function(num_data, metric)",NA,NA,undocumented
+estimate_dbscan_eps,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster.R,app/logic/cluster,498,function(sorted_dists),NA,NA,undocumented
+create_cluster_biplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,44,NA,"#' Create a cluster biplot with convex-hull polygons
+#'
+#' Projects clustered data onto reduced dimensions (currently PCA)
+#' and overlays convex-hull polygons per cluster. Points are colored
+#' by user-selected metadata groups (via the PCA biplot), while
+#' polygons are colored by cluster assignment.
+#'
+#' @param data Data frame (already cleaned and scaled)
+#' @param measure_cols Character vector of measurement column names
+#' @param clusters Integer vector of cluster assignments
+#' @param meta_cols Character vector of metadata column names
+#' @param dim_x Character, dimension for x-axis (e.g. ""Dim.1"")
+#' @param dim_y Character, dimension for y-axis (e.g. ""Dim.2"")
+#' @param group_cols Character vector of metadata columns for
+#'   point coloring. NULL for no grouping.
+#' @param reduction_method Character, dimensionality reduction
+#'   method. Currently only ""pca"" is implemented.
+#' @param show_title Logical, whether to show the plot title
+#' @return List with $success, $result (ggplot), $pca_result,
+#'   or $error
+#' @export",Create a cluster biplot with convex-hull polygons,"plotting, export, transformation, filtering, error_handling, data_prep"
+cluster_biplot_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,121,NA,"#' Error parser for cluster biplot errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for cluster biplot errors,"plotting, export, error_handling"
+build_pca_biplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,161,NA,#' Build the PCA-based biplot with cluster overlays,Build the PCA-based biplot with cluster overlays,plotting
+build_raw_biplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,208,NA,#' Build the raw-data scatter plot with cluster overlays,Build the raw-data scatter plot with cluster overlays,plotting
+add_cluster_overlays,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,398,NA,#' Add cluster polygon overlays and centroid labels,Add cluster polygon overlays and centroid labels,other
+build_group_hull_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,469,NA,"#' Build convex hull data for group coloring
+#' (used in raw data mode)",Build convex hull data for group coloring,other
+build_cluster_hull_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,506,NA,"#' Build convex hull data for each cluster
+#'
+#' @param ind_coord Matrix of individual coordinates
+#'   from PCA result
+#' @param clusters Integer vector of cluster assignments
+#' @param dim_x Character, x dimension name
+#' @param dim_y Character, y dimension name
+#' @return Data frame with x, y, cluster_label columns
+#'   or NULL if insufficient data",Build convex hull data for each cluster,other
+build_cluster_centroids,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/cluster_biplot.R,app/logic/cluster,553,NA,"#' Build cluster centroid positions for labels
+#'
+#' @param ind_coord Matrix of individual coordinates
+#' @param clusters Integer vector of cluster assignments
+#' @param dim_x Character, x dimension name
+#' @param dim_y Character, y dimension name
+#' @return Data frame with x, y, cluster_label columns",Build cluster centroid positions for labels,other
+create_cluster_heatmap,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/heatmap.R,app/logic/cluster,47,NA,"#' Create an interactive cluster heatmap using heatmaply
+#'
+#' Builds a plotly-based heatmap with dendrograms on both
+#' axes. Only works for hierarchical clustering results
+#' (variant == ""hclust"").
+#'
+#' @param cluster_result Result list from run_clustering()
+#'   (the $result field, not the wrapper)
+#' @param data Data frame used for clustering (scaled)
+#' @param measure_cols Character vector of measurement columns
+#' @param show_labels Logical, show row labels
+#' @param custom_labels Character vector of row labels
+#'   matching the data row order. If NULL, row numbers used.
+#' @param seriation Character, seriation method for leaf
+#'   ordering. One of ""OLO"", ""GW"", ""mean"", ""none"".
+#' @param row_side_colors_df Data frame of metadata columns
+#'   to display as colored side bars. NULL for none.
+#' @param scale_heatmap Character, scaling for heatmaply.
+#'   One of ""none"", ""row"", ""column"".
+#' @return List with $success, $result (plotly) or $error
+#' @export",Create an interactive cluster heatmap using heatmaply,"computation, plotting, export, transformation, error_handling, formatting"
+heatmap_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/heatmap.R,app/logic/cluster,214,NA,"#' Error parser for heatmap errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message",Error parser for heatmap errors,error_handling
+compute_hopkins,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/hopkins.R,app/logic/cluster,33,"function(data, measurement_cols)","#' Compute Hopkins statistic for clusterability assessment
+#'
+#' Validates inputs and computes the Hopkins statistic using the
+#' hopkins package. Data should already be cleaned (NAs removed)
+#' and scaled as needed by the caller.
+#'
+#' Guidelines from the hopkins package author:
+#' - n should be > 100 and m should be at most 10% of n
+#' - High-dimensional data (>10 dims) may have edge effects
+#' - Data should be centered and scaled to unit variance
+#'
+#' @param data Data frame containing the measurement columns
+#'   (already cleaned and scaled)
+#' @param measurement_cols Character vector of column names
+#' @return List with $success, $result or $error.
+#'   Result contains $H, $m, $n, $n_dims, $interpretation,
+#'   and $warnings (list of warning metadata).
+#' @export",Compute Hopkins statistic for clusterability assessment,"validation, computation, export, transformation, error_handling, data_prep"
+hopkins_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/hopkins.R,app/logic/cluster,88,NA,"#' Error parser for Hopkins statistic errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for Hopkins statistic errors,"export, error_handling"
+validate_hopkins_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/hopkins.R,app/logic/cluster,140,"function(data, measurement_cols)",NA,NA,undocumented
+interpret_hopkins,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/hopkins.R,app/logic/cluster,176,function(h_value),NA,NA,undocumented
+build_warnings,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/hopkins.R,app/logic/cluster,210,"function(n, n_dims, m)",NA,NA,undocumented
+compute_optimal_clusters,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,33,NA,"#' Calculate optimal number of clusters using multiple methods
+#'
+#' Computes Elbow (WSS), Silhouette, and Gap statistic for
+#' k = 2..max_k, then returns the median of the three optimal
+#' values as the recommended number of clusters.
+#'
+#' Data should already be cleaned (NAs removed) and scaled
+#' as needed by the caller.
+#'
+#' @param data Data frame with numeric measurement columns
+#'   (already cleaned and scaled)
+#' @param measurement_cols Character vector of column names
+#' @param max_k Integer, maximum number of clusters to evaluate
+#'   (default 10, clamped to nrow - 1)
+#' @return List with $success, $result or $error.
+#'   Result contains $methods, $summary, $plot_data.
+#' @export",Calculate optimal number of clusters using multiple methods,"computation, plotting, export, transformation, error_handling, data_prep"
+create_optimal_clusters_ggplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,175,function(optimal_data),"#' Create the ggplot object for the optimal clusters plot
+#'
+#' Builds a faceted ggplot showing Elbow (WSS), Silhouette,
+#' and Gap statistic across k values, with optimal k markers.
+#' Reusable for both interactive display and static export.
+#'
+#' @param optimal_data Result list from compute_optimal_clusters
+#' @return ggplot object
+#' @export",Create the ggplot object for the optimal clusters plot,"computation, plotting, export, formatting"
+optimal_clusters_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,362,NA,"#' Error parser for optimal clusters errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for optimal clusters errors,"export, error_handling"
+validate_optimal_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,406,"function(data, measurement_cols)",NA,NA,undocumented
+compute_wss,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,440,"function(data, k_range)",NA,NA,undocumented
+compute_silhouette,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,455,"function(data, k_range)",NA,NA,undocumented
+compute_gap,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,473,"function(data, max_k)",NA,NA,undocumented
+detect_elbow_k,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,508,"function(k_range, values)",NA,NA,undocumented
+build_plot_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/cluster/optimal_clusters.R,app/logic/cluster,526,NA,NA,NA,undocumented
+get_measurement_cols,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/column_utils.R,app/logic/column_utils.R,24,function(data),"#' Get measurement columns from a data frame
+#'
+#' Measurement columns are identified by NOT matching the
+#' uppercase-only pattern (uppercase letters, digits, underscores).
+#' Typically mixed-case numeric columns like Asfc, epLsar, Sq.
+#'
+#' @param data A data frame
+#' @return Character vector of measurement column names
+#' @export",Get measurement columns from a data frame,export
+get_descriptive_cols,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/column_utils.R,app/logic/column_utils.R,38,function(data),"#' Get descriptive columns from a data frame (strict)
+#'
+#' Descriptive columns follow the pattern: uppercase letters
+#' and underscores only. No digits allowed in column names.
+#'
+#' @param data A data frame
+#' @return Character vector of descriptive column names
+#' @export",Get descriptive columns from a data frame (strict),export
+validate_column_naming,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/column_utils.R,app/logic/column_utils.R,54,function(data),"#' Validate column naming conventions
+#'
+#' Classifies all columns and identifies ambiguous ones
+#' (uppercase with digits) that don't fit strictly into
+#' either descriptive or measurement.
+#'
+#' @param data A data frame
+#' @return List with valid, descriptive_cols, measurement_cols,
+#'   ambiguous_cols, and message
+#' @export",Validate column naming conventions,"validation, export"
+create_interaction,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/data_utils.R,app/logic/data_utils.R,10,"function(df, cols)","#' Create interaction term from multiple columns
+#'
+#' Combines multiple factor columns into a single interaction term.
+#' Useful for grouping data by multiple categorical variables.
+#'
+#' @param df Data frame containing the columns
+#' @param cols Character vector of column names to combine
+#' @return Factor vector representing the interaction of all specified columns
+#' @export",Create interaction term from multiple columns,export
+get_filter_choices,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/data_utils.R,app/logic/data_utils.R,32,function(values),"#' Get unique choices for a filter column, with NA shown as ""NA""
+#'
+#' @param values Vector of column values
+#' @return Character vector of unique values (NA replaced by ""NA"" string)
+#' @export","Get unique choices for a filter column, with NA shown as ""NA""","export, filtering"
+filter_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/data_utils.R,app/logic/data_utils.R,51,"function(data, filters)","#' Filter a data frame by selected values per column
+#'
+#' For each column in `filters`, keeps only rows whose value is in the
+#' selected set. The special value ""NA"" in a selection matches actual
+#' NA values in the data.
+#'
+#' @param data Data frame to filter
+#' @param filters Named list where names are column names and values
+#'   are character vectors of selected values (may include ""NA"")
+#' @return Filtered data frame
+#' @export",Filter a data frame by selected values per column,"export, filtering"
+default_palette,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/data_utils.R,app/logic/data_utils.R,83,function(n),"#' Generate a default color palette for n groups
+#'
+#' Returns a character vector of hex colors. Uses scales::hue_pal()
+#' for <= 8 groups, otherwise interpolates a fixed 8-color ramp.
+#'
+#' @param n Integer, number of colors needed
+#' @return Character vector of hex color strings
+#' @export",Generate a default color palette for n groups,"export, transformation"
+is_app_error,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,17,function(obj),"#' Check if an object is a structured app error
+#'
+#' Uses ""is_error"" %in% names() to avoid warnings when checking data frames,
+#' since data frames are lists and obj$is_error on a df triggers
+#' ""Unknown column"" warning.
+#'
+#' @param obj Object to check
+#' @return Logical, TRUE if obj is a structured error from create_app_error()
+#' @export",Check if an object is a structured app error,"validation, export, error_handling"
+create_app_error,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,42,NA,"#' Create a structured error object
+#'
+#' Returns a standardized error structure with user-friendly message,
+#' raw error, a filtered stack trace, and context about the operation.
+#'
+#' Stack trace filtering:
+#' - Captures output from shiny$printStackTrace()
+#' - Filters to frames with file references [path#line] (app code only)
+#' - Falls back to top 20 frames if no file refs found
+#' - Converts ANSI colors to HTML via cli$ansi_html()
+#'
+#' @param user_msg Character, user-friendly error message
+#' @param raw_msg Character, original error message from R
+#' @param error_obj The error condition object (optional, for stack trace)
+#' @param operation_name Character, name of the operation that failed
+#' @param context List, optional context with parameters for debugging
+#' @return List with is_error=TRUE and structured error information
+#' @export",Create a structured error object,"export, transformation, filtering, error_handling, formatting"
+safe_execute,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,116,NA,"#' Safe execution wrapper for any operation
+#'
+#' Wraps an expression in error handling, returning a standardized
+#' result structure. Uses shiny$captureStackTraces to enable stack
+#' trace capture on errors.
+#'
+#' @param expr Expression to evaluate
+#' @param operation_name Character, name of the operation for error messages
+#' @param context List, optional context with parameters for debugging
+#' @param error_parser Function, optional custom function to parse error
+#'   messages into user-friendly versions. Receives (error_msg, operation_name).
+#' @return List with success (logical), result (or NULL), error (or NULL)
+#' @export",Safe execution wrapper for any operation,"export, transformation, error_handling"
+default_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,158,"function(error_msg, operation_name = ""Operation"")","#' Default error message parser for common R errors
+#'
+#' Translates common R error messages into user-friendly versions.
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Default error message parser for common R errors,"export, error_handling"
+stat_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,184,"function(error_msg, operation_name = ""Test"")","#' Error parser for statistical tests
+#'
+#' Translates common statistical test error messages into user-friendly
+#' versions. Parameter naming matches safe_execute() which passes
+#' operation_name as second argument.
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for statistical tests,"computation, export, error_handling, statistical"
+simple_error,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/error_handling.R,app/logic/error_handling.R,221,NA,"#' Create a simple error without stack trace
+#'
+#' For validation failures where there is no R error condition,
+#' e.g. empty data, missing columns, invalid user input.
+#'
+#' @param message Character, the error message
+#' @param operation_name Character, name of the operation
+#' @param context List, optional context
+#' @return Structured error object
+#' @export",Create a simple error without stack trace,"export, error_handling"
+display_name,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/example_data.R,app/logic/example_data.R,19,function(filename),"#' Pretty-print a filename as a display name
+#' @param filename Character, e.g. ""iris.xlsx""
+#' @return Character, e.g. ""Iris""
+#' @keywords internal",Pretty-print a filename as a display name,formatting
+list_examples,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/example_data.R,app/logic/example_data.R,27,function(),"#' List available example datasets
+#' @return Named character vector (display name -> filename), or empty vector
+#' @export",List available example datasets,"export, formatting"
+example_path,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/example_data.R,app/logic/example_data.R,49,function(filename),"#' Resolve the full path of an example dataset
+#' @param filename Character, the filename (e.g. ""iris.xlsx"")
+#' @return Character, full path to the file
+#' @export",Resolve the full path of an example dataset,export
+load_example,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/example_data.R,app/logic/example_data.R,58,function(filename),"#' Load an example dataset
+#' @param filename Character, the filename (e.g. ""iris.xlsx"")
+#' @return List with `success`, `data`, `error` — same structure as
+#'   load_data$read_data_file()
+#' @export",Load an example dataset,"export, error_handling"
+create_stratified_split,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/data_splitting.R,app/logic/lda,30,NA,"#' Create a stratified random train/test split
+#'
+#' Splits data so that each group in the grouping column
+#' is represented proportionally in both train and test sets.
+#' Uses base R sampling (no caret dependency).
+#'
+#' @param data Data frame to split
+#' @param grouping_col Character, name of the grouping column
+#' @param train_fraction Numeric in (0, 1), proportion for
+#'   training set. Default 0.7 (70% train, 30% test).
+#' @param seed Integer, random seed for reproducibility.
+#'   NULL for no seed.
+#' @return List with $success and $result containing
+#'   $train_data, $test_data, $train_idx, $test_idx,
+#'   $split_summary (data frame with per-group counts)
+#' @export",Create a stratified random train/test split,"export, statistical"
+evaluate_dimensions,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/dimension_eval.R,app/logic/lda,28,function(lda_result),"#' Evaluate discriminant dimensions via ANOVA
+#'
+#' Runs a one-way ANOVA (lm + anova) for each LD dimension
+#' to assess how well the grouping variable explains variance
+#' in that dimension. Returns F-statistic, p-value, and R².
+#'
+#' Works for LDA, MDA (using $scores), and QDA (using
+#' $lda_scores from companion LDA).
+#'
+#' @param lda_result Result list from run_lda/run_qda/run_mda
+#' @return List with $success, $result (data.frame) or $error.
+#'   The data.frame has columns: Dimension, F, p.value, R2,
+#'   Significance.
+#' @export",Evaluate discriminant dimensions via ANOVA,"computation, export, error_handling, statistical"
+get_scores,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/dimension_eval.R,app/logic/lda,109,function(lda_result),#' Extract LD scores from any analysis type,Extract LD scores from any analysis type,filtering
+get_grouping,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/dimension_eval.R,app/logic/lda,120,function(lda_result),#' Extract grouping factor from result,Extract grouping factor from result,filtering
+format_p,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/dimension_eval.R,app/logic/lda,144,function(p),#' Format p-value for display,Format p-value for display,"formatting, statistical"
+format_sig,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/dimension_eval.R,app/logic/lda,153,function(p),#' Format significance stars,Format significance stars,"formatting, statistical"
+create_ld_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,42,NA,"#' Create an interactive LD scores scatter plot
+#'
+#' Builds a ggplot with ggiraph interactive points showing
+#' individuals projected onto linear discriminant axes.
+#' Points are colored by the grouping variable.
+#' Falls back to a 1D jittered strip plot when only one
+#' LD axis exists (2 groups).
+#'
+#' @param lda_result Result list from run_lda() (must have
+#'   $scores, $meta, $grouping_col, $proportion_of_trace)
+#' @param dim_x Character, LD column for x-axis (e.g. ""LD1"")
+#' @param dim_y Character, LD column for y-axis (e.g. ""LD2"").
+#'   Ignored when only 1 LD axis exists.
+#' @param show_diagnostics Logical, overlay assumption
+#'   diagnostics (covariance ellipses + group means)
+#' @param show_boundaries Logical, overlay decision
+#'   boundary regions and contour lines (LDA only,
+#'   requires a fitted model)
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create an interactive LD scores scatter plot,"computation, plotting, export, error_handling"
+ld_plot_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,98,NA,#' @export,@export,export
+create_qda_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,138,NA,"#' Create an interactive QDA scatter plot
+#'
+#' Plots QDA results in either LD space (via companion
+#' LDA projection) or original variable space. Points
+#' are coloured by true group labels; optional decision
+#' boundary shading shows QDA-predicted regions.
+#'
+#' @param qda_result Result list from run_qda()
+#' @param dim_x Character, column for x-axis
+#' @param dim_y Character, column for y-axis
+#' @param show_boundaries Logical, overlay QDA decision
+#'   boundary regions
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create an interactive QDA scatter plot,"computation, plotting, export, error_handling"
+build_2d_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,184,NA,NA,NA,undocumented
+build_1d_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,287,NA,NA,NA,undocumented
+build_qda_2d_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,369,NA,NA,NA,undocumented
+get_group_values,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,465,"function(meta, grouping_col)",#' @export,@export,export
+build_tooltips,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,479,NA,#' @export,@export,export
+axis_label,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,542,"function(dim_name, proportion_of_trace)",#' @export,@export,export
+ld_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/ld_plot.R,app/logic/lda,559,function(),#' @export,@export,export
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,27,"function(columns, data, grouping_col)","#' Validate inputs before LDA/QDA computation
+#'
+#' Checks that measurement columns exist, a grouping column is
+#' selected, and the grouping column has at least 2 levels.
+#' Warns (but does not fail) if any group has fewer observations
+#' than variables (n < p).
+#'
+#' @param columns Character vector of selected measurement column names
+#' @param data Data frame to validate against
+#' @param grouping_col Character, name of the grouping column
+#' @return List with $valid (logical), $error (app_error or NULL),
+#'   and $warnings (character vector, may be empty)
+#' @export",Validate inputs before LDA/QDA computation,"validation, export, filtering, error_handling"
+run_lda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,161,NA,"#' Run Linear Discriminant Analysis
+#'
+#' Calls MASS::lda() on the supplied data. Supports both
+#' standard model fitting and leave-one-out CV.
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#' @param prior Character, ""proportional"" or ""equal""
+#' @param tol Numeric, tolerance for singularity detection
+#' @param method Character, estimation method
+#' @param cv Logical, leave-one-out cross-validation
+#' @param nu Numeric, degrees of freedom for method = ""t""
+#' @param meta_cols Character vector of metadata column names
+#' @return List with $success, $result or $error
+#' @export",Run Linear Discriminant Analysis,"computation, export, transformation, error_handling, data_prep"
+run_qda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,217,NA,"#' Run Quadratic Discriminant Analysis
+#'
+#' Calls MASS::qda() on the supplied data. Supports both
+#' standard model fitting and leave-one-out CV.
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#' @param prior Character, ""proportional"" or ""equal""
+#' @param tol Numeric, tolerance for singularity detection
+#' @param method Character, estimation method
+#' @param cv Logical, leave-one-out cross-validation
+#' @param nu Numeric, degrees of freedom for method = ""t""
+#' @param meta_cols Character vector of metadata column names
+#' @return List with $success, $result or $error
+#' @export",Run Quadratic Discriminant Analysis,"computation, export, transformation, error_handling, data_prep"
+run_mda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,275,NA,"#' Run Mixture Discriminant Analysis
+#'
+#' Calls mda::mda() on the supplied data. Supports both
+#' standard model fitting and manual leave-one-out CV
+#' (mda does not have a built-in CV parameter).
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#' @param prior Character, ""proportional"" or ""equal""
+#' @param cv Logical, leave-one-out cross-validation
+#' @param meta_cols Character vector of metadata column names
+#' @param subclasses Integer, number of subclasses per class
+#' @param iter Integer, maximum number of EM iterations
+#' @param dimension Integer or NULL, dimension of reduced model
+#' @param eps Numeric or NULL, threshold for truncating dimension
+#' @return List with $success, $result or $error
+#' @export",Run Mixture Discriminant Analysis,"computation, export, transformation, error_handling, data_prep"
+run_predict,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,342,NA,"#' Predict on new data using a fitted LDA/QDA model
+#'
+#' Takes the result from run_lda()/run_qda() (with cv=FALSE)
+#' and predicts classes for a test set. Returns classification,
+#' posterior probabilities, LD scores (LDA only), and
+#' confusion matrix if true labels are available.
+#'
+#' @param lda_result The $result from run_lda()/run_qda()
+#' @param test_data Data frame with the same columns
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#'   (used to extract true labels for confusion matrix;
+#'   NULL if no true labels available)
+#' @param meta_cols Character vector of metadata column names
+#' @return List with $success, $result or $error
+#' @export",Predict on new data using a fitted LDA/QDA model,"computation, export, filtering, error_handling, statistical"
+build_prior,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,437,"function(prior_choice, grouping)",NA,NA,undocumented
+fit_mda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,453,NA,NA,NA,undocumented
+build_lda_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,481,NA,NA,NA,undocumented
+build_cv_classification,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,613,"function(obj, grouping)",NA,NA,undocumented
+build_mda_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,630,NA,NA,NA,undocumented
+build_mda_cv_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,762,NA,NA,NA,undocumented
+build_confusion_stats,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,848,NA,NA,NA,undocumented
+lda_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda.R,app/logic/lda,917,NA,"#' Error parser for LDA/QDA-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for LDA/QDA-specific errors,"export, error_handling"
+compute_pooled_vc,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,30,"function(scores, groups)","#' Compute pooled within-group variance-covariance matrix
+#'
+#' Averages per-group covariance matrices weighted by (n_k - 1),
+#' matching the pooled estimate used by MASS::lda().
+#'
+#' @param scores Data frame of LD scores (numeric columns only)
+#' @param groups Factor or character vector of group labels
+#' @return Pooled variance-covariance matrix
+#' @export",Compute pooled within-group variance-covariance matrix,"computation, export"
+generate_ellipse_points,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,68,NA,"#' Generate points on a 2D ellipse from a covariance matrix
+#'
+#' Uses eigendecomposition to draw an ellipse at n_std
+#' standard deviations, centered at the given point.
+#'
+#' @param vc_matrix 2x2 variance-covariance matrix
+#' @param center Numeric vector of length 2 (center x, y)
+#' @param n_points Number of points on the ellipse boundary
+#' @param n_std Number of standard deviations for the radius
+#' @return Data frame with columns x and y
+#' @export",Generate points on a 2D ellipse from a covariance matrix,"plotting, export"
+add_diagnostics_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,111,NA,"#' Add assumption diagnostics overlay to an LD plot
+#'
+#' Overlays per-group covariance ellipses (solid),
+#' pooled within-group covariance ellipses (dashed,
+#' darker shade), and group mean markers onto an
+#' existing LD scores ggplot.
+#'
+#' @param p A ggplot object (the LD scores plot)
+#' @param scores Data frame of LD scores
+#' @param groups Factor of group labels
+#' @param dim_x Character, LD column for x-axis
+#' @param dim_y Character, LD column for y-axis
+#' @return The ggplot with diagnostics layers added
+#' @export",Add assumption diagnostics overlay to an LD plot,"plotting, export"
+add_boundaries_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,246,NA,"#' Add decision boundary overlay to an LD scores plot
+#'
+#' Creates a dense grid in the 2D LD space, back-projects
+#' each grid point to original variable space via the
+#' scaling matrix, predicts the class using the fitted
+#' LDA model, and renders coloured tile regions plus
+#' boundary contour lines underneath the scatter points.
+#'
+#' @param p A ggplot object (the LD scores plot)
+#' @param lda_result Result list from run_lda() (needs
+#'   $model, $scores, $columns, $scaling)
+#' @param dim_x Character, LD column for x-axis
+#' @param dim_y Character, LD column for y-axis
+#' @param grid_n Integer, resolution per axis (default 150)
+#' @return The ggplot with boundary layers added
+#' @export",Add decision boundary overlay to an LD scores plot,"computation, plotting, export, formatting"
+compute_1d_boundary,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,418,function(lda_result),"#' Compute 1D decision boundary for a 2-group LDA
+#'
+#' Returns the LD1 score at which the classification
+#' switches between the two groups, accounting for
+#' prior probabilities.
+#'
+#' @param lda_result Result list from run_lda()
+#' @return Numeric scalar, the decision threshold on LD1
+#' @export",Compute 1D decision boundary for a 2-group LDA,"computation, export"
+add_qda_boundaries_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_diagnostics.R,app/logic/lda,527,NA,"#' Add QDA decision boundary overlay to a plot
+#'
+#' Works in either LD space (companion LDA projection)
+#' or original variable space. Builds a grid, predicts
+#' class via the QDA model, and renders tile regions
+#' plus boundary segments.
+#'
+#' @param p A ggplot object
+#' @param qda_result Result list from run_qda() (needs
+#'   $model, $columns; optionally $lda_model, $lda_scaling)
+#' @param dim_x Character, column name for x-axis
+#' @param dim_y Character, column name for y-axis
+#' @param plot_data Data frame with x, y columns used
+#'   in the scatter (to derive grid range)
+#' @param axis_type Character, ""ld"" or ""original""
+#' @param grid_n Integer, resolution per axis (default 150)
+#' @return The ggplot with boundary layers added
+#' @export",Add QDA decision boundary overlay to a plot,"computation, plotting, export, formatting"
+create_lda_excel,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,29,NA,"#' Export LDA/QDA results to a formatted Excel workbook
+#'
+#' Sheet 1 (""LD Scores"") contains metadata + LD scores for
+#' all observations — ready for downstream clustering.
+#' For QDA (no LD scores), sheet 1 contains metadata +
+#' predicted class + posterior probabilities instead.
+#' Remaining sheets hold model details and classification.
+#'
+#' @param lda_result LDA/QDA result list from run_lda()/run_qda()
+#' @param file Path to save the Excel file
+#' @param test_result Optional prediction result from
+#'   run_predict() for train/test split mode
+#' @return NULL (side effect: writes file)
+#' @export",Export LDA/QDA results to a formatted Excel workbook,"computation, export, formatting, statistical"
+build_scores_sheet,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,198,function(lda_result),NA,NA,undocumented
+build_posterior_sheet,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,226,NA,NA,NA,undocumented
+get_best_confusion,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,274,NA,NA,NA,undocumented
+create_lda_bundle,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,313,NA,"#' Create a standardized RDS bundle for LDA/QDA/MDA export
+#'
+#' Builds the named list that the prediction module
+#' expects when loading an LDA/QDA/MDA .rds file.
+#'
+#' @param lda_result Result list from run_lda/run_qda/run_mda
+#' @param raw_data Data frame, original data before any
+#'   transforms
+#' @param used_data Data frame, data actually passed to the
+#'   model (after transform + scale + NA removal)
+#' @param numeric_cols Character vector of measurement
+#'   column names
+#' @param meta_cols Character vector of metadata column
+#'   names
+#' @param transform_params List of per-column transform
+#'   param lists (from transform_skewed), or empty list
+#' @param scale_params List with $center and $scale named
+#'   numeric vectors, or NULL if no scaling
+#' @param settings List with skewness_correction,
+#'   scale_method, prior, etc.
+#' @param data_source Character, ""raw"" or ""pca_scores""
+#' @return Named list (the bundle)
+#' @export",Create a standardized RDS bundle for LDA/QDA/MDA export,"computation, export, transformation"
+add_sheet,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_export.R,app/logic/lda,358,"function(wb, sheet_name, data)",NA,NA,undocumented
+lda_to_pca_var_structure,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/lda/lda_var_contrib.R,app/logic/lda,22,function(lda_result),"#' Convert LDA result to PCA-like variable structure
+#'
+#' Builds a fake ""pca_result"" list with $var$contrib, $var$cos2,
+#' $var$coord, and $eig — derived from the LDA scaling matrix
+#' and proportion_of_trace. This allows
+#' create_var_contrib_jitter_plot() to work unchanged.
+#'
+#' @param lda_result Result list from run_lda/run_qda/run_mda
+#' @return List mimicking PCA result structure, or NULL if
+#'   scaling is not available (CV mode, QDA without companion)
+#' @export",Convert LDA result to PCA-like variable structure,"computation, plotting, export, transformation"
+validate_file_extension,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/load_data.R,app/logic/load_data.R,16,function(filename),"#' Validate that a filename has a supported extension
+#' @param filename Character, the original filename (not the temp path)
+#' @return List with `valid` (logical) and `ext` (character, lowercased extension)
+#' @export",Validate that a filename has a supported extension,"validation, export"
+normalize_quote_char,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/load_data.R,app/logic/load_data.R,29,function(quote_char),"#' Normalize the CSV quote character from UI input
+#' @param quote_char Character from the radio button input
+#' @return Character, a valid quote argument for read.csv
+#' @export",Normalize the CSV quote character from UI input,"export, transformation"
+read_data_file,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/load_data.R,app/logic/load_data.R,49,NA,"#' Read a data file (CSV or XLSX) and return a data.frame or error
+#' @param path Character, path to the file on disk
+#' @param ext Character, file extension (""csv"" or ""xlsx"")
+#' @param header Logical, does the CSV have a header row?
+#' @param delimiter Character, CSV field separator
+#' @param quote_char Character, CSV quote character (already normalized)
+#' @return List with `success` (logical), `data` (data.frame or NULL),
+#'   and `error` (structured error object or NULL)
+#' @export",Read a data file (CSV or XLSX) and return a data.frame or error,"export, transformation, error_handling"
+validate_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/load_data.R,app/logic/load_data.R,87,function(data),"#' Validate that a loaded data.frame is usable
+#' @param data The object returned from reading a file
+#' @return List with `valid` (logical) and `message` (character or NULL)
+#' @export",Validate that a loaded data.frame is usable,"validation, export"
+configure_session_logging,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/logging.R,app/logic/logging.R,21,function(),"#' Configure a session-aware log layout
+#'
+#' Sets a global logger layout that automatically includes a short session
+#' token when called inside a Shiny reactive context. Outside of a reactive
+#' context (e.g. during app startup), the session field shows ""global"".
+#'
+#' This must be called once at app startup (e.g. in main.R server).
+#' No changes are needed to existing rhino$log$* calls — the layout
+#' reads the current session via shiny::getDefaultReactiveDomain().
+#'
+#' Log output format:
+#'   LEVEL [timestamp] [sess_abc123] Message text
+#'
+#' @export",Configure a session-aware log layout,"export, formatting"
+session_layout,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/logging.R,app/logic/logging.R,43,NA,"#' Custom layout that prepends a short session ID
+#' @param level Log level
+#' @param msg Log message
+#' @param namespace Logger namespace
+#' @param .logcall The logging call
+#' @param .topcall The top-level call
+#' @param .topenv The top-level environment",Custom layout that prepends a short session ID,other
+compute_medians,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/median/compute.R,app/logic/median,24,NA,"#' Compute median results from filtered data
+#' @param data Data frame (already quality-filtered)
+#' @param grouping_cols Character vector of grouping column names
+#' @param quality_col Character or NULL, quality column to exclude
+#' @return List with $success, $result (data frame or NULL),
+#'   $removed_cols (character vector), $message (character)
+#' @export",Compute median results from filtered data,"computation, export, filtering"
+analyze_quality_column,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/median/quality_analysis.R,app/logic/median,12,"function(data, col_name)","#' Analyze a quality column to determine its type and properties
+#' @param data Data frame
+#' @param col_name Character, name of the quality column
+#' @return List with type, and type-specific properties
+#' @export",Analyze a quality column to determine its type and properties,export
+apply_quality_filter,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/median/quality_filter.R,app/logic/median,29,NA,"#' Apply quality filter to data
+#' @param data Data frame to filter
+#' @param quality_settings List with filter settings:
+#'   enabled (logical), column (character or NULL),
+#'   type (""none"", ""categorical"", ""percentage_decimal"",
+#'         ""percentage_100"", ""numeric""),
+#'   bad_values (character vector, for categorical),
+#'   threshold (numeric, for numeric types)
+#' @param grouping_cols Character vector of grouping column names
+#' @return List with $data (filtered data frame) and $message
+#' @export",Apply quality filter to data,"export, filtering"
+filter_categorical,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/median/quality_filter.R,app/logic/median,86,NA,"#' Filter by categorical bad values
+#' @param data Data frame
+#' @param col Character, quality column name
+#' @param bad_values Character vector of bad values
+#' @param grouping_cols Character vector of grouping columns
+#' @return List with $data and $message
+#' @export",Filter by categorical bad values,"export, filtering"
+filter_numeric,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/median/quality_filter.R,app/logic/median,153,NA,"#' Filter by numeric threshold
+#' @param data Data frame
+#' @param col Character, quality column name
+#' @param threshold Numeric, minimum threshold
+#' @param grouping_cols Character vector of grouping columns
+#' @return List with $data and $message
+#' @export",Filter by numeric threshold,"export, filtering"
+create_biplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,39,NA,"#' Create a PCA biplot
+#'
+#' Builds a ggplot biplot with layer toggles for individuals,
+#' variables (loadings), or combined view. Returns a ggplot
+#' object — the caller wraps it in ggiraph::girafe().
+#'
+#' @param pca_result PCA result list (the $result field from run_pca)
+#' @param dim_x Character, dimension for x-axis (e.g. ""Dim.1"")
+#' @param dim_y Character, dimension for y-axis (e.g. ""Dim.2"")
+#' @param layer Character, one of ""individuals"", ""variables"", ""combined""
+#' @param group_cols Character vector, column name(s) in ind$meta
+#'   for grouping. Multiple columns are combined via interaction().
+#'   NULL for no grouping.
+#' @param show_convex_hull Logical, use convex hull instead of
+#'   95% confidence ellipse
+#' @param show_group_shapes Logical, whether to draw
+#'   ellipses or hulls around groups at all. Default TRUE.
+#' @param point_alpha Character or numeric, ""Contribution"" or fixed value
+#' @param point_size Character or numeric, ""Contribution"" or fixed value
+#' @param show_title Logical, whether to show the plot title
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create a PCA biplot,"computation, plotting, export, error_handling"
+biplot_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,337,NA,"#' Error parser for biplot-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for biplot-specific errors,"plotting, export, error_handling"
+validate_biplot_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,373,NA,#' Validate biplot inputs,Validate biplot inputs,"validation, plotting"
+build_ind_plot_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,398,NA,#' Build individual plot data,Build individual plot data,plotting
+build_var_plot_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,461,"function(pca_result, dim_x, dim_y)",#' Build variable plot data,Build variable plot data,plotting
+build_hull_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,491,function(ind_data),#' Build convex hull data for grouped individuals,Build convex hull data for grouped individuals,other
+build_circle_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,522,function(n = 100),#' Build unit circle data,Build unit circle data,other
+biplot_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,531,function(),#' Biplot theme,Biplot theme,plotting
+axis_label_with_variance,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot.R,app/logic/pca,549,"function(dim_name, eig)",#' Build axis label with variance percentage,Build axis label with variance percentage,other
+create_biplot3d,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,31,NA,"#' Create a 3D PCA biplot using plotly
+#'
+#' Builds an interactive 3D scatter plot of individual scores
+#' with variable loadings as arrows from the origin. Grouping
+#' is applied via color. Returns a plotly object.
+#'
+#' @param pca_result PCA result list (the $result field from run_pca)
+#' @param dim_x Character, dimension for x-axis (e.g. ""Dim.1"")
+#' @param dim_y Character, dimension for y-axis (e.g. ""Dim.2"")
+#' @param dim_z Character, dimension for z-axis (e.g. ""Dim.3"")
+#' @param group_cols Character vector, column name(s) in ind$meta
+#'   for grouping. Multiple columns are combined via interaction().
+#'   NULL for no grouping.
+#' @return List with $success, $result (plotly) or $error
+#' @export",Create a 3D PCA biplot using plotly,"computation, plotting, export, error_handling"
+biplot3d_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,176,NA,"#' Error parser for 3D biplot-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for 3D biplot-specific errors,"plotting, export, error_handling"
+validate_biplot3d_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,217,NA,#' Validate 3D biplot inputs,Validate 3D biplot inputs,"validation, plotting"
+build_ind_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,244,NA,#' Build individual scores data frame,Build individual scores data frame,other
+build_var_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,281,NA,"#' Build variable loadings data frame, scaled to
+#' match the range of individual scores","Build variable loadings data frame, scaled to",transformation
+compute_axis_ranges,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,304,NA,#' Compute axis ranges with buffer,Compute axis ranges with buffer,computation
+build_hover_text,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,319,NA,#' Build hover text for individuals,Build hover text for individuals,other
+add_origin_axes,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,361,"function(fig, axis_ranges, dims)",#' Add origin axis lines to the plotly figure,Add origin axis lines to the plotly figure,plotting
+axis_label,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/biplot3d.R,app/logic/pca,411,"function(dim_name, eig)",#' Build axis label with variance percentage,Build axis label with variance percentage,other
+compute_correlation_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,27,"function(data, measurement_cols)","#' Compute correlation data for plotting
+#'
+#' Validates inputs and computes the correlation matrix with
+#' hierarchical clustering. Returns a safe_execute result with
+#' cor_long (long-format data frame) and ordered_cols.
+#'
+#' @param data Data frame containing the measurement columns
+#' @param measurement_cols Character vector of column names
+#' @return List with $success, $result or $error
+#' @export",Compute correlation data for plotting,"validation, computation, plotting, export, error_handling, formatting"
+create_correlation_ggplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,63,function(cor_data),"#' Create the ggplot object for the correlation heatmap
+#'
+#' Builds the ggplot (without girafe wrapping) so it can
+#' be reused for both interactive display and static export.
+#'
+#' @param cor_data List with $cor_long, $ordered_cols, $n_cols
+#' @return ggplot object
+#' @export",Create the ggplot object for the correlation heatmap,"plotting, export, formatting"
+render_correlation_girafe,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,148,function(cor_data),"#' Render correlation plot as ggiraph
+#'
+#' Takes pre-computed correlation data and renders it as an
+#' interactive ggiraph heatmap. Should not fail if
+#' compute_correlation_data() succeeded. Text sizes, axis
+#' label sizes, and SVG dimensions adapt to the number of
+#' variables.
+#'
+#' @param cor_data List with $cor_long, $ordered_cols, $n_cols
+#' @return ggiraph interactive plot object
+#' @export",Render correlation plot as ggiraph,"computation, plotting, export, formatting"
+correlation_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,188,NA,"#' Error parser for correlation plot errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for correlation plot errors,"plotting, export, error_handling"
+validate_correlation_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,230,"function(data, measurement_cols)",NA,NA,undocumented
+compute_cor_matrix,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,282,function(cor_data),NA,NA,undocumented
+cluster_columns,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,304,"function(cor_matrix, measurement_cols)",NA,NA,undocumented
+cor_matrix_to_long,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/correlation_plot.R,app/logic/pca,310,"function(cor_matrix, ordered_cols)",NA,NA,undocumented
+compute_eigencor_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,31,"function(pca_result, display_ncp = 5L)","#' Compute correlations between PC scores and metadata variables
+#'
+#' Extracts individual scores from the PCA result and correlates
+#' them against the metadata columns. Non-numeric metadata is
+#' coerced to numeric via as.numeric(as.factor(...)). Returns
+#' correlation matrix, p-value matrix, and list of coerced columns.
+#'
+#' @param pca_result PCA result list (the $result field from run_pca)
+#' @param display_ncp Integer, number of dimensions to include
+#' @return List with $success, $result or $error.
+#'   $result contains $cor_matrix, $pval_matrix, $coerced_cols,
+#'   $dim_labels (named character vector)
+#' @export",Compute correlations between PC scores and metadata variables,"computation, export, filtering, error_handling, formatting, statistical"
+create_eigencor_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,128,function(eigencor_data),"#' Create the eigencorrelation heatmap plot
+#'
+#' Builds an interactive ggplot2 heatmap from pre-computed
+#' correlation and p-value matrices. Cells show r-value with
+#' significance stars. Diverging blue-white-red colour scale.
+#' Adaptive text sizing based on grid dimensions.
+#'
+#' @param eigencor_data List from compute_eigencor_data()$result
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create the eigencorrelation heatmap plot,"computation, plotting, export, transformation, error_handling, statistical"
+eigencor_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,270,NA,"#' Error parser for eigencorrelation errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for eigencorrelation errors,"export, error_handling"
+validate_metadata,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,317,function(meta),"#' Validate that metadata is usable for eigencorrelation
+#'
+#' Checks that metadata exists, is not just a ""Row"" fallback,
+#' and has at least one column.
+#'
+#' @param meta Data frame from pca_result$ind$meta",Validate that metadata is usable for eigencorrelation,validation
+significance_stars,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,334,function(p),"#' Convert p-value to significance stars
+#'
+#' @param p Numeric, p-value
+#' @return Character, significance stars",Convert p-value to significance stars,"transformation, statistical"
+format_pval,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/eigencorplot.R,app/logic/pca,346,function(p),"#' Format p-value for display
+#'
+#' @param p Numeric vector of p-values
+#' @return Character vector of formatted p-values",Format p-value for display,"formatting, statistical"
+ind_contrib_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/ind_contrib.R,app/logic/pca,22,NA,"#' Error parser for individual contribution plot errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for individual contribution plot errors,"plotting, export, error_handling"
+create_ind_contrib_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/ind_contrib.R,app/logic/pca,65,NA,"#' Create a jitter plot of individual contributions
+#'
+#' Dimensions on X-axis, contribution % on Y-axis.
+#' Each individual is a jittered point per dimension,
+#' with interactive tooltips showing the individual
+#' label, dimension, contribution, and cos2.
+#' A horizontal reference line marks the expected
+#' average contribution (100 / n).
+#'
+#' @param pca_result PCA result list ($result from run_pca)
+#' @param display_ncp Integer, number of dimensions to show
+#' @param group_cols Character vector, column name(s) in
+#'   ind$meta for coloring. NULL for no grouping.
+#' @param show_title Logical, whether to show the plot title
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create a jitter plot of individual contributions,"computation, plotting, export, error_handling, formatting"
+add_group_column,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/ind_contrib.R,app/logic/pca,235,NA,#' Add group column to long-format data frame,Add group column to long-format data frame,formatting
+ind_contrib_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/ind_contrib.R,app/logic/pca,262,function(),#' Theme for individual contributions plot,Theme for individual contributions plot,plotting
+calculate_kmo,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/kmo.R,app/logic/pca,26,function(data),"#' Calculate KMO measure
+#'
+#' Wraps psych::KMO in safe_execute with a domain-specific error parser.
+#' Returns list with overall MSA and individual variable MSAs on success,
+#' or a structured error on failure.
+#'
+#' @param data Data frame with numeric columns (already prepared)
+#' @return List with $success, $result (list with $overall, $individual)
+#'   or $error (structured error object)
+#' @export",Calculate KMO measure,"computation, export, error_handling, data_prep"
+kmo_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/kmo.R,app/logic/pca,125,NA,"#' Error parser for KMO-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for KMO-specific errors,"export, error_handling"
+kmo_interpretation,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/kmo.R,app/logic/pca,162,function(kmo),"#' Get interpretation text for a KMO value
+#'
+#' Uses Kaiser's classification scale.
+#'
+#' @param kmo Numeric KMO value
+#' @return Character interpretation label
+#' @export",Get interpretation text for a KMO value,"export, transformation"
+kmo_badge_class,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/kmo.R,app/logic/pca,177,function(kmo),"#' Get Bootstrap badge CSS class for a KMO value
+#'
+#' @param kmo Numeric KMO value
+#' @return Character CSS class string
+#' @export",Get Bootstrap badge CSS class for a KMO value,export
+diagnose_kmo_issues,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/kmo.R,app/logic/pca,188,"function(data, individual_msa = NULL)",NA,NA,undocumented
+analyse_na,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/na_handling.R,app/logic/pca,24,"function(data, measurement_cols)","#' Analyse NA distribution in measurement columns
+#'
+#' Returns per-column NA counts and percentages for the selected
+#' measurement columns. This information is shown to the user
+#' before row removal so they can decide whether to deselect
+#' columns with many NAs.
+#'
+#' @param data Data frame
+#' @param measurement_cols Character vector of measurement column names
+#' @return Data frame with columns: column, na_count, na_percent,
+#'   sorted by na_count descending. Only includes columns that
+#'   have at least one NA.
+#' @export",Analyse NA distribution in measurement columns,"export, filtering, formatting"
+clean_na_rows,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/na_handling.R,app/logic/pca,70,NA,"#' Remove rows with NAs in measurement columns only
+#'
+#' Removes rows where any of the selected measurement columns
+#' contain NA. Metadata columns are ignored for row removal
+#' but their NA distribution is reported for user awareness.
+#'
+#' @param data Data frame (full, including metadata columns)
+#' @param measurement_cols Character vector of measurement column names
+#' @param meta_cols Character vector of descriptive column names
+#'   (optional). NAs in these columns are reported but do not
+#'   trigger row removal.
+#' @return List with:
+#'   - $data: cleaned data frame (all columns preserved)
+#'   - $rows_before: integer, original row count
+#'   - $rows_after: integer, row count after removal
+#'   - $rows_removed: integer, number of rows removed
+#'   - $na_summary: data frame from analyse_na (measurement cols)
+#'   - $meta_na_summary: data frame from analyse_na (descriptive cols)
+#' @export",Remove rows with NAs in measurement columns only,"export, filtering, data_prep"
+calculate_optimal_components,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/optimal_components.R,app/logic/pca,26,"function(data, scale = TRUE)","#' Calculate optimal number of components using multiple methods
+#'
+#' Computes eigenvalues from the correlation matrix, then applies
+#' Kaiser criterion, elbow detection, and parallel analysis to
+#' recommend how many components to retain.
+#'
+#' @param data Data frame with numeric columns (already prepared/scaled)
+#' @param scale Logical, whether data was scaled (affects interpretation)
+#' @return List with eigenvalues, methods results, and summary,
+#'   or a structured error on failure
+#' @export",Calculate optimal number of components using multiple methods,"computation, export, transformation, error_handling, data_prep"
+detect_elbow,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/optimal_components.R,app/logic/pca,154,function(eigenvalues),"#' Detect elbow point in eigenvalue sequence
+#'
+#' Uses second derivative (curvature) to find the elbow.
+#'
+#' @param eigenvalues Numeric vector of eigenvalues
+#' @return List with ncp (elbow position)",Detect elbow point in eigenvalue sequence,other
+compute_parallel_analysis,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/optimal_components.R,app/logic/pca,187,"function(data, n_iter = 100)","#' Compute parallel analysis (Horn's method)
+#'
+#' Generates random data and computes eigenvalues to establish
+#' a baseline. Components with observed eigenvalues exceeding
+#' the 95th percentile of random eigenvalues are retained.
+#'
+#' @param data Data frame with numeric columns
+#' @param n_iter Number of random iterations
+#' @return List with ncp and random eigenvalues (95th percentile)",Compute parallel analysis (Horn's method),computation
+optimal_components_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/optimal_components.R,app/logic/pca,233,NA,"#' Error parser for optimal components estimation
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for optimal components estimation,"export, error_handling"
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,20,"function(columns, data)","#' Validate inputs before PCA computation
+#' @param columns Character vector of selected column names
+#' @param data Data frame to validate against
+#' @return List with $valid (logical) and $error (app_error or NULL)
+#' @export",Validate inputs before PCA computation,"validation, export, filtering, error_handling"
+run_pca,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,78,NA,"#' Run PCA using stats::prcomp
+#'
+#' Data is assumed to be already cleaned (no NAs). Centering
+#' and scaling are handled by prcomp() via the center and
+#' scale. arguments. Computes eigenvalues, variable coordinates
+#' / contributions / cos2, and individual coordinates /
+#' contributions / cos2. The returned structure mirrors
+#' FactoMineR::PCA output so that downstream renderers work
+#' with the same shape.
+#'
+#' @param data Data frame (full, may include metadata columns)
+#' @param columns Character vector of measurement column names
+#' @param meta_cols Character vector of metadata column names
+#'   (optional). When provided, the metadata is attached to the
+#'   result as $ind$meta and used to label individual rows.
+#' @param ncp Number of components to retain. NULL (default)
+#'   retains all feasible components. The full result is always
+#'   stored; downstream renderers use a separate display_ncp
+#'   to limit what is shown in the UI.
+#' @param center Logical, whether to center variables before
+#'   PCA. Default FALSE for backward compatibility.
+#' @param scale. Logical, whether to scale variables to unit
+#'   variance before PCA. Default FALSE.
+#' @return List with $success, $result or $error.
+#'   $result contains $eig, $var, $ind, $ncp, $call_info.
+#' @export",Run PCA using stats::prcomp,"computation, export, transformation, error_handling, formatting, data_prep"
+pca_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,139,NA,"#' Error parser for PCA-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for PCA-specific errors,"export, error_handling"
+build_pca_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,191,"function(pca_obj, ncp, n, p)","#' Build the structured PCA result from a prcomp object
+#'
+#' @param pca_obj prcomp result
+#' @param ncp Number of components to retain
+#' @param n Number of observations
+#' @param p Number of variables
+#' @return List with $eig, $var, $ind, $ncp, $call_info
+#' @export",Build the structured PCA result from a prcomp object,export
+build_ind_meta,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,303,"function(data, meta_cols, n)","#' Build metadata data frame for individuals
+#'
+#' Extracts selected metadata columns from the original data,
+#' aligned with the rows used in PCA. Returns a data frame
+#' with one row per individual. If no metadata columns are
+#' selected, returns a data frame with a single ""Row"" column
+#' containing row numbers.
+#'
+#' @param data Full data frame (including metadata columns)
+#' @param meta_cols Character vector of metadata column names
+#' @param n Number of rows (for fallback labels)
+#' @return Data frame with metadata or row numbers
+#' @export",Build metadata data frame for individuals,"export, filtering"
+apply_row_labels,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca.R,app/logic/pca,333,"function(result, meta)","#' Apply row labels from metadata to individual result matrices
+#'
+#' Sets rownames on ind$coord, ind$contrib, and ind$cos2 using
+#' a composite label built from metadata columns. If labels are
+#' not unique, appends a row number suffix.
+#'
+#' @param result PCA result list (modified in place via reference)
+#' @param meta Data frame from build_ind_meta
+#' @return The modified result (invisibly)",Apply row labels from metadata to individual result matrices,other
+create_pca_excel,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca_export.R,app/logic/pca,26,"function(pca_result, file)","#' Export PCA results to a formatted Excel workbook
+#'
+#' Creates a multi-sheet Excel file with eigenvalues, variable
+#' coordinates / contributions / cos2, and individual coordinates /
+#' contributions / cos2.
+#'
+#' @param pca_result PCA result list from run_pca()
+#'   (the $result field, not the wrapper)
+#' @param file Path to save the Excel file
+#' @return NULL (side effect: writes file)
+#' @export",Export PCA results to a formatted Excel workbook,"computation, export, formatting"
+create_pca_bundle,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca_export.R,app/logic/pca,110,NA,"#' Create a standardized RDS bundle for PCA export
+#'
+#' Builds the named list that the prediction module
+#' expects when loading a PCA .rds file.
+#'
+#' @param pca_result PCA result list from run_pca()
+#'   (the $result field, not the wrapper)
+#' @param raw_data Data frame, original data before
+#'   any transforms
+#' @param used_data Data frame, data actually passed
+#'   to prcomp (after transform + NA removal)
+#' @param numeric_cols Character vector of measurement
+#'   column names
+#' @param meta_cols Character vector of metadata column
+#'   names
+#' @param transform_params List of per-column transform
+#'   param lists (from transform_skewed), or empty list
+#' @param settings List with skewness_correction,
+#'   scale_method, etc.
+#' @return Named list (the bundle)
+#' @export",Create a standardized RDS bundle for PCA export,"computation, export, transformation"
+matrix_to_df,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca_export.R,app/logic/pca,143,"function(mat, row_label = ""Item"")",NA,NA,undocumented
+ind_matrix_to_df,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca_export.R,app/logic/pca,151,"function(mat, meta)",NA,NA,undocumented
+add_sheet,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/pca_export.R,app/logic/pca,167,"function(wb, sheet_name, data)",NA,NA,undocumented
+scale_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/scaling.R,app/logic/pca,27,NA,"#' Scale measurement columns using z-score standardization
+#'
+#' Applies centering (mean = 0) and scaling (SD = 1) to the
+#' selected measurement columns. Non-measurement columns are
+#' left untouched. Wrapped in safe_execute for consistent
+#' error handling.
+#'
+#' @param data Data frame (full, including metadata columns)
+#' @param measurement_cols Character vector of measurement column names
+#' @param center Logical, whether to center (subtract mean). Default TRUE.
+#' @param scale Logical, whether to scale (divide by SD). Default TRUE.
+#' @return List with $success, $result (scaled data frame) or $error
+#' @export",Scale measurement columns using z-score standardization,"computation, export, transformation, filtering, error_handling"
+scaling_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/scaling.R,app/logic/pca,71,NA,"#' Error parser for scaling-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for scaling-specific errors,"export, error_handling"
+create_var_contrib_jitter_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/var_contrib_jitter.R,app/logic/pca,34,NA,"#' Create a faceted strip plot of variable contributions per dimension
+#'
+#' Each dimension is a facet with independent Y-axis (contribution %).
+#' Points colored by cos2 (viridis), labeled with ggrepel.
+#'
+#' For high-dimensional data (20+ variables):
+#' - Variables with cos2 < 0.2 are filtered out per dimension
+#' - Dimensions where no variable survives the filter are dropped
+#' - Facet strips annotated with surviving variable count
+#' - Y-axis starts from data minimum (not 0) to maximize spread
+#'
+#' @param pca_result PCA result list (the $result field from run_pca)
+#' @param display_ncp Integer, number of dimensions to show
+#' @param show_title Logical, whether to show the plot title
+#' @param cos2_threshold Numeric, cos2 cutoff for high-dim filtering
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create a faceted strip plot of variable contributions per dimension,"computation, plotting, export, filtering, error_handling, formatting"
+var_contrib_jitter_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/var_contrib_jitter.R,app/logic/pca,299,NA,"#' Error parser for variable contribution jitter plot errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for variable contribution jitter plot errors,"plotting, export, error_handling"
+select_label_vars,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/var_contrib_jitter.R,app/logic/pca,337,"function(df, n_vars, n_dims)","#' Select which variables get labels per dimension
+#'
+#' Strategy:
+#' - <= 10 variables: label all
+#' - > 10: per dimension, label variables whose contribution
+#'   exceeds the expected average AND cos2 >= 0.1
+#'   (at least top 3 per dim, at most 10)",Select which variables get labels per dimension,filtering
+jitter_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/pca/var_contrib_jitter.R,app/logic/pca,380,function(),#' Theme for the faceted jitter plot,Theme for the faceted jitter plot,plotting
+check_normality,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,24,NA,"#' Check normality via Shapiro-Wilk test per group
+#'
+#' Runs Shapiro-Wilk on each group defined by the interaction term,
+#' excluding outlier- and trimmed-flagged rows.
+#'
+#' @param data Data frame
+#' @param measure_col Character, measurement column name
+#' @param group_col Factor vector (same length as nrow(data)) defining groups
+#' @param outlier_col Character, name of the logical outlier flag column
+#'   (optional, defaults to ""{measure_col}_outlier"")
+#' @param trimmed_col Character, name of the logical trimmed flag column
+#'   (optional, defaults to ""{measure_col}_trimmed"")
+#' @return Data frame with columns: group, n, W, p_value, normal
+#' @export",Check normality via Shapiro-Wilk test per group,"validation, computation, export, statistical"
+check_normality_residuals,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,83,NA,"#' Check normality of residuals via Shapiro-Wilk test
+#'
+#' Fits a simple linear model (value ~ group) and runs Shapiro-Wilk
+#' on the residuals. This is the model-based approach: it tests
+#' whether the ANOVA residuals are normally distributed, which is
+#' the actual assumption underlying parametric group comparisons.
+#'
+#' @param data Data frame
+#' @param measure_col Character, measurement column name
+#' @param group_col Factor vector defining groups
+#' @param outlier_col Character, outlier flag column name (optional)
+#' @param trimmed_col Character, trimmed flag column name (optional)
+#' @return List with: n, W, p_value, normal
+#' @export",Check normality of residuals via Shapiro-Wilk test,"validation, computation, export, statistical"
+check_homogeneity,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,155,NA,"#' Check homogeneity of variances via manual Levene's test
+#'
+#' Implements Levene's test as a one-way ANOVA on absolute deviations
+#' from group medians. Works for any number of grouping levels
+#' (1-way, 2-way, 3-way interactions treated as a single factor).
+#'
+#' @param data Data frame
+#' @param measure_col Character, measurement column name
+#' @param group_col Factor vector defining groups
+#' @param outlier_col Character, outlier flag column name (optional)
+#' @param trimmed_col Character, trimmed flag column name (optional)
+#' @return List with: F_statistic, df1, df2, p_value, equal_variances
+#' @export",Check homogeneity of variances via manual Levene's test,"validation, export, statistical"
+recommend_transformation,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,226,"function(normality_df, threshold = 0.5)","#' Recommend whether data transformation is needed
+#'
+#' Based on the proportion of non-normal groups relative to the threshold.
+#'
+#' @param normality_df Data frame from check_normality()
+#' @param threshold Numeric 0-1, proportion threshold for recommending
+#'   transformation (default 0.5)
+#' @return List with: recommend (logical), n_non_normal, n_groups, proportion,
+#'   message
+#' @export",Recommend whether data transformation is needed,"validation, export, transformation, formatting"
+build_recommendation_banner,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,285,"function(recommendation, levene_result)","#' Build recommendation banner info (CSS class + text)
+#'
+#' Combines normality recommendation and Levene's result into a
+#' unified banner with appropriate styling.
+#'
+#' @param recommendation List from recommend_transformation()
+#' @param levene_result List from check_homogeneity()
+#' @return List with: css_class, icon, normality_text, variance_text
+#' @export",Build recommendation banner info (CSS class + text),"validation, export, transformation, formatting"
+compute_shapiro,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,345,function(values),"#' Compute Shapiro-Wilk test for a vector of values
+#' @param values Numeric vector (already filtered for NA/outliers/trimmed)
+#' @return List with W, p_value, normal",Compute Shapiro-Wilk test for a vector of values,"computation, filtering, statistical"
+compute_oneway_anova,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,376,"function(values, groups)","#' Manual one-way ANOVA (used internally for Levene's test)
+#' @param values Numeric vector
+#' @param groups Factor vector
+#' @return List with F_statistic, df1, df2, p_value",Manual one-way ANOVA (used internally for Levene's test),statistical
+format_p,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/assumption_checks.R,app/logic/plotting,427,function(p),"#' Format a p-value for display
+#' @param p Numeric p-value
+#' @return Character string
+#' @export",Format a p-value for display,"export, formatting, statistical"
+detect_outliers,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,26,NA,"#' Detect outliers in a measurement column, grouped by an interaction factor
+#'
+#' @param data Data frame
+#' @param value_col Character, name of the numeric column to check
+#' @param group_col Factor vector (same length as nrow(data)) defining groups
+#' @param method Character, one of: ""IQR"", ""zscore"", ""modified_zscore"",
+#'   ""adjusted_boxplot"", ""kde"", ""isolation_forest"", ""lof"", ""bootstrap""
+#' @param factor Numeric, threshold factor (interpretation depends on method)
+#' @param bootstrap_samples Integer, number of bootstrap samples
+#' @return Logical vector (same length as nrow(data)), TRUE = outlier
+#' @export","Detect outliers in a measurement column, grouped by an interaction factor","validation, plotting, export"
+mark_trimmed,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,93,"function(values, group_col, trim_percent = 0)","#' Mark data points as trimmed based on trim percentage within groups
+#'
+#' For each group, marks the lowest and highest trim_percent of values.
+#'
+#' @param values Numeric vector of measurement values
+#' @param group_col Factor vector defining groups (same length as values)
+#' @param trim_percent Numeric 0-100, percentage trimmed from each end
+#' @return Logical vector, TRUE = trimmed
+#' @export",Mark data points as trimmed based on trim percentage within groups,export
+process_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,144,NA,"#' Process data: detect outliers and mark trimmed points per measurement
+#'
+#' For each measurement column, adds `{col}_outlier` and `{col}_trimmed`
+#' logical flag columns. Trimming is applied only to non-outlier rows.
+#' Optionally runs normalization (mutually exclusive with trimming).
+#'
+#' @param data Data frame (typically the filtered data)
+#' @param measure_cols Character vector of measurement column names
+#' @param x_cols Character vector of X-axis column names (for grouping)
+#' @param trim_percent Numeric 0-100
+#' @param outlier_options List with: enabled (logical), method (character),
+#'   factor (numeric), bootstrap_samples (integer)
+#' @param normalize_options List with: enabled (logical),
+#'   threshold (numeric 0-1, default 0.5)
+#' @return Data frame with added flag columns (and optionally
+#'   {col}_normalized columns). Attribute ""transform_info"" attached
+#'   when normalization was performed.
+#' @export",Process data: detect outliers and mark trimmed points per measurement,"computation, export, transformation, filtering"
+detect_iqr,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,237,"function(x, fac)",NA,NA,undocumented
+detect_zscore,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,251,"function(x, fac)",NA,NA,undocumented
+detect_modified_zscore,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,261,"function(x, fac)",NA,NA,undocumented
+detect_adjusted_boxplot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,275,"function(x, fac)",NA,NA,undocumented
+detect_kde,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,305,"function(x, fac)",NA,NA,undocumented
+detect_isolation_forest,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,320,"function(x, fac)",NA,NA,undocumented
+detect_lof,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,343,"function(x, fac)",NA,NA,undocumented
+detect_bootstrap,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/data_processing.R,app/logic/plotting,370,"function(x, fac, n_samples)",NA,NA,undocumented
+normalize_columns,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/normalize.R,app/logic/plotting,34,NA,"#' Normalize selected measurement columns using bestNormalize
+#'
+#' Only transforms columns where the proportion of non-normal groups
+#' exceeds the threshold. Adds `{col}_normalized` columns; outlier-flagged
+#' rows get NA in the normalized column.
+#'
+#' @param data Data frame with measurement and flag columns
+#' @param measure_cols Character vector of measurement column names to consider
+#' @param normality_results Named list of data frames from
+#'   assumption_checks$check_normality(), keyed by measure_col name
+#' @param threshold Numeric 0-1, proportion of non-normal groups required
+#'   to trigger transformation
+#' @param outlier_col_suffix Character, suffix for outlier flag columns
+#'   (default ""_outlier"")
+#' @param trimmed_col_suffix Character, suffix for trimmed flag columns
+#'   (default ""_trimmed"")
+#' @return List with:
+#'   \itemize{
+#'     \item \code{$data} — data frame with added \code{{col}_normalized}
+#'       columns
+#'     \item \code{$transform_info} — data frame with columns:
+#'       column, method, n_transformed
+#'   }
+#' @export",Normalize selected measurement columns using bestNormalize,"validation, export, transformation, filtering, formatting"
+get_transform_label,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/normalize.R,app/logic/plotting,121,"function(transform_info, col)","#' Get a human-readable transformation label for a column
+#'
+#' @param transform_info Data frame from normalize_columns()$transform_info
+#' @param col Character, the measurement column name
+#' @return Character string, e.g. ""Yeo-Johnson"" or NULL if not transformed
+#' @export",Get a human-readable transformation label for a column,"export, transformation, formatting"
+needs_transformation,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/normalize.R,app/logic/plotting,139,"function(normality_df, threshold)","#' Check if a column needs transformation based on normality results
+#' @param normality_df Data frame from check_normality()
+#' @param threshold Numeric 0-1
+#' @return Logical",Check if a column needs transformation based on normality results,"validation, transformation, formatting"
+fit_best_normalize,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/normalize.R,app/logic/plotting,155,function(values),"#' Fit bestNormalize and return transformed values + method name
+#'
+#' Runs bestNormalize::bestNormalize() in a safe environment.
+#'
+#' @param values Numeric vector of clean values
+#' @return List with transformed_values and method, or NULL on failure",Fit bestNormalize and return transformed values + method name,"computation, transformation, data_prep"
+create_scatter_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,39,NA,"#' Create an interactive scatter plot for a single measurement variable
+#'
+#' Pure logic function — no Shiny dependencies.
+#' Uses ggiraph for interactivity and legendry for nested X-axis labels.
+#'
+#' @param data Data frame containing the data to plot
+#' @param x_cols Character vector of column name(s) for X-axis
+#' @param y_col Character string of column name for Y-axis (measurement)
+#' @param color_map Named character vector mapping group names to hex colors
+#' @param color_cols Character vector of column name(s) for color grouping.
+#'   Defaults to x_cols when NULL.
+#' @param tooltip_cols Character vector of additional column names for tooltip
+#' @param point_style List: size, spread (jitter width), alpha, shape_cols
+#' @param processing List: trim_percent, outlier_enabled, outlier_method,
+#'   outlier_factor, bootstrap_samples
+#' @param grid_legend List: legend_position, h_grid, v_grid,
+#'   top_right_borders, show_median, show_sd, aspect_ratio
+#' @param stat_line_style List: median_thickness, median_width,
+#'   sd_thickness, sd_width
+#' @param axis_style List: tick_length, line_thickness
+#' @return A ggplot2 object (ready for ggiraph::girafe)
+#' @export",Create an interactive scatter plot for a single measurement variable,"plotting, export"
+create_empty_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,136,"function(message = ""No data to display"")","#' Create an empty placeholder plot with a message
+#'
+#' @param message Character string to display
+#' @return A ggplot2 object
+#' @export",Create an empty placeholder plot with a message,"plotting, export, formatting"
+build_tooltip_text,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,157,NA,"#' Build tooltip HTML for each data point
+#'
+#' @param data Data frame (must contain .is_trimmed, .is_outlier columns)
+#' @param x_var Name of x variable in data
+#' @param x_label Display label for x axis
+#' @param y_col Name of y column
+#' @param tooltip_cols Additional columns to include
+#' @return Character vector of tooltip HTML strings
+#' @export",Build tooltip HTML for each data point,"export, formatting"
+resolve_point_style,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,205,function(ps),NA,NA,undocumented
+resolve_processing,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,214,function(proc),NA,NA,undocumented
+resolve_grid_legend,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,224,function(gl),NA,NA,undocumented
+resolve_stat_line_style,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,236,function(sls),NA,NA,undocumented
+resolve_axis_style,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,245,function(ax),NA,NA,undocumented
+validate_plot_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,258,"function(data, x_cols, y_col)",#' Validate required plot inputs; returns empty plot or NULL if valid,Validate required plot inputs; returns empty plot or NULL if valid,"validation, plotting"
+prepare_x_axis,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,286,"function(data, x_cols)",#' Prepare x-axis: single column or nested interaction,Prepare x-axis: single column or nested interaction,data_prep
+prepare_shape,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,308,"function(data, shape_cols)",#' Prepare shape mapping,Prepare shape mapping,data_prep
+apply_processing,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,339,"function(data, y_col, interaction_term, proc)",#' Apply outlier detection + trimming to data,Apply outlier detection + trimming to data,other
+build_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,376,NA,#' Build the core ggplot with jitter layers for retained / trimmed / outlier,Build the core ggplot with jitter layers for retained / trimmed / outlier,plotting
+add_stat_overlays,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,492,"function(p, data, gl, sls)",#' Add median crossbar and SD error bars on retained data,Add median crossbar and SD error bars on retained data,error_handling
+apply_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,526,"function(p, x_cols, gl, ax)","#' Apply theme, grid, and border settings","Apply theme, grid, and border settings",other
+add_nested_axis,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/scatter.R,app/logic/plotting,583,function(p),#' Add legendry nested axis guide for multi-column x-axis,Add legendry nested axis guide for multi-column x-axis,other
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/plotting/validate.R,app/logic/plotting,19,"function(columns, data)","#' Validate inputs before computation
+#' @param columns Character vector of selected column names
+#' @param data Data frame to validate against
+#' @return List with $valid (logical) and $error (app_error or NULL)
+#' @export",Validate inputs before computation,"validation, export, filtering, error_handling"
+load_bundle,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/bundle_io.R,app/logic/prediction,33,function(path),"#' Load and validate an RDS bundle
+#'
+#' Reads an .rds file, checks that it contains the
+#' expected bundle structure, and returns the bundle
+#' or a structured error.
+#'
+#' @param path Character, path to the .rds file
+#' @return List with $success, $result (bundle) or $error
+#' @export",Load and validate an RDS bundle,"validation, export, error_handling"
+validate_bundle,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/bundle_io.R,app/logic/prediction,78,function(bundle),"#' Validate bundle structure
+#'
+#' Checks that a loaded object has all required fields
+#' and a valid analysis_type.
+#'
+#' @param bundle The object read from the .rds file
+#' @return List with $valid (logical) and $message
+#'   (character or NULL)
+#' @export",Validate bundle structure,"validation, export"
+bundle_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/bundle_io.R,app/logic/prediction,134,NA,NA,NA,undocumented
+preprocess_unknown,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,28,"function(unknown_data, bundle)","#' Preprocess unknown data using stored bundle params
+#'
+#' Applies stored skewness transforms and scaling params
+#' to unknown data so it matches the training pipeline.
+#' For PCA: only transforms (predict.prcomp handles
+#' center/scale automatically).
+#' For LDA/MDA/QDA: transforms + manual scale.
+#'
+#' @param unknown_data Data frame of unknown observations
+#' @param bundle The prediction bundle
+#' @return Data frame with preprocessed numeric columns
+#' @export",Preprocess unknown data using stored bundle params,"export, transformation, data_prep"
+predict_unknown,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,97,"function(bundle, preprocessed_data)","#' Run prediction on preprocessed unknown data
+#'
+#' Dispatches to the appropriate predict method based
+#' on the bundle's analysis_type.
+#'
+#' @param bundle The prediction bundle
+#' @param preprocessed_data Data frame (already
+#'   preprocessed via preprocess_unknown)
+#' @return List with $success, $result or $error.
+#'   $result contains: predicted_class, posterior,
+#'   scores (where applicable), n_unknowns
+#' @export",Run prediction on preprocessed unknown data,"computation, export, error_handling, data_prep"
+predict_pca,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,146,"function(model, numeric_data)",NA,NA,undocumented
+predict_lda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,162,"function(model, numeric_data)",NA,NA,undocumented
+predict_mda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,175,"function(model, numeric_data)",NA,NA,undocumented
+predict_qda,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,205,"function(model, numeric_data, bundle)",NA,NA,undocumented
+prediction_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/predict.R,app/logic/prediction,230,NA,NA,NA,undocumented
+create_prediction_overlay_plot,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,53,NA,"#' Create a prediction overlay plot
+#'
+#' Recreates the training plot from bundled data and
+#' overlays unknown sample predictions with distinct
+#' visual encoding.
+#'
+#' @param bundle The prediction bundle
+#' @param prediction_result Result from predict_unknown()
+#' @param unknown_data Original unknown data frame
+#'   (for metadata / labels)
+#' @param dim_x Character, x-axis dimension name
+#' @param dim_y Character, y-axis dimension name
+#' @param meta_col Character or NULL, metadata column
+#'   to use as unknown labels
+#' @param group_cols Character vector or NULL, metadata
+#'   columns for grouping training data (PCA only)
+#' @param show_convex_hull Logical, use convex hull
+#'   instead of 95% ellipse (PCA only)
+#' @param point_alpha Character or numeric, point alpha
+#'   for PCA biplot (""Contribution"" or fixed, PCA only)
+#' @param point_size Character or numeric, point size
+#'   for PCA biplot (""Contribution"" or fixed, PCA only)
+#' @param layer Character, biplot layer: ""individuals"",
+#'   ""variables"", or ""combined"" (PCA only)
+#' @param show_diagnostics Logical, overlay assumption
+#'   diagnostics (LDA/MDA only)
+#' @param show_boundaries Logical, overlay decision
+#'   boundary regions (LDA/MDA/QDA)
+#' @return List with $success, $result (ggplot) or $error
+#' @export",Create a prediction overlay plot,"plotting, export, error_handling"
+build_pca_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,120,NA,"#' Build PCA overlay: reuse create_biplot for training
+#' data, then layer unknown scores on top.",Build PCA overlay: reuse create_biplot for training,plotting
+build_ld_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,238,NA,"#' Build LDA/MDA overlay: delegate to create_ld_plot
+#' for the training base layer, then overlay unknowns.",Build LDA/MDA overlay: delegate to create_ld_plot,plotting
+build_qda_overlay,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,338,NA,"#' Build QDA overlay: delegate to create_qda_plot
+#' for the training base layer, then overlay unknowns.",Build QDA overlay: delegate to create_qda_plot,plotting
+reconstruct_pca_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,431,function(bundle),"#' Reconstruct a pca_result structure from a bundle
+#'
+#' Uses the stored prcomp model and training data to
+#' rebuild the same structure that create_biplot expects.",Reconstruct a pca_result structure from a bundle,plotting
+reconstruct_lda_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,452,function(bundle),"#' Reconstruct an lda_result-like structure from a bundle
+#'
+#' Builds the list that create_ld_plot expects from the
+#' bundle's stored model and training data.",Reconstruct an lda_result-like structure from a bundle,plotting
+reconstruct_qda_result,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,551,function(bundle),"#' Reconstruct a qda_result-like structure from a bundle
+#'
+#' Builds the list that create_qda_plot expects from the
+#' bundle's stored model and training data.",Reconstruct a qda_result-like structure from a bundle,plotting
+build_unknown_overlay_df,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/prediction_plots.R,app/logic/prediction,606,NA,"#' Build unknown sample overlay data frame
+#'
+#' Creates the data frame used to layer unknown
+#' predictions on top of the training base plot.",Build unknown sample overlay data frame,plotting
+validate_unknown_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/validation.R,app/logic/prediction,25,"function(unknown_data, bundle)","#' Validate unknown data against a prediction bundle
+#'
+#' Checks that the unknown data has all required numeric
+#' columns, warns on missing metadata columns, and
+#' compares value ranges for plausibility.
+#'
+#' @param unknown_data Data frame of unknown observations
+#' @param bundle The prediction bundle (from load_bundle)
+#' @return List with $valid (logical), $errors (character
+#'   vector), $warnings (character vector)
+#' @export",Validate unknown data against a prediction bundle,"validation, export, error_handling"
+check_value_ranges,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/prediction/validation.R,app/logic/prediction,117,NA,"#' Compare value ranges of unknown data against training
+#'
+#' @param unknown_data Data frame of unknown observations
+#' @param raw_data Data frame of raw training data
+#' @param cols Character vector of column names to check
+#' @return Character vector of warning messages",Compare value ranges of unknown data against training,validation
+get_default_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/settings.R,app/logic/settings.R,31,function(),"#' Get the default theme object
+#' @return A bslib theme object
+#' @export",Get the default theme object,export
+get_theme_names,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/settings.R,app/logic/settings.R,38,function(),"#' Get theme names
+#' @return Character vector of available theme display names
+#' @export",Get theme names,"export, formatting"
+get_theme,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/settings.R,app/logic/settings.R,46,function(name),"#' Get a theme by name
+#' @param name Character, display name of the theme
+#' @return A bslib theme object, or the default if name is invalid
+#' @export",Get a theme by name,"export, formatting"
+compute_skewness,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,23,function(x),"#' Compute Fisher's skewness for a numeric vector
+#'
+#' Uses the adjusted Fisher-Pearson formula:
+#' g1 = (n / ((n-1)(n-2))) * sum(((x - mean) / sd)^3)
+#'
+#' @param x Numeric vector (NAs removed upstream)
+#' @return Numeric scalar, skewness value",Compute Fisher's skewness for a numeric vector,computation
+detect_skewness,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,48,NA,"#' Detect skewness in measurement columns
+#'
+#' Computes per-column skewness and classifies each column
+#' as ""left"" (negative skewness), ""right"" (positive skewness),
+#' or ""symmetric"" (abs(skewness) <= threshold).
+#'
+#' @param data Data frame
+#' @param measurement_cols Character vector of measurement column names
+#' @param threshold Numeric, absolute skewness above which a column
+#'   is flagged as skewed. Default 1.0.
+#' @return Data frame with columns: column, skewness, abs_skewness,
+#'   direction (""left"", ""right"", ""symmetric""), is_skewed (logical).
+#'   Sorted by abs_skewness descending.
+#' @export",Detect skewness in measurement columns,"computation, export"
+transform_skewed,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,107,NA,"#' Transform skewed columns to reduce skewness
+#'
+#' Applies log or Box-Cox transformation to columns flagged
+#' as skewed by detect_skewness(). Left-skewed columns are
+#' reflected before transformation. Symmetric columns are
+#' left untouched.
+#'
+#' @param data Data frame (full, including metadata columns)
+#' @param measurement_cols Character vector of measurement column names
+#' @param skew_result Data frame from detect_skewness()
+#' @param method Character, transformation method:
+#'   ""auto"" (try log, fall back to Box-Cox),
+#'   ""log"", ""boxcox"", ""none"".
+#' @return List with $success, $result or $error.
+#'   $result contains $data, $transformed_cols (data frame),
+#'   $skipped_cols (character vector).
+#' @export",Transform skewed columns to reduce skewness,"export, transformation, error_handling, formatting"
+apply_stored_transform,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,229,"function(x, params)","#' Apply a stored transform to a single column
+#'
+#' Replays the exact transformation on new data using
+#' stored parameters (no re-estimation). Used by the
+#' prediction module to apply training transforms to
+#' unknown data.
+#'
+#' @param x Numeric vector (new data column)
+#' @param params List with: method, direction, shift,
+#'   lambda (NULL for log), reflect_max (NULL for right),
+#'   column (informational)
+#' @return Numeric vector of transformed values
+#' @export",Apply a stored transform to a single column,"export, transformation, formatting"
+apply_stored_transforms,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,286,NA,"#' Apply stored transforms to a data frame
+#'
+#' Applies all stored per-column transform parameters
+#' to the corresponding columns in a data frame.
+#' Columns not in transform_params are left untouched.
+#'
+#' @param data Data frame
+#' @param transform_params List of per-column param lists,
+#'   each with $column and transform parameters
+#' @return Data frame with transformed columns
+#' @export",Apply stored transforms to a data frame,"export, transformation"
+skewness_error_parser,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,313,NA,"#' Error parser for skewness transformation errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export",Error parser for skewness transformation errors,"export, transformation, error_handling, formatting"
+try_transform_column,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,349,"function(x, direction, method)","#' Try to transform a single column
+#'
+#' @param x Numeric vector
+#' @param direction ""left"" or ""right""
+#' @param method ""auto"", ""log"", or ""boxcox""
+#' @return List with $values, $method_used, and $params,
+#'   or NULL on failure",Try to transform a single column,transformation
+try_transform_positive,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,387,"function(x, method)","#' Apply transformation to a (positive-shifted) vector
+#'
+#' @param x Numeric vector
+#' @param method ""auto"", ""log"", or ""boxcox""
+#' @return List with $values and $method_used, or NULL",Apply transformation to a (positive-shifted) vector,"transformation, formatting"
+try_log_transform,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,414,function(x),"#' Try log1p transformation
+#'
+#' Shifts data so minimum is 0, then applies log1p.
+#' Returns stored params for replay on new data.
+#'
+#' @param x Numeric vector
+#' @return List with $values, $method_used, and $params,
+#'   or NULL on failure",Try log1p transformation,"transformation, formatting"
+try_boxcox_transform,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/skewness_transform.R,app/logic/skewness_transform.R,446,function(x),"#' Try Box-Cox transformation
+#'
+#' Estimates optimal lambda via MASS::boxcox, then applies
+#' the power transformation. Requires strictly positive data.
+#' Returns stored params for replay on new data.
+#'
+#' @param x Numeric vector
+#' @return List with $values, $method_used, and $params,
+#'   or NULL on failure",Try Box-Cox transformation,"transformation, formatting"
+elimna,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,10,function(m),"#' Remove rows with missing values
+#' @keywords internal",Remove rows with missing values,other
+binomci,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,42,function(x = sum(y),"#' Binomial confidence interval using Pratt's method
+#' @keywords internal",Binomial confidence interval using Pratt's method,other
+binomcipv,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,86,function(x = sum(y),"#' Binomial CI with p-value
+#' @keywords internal",Binomial CI with p-value,statistical
+cid,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,125,NA,"#' Cliff's method for two independent groups
+#' @keywords internal",Cliff's method for two independent groups,other
+bmp,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,184,NA,"#' Brunner-Munzel heteroscedastic analog of WMW test
+#' @keywords internal",Brunner-Munzel heteroscedastic analog of WMW test,"computation, statistical"
+cidv2,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,241,NA,"#' p-value for Cliff's analog of WMW test
+#' @keywords internal",p-value for Cliff's analog of WMW test,statistical
+cidmulv2_labelled,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/cliff_delta.R,app/logic/statistics,309,NA,"#' Cliff's method for all pairs of J independent groups with labels
+#'
+#' Perform Cliff's method for all pairs of J independent groups.
+#' The familywise type I error probability is controlled via
+#' Hochberg's method.
+#'
+#' @param data Data frame containing the data
+#' @param alpha Significance level (default 0.05)
+#' @param gcode Column name for numeric group codes
+#' @param glab Column name for character group labels
+#' @param dp Column name for the dependent variable
+#' @param CI.FWE Logical, use FWE-adjusted CIs (default FALSE)
+#' @return List with n (group sizes), test (results), summary.dvals
+#' @export",Cliff's method for all pairs of J independent groups with labels,"computation, export, error_handling, statistical"
+winvar,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,10,"function (x, tr = 0.2, na.rm = FALSE, STAND = NULL, ...)",NA,NA,undocumented
+listm,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,26,function(x),NA,NA,undocumented
+smmcrit,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,34,"function (nuhat, C)",NA,NA,undocumented
+smmcrit01,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,155,"function (nuhat, C)",NA,NA,undocumented
+smmvalv2,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,276,"function (dfvec, iter = 10000, alpha = 0.05, SEED = TRUE)",NA,NA,undocumented
+fac2list,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,293,"function (x, g)",NA,NA,undocumented
+lincon1,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,316,NA,NA,NA,undocumented
+con2way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,439,"function (J, K)",NA,NA,undocumented
+selby,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,495,"function (m, grpc, coln)",NA,NA,undocumented
+selby2,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,518,"function (m, grpc, coln = NA)",NA,NA,undocumented
+matl,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,623,function (x),NA,NA,undocumented
+mcp2atm,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,633,"function (formula, data, tr = 0.2, ...)",NA,NA,undocumented
+mcp2atm_TM,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,718,"function (formula, data, tr = 0.2, ...)",NA,NA,undocumented
+kron,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,807,"function(m1, m2)",NA,NA,undocumented
+cjMAT,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,820,function(J),NA,NA,undocumented
+con3way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,836,"function(J, K, L)",NA,NA,undocumented
+mcp3atm_TM,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/customWRS.R,app/logic/statistics,857,"function(formula, data, tr = 0.2, ...)",NA,NA,undocumented
+safe_factor_conversion,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,24,"function(data, vars)","#' Safely convert columns to factors with validation
+#'
+#' Validates data before factor conversion to prevent errors from invalid data.
+#'
+#' @param data Data frame containing the columns to convert
+#' @param vars Character vector of column names to convert to factors
+#' @return List with $success (logical), $data (modified df), $error (app_error or NULL)
+#' @export",Safely convert columns to factors with validation,"validation, export, transformation, error_handling"
+calculate_smallest_group,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,96,"function(df, x_axis)","#' Calculate smallest group size across all factor combinations
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of grouping column(s)
+#' @return Integer, smallest group size
+#' @export",Calculate smallest group size across all factor combinations,"computation, export"
+setup_bootstrap_params,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,115,NA,"#' Setup bootstrap parameters
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping columns
+#' @param use_bootstrap Logical
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL, sample size per group
+#' @return List with $n_iterations and $sample_size
+#' @export",Setup bootstrap parameters,"export, data_prep"
+sample_for_iteration,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,143,NA,"#' Sample data for a single bootstrap iteration
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping columns
+#' @param use_bootstrap Logical
+#' @param sample_size Integer, sample size per group
+#' @return Data frame (sampled or original)
+#' @export",Sample data for a single bootstrap iteration,export
+format_bootstrap_results,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,169,"function(boot_results, digits = 3)","#' Format bootstrap results with confidence intervals
+#'
+#' @param boot_results Data frame with bootstrap iterations as rows
+#' @param digits Integer, number of significant digits (default 3)
+#' @return Data frame with mean [CI lower - CI upper] format
+#' @export",Format bootstrap results with confidence intervals,"export, formatting"
+run_omnibus_test,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/omnibus.R,app/logic/statistics,238,NA,"#' Generic omnibus test runner
+#'
+#' Executes any omnibus test (robust or parametric) using a config object
+#' that defines test-specific hooks for validation, formula building,
+#' test execution, result extraction, and formatting.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical, whether to use bootstrap
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL, bootstrap sample size per group
+#' @param config List with test configuration hooks:
+#'   $name, $result_cols, $validate, $build_context,
+#'   $build_formula, $run_test, $extract_results, $format_results
+#' @return Data frame with results, or structured app_error
+#' @export",Generic omnibus test runner,"validation, computation, export, filtering, error_handling, formatting, statistical"
+validate_posthoc,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,27,"function(df, x_axis)","#' Validate post-hoc inputs
+#'
+#' @param df Data frame
+#' @param x_axis Grouping columns
+#' @return NULL if valid, app_error otherwise",Validate post-hoc inputs,"validation, error_handling"
+build_posthoc_context,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,53,"function(df, x_axis, measure_col)","#' Build error context for post-hoc tests
+#'
+#' @param df Data frame
+#' @param x_axis Grouping columns
+#' @param measure_col Measurement column
+#' @return List with context information",Build error context for post-hoc tests,"error_handling, formatting, statistical"
+normalize_interaction,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,68,function(df),"#' Normalize interaction strings for consistent matching
+#'
+#' Extracts group names from ""GroupA vs. GroupB"" format and creates
+#' an alphabetized key for consistent matching between tests.
+#'
+#' @param df Data frame with Interaction column
+#' @return Data frame with added InteractionKey column",Normalize interaction strings for consistent matching,"transformation, filtering, formatting, statistical"
+filter_valid_comparisons,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,86,"function(df, x_axis)","#' Filter for valid comparisons in multi-factor designs
+#'
+#' Keeps only comparisons where groups differ by exactly one factor level.
+#'
+#' @param df Data frame with Interaction column
+#' @param x_axis Character vector of grouping columns
+#' @return Filtered data frame",Filter for valid comparisons in multi-factor designs,filtering
+parse_tukey_comparison,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,109,function(comp),"#' Parse Tukey HSD comparison string into group pair
+#'
+#' TukeyHSD uses ""GroupB-GroupA"" format. For multi-way with interaction(),
+#' groups contain ""."" separators, so we split on the last ""-"" that
+#' separates two groups.
+#'
+#' @param comp Character, comparison string from TukeyHSD rownames
+#' @return List with g1 and g2 (reversed to match Cohen's d ordering)",Parse Tukey HSD comparison string into group pair,formatting
+calculate_raw_pvalues,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,138,NA,"#' Calculate raw (unadjusted) p-values from mean differences
+#'
+#' Uses the pooled MSE from the ANOVA model to compute t-statistics
+#' and two-sided p-values for each pairwise comparison.
+#'
+#' @param differences Numeric vector of mean differences
+#' @param group1 Character vector of first group names
+#' @param group2 Character vector of second group names
+#' @param group_sizes Named numeric vector of group sizes
+#' @param mse Numeric, mean squared error from ANOVA residuals
+#' @param df_residual Numeric, residual degrees of freedom
+#' @return Numeric vector of raw p-values",Calculate raw (unadjusted) p-values from mean differences,"computation, error_handling, statistical"
+perform_tukey_hsd,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,174,"function(df, x_axis, measure_col)","#' Perform Tukey HSD Post-hoc Comparisons
+#'
+#' Conducts Tukey's Honestly Significant Difference test for pairwise
+#' comparisons. For multi-way designs, groups are combined into a single
+#' interaction factor using ""."" separator to produce pairwise comparisons
+#' compatible with Cohen's d output.
+#'
+#' Returns raw (unadjusted) p-values so downstream filtering and
+#' p-value correction can be applied.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @return Data frame with pairwise comparisons or structured error
+#' @export",Perform Tukey HSD Post-hoc Comparisons,"computation, export, filtering, error_handling, statistical"
+perform_cohens_d,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,284,"function(df, x_axis, measure_col)","#' Calculate Cohen's d Effect Size
+#'
+#' Computes Cohen's d for pairwise comparisons. For multi-way designs,
+#' groups are combined into a single factor using ""."" separator.
+#' Returns raw (unadjusted) t-test p-values.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @return Data frame with effect sizes or structured error
+#' @export",Calculate Cohen's d Effect Size,"computation, export, error_handling, statistical"
+perform_combined_parametric_posthoc,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_posthoc.R,app/logic/statistics,410,NA,"#' Perform Combined Parametric Post-Hoc Tests
+#'
+#' Runs both Tukey HSD and Cohen's d, merges results by interaction key,
+#' optionally filters valid comparisons, then applies p-value adjustment.
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param p_adjust_method Character, p-value adjustment method
+#' @param filter_valid Logical, filter to valid comparisons for multi-way
+#' @return Data frame with combined results or app_error
+#' @export",Perform Combined Parametric Post-Hoc Tests,"computation, export, filtering, error_handling, statistical"
+perform_anova1way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_tests.R,app/logic/statistics,136,NA,"#' Perform One-Way Parametric ANOVA
+#'
+#' Uses stats::aov() for classical one-way ANOVA.
+#' Bootstrap and trim parameters are accepted for interface
+#' consistency but ignored.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character, single grouping column name
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, ignored for parametric tests
+#' @param use_bootstrap Logical, ignored (always FALSE)
+#' @param boot_samples Integer, ignored
+#' @param boot_sample_size Integer or NULL, ignored
+#' @return Data frame with ANOVA results, or structured app_error
+#' @export",Perform One-Way Parametric ANOVA,"computation, export, error_handling, statistical"
+perform_anova2way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_tests.R,app/logic/statistics,309,NA,"#' Perform Two-Way Parametric ANOVA
+#'
+#' Uses stats::aov() for classical two-way ANOVA with interaction.
+#' Returns main effects (A, B) and interaction (A:B).
+#' Bootstrap and trim parameters are accepted for interface
+#' consistency but ignored.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of exactly two grouping column names
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, ignored for parametric tests
+#' @param use_bootstrap Logical, ignored (always FALSE)
+#' @param boot_samples Integer, ignored
+#' @param boot_sample_size Integer or NULL, ignored
+#' @return Data frame with ANOVA results, or structured app_error
+#' @export",Perform Two-Way Parametric ANOVA,"computation, export, error_handling, statistical"
+perform_anova3way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/parametric_tests.R,app/logic/statistics,503,NA,"#' Perform Three-Way Parametric ANOVA
+#'
+#' Uses stats::aov() for classical three-way ANOVA with all
+#' interactions. Returns main effects (A, B, C), two-way
+#' interactions (A:B, A:C, B:C), and three-way interaction
+#' (A:B:C). Bootstrap and trim parameters are accepted for
+#' interface consistency but ignored.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of exactly three grouping
+#'   column names
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, ignored for parametric tests
+#' @param use_bootstrap Logical, ignored (always FALSE)
+#' @param boot_samples Integer, ignored
+#' @param boot_sample_size Integer or NULL, ignored
+#' @return Data frame with ANOVA results, or structured app_error
+#' @export",Perform Three-Way Parametric ANOVA,"computation, export, error_handling, statistical"
+df_to_html_table,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/report.R,app/logic/statistics,21,function(df),"#' Convert a data frame to an HTML table string
+#'
+#' @param df Data frame to convert
+#' @return Character string with HTML table markup
+#' @export",Convert a data frame to an HTML table string,"export, transformation"
+render_plot_base64,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/report.R,app/logic/statistics,69,NA,"#' Render a ggplot object to a base64-encoded PNG data URI
+#'
+#' @param plot_object A ggplot object
+#' @param width_cm Width in cm (default 16)
+#' @param height_cm Height in cm (default 10)
+#' @param dpi Resolution (default 150)
+#' @return Character string with data URI, or NULL on failure",Render a ggplot object to a base64-encoded PNG data URI,"plotting, formatting"
+build_omnibus_html,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/report.R,app/logic/statistics,102,NA,"#' Build the omnibus section HTML
+#'
+#' @param omnibus_result Data frame or app_error or NULL
+#' @param x_axis Character vector of grouping columns
+#' @param approach Character, test approach name
+#' @return Character string with HTML",Build the omnibus section HTML,"error_handling, statistical"
+build_posthoc_html,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/report.R,app/logic/statistics,152,function(posthoc_result),"#' Build the post-hoc section HTML
+#'
+#' Detects column prefixes (Lincon/Cliff vs Tukey/Cohen)
+#' and splits into two side-by-side tables.
+#'
+#' @param posthoc_result Data frame or app_error or NULL
+#' @return Character string with HTML",Build the post-hoc section HTML,error_handling
+generate_html_report,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/report.R,app/logic/statistics,248,NA,"#' Generate a standalone HTML report for a single measurement
+#'
+#' @param measure Character, measurement column name
+#' @param plot_object ggplot object (or NULL)
+#' @param omnibus_result Data frame, app_error, or NULL
+#' @param posthoc_result Data frame, app_error, or NULL
+#' @param params List with test_approach, use_bootstrap,
+#'   p_val_cor_method, etc.
+#' @param x_axis Character vector of grouping columns
+#' @param timestamp POSIXct timestamp
+#' @return Character string with full HTML document
+#' @export",Generate a standalone HTML report for a single measurement,"plotting, export, error_handling, statistical"
+validate_posthoc,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,31,"function(df, x_axis)","#' Validate post-hoc inputs
+#'
+#' @param df Data frame
+#' @param x_axis Grouping columns
+#' @return NULL if valid, app_error otherwise",Validate post-hoc inputs,"validation, error_handling"
+build_posthoc_context,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,59,NA,"#' Build error context for post-hoc tests
+#'
+#' @param df Data frame
+#' @param x_axis Grouping columns
+#' @param measure_col Measurement column
+#' @param tr_value Trim proportion
+#' @param use_bootstrap Logical
+#' @return List with context information",Build error context for post-hoc tests,"error_handling, formatting, statistical"
+extract_contrast_labels,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,79,function(contrasts),"#' Extract interaction labels from mcp2atm_TM / mcp3atm_TM contrast matrix
+#'
+#' Each contrast column has +1 and -1 entries. The row names of the
+#' contrast matrix are the group labels (from dataWide column names).
+#' For each contrast, we find the groups with positive vs negative
+#' coefficients and build ""GroupA vs. GroupB"" labels.
+#'
+#' @param contrasts Data frame with contrast matrix (rows = groups, cols = contrasts)
+#' @return Character vector of interaction labels",Extract interaction labels from mcp2atm_TM / mcp3atm_TM contrast matrix,filtering
+flatten_mcp_effects,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,98,function(mcp_result),"#' Flatten mcp result effects into a data frame with interaction labels
+#'
+#' @param mcp_result Result from mcp2atm_TM or mcp3atm_TM
+#' @return Data frame with Interaction, Lincon.psihat, Lincon.ci.lower,
+#'   Lincon.ci.upper, Lincon.p.value",Flatten mcp result effects into a data frame with interaction labels,other
+run_lincon_1way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,147,NA,"#' Run single lincon iteration for 1-way design
+#'
+#' @param sample_data Data frame
+#' @param x_axis Grouping columns (length 1)
+#' @param measure_col Measurement column
+#' @param tr_value Trim proportion
+#' @return Data frame with lincon results",Run single lincon iteration for 1-way design,computation
+run_lincon_2way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,182,NA,"#' Run single lincon iteration for 2-way design
+#'
+#' @param sample_data Data frame
+#' @param x_axis Grouping columns (length 2)
+#' @param measure_col Measurement column
+#' @param tr_value Trim proportion
+#' @return Data frame with lincon results",Run single lincon iteration for 2-way design,computation
+run_lincon_3way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,207,NA,"#' Run single lincon iteration for 3-way design
+#'
+#' @param sample_data Data frame
+#' @param x_axis Grouping columns (length 3)
+#' @param measure_col Measurement column
+#' @param tr_value Trim proportion
+#' @return Data frame with lincon results",Run single lincon iteration for 3-way design,computation
+run_cliff_iteration,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,232,NA,"#' Run single cliff iteration
+#'
+#' @param sample_data Data frame
+#' @param x_axis Grouping columns
+#' @param measure_col Measurement column
+#' @return Data frame with cliff results",Run single cliff iteration,computation
+format_posthoc_bootstrap,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,273,"function(results_list, value_cols)","#' Aggregate bootstrap iterations into mean [CI] format
+#'
+#' @param results_list List of data frames from bootstrap iterations
+#' @param value_cols Character vector of numeric column names to aggregate
+#' @return Data frame with formatted results",Aggregate bootstrap iterations into mean [CI] format,formatting
+normalize_interaction,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,353,function(df),"#' Normalize interaction strings for consistent matching
+#'
+#' Extracts group names from ""GroupA vs. GroupB"" format and creates
+#' an alphabetized key for consistent matching between tests.
+#'
+#' @param df Data frame with Interaction column
+#' @return Data frame with added InteractionKey column",Normalize interaction strings for consistent matching,"transformation, filtering, formatting, statistical"
+filter_valid_comparisons,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,371,"function(df, x_axis)","#' Filter for valid comparisons in multi-factor designs
+#'
+#' Keeps only comparisons where groups differ by exactly one factor level.
+#'
+#' @param df Data frame with Interaction column
+#' @param x_axis Character vector of grouping columns
+#' @return Filtered data frame",Filter for valid comparisons in multi-factor designs,filtering
+run_lincon_combined,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,398,NA,"#' Run lincon on combined groups (1-way style) for multi-way designs
+#'
+#' Combines multi-factor groups into a single factor using ""."" separator
+#' (matching Cliff's Delta convention) and runs WRS2::lincon.
+#' This produces pairwise comparisons compatible with Cliff's output.
+#'
+#' @param sample_data Data frame
+#' @param x_axis Grouping columns
+#' @param measure_col Measurement column
+#' @param tr_value Trim proportion
+#' @return Data frame with lincon results",Run lincon on combined groups (1-way style) for multi-way designs,"computation, export"
+perform_lincon_combined,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,449,NA,"#' Perform lincon on combined groups for the combined posthoc table
+#'
+#' For multi-way designs, combines factors into a single group using "".""
+#' separator and runs WRS2::lincon (1-way style). This produces pairwise
+#' comparisons that match Cliff's Delta output for merging.
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL
+#' @return Data frame with lincon results or app_error",Perform lincon on combined groups for the combined posthoc table,"computation, export, error_handling"
+perform_lincon,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,536,NA,"#' Perform Linear Contrasts (lincon)
+#'
+#' Pairwise comparisons using trimmed means.
+#' 1-way: WRS2::lincon with method=""none"".
+#' 2-way: mcp2atm_TM (structured Factor.A, Factor.B, Factor.AB).
+#' 3-way: mcp3atm_TM (structured 7 effect groups).
+#' Returns raw p-values only — no adjustment applied.
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL
+#' @return Data frame with contrast results or app_error
+#' @export",Perform Linear Contrasts (lincon),"computation, export, error_handling, statistical"
+perform_cliff,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,631,NA,"#' Perform Cliff's Delta Effect Size
+#'
+#' Pairwise Cliff's Delta for all group pairs.
+#' For multi-way designs, groups are combined into a single factor.
+#' Returns raw p-values only — no adjustment applied.
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param use_bootstrap Logical
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL
+#' @return Data frame with effect size results or app_error
+#' @export",Perform Cliff's Delta Effect Size,"computation, export, error_handling, statistical"
+perform_combined_posthoc,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_posthoc.R,app/logic/statistics,712,NA,"#' Perform Combined Post-Hoc Tests
+#'
+#' Runs both lincon and Cliff's Delta, merges results by interaction key,
+#' optionally filters valid comparisons, then applies p-value adjustment.
+#'
+#' @param df Data frame
+#' @param x_axis Character vector of grouping column(s)
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL
+#' @param p_adjust_method Character, p-value adjustment method
+#' @param filter_valid Logical, filter to valid comparisons for multi-way
+#' @return Data frame with combined results or app_error
+#' @export",Perform Combined Post-Hoc Tests,"computation, export, filtering, error_handling, statistical"
+perform_t1way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_tests.R,app/logic/statistics,120,NA,"#' Perform One-Way Robust ANOVA (Welch-Yuen t1way)
+#'
+#' Uses WRS2::t1way with trimmed means. Supports optional bootstrap.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character, single grouping column name
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical, whether to use bootstrap
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL, bootstrap sample size per group
+#' @return Data frame with test results, or structured app_error
+#' @export",Perform One-Way Robust ANOVA (Welch-Yuen t1way),"computation, export, error_handling, statistical"
+perform_t2way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_tests.R,app/logic/statistics,314,NA,"#' Perform Two-Way Robust ANOVA (Welch-Yuen t2way)
+#'
+#' Uses WRS2::t2way with trimmed means. Returns main effects (A, B)
+#' and interaction (AB) with Q statistics and p-values.
+#' Supports optional bootstrap.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of exactly two grouping column names
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical, whether to use bootstrap
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL, bootstrap sample size per group
+#' @return Data frame with test results, or structured app_error
+#' @export",Perform Two-Way Robust ANOVA (Welch-Yuen t2way),"computation, export, error_handling, statistical"
+perform_t3way,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/robust_tests.R,app/logic/statistics,542,NA,"#' Perform Three-Way Robust ANOVA (Welch-Yuen t3way)
+#'
+#' Uses WRS2::t3way with trimmed means. Returns main effects (A, B, C),
+#' two-way interactions (AB, AC, BC), and three-way interaction (ABC)
+#' with Q statistics and p-values. Supports optional bootstrap.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of exactly three grouping column names
+#' @param measure_col Character, measurement column name
+#' @param tr_value Numeric, trim proportion (0-0.5)
+#' @param use_bootstrap Logical, whether to use bootstrap
+#' @param boot_samples Integer, number of bootstrap samples
+#' @param boot_sample_size Integer or NULL, bootstrap sample size per group
+#' @return Data frame with test results, or structured app_error
+#' @export",Perform Three-Way Robust ANOVA (Welch-Yuen t3way),"computation, export, error_handling, statistical"
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/validate.R,app/logic/statistics,19,"function(columns, data)","#' Validate inputs before statistics computation
+#' @param columns Character vector of selected column names
+#' @param data Data frame to validate against
+#' @return List with $valid (logical) and $error (app_error or NULL)
+#' @export",Validate inputs before statistics computation,"validation, export, filtering, error_handling"
+run_analysis,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/statistics/validate.R,app/logic/statistics,56,"function(data, columns)","#' Run statistical analysis wrapped in safe_execute
+#' @param data Data frame
+#' @param columns Character vector of column names
+#' @return List with $success, $result or $error
+#' @export",Run statistical analysis wrapped in safe_execute,"computation, export, error_handling, statistical"
+validate_inputs,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,20,"function(grouping_vars, data)","#' Validate grouping columns exist in data
+#' @param grouping_vars Character vector of grouping column names
+#' @param data Data frame to validate against
+#' @return List with $valid (logical) and $error (app_error or NULL)
+#' @export",Validate grouping columns exist in data,"validation, export, error_handling"
+get_filtered_values,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,62,"function(values, data, col_name)","#' Get filtered values excluding outliers and trimmed
+#'
+#' Uses {col}_outlier and {col}_trimmed flag columns if present.
+#'
+#' @param values Numeric vector of measurement values
+#' @param data Data frame containing the group subset
+#' @param col_name Character, the measurement column name
+#' @return Numeric vector of retained (non-NA, non-outlier,
+#'   non-trimmed) values
+#' @export",Get filtered values excluding outliers and trimmed,"export, filtering"
+compute_base_stats,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,87,function(filtered),"#' Compute summary statistics for one group + one measurement
+#'
+#' @param filtered Numeric vector of filtered values
+#' @return Named list with n, mean, median, var, sd, sem, cv",Compute summary statistics for one group + one measurement,"computation, filtering"
+count_exclusions,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,112,"function(data, col_name)","#' Count outliers and trimmed values for one group + one measurement
+#'
+#' @param data Data frame (group subset)
+#' @param col_name Character, measurement column name
+#' @return Named list with n_outliers, n_trimmed",Count outliers and trimmed values for one group + one measurement,filtering
+compute_shapiro,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,143,function(filtered),"#' Compute Shapiro-Wilk test for one group + one measurement
+#'
+#' @param filtered Numeric vector of filtered values
+#' @return Named list with shapiro_p, shapiro_W, normal",Compute Shapiro-Wilk test for one group + one measurement,"computation, filtering, statistical"
+summarize_data,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,184,NA,"#' Summarize data with grouped statistics per measurement
+#'
+#' Computes n, mean, median, var, sd, sem, cv (and optionally
+#' Shapiro-Wilk) for each measurement column, grouped by the
+#' specified grouping variables. Respects {col}_outlier and
+#' {col}_trimmed flag columns.
+#'
+#' @param data Data frame with measurement and flag columns
+#' @param grouping_vars Character vector of grouping column names
+#' @param measure_vars Character vector of measurement column names
+#' @param shapiro_test Logical, include Shapiro-Wilk test
+#' @return Data frame in long format (one row per group per
+#'   measurement)
+#' @export",Summarize data with grouped statistics per measurement,"computation, export, formatting, statistical"
+split_by_measurement,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,257,function(summary_df),"#' Split summary data into per-measurement list
+#'
+#' Takes the long-format output of summarize_data() and splits
+#' it into a list of list(col, df), one per measurement. Removes
+#' the Measurement column (redundant per card), rounds numerics,
+#' and drops n_outliers/n_trimmed columns if all zeros.
+#'
+#' @param summary_df Data frame from summarize_data()
+#' @return List of list(col = character, df = data.frame)
+#' @export",Split summary data into per-measurement list,"export, formatting"
+run_summary,/Users/tmc/Documents/03_Arbeit/09_Software_Dev/TexAn2.0/app/logic/summary.R,app/logic/summary.R,295,NA,"#' Run full summary computation (validate + summarize + split)
+#'
+#' @param data Data frame
+#' @param grouping_vars Character vector of grouping column names
+#' @param measure_vars Character vector of measurement column names.
+#'   If NULL, auto-detected via column_utils$get_measurement_cols().
+#' @param shapiro_test Logical, include Shapiro-Wilk test
+#' @return List with $success, $result (list of list(col, df))
+#'   or $error
+#' @export",Run full summary computation (validate + summarize + split),"validation, computation, export, error_handling, statistical"
