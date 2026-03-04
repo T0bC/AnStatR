@@ -13,21 +13,32 @@ box::use(
 #' @param trace_text Character, raw stack trace text
 #' @return Character, sanitized stack trace
 sanitize_stack_paths <- function(trace_text) {
-
   if (is.null(trace_text) || length(trace_text) == 0) {
     return(trace_text)
   }
 
-
-  # Pattern to match file paths in stack traces: [/path/to/file.R#123]
-
-  # Replace absolute paths with relative paths starting from 'app/'
+  # Replace Windows absolute paths: [C:\...\app\...] -> [app/...]
+  # Match drive letter, any path, then capture from 'app\' or 'app/'
   sanitized <- gsub(
-    "\\[([^\\]]*[/\\\\])(app[/\\\\][^\\]]+)\\]",
-    "[\\2]",
+    "\\[[A-Za-z]:[^\\]]*[/\\\\](app[/\\\\][^\\]]+)\\]",
+    "[\\1]",
     trace_text
   )
 
+  # Replace Unix absolute paths: [/path/to/app/...] -> [app/...]
+  sanitized <- gsub(
+    "\\[/[^\\]]*/(app/[^\\]]+)\\]",
+    "[\\1]",
+    sanitized
+  )
+
+  # Normalize backslashes to forward slashes in remaining paths
+  sanitized <- gsub(
+    "\\[(app)\\\\",
+    "[\\1/",
+    sanitized
+  )
+  sanitized <- gsub("\\\\", "/", sanitized)
 
   # Remove /tmp/... paths (R session temp files)
   sanitized <- gsub(
