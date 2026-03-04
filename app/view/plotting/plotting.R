@@ -331,7 +331,7 @@ server <- function(id, input_data, data_version) {
         }
 
         error_handling$safe_execute(
-          scatter$create_scatter_plot(
+          suppressWarnings(scatter$create_scatter_plot(
             data            = data,
             x_cols          = params$x_cols,
             y_col           = plot_col,
@@ -343,7 +343,7 @@ server <- function(id, input_data, data_version) {
             grid_legend     = params$grid_legend,
             stat_line_style = params$stat_line_style,
             axis_style      = params$axis_style
-          ),
+          )),
           operation_name = paste("Plot", y_col)
         ) -> exec_result
 
