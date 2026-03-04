@@ -264,6 +264,21 @@ var TEXAN_DEBUG = false;
         if (!Ctor || !Ctor.prototype) return false;
         if (Ctor.prototype._close_patched) return true;
 
+        // Patch close(): prevent multi-select dropdowns from closing
+        // while the control still has focus.  This stops DOM mutations
+        // (e.g. conditionalPanel appearing) from stealing the dropdown.
+        var origClose = Ctor.prototype.close;
+        Ctor.prototype.close = function () {
+            if (this.settings.maxItems !== 1 && this.isFocused) {
+                return;
+            }
+            return origClose.apply(this, arguments);
+        };
+
+        // Patch addItem(): after selecting an item in a multi-select,
+        // re-open the dropdown so the user can continue picking.
+        // The 20ms delay ensures this fires after shiny:busy lock
+        // (which skips open dropdowns).
         var origAddItem = Ctor.prototype.addItem;
         Ctor.prototype.addItem = function (value, silent) {
             var isMulti = this.settings.maxItems !== 1;
@@ -273,7 +288,7 @@ var TEXAN_DEBUG = false;
                 setTimeout(function () {
                     self.open();
                     self.$control_input[0].focus();
-                }, 0);
+                }, 20);
             }
             return result;
         };
