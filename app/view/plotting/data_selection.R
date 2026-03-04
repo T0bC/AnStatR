@@ -48,20 +48,29 @@ tab_ui <- function(ns) {
       ),
       shiny$selectizeInput(
         inputId = ns("measureVar"),
-        label = shiny$tags$span(
-          "Measurement columns (Y-Axis) ",
-          bslib$tooltip(
-            bsicons$bs_icon("info-circle", class = "text-muted"),
-            paste(
-              "Select columns containing measurements",
-              "to plot. One plot per column."
+        label = shiny$tags$div(
+          class = "d-flex justify-content-between align-items-center",
+          shiny$tags$span(
+            "Measurement columns (Y-Axis) ",
+            bslib$tooltip(
+              bsicons$bs_icon("info-circle", class = "text-muted"),
+              paste(
+                "Select columns containing measurements",
+                "to plot. One plot per column."
+              )
             )
+          ),
+          shiny$actionLink(
+            inputId = ns("select_all_measure"),
+            label = "   Select all",
+            class = "small ms-2"
           )
         ),
         choices = NULL,
         multiple = TRUE,
         options = list(
-          placeholder = "Select measurement columns..."
+          placeholder = "Select measurement columns...",
+          closeAfterSelect = FALSE
         )
       ),
       # Step 3: X-Axis and Tooltip (shown after measureVar)
@@ -197,46 +206,40 @@ tab_server <- function(input, output, session, input_data,
     )
   }, ignoreInit = TRUE)
 
-  # Update metaData choices when data changes (non-version)
-  shiny$observe({
-    data <- input_data()
-    if (is.null(data)) return()
-    cols <- column_utils$get_descriptive_cols(data)
-    shiny$updateSelectizeInput(
-      session, "metaData",
-      choices = cols,
-      selected = input$metaData[input$metaData %in% cols]
-    )
-  })
-
-  # Update measureVar choices when data changes (non-version)
-  shiny$observe({
+  # Select all measurement columns on link click
+  shiny$observeEvent(input$select_all_measure, {
     data <- input_data()
     if (is.null(data)) return()
     cols <- column_utils$get_measurement_cols(data)
     shiny$updateSelectizeInput(
       session, "measureVar",
-      choices = cols,
-      selected = input$measureVar[input$measureVar %in% cols]
+      choices = cols, selected = cols
     )
   })
 
-  # Update xAxis + tooltip choices from selected metaData
+  # Update xAxis + tooltip choices from selected metaData.
+  # Debounced so rapid metaData picks don't repeatedly rebuild
+  # the xAxis/tooltip widgets (which would close their dropdowns).
+  debounced_meta <- shiny$reactive({
+    m <- input$metaData
+    if (is.null(m)) character(0) else m
+  }) |> shiny$debounce(500)
+
   shiny$observe({
-    selected_meta <- input$metaData
-    if (is.null(selected_meta)) selected_meta <- character(0)
+    selected_meta <- debounced_meta()
+
+    cur_x <- shiny$isolate(input$xAxis)
+    cur_tip <- shiny$isolate(input$tooltip)
 
     shiny$updateSelectizeInput(
       session, "xAxis",
       choices = selected_meta,
-      selected = input$xAxis[input$xAxis %in% selected_meta]
+      selected = cur_x[cur_x %in% selected_meta]
     )
     shiny$updateSelectizeInput(
       session, "tooltip",
       choices = selected_meta,
-      selected = input$tooltip[
-        input$tooltip %in% selected_meta
-      ]
+      selected = cur_tip[cur_tip %in% selected_meta]
     )
   })
 }
