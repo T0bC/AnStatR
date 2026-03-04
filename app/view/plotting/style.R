@@ -53,29 +53,37 @@ tab_server <- function(input, output, session, input_data,
                        data_version) {
   ns <- session$ns
 
-  # Update pointShape choices from metaData
+  # Update pointShape choices from metaData (debounced)
+  debounced_meta <- shiny$reactive({
+    m <- input$metaData
+    if (is.null(m)) character(0) else m
+  }) |> shiny$debounce(500)
+
   shiny$observe({
-    selected_meta <- input$metaData
-    if (is.null(selected_meta)) selected_meta <- character(0)
+    selected_meta <- debounced_meta()
+    cur_shape <- shiny$isolate(input$pointShape)
 
     shiny$updateSelectizeInput(
       session, "pointShape",
       choices = selected_meta,
-      selected = input$pointShape[
-        input$pointShape %in% selected_meta
-      ]
+      selected = cur_shape[cur_shape %in% selected_meta]
     )
   })
 
-  # Update pointColor choices from xAxis (empty = use all xAxis)
+  # Update pointColor choices from xAxis (debounced)
+  debounced_xaxis <- shiny$reactive({
+    xa <- input$xAxis
+    if (is.null(xa)) character(0) else xa
+  }) |> shiny$debounce(500)
+
   shiny$observe({
-    x_axis <- input$xAxis
-    if (is.null(x_axis) || length(x_axis) == 0) {
+    x_axis <- debounced_xaxis()
+    if (length(x_axis) == 0) {
       shiny$updateSelectizeInput(
         session, "pointColor", choices = character(0)
       )
     } else {
-      current <- input$pointColor
+      current <- shiny$isolate(input$pointColor)
       valid <- current[current %in% x_axis]
       shiny$updateSelectizeInput(
         session, "pointColor",
