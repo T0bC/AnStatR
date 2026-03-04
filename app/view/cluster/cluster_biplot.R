@@ -83,8 +83,8 @@ render_output <- function(input, output, session,
     )
   }
 
-  shiny$observe({
-    new_params <- list(
+  debounced_params_raw <- shiny$reactive({
+    list(
       dim_x = input$clusterBiplotDimX,
       dim_y = input$clusterBiplotDimY,
       group_cols = input$groupBiplot,
@@ -94,7 +94,11 @@ render_output <- function(input, output, session,
       point_alpha = input$pointAlpha,
       point_size = input$pointSize
     )
+  }) |> shiny$debounce(400)
 
+  shiny$observe({
+    new_params <- debounced_params_raw()
+    shiny$req(new_params)
     current <- cached_params()
     new_fp <- make_fingerprint(new_params)
     old_fp <- if (!is.null(current)) {
@@ -105,7 +109,7 @@ render_output <- function(input, output, session,
     if (new_fp != old_fp) {
       cached_params(new_params)
     }
-  }) |> shiny$debounce(400)
+  })
 
   biplot_params <- shiny$reactive({ cached_params() })
 
