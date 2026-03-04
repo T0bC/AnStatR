@@ -1,5 +1,6 @@
 box::use(
   bsicons,
+  markdown,
   rhino,
   shiny,
 )
@@ -44,8 +45,15 @@ server <- function(id) {
           shiny$helpText(
             "More settings can be added here in the future."
           ),
+          shiny$hr(),
+          shiny$actionButton(
+            inputId = session$ns("show_changelog"),
+            label = "View Changelog",
+            icon = bsicons$bs_icon("journal-text"),
+            class = "btn-outline-secondary btn-sm"
+          ),
           footer = shiny$tagList(
-            shiny$helpText(paste("Version:", settings$app_version)),
+            shiny$helpText(paste("Version:", settings$get_version_string())),
             shiny$modalButton("Close")
           )
         )
@@ -57,6 +65,25 @@ server <- function(id) {
       theme <- settings$get_theme(input$theme_selector)
       session$setCurrentTheme(theme)
       rhino$log$info("Theme changed to: '{input$theme_selector}'")
+    })
+
+    # Show changelog modal
+    shiny$observeEvent(input$show_changelog, {
+      rhino$log$debug("Changelog modal opened")
+      changelog_html <- markdown$mark(settings$get_changelog_markdown())
+
+      shiny$showModal(
+        shiny$modalDialog(
+          title = "Changelog",
+          size = "l",
+          easyClose = TRUE,
+          shiny$div(
+            style = "max-height: 60vh; overflow-y: auto; padding: 10px;",
+            shiny$HTML(changelog_html)
+          ),
+          footer = shiny$modalButton("Close")
+        )
+      )
     })
   })
 }
