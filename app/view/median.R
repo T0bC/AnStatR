@@ -514,7 +514,10 @@ server <- function(id, input_data, data_version) {
       if (is.null(data)) return(NULL)
       filtered_rows <- input$median_table_rows_all
       if (is.null(filtered_rows)) return(data)
-      data[filtered_rows, , drop = FALSE]
+      result <- data[filtered_rows, , drop = FALSE]
+      # Drop unused factor levels after filtering to prevent
+      # issues in downstream modules (LDA, PCA, etc.)
+      droplevels(result)
     })
 
     # --- Download handler: filtered data as Excel ---
