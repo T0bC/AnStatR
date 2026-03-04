@@ -73,6 +73,7 @@ COPY app.R app.R
 COPY rhino.yml rhino.yml
 COPY config.yml config.yml
 COPY dependencies.R dependencies.R
+COPY CHANGELOG.md CHANGELOG.md
 COPY app/ app/
 COPY www/ www/
 
