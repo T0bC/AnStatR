@@ -17,42 +17,33 @@ sanitize_stack_paths <- function(trace_text) {
     return(trace_text)
   }
 
-  # Replace Windows absolute paths: [C:\...\app\...] -> [app/...]
-  # Match drive letter, any path, then capture from 'app\' or 'app/'
+  # Replace any absolute path containing /app/ or \app\ with relative path
+  # Handles: [C:/Users/.../app/...], [/home/.../app/...], etc.
   sanitized <- gsub(
-    "\\[[A-Za-z]:[^\\]]*[/\\\\](app[/\\\\][^\\]]+)\\]",
+    "\\[.+?[/\\\\](app[/\\\\].+?)\\]",
     "[\\1]",
-    trace_text
+    trace_text,
+    perl = TRUE
   )
 
-  # Replace Unix absolute paths: [/path/to/app/...] -> [app/...]
-  sanitized <- gsub(
-    "\\[/[^\\]]*/(app/[^\\]]+)\\]",
-    "[\\1]",
-    sanitized
-  )
-
-  # Normalize backslashes to forward slashes in remaining paths
-  sanitized <- gsub(
-    "\\[(app)\\\\",
-    "[\\1/",
-    sanitized
-  )
+  # Normalize backslashes to forward slashes
   sanitized <- gsub("\\\\", "/", sanitized)
 
   # Remove /tmp/... paths (R session temp files)
   sanitized <- gsub(
-    "\\[/tmp/[^\\]]+\\]",
-    "[internal]",
-    sanitized
-  )
-
-  # Remove Windows temp paths
-  sanitized <- gsub(
-    "\\[[A-Za-z]:[^\\]]*[/\\\\]Temp[/\\\\][^\\]]+\\]",
+    "\\[/tmp/.+?\\]",
     "[internal]",
     sanitized,
-    ignore.case = TRUE
+    perl = TRUE
+  )
+
+  # Remove Windows temp paths (with forward or back slashes)
+  sanitized <- gsub(
+    "\\[[A-Za-z]:.+?Temp[/\\\\].+?\\]",
+    "[internal]",
+    sanitized,
+    ignore.case = TRUE,
+    perl = TRUE
   )
 
   sanitized
