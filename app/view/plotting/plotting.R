@@ -265,7 +265,7 @@ server <- function(id, input_data, data_version) {
         data   = data,
         fp     = make_plot_fingerprint(params, data)
       )
-    }) |> shiny$debounce(3000)
+    }) |> shiny$debounce(600)
 
     # Observer propagates debounced snapshot to cached values
     # only when the fingerprint actually changes.
