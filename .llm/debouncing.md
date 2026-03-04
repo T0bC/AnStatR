@@ -1,157 +1,118 @@
-# Unified Debouncing Pattern
+# Debouncing & Cascading Input Updates
 
-## Pattern Overview
+## Critical Rule
 
-Consolidate multiple related inputs into a **single debounced reactive** to prevent double-renders when inputs change at different times.
-
-## The Problem
-
-When multiple inputs affect the same output (e.g., a table), debouncing them separately causes staggered invalidations:
+`shiny$debounce()` only works on **reactives**, never on observers.
 
 ```r
-# BAD: Separate debounces = double render
-input_a <- reactive({ input$a }) |> debounce(500)
-input_b <- reactive({ input$b })  # No debounce
+# BROKEN — debounce is silently ignored, observer fires immediately
+shiny$observe({ ... }) |> shiny$debounce(300)
 
-observe({
-    # Fires twice: once for input_b, again 500ms later for input_a
-    result <- compute(input_a(), input_b())
-})
+# CORRECT — reactive is debounced, observer reads the debounced result
+debounced <- shiny$reactive({ ... }) |> shiny$debounce(300)
+shiny$observe({ debounced() })
 ```
-
-## Solution: Unified Parameters Reactive
-
-Bundle all related inputs into one reactive with a single debounce:
-
-### Implementation File (`app/logic/debouncing.R`)
-
-```r
-box::use(
-  shiny[reactiveVal, observe, reactive, debounce]
-)
-
-#' Create a unified debounced reactive for multiple inputs
-#' @param input Shiny input object from parent module
-#' @param debounce_ms Debounce delay in milliseconds
-#' @return A reactive function that returns consolidated parameters
-#' @export
-create_module_params <- function(input, debounce_ms = 400) {
-    cached_params <- reactiveVal(NULL)
-    
-    # Fingerprint for change detection
-    make_fingerprint <- function(params) {
-        paste(params$input_a, params$input_b, sep = "|")
-    }
-    
-    observe({
-        new_params <- list(
-            input_a = input$a,
-            input_b = input$b
-        )
-        
-        current <- cached_params()
-        if (make_fingerprint(new_params) != make_fingerprint(current)) {
-            cached_params(new_params)
-        }
-    }) |> debounce(debounce_ms)
-    
-    reactive({ cached_params() })
-}
-```
-
-## Usage in Parent Module
-
-### Parent Module (`app/logic/parent_module.R`)
-
-```r
-box::use(
-  shiny[moduleServer, reactive, observe, req],
-  app/logic/debouncing[create_module_params]
-)
-
-#' @export
-server <- function(id) {
-  moduleServer(id, function(input, output, session) {
-    # Create unified params
-    module_params <- create_module_params(input, debounce_ms = 400)
-
-    # Extract individual values if needed downstream
-    input_a <- reactive({ module_params()$input_a })
-
-    # Downstream observers depend on unified params
-    observe({
-      req(module_params())
-      # Single render after all inputs stabilize
-      # Use module_params()$input_a, module_params()$input_b, etc.
-    })
-  })
-}
-```
-
-## Key Elements
-
-1. **Single observer** collects all related inputs
-2. **Fingerprint comparison** prevents updates when values haven't changed
-3. **Single debounce** on the observer ensures all inputs settle before triggering downstream
-4. **Cached reactiveVal** stores the consolidated parameters
-
-## When to Apply
-
-Use when a module has multiple inputs that all affect the same output (tables, plots, computations) and you observe double-renders or slow UI response.
 
 ---
 
-## Box Import Guidelines for Debouncing
+## Pattern: Debounced Computation Pipeline
 
-### In Logic Files (app/logic/)
-
-```r
-box::use(
-  shiny[reactiveVal, observe, reactive, debounce, req]
-)
-```
-
-### In View Files (app/view/)
+Use when multiple inputs feed an expensive computation (plot, table, PCA, etc.).
 
 ```r
-box::use(
-  shiny[NS, moduleServer, reactive, observe],
-  app/logic/debouncing[create_module_params]
-)
-```
+# 1. Cache layer
+cached_params <- shiny$reactiveVal(NULL)
 
-### Custom Debouncing Patterns
-
-```r
-# app/logic/custom_debounce.R
-box::use(
-  shiny[reactiveVal, observe, reactive, debounce]
-)
-
-#' Create custom debounced reactive for specific use case
-#' @param input Shiny input object
-#' @param input_names Vector of input names to consolidate
-#' @param debounce_ms Debounce delay in milliseconds
-#' @return A reactive function that returns consolidated parameters
-#' @export
-create_custom_params <- function(input, input_names, debounce_ms = 400) {
-  cached_params <- reactiveVal(NULL)
-  
-  make_fingerprint <- function(params) {
-    # Custom fingerprint logic for your inputs
-    paste(purrr::map_chr(input_names, ~ params[[.x]]), collapse = "|")
-  }
-  
-  observe({
-    new_params <- purrr::map(input_names, ~ input[[.x]])
-    names(new_params) <- input_names
-    
-    current <- cached_params()
-    if (make_fingerprint(new_params) != make_fingerprint(current)) {
-      cached_params(new_params)
-    }
-  }) |> debounce(debounce_ms)
-  
-  reactive({ cached_params() })
+# 2. Fingerprint — include ALL values that should trigger a recompute.
+#    Use actual values, not just length(). E.g. for colors:
+#    paste(params$color_map, collapse = ",")  NOT  length(params$color_map)
+make_fingerprint <- function(params) {
+  paste(params$a, paste(params$b, collapse = ","), sep = "|")
 }
+
+# 3. Debounced reactive — collects all inputs into a snapshot
+debounced_snapshot <- shiny$reactive({
+  list(a = input$a, b = input$b)
+}) |> shiny$debounce(400)
+
+# 4. Observer — propagates only on fingerprint change
+shiny$observe({
+  snap <- debounced_snapshot()
+  shiny$req(snap)
+  old_fp <- if (!is.null(cached_params())) make_fingerprint(cached_params()) else ""
+  if (make_fingerprint(snap) != old_fp) {
+    cached_params(snap)
+  }
+})
+
+# 5. Downstream reads from cache (single invalidation point)
+output$result <- renderPlot({ req(cached_params()); ... })
+```
+
+---
+
+## Pattern: Cascading `updateSelectizeInput` Without Killing Dropdowns
+
+`updateSelectizeInput` rebuilds the widget on the client, which **closes any open dropdown**. Avoid calling it on the widget the user is currently interacting with.
+
+**Rules:**
+
+1. **Never re-update a selectize from an observer that depends on that same input.**
+   The `selected = input$foo[...]` pattern creates a reactive dep on `input$foo`,
+   causing the observer to fire on every user selection → dropdown closes.
+
+2. **Debounce cascading updates** (e.g. metaData → xAxis choices) so they don't
+   fire mid-interaction:
+
+```r
+debounced_parent <- shiny$reactive({
+  m <- input$parentSelect
+  if (is.null(m)) character(0) else m
+}) |> shiny$debounce(500)
+
+shiny$observe({
+  choices <- debounced_parent()
+  cur <- shiny$isolate(input$childSelect)           # isolate! no reactive dep
+  shiny$updateSelectizeInput(session, "childSelect",
+    choices = choices, selected = cur[cur %in% choices]
+  )
+})
+```
+
+3. **Use `isolate()` when reading the child input's current value** inside the
+   observer that updates it, to avoid creating a circular reactive dependency.
+
+4. **Data-load updates** belong in a single `observeEvent(data_version(), ...)`
+   with `ignoreInit = TRUE`. Don't duplicate them in a generic `observe()` on
+   `input_data()`.
+
+---
+
+## JS: Selectize Dropdown Persistence
+
+Even with server-side fixes, `conditionalPanel` DOM mutations can steal focus
+from selectize controls. Patch `Selectize.prototype.close` to prevent closing
+multi-select dropdowns while the control is focused:
+
+```js
+var origClose = Selectize.prototype.close;
+Selectize.prototype.close = function () {
+  if (this.settings.maxItems !== 1 && this.isFocused) return;
+  return origClose.apply(this, arguments);
+};
+```
+
+Also patch `addItem` to reopen after each selection (with a small delay to
+survive the `shiny:busy` lock cycle):
+
+```js
+var origAddItem = Selectize.prototype.addItem;
+Selectize.prototype.addItem = function (value, silent) {
+  var result = origAddItem.apply(this, arguments);
+  if (this.settings.maxItems !== 1) {
+    var self = this;
+    setTimeout(function () { self.open(); self.$control_input[0].focus(); }, 20);
+  }
+  return result;
+};
 ```
