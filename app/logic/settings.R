@@ -2,17 +2,28 @@ box::use(
   bslib,
 )
 
-#' Path to the changelog file
-changelog_path <- system.file("../CHANGELOG.md", package = "app")
-if (changelog_path == "") {
-  changelog_path <- file.path(getwd(), "CHANGELOG.md")
+#' Get path to the changelog file
+#' Searches multiple locations to support both local dev and Docker deployment
+get_changelog_path <- function() {
+  candidates <- c(
+    file.path(getwd(), "CHANGELOG.md"),
+    "/app/CHANGELOG.md",
+    file.path(dirname(getwd()), "CHANGELOG.md")
+  )
+  for (path in candidates) {
+    if (file.exists(path)) {
+      return(path)
+    }
+  }
+  ""
 }
 
 #' Read and cache changelog content
 #' @return Character vector of changelog lines
 get_changelog_content <- function() {
-  if (file.exists(changelog_path)) {
-    readLines(changelog_path, warn = FALSE)
+  path <- get_changelog_path()
+  if (path != "" && file.exists(path)) {
+    readLines(path, warn = FALSE)
   } else {
     character(0)
   }
