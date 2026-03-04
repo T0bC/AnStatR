@@ -33,16 +33,24 @@ ui <- function(id) {
     "  var unlockTimer = null;",
     "  function lockSidebar(){",
     "    if(unlockTimer){ clearTimeout(unlockTimer); unlockTimer=null; }",
-    "    $('.texan-sidebar').find('input,select,button,.selectize-input')",
+    "    var sb = $('.texan-sidebar');",
+    "    sb.find('input,select,button').not('.selectize-input input')",
     "      .addClass('texan-busy-lock')",
     "      .css('pointer-events','none');",
-    "    $('.texan-sidebar .selectize-input').css('opacity','0.6');",
+    "    sb.find('.selectize-input').each(function(){",
+    "      var $si = $(this);",
+    "      var isOpen = $si.closest('.selectize-control')",
+    "                       .hasClass('dropdown-active');",
+    "      if(!isOpen){",
+    "        $si.addClass('texan-busy-lock')",
+    "          .css({'pointer-events':'none','opacity':'0.6'});",
+    "      }",
+    "    });",
     "  }",
     "  function unlockSidebar(){",
     "    $('.texan-sidebar').find('.texan-busy-lock')",
     "      .removeClass('texan-busy-lock')",
-    "      .css('pointer-events','');",
-    "    $('.texan-sidebar .selectize-input').css('opacity','');",
+    "      .css({'pointer-events':'','opacity':''});",
     "  }",
     "  $(document).on('shiny:busy', function(){ lockSidebar(); });",
     "  $(document).on('shiny:idle', function(){",
@@ -206,7 +214,7 @@ server <- function(id, input_data, data_version) {
         null_to_str(params$x_cols),
         null_to_str(params$tooltip_cols),
         null_to_str(params$color_cols),
-        length(params$color_map),
+        null_to_str(params$color_map),
         params$point_style$size,
         params$point_style$spread,
         params$point_style$alpha,
@@ -246,23 +254,35 @@ server <- function(id, input_data, data_version) {
       )
     }
 
-    shiny$observe({
+    # Debounced reactive: collects params + data + fingerprint.
+    # shiny$debounce() works on reactives, NOT observers.
+    debounced_snapshot <- shiny$reactive({
       params <- plot_params_raw()
       data <- filter_result$filtered_data()
       shiny$req(params, data)
+      list(
+        params = params,
+        data   = data,
+        fp     = make_plot_fingerprint(params, data)
+      )
+    }) |> shiny$debounce(3000)
 
-      new_fp <- make_plot_fingerprint(params, data)
+    # Observer propagates debounced snapshot to cached values
+    # only when the fingerprint actually changes.
+    shiny$observe({
+      snap <- debounced_snapshot()
+      shiny$req(snap)
       current <- cached_plot_params()
       old_fp <- if (!is.null(current)) {
         make_plot_fingerprint(current, cached_filtered_data())
       } else {
         ""
       }
-      if (new_fp != old_fp) {
-        cached_plot_params(params)
-        cached_filtered_data(data)
+      if (snap$fp != old_fp) {
+        cached_plot_params(snap$params)
+        cached_filtered_data(snap$data)
       }
-    }) |> shiny$debounce(300)
+    })
 
     # Debounced accessors used by all downstream reactives
     plot_params <- shiny$reactive({ cached_plot_params() })
