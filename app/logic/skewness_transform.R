@@ -1,5 +1,4 @@
 box::use(
-  MASS,
   rhino,
   stats,
 )
@@ -40,13 +39,13 @@ compute_skewness <- function(x) {
 #' @param data Data frame
 #' @param measurement_cols Character vector of measurement column names
 #' @param threshold Numeric, absolute skewness above which a column
-#'   is flagged as skewed. Default 1.0.
+#'   is flagged as highly skewed. Default 2.0 (conservative).
 #' @return Data frame with columns: column, skewness, abs_skewness,
 #'   direction ("left", "right", "symmetric"), is_skewed (logical).
 #'   Sorted by abs_skewness descending.
 #' @export
 detect_skewness <- function(data, measurement_cols,
-                            threshold = 1.0) {
+                            threshold = 2.0) {
   if (length(measurement_cols) == 0) {
     return(data.frame(
       column = character(0),
@@ -87,21 +86,23 @@ detect_skewness <- function(data, measurement_cols,
   result
 }
 
-#' Transform skewed columns to reduce skewness
+#' Transform skewed columns using bestNormalize
 #'
-#' Applies log or Box-Cox transformation to columns flagged
-#' as skewed by detect_skewness(). Left-skewed columns are
-#' reflected before transformation. Symmetric columns are
-#' left untouched.
+#' Applies bestNormalize to columns flagged as skewed by
+#' detect_skewness(). bestNormalize automatically selects
+#' the best transformation (Box-Cox, Yeo-Johnson, log, sqrt,
+#' arcsinh, orderNorm, etc.) based on normality tests.
+#' Symmetric columns are left untouched.
 #'
 #' @param data Data frame (full, including metadata columns)
 #' @param measurement_cols Character vector of measurement column names
 #' @param skew_result Data frame from detect_skewness()
-#' @param method Character, transformation method:
-#'   "auto" (try log, fall back to Box-Cox),
-#'   "log", "boxcox", "none".
+#' @param method Character, kept for API compatibility.
+#'   "none" skips transformation, any other value uses
+#'   bestNormalize auto-selection.
 #' @return List with $success, $result or $error.
 #'   $result contains $data, $transformed_cols (data frame),
+#'   $transform_params (list of fitted bestNormalize objects),
 #'   $skipped_cols (character vector).
 #' @export
 transform_skewed <- function(data, measurement_cols,
@@ -126,6 +127,7 @@ transform_skewed <- function(data, measurement_cols,
             skewness_after = numeric(0),
             stringsAsFactors = FALSE
           ),
+          transform_params = list(),
           skipped_cols = character(0)
         ))
       }
@@ -141,15 +143,13 @@ transform_skewed <- function(data, measurement_cols,
         skew_before <- skewed$skewness[i]
         x <- result_data[[col_name]]
 
-        transform_res <- try_transform_column(
-          x, direction, method
-        )
+        transform_res <- suppressWarnings(fit_bestnormalize_column(x))
 
         if (is.null(transform_res)) {
           skipped <- c(skipped, col_name)
           rhino$log$warn(
             "Skewness: skipped '{col_name}'",
-            " (could not transform)"
+            " (bestNormalize failed)"
           )
           next
         }
@@ -167,11 +167,13 @@ transform_skewed <- function(data, measurement_cols,
           skewness_after = round(skew_after, 3)
         )
 
-        # Store per-column transform params for replay
-        col_params <- transform_res$params
-        col_params$column <- col_name
+        # Store fitted bestNormalize object for replay
         transform_params[[length(transform_params) + 1]] <-
-          col_params
+          list(
+            column = col_name,
+            bn_object = transform_res$bn_object,
+            method = transform_res$method_used
+          )
 
         rhino$log$info(
           "Skewness: transformed '{col_name}'",
@@ -216,60 +218,37 @@ transform_skewed <- function(data, measurement_cols,
 #' Apply a stored transform to a single column
 #'
 #' Replays the exact transformation on new data using
-#' stored parameters (no re-estimation). Used by the
+#' the stored bestNormalize object. Used by the
 #' prediction module to apply training transforms to
 #' unknown data.
 #'
 #' @param x Numeric vector (new data column)
-#' @param params List with: method, direction, shift,
-#'   lambda (NULL for log), reflect_max (NULL for right),
-#'   column (informational)
+#' @param params List with: column, bn_object (fitted
+#'   bestNormalize object), method (informational)
 #' @return Numeric vector of transformed values
 #' @export
 apply_stored_transform <- function(x, params) {
-  method <- params$method
-  direction <- params$direction
-  shift <- params$shift
-  lambda <- params$lambda
-  reflect_max <- params$reflect_max
+  bn_object <- params$bn_object
 
-  if (direction == "left" && !is.null(reflect_max)) {
-    # Reflect using the stored reflect_max
-    x_work <- reflect_max - x
-  } else {
-    x_work <- x
-  }
-
-  # Determine base method (strip "reflect+" prefix)
-  base_method <- sub("^reflect\\+", "", method)
-
-  if (base_method == "log") {
-    shifted <- x_work - shift
-    transformed <- log1p(shifted)
-  } else if (base_method == "boxcox") {
-    shifted <- if (shift <= 0) {
-      x_work - shift + 1
-    } else {
-      x_work
-    }
-    transformed <- if (abs(lambda) < 1e-6) {
-      log(shifted)
-    } else {
-      (shifted^lambda - 1) / lambda
-    }
-  } else {
+  if (is.null(bn_object)) {
     stop(paste0(
-      "Unknown transform method: '", method, "'"
+      "No bestNormalize object stored for column '",
+      params$column, "'"
     ))
   }
 
-  # Reverse reflection to preserve ordering
-  if (direction == "left" && !is.null(reflect_max)) {
-    transformed <- -(transformed -
-      max(transformed, na.rm = TRUE))
-  }
-
-  transformed
+  # Use predict() on the stored bestNormalize object
+  # This applies the exact same transformation learned
+  # during training
+  tryCatch({
+    transformed <- stats::predict(bn_object, newdata = x)
+    as.numeric(transformed)
+  }, error = function(e) {
+    stop(paste0(
+      "Failed to apply stored transform for '",
+      params$column, "': ", conditionMessage(e)
+    ))
+  })
 }
 
 #' Apply stored transforms to a data frame
@@ -339,164 +318,54 @@ skewness_error_parser <- function(
 # Internal helpers (not exported)
 # =============================================================================
 
-#' Try to transform a single column
+#' Fit bestNormalize to a single column
+#'
+#' Uses bestNormalize::bestNormalize() to automatically
+#' select and fit the best normalizing transformation.
+#' Returns the fitted object for replay on new data.
 #'
 #' @param x Numeric vector
-#' @param direction "left" or "right"
-#' @param method "auto", "log", or "boxcox"
-#' @return List with $values, $method_used, and $params,
+#' @return List with $values, $method_used, $bn_object,
 #'   or NULL on failure
-try_transform_column <- function(x, direction, method) {
-  # For left-skewed data, reflect first
-  if (direction == "left") {
-    reflect_max <- max(x, na.rm = TRUE) + 1
-    reflected <- reflect_max - x
-    result <- try_transform_positive(
-      reflected, method
-    )
-    if (is.null(result)) return(NULL)
-    # Reverse the reflection so the ordering is preserved
-    result$values <- -(result$values -
-      max(result$values, na.rm = TRUE))
-    result$method_used <- paste0(
-      "reflect+", result$method_used
-    )
-    # Wrap params with direction and reflect_max
-    result$params$direction <- "left"
-    result$params$reflect_max <- reflect_max
-    result$params$method <- paste0(
-      "reflect+", result$params$method
-    )
-    return(result)
+fit_bestnormalize_column <- function(x) {
+  # Remove NAs for fitting
+
+  clean_idx <- which(!is.na(x))
+  clean_values <- x[clean_idx]
+
+  if (length(clean_values) < 3) {
+    return(NULL)
   }
 
-  # Right-skewed: transform directly
-  result <- try_transform_positive(x, method)
-  if (!is.null(result)) {
-    result$params$direction <- "right"
-    result$params$reflect_max <- NULL
-  }
-  result
-}
-
-#' Apply transformation to a (positive-shifted) vector
-#'
-#' @param x Numeric vector
-#' @param method "auto", "log", or "boxcox"
-#' @return List with $values and $method_used, or NULL
-try_transform_positive <- function(x, method) {
-  if (method == "log" || method == "auto") {
-    log_result <- try_log_transform(x)
-    if (!is.null(log_result)) {
-      return(log_result)
-    }
-    if (method == "log") return(NULL)
+  # Skip constant columns (no variance) - bestNormalize produces NaN warnings
+  if (length(unique(clean_values)) == 1) {
+    return(NULL)
   }
 
-  if (method == "boxcox" || method == "auto") {
-    bc_result <- try_boxcox_transform(x)
-    if (!is.null(bc_result)) {
-      return(bc_result)
-    }
-  }
-
-  NULL
-}
-
-#' Try log1p transformation
-#'
-#' Shifts data so minimum is 0, then applies log1p.
-#' Returns stored params for replay on new data.
-#'
-#' @param x Numeric vector
-#' @return List with $values, $method_used, and $params,
-#'   or NULL on failure
-try_log_transform <- function(x) {
   tryCatch(
-    {
-      min_val <- min(x, na.rm = TRUE)
-      shifted <- x - min_val
-      transformed <- log1p(shifted)
-      if (any(is.na(transformed) | is.infinite(transformed))) {
-        return(NULL)
-      }
-      list(
-        values = transformed,
-        method_used = "log",
-        params = list(
-          method = "log",
-          shift = min_val,
-          lambda = NULL
-        )
-      )
-    },
-    error = function(e) NULL
-  )
-}
+    withCallingHandlers({
+      bn_result <- bestNormalize::bestNormalize(clean_values, quiet = TRUE)
 
-#' Try Box-Cox transformation
-#'
-#' Estimates optimal lambda via MASS::boxcox, then applies
-#' the power transformation. Requires strictly positive data.
-#' Returns stored params for replay on new data.
-#'
-#' @param x Numeric vector
-#' @return List with $values, $method_used, and $params,
-#'   or NULL on failure
-try_boxcox_transform <- function(x) {
-  tryCatch(
-    {
-      # Shift to strictly positive
-      min_val <- min(x, na.rm = TRUE)
-      shifted <- if (min_val <= 0) {
-        x - min_val + 1
-      } else {
-        x
-      }
+      # Get the chosen transformation method name
+      method_name <- class(bn_result$chosen_transform)[1]
 
-      # Estimate lambda using MASS::boxcox
-      # Suppress the plot output
-      n <- length(shifted)
-      dummy_y <- shifted
-      dummy_df <- data.frame(
-        y = dummy_y,
-        x_dummy = seq_len(n)
-      )
-      bc <- suppressWarnings(
-        utils::capture.output(
-          bc_obj <- MASS$boxcox(
-            stats$lm(y ~ 1, data = dummy_df),
-            plotit = FALSE
-          )
-        )
-      )
-      lambda <- bc_obj$x[which.max(bc_obj$y)]
-
-      # Apply Box-Cox transformation
-      transformed <- if (abs(lambda) < 1e-6) {
-        log(shifted)
-      } else {
-        (shifted^lambda - 1) / lambda
-      }
-
-      if (any(
-        is.na(transformed) | is.infinite(transformed)
-      )) {
-        return(NULL)
-      }
+      # Transform all values (including original positions)
+      transformed <- rep(NA_real_, length(x))
+      transformed[clean_idx] <- as.numeric(stats::predict(bn_result))
 
       list(
         values = transformed,
-        method_used = paste0(
-          "boxcox(lambda=", round(lambda, 2), ")"
-        ),
-        params = list(
-          method = "boxcox",
-          shift = min_val,
-          lambda = lambda
-        )
+        method_used = method_name,
+        bn_object = bn_result
       )
     },
-    error = function(e) NULL
+    warning = function(w) invokeRestart("muffleWarning")
+    ),
+    error = function(e) {
+      rhino$log$warn(
+        "bestNormalize error: {conditionMessage(e)}"
+      )
+      NULL
+    }
   )
 }
