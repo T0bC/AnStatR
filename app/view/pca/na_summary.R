@@ -244,6 +244,109 @@ render_na_summary <- function(na_result,
   )
 }
 
+#' Render skewness warning banner (when correction is disabled)
+#'
+#' Shows a warning alert when highly skewed columns are detected
+#' but skewness correction is disabled. Informs the user which
+#' columns are affected and suggests enabling normalization.
+#'
+#' @param skew_result Data frame from detect_skewness() with
+#'   $column, $skewness, $direction, $is_skewed columns.
+#' @param n_measure_cols Integer, total number of measurement columns.
+#' @return Shiny tags object or NULL if no skewed columns
+#' @export
+render_skewness_warning <- function(skew_result,
+                                    n_measure_cols = NULL) {
+  if (is.null(skew_result)) return(NULL)
+
+  skewed <- skew_result[skew_result$is_skewed, , drop = FALSE]
+  if (nrow(skewed) == 0) return(NULL)
+
+  n_skewed <- nrow(skewed)
+  n_total <- n_measure_cols %||% nrow(skew_result)
+
+  header <- shiny$tags$div(
+    class = "d-flex align-items-center mb-1",
+    bsicons$bs_icon(
+      "exclamation-triangle-fill", class = "me-2"
+    ),
+    shiny$tags$strong(
+      paste0(
+        n_skewed, " of ", n_total,
+        " measurement column",
+        if (n_total != 1) "s" else "",
+        " highly skewed (|skewness| > 2)"
+      )
+    )
+  )
+
+  skewed_table <- shiny$tags$details(
+    class = "mt-1",
+    shiny$tags$summary(
+      class = "small",
+      paste0("Skewed columns (", n_skewed, ")")
+    ),
+    skewness_info_table(skewed),
+    shiny$tags$p(
+      class = "text-muted small mt-2 mb-0",
+      shiny$tags$em(
+        "Consider enabling ",
+        shiny$tags$strong("Normalize skewed variables"),
+        " if these outliers are measurement errors.",
+        " If skewness reflects real signal, leave disabled."
+      )
+    )
+  )
+
+  shiny$tags$div(
+    class = "alert alert-warning",
+    role = "alert",
+    header,
+    skewed_table
+  )
+}
+
+#' Internal: render table of skewed columns (info only)
+skewness_info_table <- function(skewed_df) {
+  col_rows <- lapply(
+    seq_len(nrow(skewed_df)),
+    function(i) {
+      row <- skewed_df[i, ]
+      dir_badge <- if (row$direction == "right") {
+        shiny$tags$span(
+          class = "badge bg-warning text-dark",
+          "right-skewed"
+        )
+      } else {
+        shiny$tags$span(
+          class = "badge bg-info",
+          "left-skewed"
+        )
+      }
+      shiny$tags$tr(
+        shiny$tags$td(shiny$tags$code(row$column)),
+        shiny$tags$td(dir_badge),
+        shiny$tags$td(
+          class = "text-end",
+          as.character(row$skewness)
+        )
+      )
+    }
+  )
+
+  shiny$tags$table(
+    class = "table table-sm table-striped mb-0 mt-1",
+    shiny$tags$thead(
+      shiny$tags$tr(
+        shiny$tags$th("Column"),
+        shiny$tags$th("Direction"),
+        shiny$tags$th(class = "text-end", "Skewness")
+      )
+    ),
+    shiny$tags$tbody(col_rows)
+  )
+}
+
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
