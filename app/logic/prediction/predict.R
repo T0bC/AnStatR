@@ -5,7 +5,7 @@ box::use(
 
 box::use(
   app/logic/error_handling,
-  app/logic/skewness_transform[apply_stored_transforms],
+  app/logic/preprocessing/skewness_transform[apply_stored_transforms],
 )
 
 # =============================================================================
