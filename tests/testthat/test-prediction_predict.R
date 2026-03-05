@@ -2,7 +2,7 @@ box::use(
   app/logic/prediction/predict[
     preprocess_unknown, predict_unknown
   ],
-  app/logic/skewness_transform[
+  app/logic/preprocessing/skewness_transform[
     detect_skewness, transform_skewed,
     apply_stored_transform
   ],
@@ -159,23 +159,27 @@ test_that("preprocess_unknown applies stored scaling", {
 
 test_that("preprocess_unknown applies stored transforms", {
   bundle <- make_lda_bundle()
+
+  # Create a real bestNormalize object for the transform
+  train_values <- iris$Sepal.Length[1:120]
+  bn_obj <- suppressWarnings(
+    bestNormalize::bestNormalize(train_values, quiet = TRUE)
+  )
+
   bundle$transform_params <- list(
     list(
       column = "Sepal.Length",
-      method = "log",
-      direction = "right",
-      shift = min(iris$Sepal.Length[1:120]),
-      lambda = NULL,
-      reflect_max = NULL
+      bn_object = bn_obj
     )
   )
 
   unknown <- iris[121:150, ]
   result <- preprocess_unknown(unknown, bundle)
 
-  # Manual check
-  shift <- min(iris$Sepal.Length[1:120])
-  expected <- log1p(unknown$Sepal.Length - shift)
+  # Manual check using the same bestNormalize object
+  expected <- as.numeric(
+    stats::predict(bn_obj, newdata = unknown$Sepal.Length)
+  )
   expect_equal(
     result$Sepal.Length, expected,
     tolerance = 1e-10
