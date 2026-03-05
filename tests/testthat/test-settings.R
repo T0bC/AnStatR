@@ -7,49 +7,66 @@ box::use(
 )
 
 # =============================================================================
-# available_themes
+# get_version_info
 # =============================================================================
 
-describe("available_themes", {
-  it("contains 8 themes", {
-    expect_equal(length(settings$available_themes), 8)
+describe("get_version_info", {
+  it("returns a list with version and date", {
+    info <- settings$get_version_info()
+    expect_true(is.list(info))
+    expect_true("version" %in% names(info))
+    expect_true("date" %in% names(info))
   })
 
-  it("has named entries", {
-    nms <- names(settings$available_themes)
-    expect_true(all(nchar(nms) > 0))
-  })
-})
-
-# =============================================================================
-# default_theme_name
-# =============================================================================
-
-describe("default_theme_name", {
-  it("is 'Cosmo (Light)'", {
-    expect_equal(settings$default_theme_name, "Cosmo (Light)")
+  it("returns valid version format or 'unknown'", {
+    info <- settings$get_version_info()
+    valid_version <- grepl("^[0-9]+\\.[0-9]+\\.[0-9]+$", info$version) ||
+      info$version == "unknown"
+    expect_true(valid_version)
   })
 
-  it("exists in available_themes", {
-    expect_true(settings$default_theme_name %in% names(settings$available_themes))
+  it("returns valid date format or 'unknown'", {
+    info <- settings$get_version_info()
+    valid_date <- grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", info$date) ||
+      info$date == "unknown"
+    expect_true(valid_date)
   })
 })
 
 # =============================================================================
-# get_theme_names
+# get_version_string
 # =============================================================================
 
-describe("get_theme_names", {
-  it("returns a character vector of theme names", {
-    nms <- settings$get_theme_names()
-    expect_true(is.character(nms))
-    expect_equal(length(nms), 8)
+describe("get_version_string", {
+  it("returns a character string", {
+    version_str <- settings$get_version_string()
+    expect_true(is.character(version_str))
   })
 
-  it("includes both light and dark themes", {
-    nms <- settings$get_theme_names()
-    expect_true(any(grepl("Light", nms)))
-    expect_true(any(grepl("Dark", nms)))
+  it("contains version and date in parentheses", {
+    version_str <- settings$get_version_string()
+    expect_true(grepl("\\(.*\\)", version_str))
+  })
+})
+
+# =============================================================================
+# get_changelog_markdown
+# =============================================================================
+
+describe("get_changelog_markdown", {
+  it("returns a character string", {
+    changelog <- settings$get_changelog_markdown()
+    expect_true(is.character(changelog))
+  })
+})
+
+# =============================================================================
+# app_version
+# =============================================================================
+
+describe("app_version", {
+  it("is a character string", {
+    expect_true(is.character(settings$app_version))
   })
 })
 
@@ -60,27 +77,6 @@ describe("get_theme_names", {
 describe("get_default_theme", {
   it("returns a bs_theme object", {
     theme <- settings$get_default_theme()
-    expect_true(inherits(theme, "bs_theme"))
-  })
-})
-
-# =============================================================================
-# get_theme
-# =============================================================================
-
-describe("get_theme", {
-  it("returns the correct theme by name", {
-    theme <- settings$get_theme("Darkly (Dark)")
-    expect_true(inherits(theme, "bs_theme"))
-  })
-
-  it("falls back to default for NULL", {
-    theme <- settings$get_theme(NULL)
-    expect_true(inherits(theme, "bs_theme"))
-  })
-
-  it("falls back to default for invalid name", {
-    theme <- settings$get_theme("Nonexistent Theme")
     expect_true(inherits(theme, "bs_theme"))
   })
 })
