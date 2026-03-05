@@ -324,7 +324,7 @@ server <- function(id, input_data, data_version) {
         grouping_cols = input$grouping_columns,
         quality_settings = build_quality_settings()
       )
-    }) |> shiny$debounce(400)
+    }) |> shiny$debounce(800)
 
     shiny$observe({
       new_params <- debounced_inputs()
