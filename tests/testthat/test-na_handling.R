@@ -4,7 +4,7 @@ box::use(
 )
 
 box::use(
-  app/logic/pca/na_handling,
+  app/logic/preprocessing/na_handling,
 )
 
 # =============================================================================
