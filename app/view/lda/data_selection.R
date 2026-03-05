@@ -212,22 +212,22 @@ tab_ui <- function(ns) {
       shiny$checkboxInput(
         inputId = ns("correct_skewness"),
         label = shiny$tags$span(
-          "Correct skewed variables ",
+          "Normalize skewed variables ",
           bslib$tooltip(
             bsicons$bs_icon(
               "info-circle", class = "text-muted"
             ),
             paste(
-              "Automatically detect and transform",
-              "highly skewed variables (|skewness| > 1)",
-              "using log or Box-Cox transformation.",
-              "This reduces the influence of outliers",
-              "on LDA/QDA results. Verify in Load Data",
-              "\u2192 Data Preview."
+              "Transform highly skewed variables",
+              "(|skewness| > 2) using bestNormalize.",
+              "This reduces the influence of extreme",
+              "outliers but changes the data distribution.",
+              "Only enable if outliers are measurement",
+              "errors, not real signal."
             )
           )
         ),
-        value = TRUE
+        value = FALSE
       )
     )
   )
