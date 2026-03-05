@@ -13,7 +13,7 @@ box::use(
   app/logic/error_handling,
   app/logic/plotting/assumption_checks,
   app/logic/plotting/data_processing,
-  app/logic/plotting/normalize,
+  app/logic/preprocessing/normalize,
   app/logic/plotting/scatter,
   app/view/components/sidebar_tabs,
   app/view/error_display,
