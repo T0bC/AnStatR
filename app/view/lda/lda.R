@@ -188,11 +188,12 @@ server <- function(id, input_data, data_version,
         validation_warnings(validation$warnings)
       }
 
-      # Clean NAs in measurement columns
+      # Clean NAs in measurement columns and grouping column
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
       na_result <- clean_na_rows(
-        data, measure_cols, meta_cols
+        data, measure_cols, meta_cols,
+        grouping_col = grouping_col
       )
       na_info(na_result)
       cleaned_data <- na_result$data
