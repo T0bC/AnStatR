@@ -48,17 +48,19 @@ analyse_na <- function(data, measurement_cols) {
   result
 }
 
-#' Remove rows with NAs in measurement columns only
+#' Remove rows with NAs in measurement columns and grouping column
 #'
 #' Removes rows where any of the selected measurement columns
-#' contain NA. Metadata columns are ignored for row removal
-#' but their NA distribution is reported for user awareness.
+#' or the grouping column contain NA. Metadata columns are ignored
+#' for row removal but their NA distribution is reported for user awareness.
 #'
 #' @param data Data frame (full, including metadata columns)
 #' @param measurement_cols Character vector of measurement column names
 #' @param meta_cols Character vector of descriptive column names
 #'   (optional). NAs in these columns are reported but do not
 #'   trigger row removal.
+#' @param grouping_col Character, name of the grouping column (optional).
+#'   If provided, rows with NA in this column are also removed.
 #' @return List with:
 #'   - $data: cleaned data frame (all columns preserved)
 #'   - $rows_before: integer, original row count
@@ -68,7 +70,8 @@ analyse_na <- function(data, measurement_cols) {
 #'   - $meta_na_summary: data frame from analyse_na (descriptive cols)
 #' @export
 clean_na_rows <- function(data, measurement_cols,
-                          meta_cols = character(0)) {
+                          meta_cols = character(0),
+                          grouping_col = NULL) {
   rows_before <- nrow(data)
   na_summary <- analyse_na(data, measurement_cols)
 
@@ -84,7 +87,13 @@ clean_na_rows <- function(data, measurement_cols,
     )
   }
 
-  subset <- data[, measurement_cols, drop = FALSE]
+  # Include grouping column in completeness check if provided
+  cols_for_complete <- measurement_cols
+  if (!is.null(grouping_col) && grouping_col %in% names(data)) {
+    cols_for_complete <- c(cols_for_complete, grouping_col)
+  }
+
+  subset <- data[, cols_for_complete, drop = FALSE]
   complete <- stats$complete.cases(subset)
   cleaned <- data[complete, , drop = FALSE]
 
