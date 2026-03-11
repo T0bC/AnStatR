@@ -134,29 +134,35 @@ server <- function(id) {
       input_data = load_data_result$data,
       data_version = load_data_result$version
     )
-    # Plotting receives median results if available, otherwise the original data
-    plotting_data <- shiny$reactive({
+
+    # --- Data for analysis modules (PCA/LDA/Cluster) ---
+    # Receives median results if available, otherwise the original data
+    analysis_data <- shiny$reactive({
       median_result() %||% load_data_result$data()
     })
     # Version counter that increments on ANY data change
     # (file upload OR median filtering/grouping change)
-    plotting_data_version <- shiny$reactiveVal(0L)
+    analysis_data_version <- shiny$reactiveVal(0L)
     shiny$observe({
-      plotting_data()
+      analysis_data()
       shiny$isolate(
-        plotting_data_version(plotting_data_version() + 1L)
+        analysis_data_version(analysis_data_version() + 1L)
       )
     })
+
+    # --- Plotting module ---
     plotting_result <- plotting$server(
       "plotting",
-      input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version())
+      input_data = analysis_data,
+      data_version = shiny$reactive(analysis_data_version())
     )
+
+    # --- Data for Summary/Statistics modules ---
     # Processed data from plotting: includes _outlier/_trimmed flag columns
-    # Falls back to raw plotting_data when no processing has been done yet
+    # Falls back to raw analysis_data when no processing has been done yet
     processed_plotting_data <- shiny$reactive({
       pd <- plotting_result$processed_data()
-      if (!is.null(pd)) pd else plotting_data()
+      if (!is.null(pd)) pd else analysis_data()
     })
     processed_data_version <- shiny$reactiveVal(0L)
     shiny$observe({
@@ -165,6 +171,7 @@ server <- function(id) {
         processed_data_version(processed_data_version() + 1L)
       )
     })
+
     summary$server(
       "summary",
       input_data = processed_plotting_data,
@@ -185,21 +192,25 @@ server <- function(id) {
       plotting_normalize_enabled = plotting_result$normalize_enabled,
       plotting_transform_info = plotting_result$transform_info
     )
+
+    # --- Analysis modules (PCA/LDA/Cluster) ---
+    # These receive the same data as Plotting (median or raw), NOT the
+    # processed/filtered data from the Plotting module
     pca_result <- pca$server(
       "pca",
-      input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version())
+      input_data = analysis_data,
+      data_version = shiny$reactive(analysis_data_version())
     )
     lda_result <- lda$server(
       "lda",
-      input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version()),
+      input_data = analysis_data,
+      data_version = shiny$reactive(analysis_data_version()),
       pca_result = pca_result
     )
     cluster$server(
       "cluster",
-      input_data = plotting_data,
-      data_version = shiny$reactive(plotting_data_version()),
+      input_data = analysis_data,
+      data_version = shiny$reactive(analysis_data_version()),
       pca_result = pca_result,
       lda_result = lda_result
     )
