@@ -40,7 +40,8 @@ ui <- function(id) {
       shiny$tags$head(
         shiny$tags$link(rel = "icon", type = "image/svg+xml", href = "static/texan_icon.svg"),
         shiny$tags$script(src = "static/js/disabled_tabs.js"),
-        shiny$tags$script(src = "static/js/plot_resize.js")
+        shiny$tags$script(src = "static/js/plot_resize.js"),
+        shiny$tags$script(src = "static/js/help_resize.js")
       ),
       help_modal$panel(ns("help"))
     ),
