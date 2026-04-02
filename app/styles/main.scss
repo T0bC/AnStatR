@@ -420,3 +420,98 @@ details.app-error-details.mt-2 {
   background: inherit;
   border-radius: 4px;
 }
+
+// =============================================================================
+// Help Modal: Resizable Offcanvas Sidebar
+// =============================================================================
+
+// Resizable help offcanvas panel
+.help-offcanvas-resizable {
+  width: 400px;
+  max-width: 90vw;
+  transition: none; // Disable transition during resize for smooth dragging
+}
+
+// Drag handle on the left edge
+.help-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:active {
+    background-color: var(--bs-primary);
+    opacity: 0.5;
+  }
+}
+
+// Help section content styling
+.help-section-content {
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  p {
+    margin-bottom: 0.75rem;
+  }
+
+  ul, ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+  }
+
+  code {
+    background-color: var(--bs-tertiary-bg);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.875em;
+  }
+
+  pre {
+    background-color: var(--bs-tertiary-bg);
+    padding: 0.75rem;
+    border-radius: 4px;
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background: none;
+    }
+  }
+}
+
+// Help tabs (pills) styling inside offcanvas
+.offcanvas-body .nav-pills {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--bs-border-color);
+  padding-bottom: 0.5rem;
+
+  .nav-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+
+    svg {
+      vertical-align: -0.125em;
+    }
+  }
+}
