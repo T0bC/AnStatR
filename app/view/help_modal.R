@@ -49,7 +49,6 @@ panel <- function(id) {
 
 # Help markdown files live in docs/help/{tab_value}.md
 # To add help for a new module, create docs/help/{tab_value}.md — no code changes needed.
-help_dir <- "docs/help"
 
 #' @param id Character, module namespace id
 #' @param active_page Reactive string returning the currently selected tab value
@@ -77,7 +76,9 @@ server <- function(id, active_page) {
 
     output$help_content <- shiny$renderUI({
       tab <- active_page()
-      help_file <- file.path(help_dir, paste0(tab, ".md"))
+      # Use box::file() to resolve path relative to this module's location
+      # Module is in app/view/, so docs/help is at ../../docs/help
+      help_file <- box::file("..", "..", "docs", "help", paste0(tab, ".md"))
 
       if (file.exists(help_file)) {
         shiny$includeMarkdown(help_file)
