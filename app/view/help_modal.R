@@ -119,27 +119,27 @@ server <- function(id, active_page) {
       tab_panels <- list()
 
       if (has_overview) {
-        tab_panels[["Overview"]] <- bslib$nav_panel(
+        tab_panels <- c(tab_panels, list(bslib$nav_panel(
           title = shiny$tagList(bsicons$bs_icon("info-circle"), " Overview"),
           value = "overview",
           shiny$div(class = "help-section-content pt-3", render_section(overview_file))
-        )
+        )))
       }
 
       if (has_details) {
-        tab_panels[["Details"]] <- bslib$nav_panel(
+        tab_panels <- c(tab_panels, list(bslib$nav_panel(
           title = shiny$tagList(bsicons$bs_icon("book"), " Details"),
           value = "details",
           shiny$div(class = "help-section-content pt-3", render_section(details_file))
-        )
+        )))
       }
 
       if (has_faq) {
-        tab_panels[["FAQ"]] <- bslib$nav_panel(
+        tab_panels <- c(tab_panels, list(bslib$nav_panel(
           title = shiny$tagList(bsicons$bs_icon("question-circle"), " FAQ"),
           value = "faq",
           shiny$div(class = "help-section-content pt-3", render_section(faq_file))
-        )
+        )))
       }
 
       if (length(tab_panels) == 1) {
