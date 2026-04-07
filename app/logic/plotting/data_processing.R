@@ -264,7 +264,9 @@ detect_modified_zscore <- function(x, fac) {
   if (sum(valid) < 3) return(result)
 
   med <- stats::median(x[valid])
-  mad_val <- stats::mad(x[valid], constant = 1.4826)
+  # Use raw MAD (constant=1) with 0.6745 scaling per Iglewicz & Hoaglin (1993)
+  # Formula: M_i = 0.6745 * (x_i - median) / MAD
+  mad_val <- stats::mad(x[valid], constant = 1)
   if (mad_val == 0) return(result)
 
   mod_z <- 0.6745 * (x - med) / mad_val
@@ -291,12 +293,15 @@ detect_adjusted_boxplot <- function(x, fac) {
   q3 <- stats::quantile(xv, 0.75)
   iqr <- q3 - q1
 
+  # Hubert & Vandervieren (2008) adjusted boxplot coefficients:
+  # MC >= 0: a = -4, b = 3
+  # MC < 0:  a = -3, b = 4
   if (mc >= 0) {
-    lower <- q1 - fac * exp(-3.5 * mc) * iqr
-    upper <- q3 + fac * exp(4 * mc) * iqr
-  } else {
     lower <- q1 - fac * exp(-4 * mc) * iqr
-    upper <- q3 + fac * exp(3.5 * abs(mc)) * iqr
+    upper <- q3 + fac * exp(3 * mc) * iqr
+  } else {
+    lower <- q1 - fac * exp(-3 * mc) * iqr
+    upper <- q3 + fac * exp(4 * mc) * iqr
   }
   result[valid] <- xv < lower | xv > upper
   result
