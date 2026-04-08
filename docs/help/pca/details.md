@@ -74,6 +74,19 @@ The **bestNormalize** package (Peterson & Cavanaugh, 2020) automatically selects
 
 ##### Data Interpretation
 
+**Correlation Matrix**
+
+The **Correlation Matrix** heatmap displays Pearson correlations between all measurement variables. Use this diagnostic to identify data structure issues before interpreting PCA results:
+
+| Pattern | Interpretation | PCA Implication |
+|---------|----------------|-----------------|
+| **Near-perfect correlations (r > 0.95)** | Redundant variables | Remove one to prevent singular matrix errors; redundant variables don't add information |
+| **Strong correlations (0.7 < r < 0.95)** | Related measurements | Expected for PCA; these variables will likely load on the same component |
+| **Weak correlations (r < 0.3)** | Independent variables | May form separate components or represent noise |
+| **Mixed correlation structure** | Diverse variable relationships | PCA will extract multiple components to capture different correlation clusters |
+
+**Conclusion for PCA**: The correlation matrix predicts how many meaningful components PCA will extract. If most correlations are weak, expect many components with low variance each. If variables cluster into strongly correlated blocks, expect fewer components capturing those block structures.
+
 **Eigenvalues and Variance**
 
 The eigenvalue table is the primary reference for component importance:
@@ -101,6 +114,34 @@ The eigenvalue table is the primary reference for component importance:
 | **Coordinates** | PC scores (position in reduced space) | Visualized in biplot; relative positions show similarity |
 | **Contributions (%)** | Individual's influence on component direction | High values indicate leverage points or outliers |
 | **Cos²** | Quality of individual representation | Near 1 = well-represented; near 0 = poorly represented |
+
+**Visualization Panels**
+
+Configure plots in the **PCA Plotting Controls** sidebar tab:
+
+| Control | Options | Effect |
+|---------|---------|--------|
+| **Biplot Layer** | Individuals, Variables (Loadings), Combined | Toggle which elements appear in the biplot |
+| **Group Biplot** | Metadata columns | Color-code points by descriptive variable for pattern detection |
+| **Convex Hull** | On/Off | Replace 95% confidence ellipses with minimum bounding polygons |
+| **Dim.X / Dim.Y / Dim.Z** | Component selection | Choose which principal components map to each axis |
+| **Point Alpha / Size** | Fixed values or "Contribution" | Vary transparency/size by individual contribution to Dim.1 |
+
+**Variable Contributions Plot**
+
+The **Variable Contributions** jitter plot displays contribution percentages across all retained dimensions. Variables with consistently high contributions (> 1/p, where p = number of variables) are the primary drivers of your PCA structure. This plot reveals:
+
+- Which measurements define each principal component
+- Variables that contribute across multiple dimensions (general importance)
+- Variables with narrow, focused contributions (specific to one component)
+
+**Individual Contributions Plot**
+
+The **Individual Contributions** plot shows how much each observation influences the direction of each principal component. High-contribution individuals act as "anchor points" that pull component axes toward them. Use this to:
+
+- Identify outliers that may warrant investigation
+- Detect clusters where boundary individuals have elevated contributions
+- Verify that no single observation dominates multiple components
 
 ##### Quality Assurance
 
