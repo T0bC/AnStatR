@@ -1,36 +1,30 @@
-# LDA / QDA — Discriminant Analysis
+#### Discriminant Analysis (LDA / QDA / MDA)
 
-## What is LDA?
+Supervised method that finds linear combinations of measurement variables maximizing separation between predefined groups. Unlike PCA (which ignores group labels), discriminant analysis explicitly targets group differences.
 
-**Linear Discriminant Analysis (LDA)** is a supervised method that finds linear combinations of your measurement variables which maximize the separation between predefined groups (e.g., species). Unlike PCA, which maximizes total variance regardless of group labels, LDA specifically targets the directions along which groups differ most.
+##### Data Selection
 
-## What is QDA?
+Configure columns in the **Data Selection** sidebar tab:
 
-**Quadratic Discriminant Analysis (QDA)** relaxes LDA's assumption that all groups share the same covariance matrix. Each group gets its own covariance estimate, allowing curved (quadratic) decision boundaries. QDA is more flexible but requires more observations per group.
+- **Descriptive (metadata) columns** — Select columns like `SAMPLE_ID`, `SPECIES`, `SITE`, or `TOOTH_TYPE` that describe your specimens. These are *not* used in the analysis computation but are displayed in plots and exported results for identification and context
+- **Grouping column** *(required)* — The single categorical column that defines the groups to be discriminated (e.g., `SPECIES`, `PERIOD`, `TAXON`). LDA/QDA maximizes separation *between* these groups. Must contain at least 2 distinct, non-missing levels
+- **Measurement columns** — Numeric variables included in the analysis. Click **Select all** to include all measurement columns
 
-## When to use which?
+##### Analysis Type
 
-- **LDA**: Good default when groups have roughly similar spread and you have limited observations per group.
-- **QDA**: Use when groups clearly have different variances or shapes, and you have enough observations per group (at least more than the number of variables).
+Choose between three methods in the **Analysis Settings** tab:
 
-## Workflow
+| Method | Decision Boundary | Key Requirement | Best For |
+|--------|-------------------|-----------------|----------|
+| **LDA** (Linear) | Linear (flat) | Groups share same covariance structure | Default; limited observations per group |
+| **QDA** (Quadratic) | Quadratic (curved) | ≥ p+1 observations per group | Groups with clearly different spread/shape |
+| **MDA** (Mixture) | Flexible (mixture) | ≥ subclasses × p observations per group | Multi-modal or non-elliptical group shapes |
 
-1. **Select metadata columns** — columns that describe your specimens (species, site, tooth type, etc.)
-2. **Select a grouping column** — the categorical variable defining your groups (e.g., species). Must have at least 2 levels.
-3. **Select measurement columns** — the numeric variables to include in the analysis.
-4. **Choose data scaling** — recommended when variables have different units or magnitudes.
-5. **Configure analysis settings** — choose LDA vs QDA, estimation method, priors, and cross-validation.
-6. Click **Compute LDA / QDA**.
+##### Scaling and Preprocessing
 
-## Key settings
+- **Data Scaling** — **Scale & Center (recommended)** applies z-score standardization (mean=0, SD=1), ensuring all variables contribute equally regardless of original units or magnitude. Essential when variables are on different scales. See Details tab for full scaling implications
+- **Normalize skewed variables** — Transforms highly skewed variables (|skewness| > 2) using the bestNormalize package before analysis. Reduces outlier influence. See Details tab for guidance on when to enable this
 
-- **Estimation method**: "moment" (standard) is the default. "mve" and "t" provide robust alternatives when outliers are present.
-- **Prior probabilities**: "Proportional" uses group sizes from your data. "Equal" treats all groups as equally likely.
-- **Cross-validation**: Leave-one-out CV assesses how well the model classifies specimens without a separate test set.
-- **Tolerance**: Controls singularity detection. Increase if you get singular matrix errors.
+##### Key Result
 
-## Tips
-
-- If you have more variables than observations per group, consider running PCA first and using the PCA scores as input (reduces dimensionality).
-- The degree of overlap between groups in LDA space directly indicates how similar their measurement profiles are.
-- Compare LDA and QDA results — if they differ substantially, the equal-covariance assumption of LDA may not hold.
+After clicking **Compute LDA / QDA / MDA**, the most important result is the **LD Scores Plot** (open by default) — the scatter plot projecting all specimens onto the linear discriminant axes (LD1, LD2, …). The degree of separation between group clouds directly reflects how well the measurement variables discriminate the groups. The **Proportion of Trace** table in **LDA Results** reports how much between-group variance each discriminant axis captures.
