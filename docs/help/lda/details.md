@@ -24,13 +24,13 @@ Where p = number of measurement variables, G = number of groups.
 <details>
 <summary><strong>LDA Computation Method</strong></summary>
 
-LDA is implemented via `MASS::lda()` (Venables & Ripley, 2002). The algorithm finds the projection matrix **W** that maximises the ratio of between-group scatter **S_B** to within-group scatter **S_W**:
+LDA is implemented via `MASS::lda()` (Venables & Ripley, 2002). The algorithm finds the projection matrix $\mathbf{W}$ that maximises the ratio of between-group scatter $\mathbf{S}_B$ to within-group scatter $\mathbf{S}_W$:
 
-**W** = argmax |**W**ᵀ **S_B** **W**| / |**W**ᵀ **S_W** **W**|
+$$\mathbf{W} = \underset{\mathbf{W}}{\arg\max} \frac{|\mathbf{W}^\top \mathbf{S}_B \mathbf{W}|}{|\mathbf{W}^\top \mathbf{S}_W \mathbf{W}|}$$
 
 This is solved as a generalised eigenvalue problem. The resulting eigenvectors are the discriminant coefficients (the **scaling** matrix); the eigenvalues (accessed as SVD singular values) determine how much between-group variance each axis explains.
 
-The number of usable discriminant axes is min(p, G − 1). With two groups there is exactly one LD axis; additional groups yield additional axes.
+The number of usable discriminant axes is $\min(p,\, G - 1)$. With two groups there is exactly one LD axis; additional groups yield additional axes.
 
 **References**: Fisher (1936); McLachlan (2004); Venables & Ripley (2002).
 
@@ -39,11 +39,11 @@ The number of usable discriminant axes is min(p, G − 1). With two groups there
 <details>
 <summary><strong>QDA Computation Method</strong></summary>
 
-QDA is implemented via `MASS::qda()` (Venables & Ripley, 2002). Unlike LDA, QDA estimates a separate covariance matrix Σ_k for each group k. The quadratic discriminant function for group k is:
+QDA is implemented via `MASS::qda()` (Venables & Ripley, 2002). Unlike LDA, QDA estimates a separate covariance matrix $\boldsymbol{\Sigma}_k$ for each group $k$. The quadratic discriminant function for group $k$ is:
 
-δ_k(x) = −½ log|Σ_k| − ½ (x − μ_k)ᵀ Σ_k⁻¹ (x − μ_k) + log π_k
+$$\delta_k(\mathbf{x}) = -\tfrac{1}{2} \log|\boldsymbol{\Sigma}_k| - \tfrac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_k)^\top \boldsymbol{\Sigma}_k^{-1} (\mathbf{x} - \boldsymbol{\mu}_k) + \log \pi_k$$
 
-Because each group needs to invert its own p × p covariance matrix, at least p + 1 observations per group are required. QDA does not produce discriminant axes; the companion LDA fit (fitted automatically on the same data) is used for LD-space visualisation only.
+Because each group needs to invert its own $p \times p$ covariance matrix, at least $p + 1$ observations per group are required. QDA does not produce discriminant axes; the companion LDA fit (fitted automatically on the same data) is used for LD-space visualisation only.
 
 **References**: Hastie, Tibshirani & Friedman (2009); Venables & Ripley (2002).
 
@@ -54,7 +54,7 @@ Because each group needs to invert its own p × p covariance matrix, at least p 
 
 MDA is implemented via `mda::mda()` (Hastie & Tibshirani, 1996). Each group is modelled as a mixture of `subclasses` Gaussian sub-populations:
 
-P(x | group k) = Σ_r π_{kr} · N(x; μ_{kr}, Σ)
+$$P(\mathbf{x} \mid \text{group}\, k) = \sum_{r} \pi_{kr}\, \mathcal{N}(\mathbf{x};\, \boldsymbol{\mu}_{kr},\, \boldsymbol{\Sigma})$$
 
 Parameters are estimated by the Expectation–Maximisation (EM) algorithm. Because a shared (pooled) covariance matrix is used across all sub-populations, MDA generalises LDA to non-elliptical group shapes without the per-group covariance requirement of QDA.
 
@@ -73,8 +73,8 @@ The **Data Source** toggle in the Data Selection tab allows LDA / QDA / MDA to b
 
 ###### Benefits
 
-- **Eliminates collinearity** — PCA components are orthogonal by construction. Because LDA's within-group covariance matrix Σ_W must be invertible, highly correlated raw variables frequently cause singularity errors. PCA scores are always full-rank up to the number of retained components
-- **Reduces dimensionality (p < n/G)** — when the number of raw variables p approaches or exceeds the number of observations per group n/G, discriminant functions overfit. Retaining only the PCA dimensions that explain ≥ 90% of variance substantially reduces p while preserving most of the data structure
+- **Eliminates collinearity** — PCA components are orthogonal by construction. Because LDA's within-group covariance matrix $\mathbf{S}_W$ must be invertible, highly correlated raw variables frequently cause singularity errors. PCA scores are always full-rank up to the number of retained components
+- **Reduces dimensionality ($p < n/G$)** — when the number of raw variables $p$ approaches or exceeds the number of observations per group $n/G$, discriminant functions overfit. Retaining only the PCA dimensions that explain ≥ 90% of variance substantially reduces p while preserving most of the data structure
 - **Noise removal** — trailing PCA dimensions typically capture measurement noise. Excluding them prevents noise dimensions from inflating within-group scatter and diluting discriminant signal
 - **Scaling is implicit** — PCA scores are already mean-centred (and standardised if Scale & Center was used in PCA). No additional scaling is needed in the LDA step
 
@@ -100,7 +100,7 @@ Scaling decisions directly affect the within-group and between-group scatter mat
 
 | Scaling | Covariance Structure | Effect on LDA | Recommended When |
 |---------|---------------------|---------------|-----------------|
-| **Scale & Center** | Correlation matrix | All variables contribute equally to Σ_W; discriminant coefficients are comparable across variables | Variables have different units (mm, %, counts, etc.) |
+| **Scale & Center** | Correlation matrix | All variables contribute equally to $\mathbf{S}_W$; discriminant coefficients are comparable across variables | Variables have different units (mm, %, counts, etc.) |
 | **Center only** | Covariance matrix | High-variance variables exert stronger influence on discriminant directions | All variables share the same unit and variance differences are scientifically meaningful |
 | **No scaling** | Raw cross-products | Raw scale dominates; variables with large absolute values can monopolise LD axes | Data already preprocessed to a common scale |
 
@@ -145,59 +145,216 @@ The **Nu (degrees of freedom)** parameter (visible only for `t` method) governs 
 
 **Resubstitution accuracy** is always reported in the LDA Results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it.
 
-##### Data Interpretation
+##### Data Interpretation — LDA Results Panels
+
+The **LDA Results** accordion contains up to nine sub-panels depending on analysis type and validation mode. The panels appear in the order described below.
 
 <details>
-<summary><strong>Proportion of Trace (LDA and MDA)</strong></summary>
+<summary><strong>Resubstitution / LOO-CV / Test Accuracy (Summary panel)</strong></summary>
 
-The **Proportion of Trace** table is the primary summary of discriminant axis importance, analogous to the variance-explained table in PCA:
+The top of the summary panel shows a coloured accuracy badge and a brief model description:
 
-| Column | Definition | Interpretation |
-|--------|-----------|----------------|
-| **LD / DC** | Axis label (LD = LDA axes, DC = MDA discriminant coordinates) | Axes are ranked by discriminating power |
-| **Singular Value** | Square root of the eigenvalue (LDA only) | Larger values → stronger group separation on that axis |
-| **Proportion** | Fraction of total between-group variance explained by this axis | Values sum to 1.0 across all axes |
-| **Cumulative** | Running total | Retain axes until cumulative proportion ≥ 0.80–0.90 for interpretation |
+| Field | Meaning |
+|-------|---------|
+| **Analysis** | Method used: LDA, QDA, or MDA |
+| **Observations** | Number of rows after NA removal |
+| **Variables** | Number of measurement columns entered |
+| **Groups** | Number of distinct groups and their labels |
+| **Discriminant axes** | Number of LD axes computed — always $\min(p,\, G-1)$; not shown for QDA |
 
-**Key insight**: If LD1 explains > 90% of the trace, a single axis captures most group separation. If proportions are distributed across several axes, group discrimination is multi-dimensional and requires examining multiple plots.
+The accuracy badge is colour-coded: green ≥ 90 %, yellow ≥ 70 %, red < 70 %.
+
+**Which accuracy is shown** depends on the validation mode selected:
+
+| Validation | Label | Interpretation |
+|------------|-------|---------------|
+| None | **Resubstitution Accuracy** | Model classified the same data it was trained on — always optimistic; upper bound of true performance |
+| LOO-CV | **LOO-CV Accuracy** | Each specimen predicted by a model trained without it — unbiased estimate for small samples |
+| Train/Test Split | **Test Accuracy** | Accuracy on the held-out test set — most realistic estimate for larger datasets |
+
+A resubstitution accuracy of 100 % with LOO-CV accuracy substantially lower is a strong sign of overfitting. See the FAQ for remedies.
 
 </details>
 
 <details>
-<summary><strong>Classification Accuracy and Confusion Matrix</strong></summary>
+<summary><strong>Prior Probabilities</strong></summary>
 
-The **Confusion Matrix** cross-tabulates true group labels against predicted labels. Per-class metrics are reported alongside overall accuracy:
+Lists the prior probability $\pi_k$ assigned to each group before seeing the measurement data.
 
-| Metric | Definition | Interpretation |
+| Setting | Prior values | Effect on classification |
+|---------|-------------|--------------------------|
+| **Proportional** | Proportional to group size in the training data | Larger groups are more likely to be predicted; mirrors realistic population frequencies |
+| **Equal** | $1/G$ for all groups | All groups treated equally regardless of sample size; removes sampling-frequency bias from predictions |
+
+Prior probabilities influence posterior probabilities and decision boundaries but do not affect discriminant coefficients or the Proportion of Trace. If one group is substantially larger than others and priors are proportional, small groups near boundaries will tend to be absorbed by the larger group.
+
+</details>
+
+<details>
+<summary><strong>Group Means</strong></summary>
+
+Shows the within-group mean for every measurement variable, computed on the (scaled) data used for analysis. Rows are groups; columns are variables.
+
+These are the centroid coordinates that LDA/QDA uses as the reference points for classification. Key uses:
+
+- **Identify which variables distinguish groups**: large mean differences across groups on a variable signal strong discriminating potential on that variable
+- **Interpret discriminant axes**: if LD1 has large positive coefficients for variable X and group A has the highest mean on X, group A will plot at the positive end of LD1
+- **Verify scaling effect**: with Scale & Center applied, all means are in standard deviation units (z-scores) and are directly comparable across variables
+
+For QDA and MDA the group means have the same interpretation, but the within-group covariance structure differs between methods.
+
+</details>
+
+<details>
+<summary><strong>Coefficients of Linear Discriminants / Discriminant Coefficients</strong></summary>
+
+*Available for LDA and MDA (model mode only); not shown for QDA.*
+
+The table lists the discriminant coefficients (the **scaling matrix**): how much each variable contributes to each LD axis. Rows are variables; columns are LD1, LD2, … (LDA) or DC1, DC2, … (MDA).
+
+After z-score scaling the coefficients are on a common scale and directly comparable:
+
+| Coefficient magnitude | Interpretation |
+|-----------------------|---------------|
+| Large positive | Variable pulls specimens towards the positive end of that axis |
+| Large negative | Variable pulls specimens towards the negative end of that axis |
+| Near zero | Variable contributes little to separation on that axis |
+
+To identify the primary discriminating variables: look for the rows with the largest absolute values in LD1. These are the measurements that most strongly separate the groups along the first (and usually most important) discriminant axis.
+
+The **Variable Contributions** jitter plot (separate accordion panel below the LDA Results) visualises these coefficients across all LD axes simultaneously — variables with consistently large absolute values across multiple axes are the overall key discriminators.
+
+For MDA, the coefficients describe the shared pooled discriminant space across all mixture components; their interpretation is analogous to LDA coefficients.
+
+</details>
+
+<details>
+<summary><strong>MDA Subclass Information (MDA only)</strong></summary>
+
+*Shown only for MDA model fits (not CV mode).*
+
+Contains two sub-sections:
+
+**Subclass Priors** — the estimated prior probability of each subclass within each group. Each group is modelled as a mixture of `subclasses` Gaussian components; the subclass prior shows how much weight each component received after EM convergence. Balanced subclass priors (all components roughly equal weight) indicate the subclasses are all being used. A subclass with near-zero prior has collapsed and is effectively unused — consider reducing the subclasses count.
+
+**Model Details** lists:
+- **Dimension** — number of discriminant dimensions retained by the MDA fit
+- **Subclasses per group** — the value used for the current run
+- **Deviance** — the final negative log-likelihood of the fitted model; lower is better, but only comparable across runs on identical data
+
+</details>
+
+<details>
+<summary><strong>Proportion of Trace</strong></summary>
+
+*Available for LDA and MDA (model mode only); not shown for QDA.*
+
+The primary summary of discriminant axis importance, directly analogous to the variance-explained table in PCA. Columns:
+
+| Column | Definition | Interpretation |
 |--------|-----------|----------------|
-| **Overall Accuracy** | Correct / Total | Green ≥ 90%, Yellow ≥ 70%, Red < 70% |
-| **Precision** | TP / (TP + FP) | What fraction of predicted-class specimens actually belong to it |
-| **Recall** | TP / (TP + FN) | What fraction of true-class specimens were correctly predicted |
-| **F1** | 2 × Precision × Recall / (Precision + Recall) | Harmonic mean; useful for imbalanced groups |
+| **LD / DC** | Axis label — LD1, LD2, … for LDA; DC1, DC2, … for MDA | Axes are ranked by discriminating power, LD1/DC1 always first |
+| **Singular Value** | Square root of the corresponding eigenvalue (LDA only) | Larger → stronger between-group separation on that axis |
+| **Proportion** | Fraction of total between-group variance explained by this axis | Values sum to 1.0 |
+| **Cumulative** | Running sum of proportions | Background colour: grey < 0.6, yellow 0.6–0.8, green > 0.8 |
 
-**Resubstitution accuracy** (no cross-validation) is always optimistic — the model was trained on the same data it classifies. For genuine predictive evaluation, use LOO-CV or Train/Test Split. A large gap between resubstitution and CV accuracy indicates overfitting, commonly caused by too many variables relative to observations (p ≥ n per group).
+**Reading the table**: If LD1 proportion > 0.90, a single scatter plot of LD1 captures the overwhelming majority of group separation. If the proportion is split more evenly (e.g., 0.69 / 0.31), both axes carry substantial discriminating information and the two-dimensional LD Scores Plot should be examined carefully. The cumulative column reaching green (> 0.80) indicates that the axes up to that row together explain most between-group variance.
+
+</details>
+
+<details>
+<summary><strong>Dimension Evaluation (ANOVA)</strong></summary>
+
+*Shown for model fits (not CV mode) when LD scores are available. For QDA, based on the companion LDA projection.*
+
+A one-way ANOVA is run separately for each discriminant axis, testing whether group membership explains a significant proportion of the variance in the LD scores on that axis. Columns:
+
+| Column | Definition | Interpretation |
+|--------|-----------|----------------|
+| **Dimension** | LD1, LD2, … | Each row is one discriminant axis |
+| **F** | ANOVA F-statistic | Higher F → stronger group effect on this axis |
+| **p-value** | Significance of the F-test | Reported as exact value or `< 0.001` |
+| **R² (%)** | Proportion of LD-score variance explained by group | Background: grey < 10 %, yellow 10–25 %, green > 25 % |
+| **Sig.** | Significance stars | *** p < 0.001, ** p < 0.01, * p < 0.05, . p < 0.1 |
+
+A high R² (e.g., 90 %) on LD1 confirms that group membership strongly structures the scores on that axis. Low R² or non-significant F on an axis means that axis adds little discriminating value over chance — consider omitting it from plots and interpretation.
+
+**Note for QDA**: the ANOVA uses the companion LDA projection (fitted internally for visualisation purposes), not the QDA classification boundaries. It still provides useful guidance on which projected axes carry group signal.
+
+</details>
+
+<details>
+<summary><strong>Confusion Matrix</strong></summary>
+
+The confusion matrix cross-tabulates true group labels (rows) against predicted labels (columns). A perfect classifier has counts only on the diagonal; off-diagonal cells indicate misclassifications.
+
+**Per-Class Metrics** table:
+
+| Metric | Formula | Interpretation |
+|--------|---------|----------------|
+| **N** | Group sample size | Larger groups have more influence on overall accuracy |
+| **Correct** | True positives (diagonal cell) | Specimens correctly assigned to their true group |
+| **Precision** | $\text{TP} / (\text{TP} + \text{FP})$ | Of all specimens *predicted* as this group, what fraction truly belongs |
+| **Recall** | $\text{TP} / (\text{TP} + \text{FN})$ | Of all specimens *truly* in this group, what fraction was correctly predicted |
+| **F1** | $2 \times \text{Precision} \times \text{Recall} / (\text{Precision} + \text{Recall})$ | Harmonic mean — use when group sizes are imbalanced |
+
+Overall accuracy (shown below the table) is the fraction of all specimens correctly classified. The **accuracy badge** in the summary panel uses the same value with colour coding: green ≥ 90 %, yellow ≥ 70 %, red < 70 %.
+
+Which data the confusion matrix describes depends on the validation mode:
+- **None**: resubstitution — trained and tested on all data; always optimistic
+- **LOO-CV**: leave-one-out predictions — unbiased but conservative
+- **Train/Test Split**: test-set predictions only — see the **Train / Test Split** panel for split details
 
 </details>
 
 <details>
 <summary><strong>Posterior Probabilities</strong></summary>
 
-For each specimen the model reports a posterior probability P(group | x) for every group. These are derived via Bayes' theorem using the discriminant functions and the selected prior probabilities. The specimen is assigned to the group with the highest posterior.
+Lists the posterior probability $P(\text{group}_k \mid \mathbf{x})$ for every specimen and every group. The specimen is assigned to the group with the highest posterior (shown in the **Predicted** column).
 
-High posterior probability (> 0.90) for the assigned group indicates confident classification. Specimens with roughly equal posteriors across two or more groups are ambiguous — they sit near decision boundaries and are most likely to be misclassified. Inspect these in the LD Scores Plot by hovering over the interactive points.
+Table columns:
+- **Metadata columns** (e.g., `SAMPLE_ID`, `SPECIES`) — carried from the descriptive column selection for identification
+- **Predicted** — the group assignment based on the highest posterior
+- **One column per group** — the posterior probability for that group, summing to 1.0 across all group columns for each row
+
+| Posterior pattern | Interpretation |
+|-------------------|---------------|
+| One group near 1.0, others near 0.0 | Confident, unambiguous classification |
+| Two groups both > 0.3 | Specimen is near the decision boundary; classification uncertain |
+| All groups roughly equal (≈ 1/G) | Specimen is equidistant from all group centroids — highly ambiguous |
+
+The panel label changes based on validation mode:
+- **Posterior Probabilities (All Data)** — model fitted on all data, posteriors computed on training set
+- **Posterior Probabilities (LOO-CV)** — each specimen's posterior from the model that excluded it
+- **Posterior Probabilities (Test Set)** — posteriors for the held-out test specimens only
+
+For QDA, posteriors are derived from the per-group covariance matrices and are the primary classification result (no LD scores are produced directly). For MDA, posteriors are summed across subclass components within each group.
 
 </details>
 
 <details>
-<summary><strong>Discriminant Coefficients (Scaling Matrix)</strong></summary>
+<summary><strong>Train / Test Split (split mode only)</strong></summary>
 
-The **Discriminant Coefficients** table (available for LDA and MDA) lists the weight each variable receives on each discriminant axis. After z-score scaling, these coefficients are directly comparable:
+*Shown only when Train/Test Split validation is selected.*
 
-- Large absolute coefficient → variable contributes strongly to group separation on that axis
-- Variables with near-zero coefficients on all axes are not discriminating the groups in this dataset
-- The **Variable Contributions** jitter plot visualises these coefficients across all axes simultaneously
+Displays the **Stratified Split Summary** table, listing for each group how many specimens were allocated to the training set and how many to the test set. The split is stratified, meaning each group's proportional representation is maintained in both subsets.
 
-For QDA, no discriminant coefficients exist — classification is based on posterior probabilities from per-group covariance matrices.
+Key checks:
+- All groups should have at least a few specimens in both train and test — if a group is very small it may appear only in train, making test-set accuracy for that group undefined
+- The **Random seed** controls which specimens are assigned to train vs. test; use the same seed to reproduce the exact split
+
+The confusion matrix and posterior probabilities shown in their respective panels refer to the **test set** when split mode is active. The summary accuracy badge shows **Test Accuracy**, not resubstitution.
+
+</details>
+
+<details>
+<summary><strong>Download Results</strong></summary>
+
+Two export formats are available:
+
+**Download Excel (All Results)** — an `.xlsx` workbook with one sheet per result component: LD scores (or posterior probabilities for QDA) with metadata columns prepended, proportion of trace, group means, discriminant coefficients, confusion matrix, and per-class metrics. Sheet 1 (scores / posteriors with metadata) is ready for import into the Cluster module or for external analysis.
+
+**Download RDS (LDA/QDA Object)** — an `.rds` file containing the full result bundle including the fitted model object, raw and scaled data, transformation parameters, scale parameters, and all settings. Load in R with `readRDS()` for programmatic access to the model or for reproducibility documentation.
 
 </details>
 
