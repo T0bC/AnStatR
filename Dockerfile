@@ -78,6 +78,9 @@ COPY app/ app/
 COPY www/ www/
 
 # ---------- Runtime configuration ----------
+ENV R_CONFIG_ACTIVE=production
+RUN mkdir -p /app/logs
+
 EXPOSE 3838
 
 CMD ["R", "-e", "shiny::runApp('/app', host = '0.0.0.0', port = 3838)"]

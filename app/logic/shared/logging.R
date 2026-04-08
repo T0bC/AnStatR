@@ -24,10 +24,23 @@ configure_session_logging <- function() {
   # is not NA, but never resets to console — so switching from production
   # back to default in the same R session leaves the file appender active.
   log_file <- config$get("rhino_log_file")
+  is_production <- identical(Sys.getenv("R_CONFIG_ACTIVE"), "production")
+
   if (is.null(log_file) || is.na(log_file)) {
+    # No file configured: output to console only
     logger$log_appender(logger$appender_stderr)
   } else {
-    logger$log_appender(logger$appender_file(log_file))
+    # Ensure log directory exists
+    log_dir <- dirname(log_file)
+    if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+
+    if (is_production) {
+      # Production: file only (for per-user debugging via session ID)
+      logger$log_appender(logger$appender_file(log_file))
+    } else {
+      # Local development: both console AND file
+      logger$log_appender(logger$appender_tee(log_file))
+    }
   }
 
   logger$log_layout(session_layout)

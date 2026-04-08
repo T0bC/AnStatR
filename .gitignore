@@ -7,8 +7,9 @@
 node_modules/
 
 
-# Log file
-app.log
+# Log files
+logs/
+texan.log
 
 # Legacy reference code (read-only, not part of new codebase)
 #legacy_texan2/
