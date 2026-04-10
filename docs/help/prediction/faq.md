@@ -166,7 +166,6 @@ Additional supporting packages: **stats** (base R `predict()`, `scale()`), **bsl
 
 </details>
 
-
 **References**
 
 - Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, 7(2), 179–188.
