@@ -1,0 +1,116 @@
+---
+title: "Untitled"
+output: github_document
+---
+ want to Implement a new submodule for Power analysis. power analysis is a common way to get insight how many sample/specemin/patiens one needs for a study trail, when some prior knowledge is aquired from pre studies or literature. read the new_tab_guide.md in the .llm folder as well as the instructions.md and the error_handling.md as well as the dependency_injection.md and debouncing.md, as well as the help_modal_guide.md. The goal is that the user has on the left sidebar the options for the study layout, and the prior knowledge, like effect sizes or differences between group means/medians in "real units". since we have implemented a series of statistical tests in the app/logic/statistics module for one, two and threeway study designs, for robust, parametric and nonparametric tests I guess the user needs to specify either if the distribution is known, or if the user has mean + SD from literature that can be obtained so we can calculate the correct statistical power or sample size for the groupings. so we need a comprehensive but simple to use UI where the user can input the relevant data so that the result can be visualized in the main content area of the app. it might be nice to have also "Dummy" plots, we might reuse the functions written from the app/logic/plotting code for the stripcharts so we do not repeat ourselfs that much. please review my specifications critically, ask questions to clarify my intent and how and what information is needed to do proper power analysis and sample size calculations for given data/distribution/prior knowledge.
+
+
+Critical Review of Power Analysis Module Specification
+I've reviewed the documentation and existing codebase. Your specification has good intuition but needs refinement. Here are my critical observations and clarifying questions:
+
+What You Have Right
+Study design alignment — You correctly identified that power analysis should mirror your existing test structure (1-way, 2-way, 3-way designs)
+Prior knowledge inputs — Effect sizes, mean differences, and SD from literature are the right inputs
+UI pattern — Left sidebar for configuration, main area for results/visualization follows your established pattern
+Reusing plotting code — The create_scatter_plot() in scatter.R:39-128 could be adapted for "dummy" sample visualizations
+Critical Issues & Clarifying Questions
+1. What is the primary use case: Sample Size or Power?
+Power analysis can solve for different unknowns:
+
+Sample size (given: effect size, α, desired power) → "How many subjects do I need?"
+Power (given: effect size, α, sample size) → "What power do I have with N subjects?"
+Minimum detectable effect (given: α, power, sample size) → "What effect can I detect?"
+Question: Which mode(s) should be primary? Most researchers want sample size estimation, but having all three modes is more complete.
+
+2. Effect Size Specification — This Needs Careful Design
+You mentioned "effect sizes or differences between group means/medians in real units." These are different things:
+
+Input Type	What It Means	When to Use
+Cohen's d / f	Standardized effect size	When you have prior studies reporting standardized effects
+Raw difference + SD	Mean₁ - Mean₂ and pooled SD	When you have literature with actual values
+Means per group + SD	μ₁, μ₂, ..., μₖ and σ	When you want to specify exact expected group means
+Questions:
+
+Should users input standardized effect sizes (Cohen's d, f, η²) directly?
+Or should they input raw values (group means + SD) and we calculate the effect size internally?
+Or both options with a toggle?
+3. Test Type Mapping — Not 1:1 with Your Statistics Module
+Your statistics module has:
+
+Parametric: ANOVA (1/2/3-way)
+Robust: t1way/t2way/t3way (trimmed means)
+Non-parametric: Kruskal-Wallis, ART
+Power analysis methods differ:
+
+Your Test	Power Analysis Method	R Package
+ANOVA	pwr::pwr.anova.test() or pwr::pwr.f2.test()	pwr
+t-test (2 groups)	pwr::pwr.t.test()	pwr
+Kruskal-Wallis	Simulation-based or asymptotic approximation	No standard package
+Robust (trimmed)	Simulation-based (no closed-form)	Custom
+ART	Simulation-based	Custom
+Questions:
+
+For non-parametric/robust tests, are you okay with simulation-based power estimation? This is computationally heavier but accurate.
+Should we support only parametric power initially (simpler, well-established) and add simulation-based methods later?
+4. Distribution Assumptions
+You mentioned "if the distribution is known." What distributions should we support?
+
+Distribution	Use Case
+Normal	Standard parametric tests
+Log-normal	Skewed positive data (common in biology)
+Exponential	Time-to-event, survival
+Custom (empirical)	User uploads pilot data
+Question: Should users be able to:
+
+(a) Assume normality (simplest)
+(b) Select from common distributions
+(c) Upload pilot data to estimate distribution empirically
+5. Multi-Factor Designs (2-way, 3-way)
+For factorial designs, power analysis becomes complex:
+
+Power for main effects vs interactions differs
+Need to specify effect sizes for each effect (A, B, A×B for 2-way)
+Cell sample sizes and balance matter
+Questions:
+
+Should users specify effect sizes for all effects (main + interactions)?
+Or focus on a single effect of interest (e.g., "I care about factor A")?
+Should we assume balanced designs only, or support unbalanced?
+6. Output Visualization
+You mentioned "dummy plots" — what should these show?
+
+Options:
+
+Power curve: Power vs. sample size (classic)
+Sample distribution preview: Simulated data points showing expected group separation
+Sensitivity plot: Power vs. effect size at fixed N
+Design table: Required N per cell for factorial designs
+Question: Which visualizations are most useful for your users?
+
+7. Integration with Existing Data
+Should the power module be:
+
+(a) Standalone — User enters all parameters manually (no data needed)
+(b) Data-informed — Can optionally use loaded data to estimate SD, group structure, etc.
+(c) Both — Toggle between manual entry and "use current data as pilot"
+Question: Your current tab visibility pattern requires data to be loaded. Should Power Analysis be accessible without data (pure planning tool)?
+
+Recommended Approach
+Based on your existing architecture, I suggest:
+
+Start with parametric power (ANOVA/t-test) using the pwr package
+Two input modes:
+"I have standardized effect size" → direct Cohen's d/f input
+"I have raw values" → means + SD → we calculate effect size
+Primary output: Sample size given desired power (0.80 default)
+Visualization: Power curve + optional simulated data preview
+Standalone initially — no data dependency, pure planning tool
+Your Turn
+Please clarify:
+
+Sample size vs. power vs. both?
+Standardized effect sizes, raw values, or both?
+Parametric only initially, or simulation-based for robust/non-parametric too?
+Which visualizations matter most?
+Standalone or data-integrated?
+Balanced designs only?
