@@ -126,7 +126,7 @@ DBSCAN is most effective when there are genuinely dense regions separated by spa
 <details>
 <summary>Can I cluster on PCA or LDA scores instead of raw measurements?</summary>
 
-Yes, and this is often the recommended approach. Switch **Data Source** in the Data Selection tab to **PCA Scores** or **LDA Scores**.
+Yes, and this is approach is sometimes used. Conduct PCA or LDA teen switch **Data Source** in the Data Selection tab to **PCA Scores** or **LDA Scores**.
 
 **Clustering on PCA scores** is useful when:
 - The number of raw variables is large (curse of dimensionality — distances become less informative in high-dimensional space)
