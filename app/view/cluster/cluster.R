@@ -21,6 +21,7 @@ box::use(
   ],
   app/view/cluster/cluster_biplot,
   app/view/cluster/cluster_results,
+  app/view/cluster/cluster_silhouette,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
   app/view/cluster/heatmap,
@@ -828,6 +829,34 @@ server <- function(id, input_data, data_version,
         )
       }
 
+      # Cluster silhouette panel
+      sil_err <- silhouette_state$error()
+      silhouette_panel <- if (!is.null(res)) {
+        sil_title <- shiny$tags$span(
+          bsicons$bs_icon(
+            "bar-chart-steps", class = "me-1"
+          ),
+          "Cluster Silhouette"
+        )
+        sil_content <- if (
+          error_handling$is_app_error(sil_err)
+        ) {
+          error_display$error_alert_structured(
+            sil_err, type = "danger"
+          )
+        } else {
+          cluster_silhouette$render_silhouette_content(
+            res, ns
+          )
+        }
+        bslib$accordion_panel(
+          title = sil_title,
+          value = "cluster_silhouette_panel",
+          sil_content,
+          download_buttons(ns, "cluster_silhouette")
+        )
+      }
+
       shiny$tagList(
         preprocess_banner,
         skew_warning,
@@ -838,6 +867,7 @@ server <- function(id, input_data, data_version,
           hopkins_panel,
           opt_panel,
           biplot_panel,
+          silhouette_panel,
           cluster_results_panel,
           heatmap_panel
         )
@@ -888,6 +918,21 @@ server <- function(id, input_data, data_version,
     register_plot_downloads(
       output, input, "cluster_biplot",
       biplot_state$plot, "Cluster_Biplot"
+    )
+
+    # Delegate cluster silhouette rendering
+    silhouette_state <- cluster_silhouette$render_output(
+      input, output, session,
+      cluster_result_rv = result,
+      membership_data_rv = membership_data,
+      analysis_data_rv = analysis_data_store,
+      measure_cols_rv = measure_cols_store
+    )
+
+    # Register cluster silhouette download handlers
+    register_plot_downloads(
+      output, input, "cluster_silhouette",
+      silhouette_state$plot, "Cluster_Silhouette"
     )
 
     # Render membership DT table with colored cluster badges
