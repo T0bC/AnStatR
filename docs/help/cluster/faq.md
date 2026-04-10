@@ -159,6 +159,62 @@ The Cluster Profile is the key table for biological and archaeological interpret
 </details>
 
 <details>
+<summary>What does the Silhouette Plot show and how do I read it?</summary>
+
+The Silhouette Plot visualises the silhouette width of every individual observation in your cluster solution. Each horizontal bar represents one observation:
+
+- **Bar width** = silhouette width (ranges from −1 to +1)
+- **Bar direction**: extends right for positive values, left for negative values
+- **Bar colour**: coded by cluster assignment
+- **Observations are grouped** by cluster, with clusters stacked vertically
+
+**How to interpret individual bars**:
+- **Wide bars extending right** (silhouette near +1): the observation is well-matched to its cluster and far from neighbouring clusters
+- **Narrow bars** (silhouette near 0): the observation sits on the boundary between two clusters
+- **Bars extending left** (negative silhouette): the observation may be misassigned — it is closer to a neighbouring cluster than to its own
+
+**How to interpret cluster patterns**:
+- **Cluster with consistently wide bars**: a tight, cohesive group with clear separation from other clusters
+- **Cluster with mixed bar widths**: a heterogeneous group; consider whether it should be split further
+- **Many negative bars across clusters**: the overall cluster solution is weak; verify with the Hopkins statistic and consider a different k
+
+Use the **Sort by** control to reorder observations within each cluster — sorting by metadata group can reveal whether known biological or archaeological groupings align with the computed cluster boundaries.
+
+</details>
+
+<details>
+<summary>When should I use the Silhouette Plot vs. the Average Silhouette metric?</summary>
+
+The **Average Silhouette Width** is a single number summarising overall cluster quality — useful for comparing different k values quickly in the Optimal Clusters panel.
+
+The **Silhouette Plot** shows individual-level detail and is essential when:
+
+- **Diagnosing cluster problems**: low average silhouette can be driven by a few poorly assigned observations or by systematic issues across all clusters — the plot reveals which
+- **Identifying outliers**: observations with strongly negative silhouette are candidates for being noise points or measurement errors
+- **Checking metadata alignment**: sorting by a metadata column (e.g., `SITE` or `SPECIES`) lets you visually verify whether known groupings align with cluster boundaries
+- **Reporting**: the plot provides a publication-quality figure showing cluster quality to accompany the numerical summary
+
+**Recommended workflow**: run clustering, check the Average Silhouette in the Cluster Quality panel, then open the Silhouette Plot to investigate any clusters with low or borderline values. Export the plot (PNG/SVG) for documentation.
+
+</details>
+
+<details>
+<summary>What are the "Sort by" options in the Silhouette Plot for?</summary>
+
+The **Sort by** control determines how observations are ordered within each cluster:
+
+| Sort Option | Effect | Best Used When |
+|-------------|--------|---------------|
+| **Silhouette Width** (default) | Orders observations from best-assigned (widest bar) to worst-assigned (narrowest/negative) | Quickly identifying which observations contribute to low cluster quality |
+| **Metadata Group** | Orders observations by the selected metadata column | Checking whether known groupings (e.g., all specimens from Site A) cluster together within the computed clusters |
+
+When **Metadata Group** is selected, choose the grouping variable in the **Metadata Group** dropdown. This is particularly useful for archaeological or biological validation — for example, verifying that specimens from the same provenance or taxon tend to have similar silhouette patterns within their assigned cluster.
+
+The sort order affects only the visual arrangement; silhouette values themselves are unchanged. Use sorting interactively to explore patterns, then export the final arrangement for reporting.
+
+</details>
+
+<details>
 <summary>My clusters look well-separated in the biplot but the silhouette is low — why?</summary>
 
 The Cluster Biplot projects the data into two dimensions (via PCA by default). If the two plotted dimensions capture only a fraction of the total variance, the visual separation in the biplot may not reflect true separation in the full measurement space — and vice versa.

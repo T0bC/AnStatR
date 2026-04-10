@@ -271,9 +271,27 @@ The heatmap renders observations as rows and measurement variables as columns, w
 | **Seriation (leaf ordering)** | OLO (optimal), GW (fast heuristic), Mean, None | Controls how dendrogram leaves are reordered for visual clarity; **OLO** (Optimal Leaf Ordering) minimises the sum of adjacent distances and gives the most interpretable arrangement |
 | **Row Side Colors** | Any selected metadata column(s) | Coloured annotation bars alongside heatmap rows — useful for visually confirming whether metadata groups align with cluster structure |
 
+###### Silhouette Plot
+
+The silhouette plot visualises the quality of cluster assignments for individual observations. Each horizontal bar represents one observation, with bar width indicating the silhouette width (ranging from −1 to +1). Observations are grouped by cluster and sorted by silhouette value.
+
+| Control | Options | Effect |
+|---------|---------|--------|
+| **Sort by** | Silhouette Width, Metadata Group | Sorts observations within each cluster by silhouette value or by a selected metadata column |
+| **Metadata Group** | Any selected metadata column | When selected as sort key, observations are ordered within each cluster by this variable (useful for checking whether known groups align with cluster boundaries) |
+| **Show Average** | On/Off | Displays a vertical reference line at the average silhouette width for each cluster and the global average |
+
+**Interpretation**:
+- **Wide bars extending right** (positive silhouette): observations well-matched to their cluster
+- **Narrow or negative bars** (extending left): observations near cluster boundaries or potentially misassigned
+- **Clusters with consistently wide bars**: tight, well-separated groups
+- **Clusters with mixed bar widths**: heterogeneous groups that may warrant further subdivision
+
+The silhouette plot complements the Average Silhouette Width metric by revealing which specific observations contribute to low cluster quality. Use the **Sort by** controls to investigate whether metadata groupings align with silhouette patterns — for example, checking if specimens from the same site cluster together within a computed cluster.
+
 ###### Plot Export
 
-**Width (cm)** and **Height (cm)** set the dimensions for SVG and PNG downloads. A width of 16 cm corresponds to a standard Word document page width; 10 cm height is a sensible default for portrait-format figures.
+**Width (cm)** and **Height (cm)** set the dimensions for SVG and PNG downloads. A width of 16 cm corresponds to a standard Word document page width; 10 cm height is a sensible default for portrait-format figures. The silhouette plot supports PNG and SVG export via the download buttons.
 
 ##### Best Practices
 
