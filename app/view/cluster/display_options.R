@@ -309,6 +309,51 @@ tab_ui <- function(ns) {
       )
     ),
     shiny$tags$hr(),
+    # --- Silhouette display options ---
+    shiny$h6(
+      class = "text-muted mb-2 mt-1",
+      "Silhouette Plot"
+    ),
+    shiny$selectInput(
+      inputId = ns("silSortBy"),
+      label = shiny$tags$span(
+        "Sort Bars By ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Sort observation bars within each",
+            "cluster by silhouette width",
+            "(descending) or keep original",
+            "observation order."
+          )
+        )
+      ),
+      choices = c(
+        "Silhouette Width" = "width",
+        "Observation Order" = "cluster"
+      ),
+      selected = "width"
+    ),
+    shiny$checkboxInput(
+      inputId = ns("silShowAvgLine"),
+      label = shiny$tags$span(
+        "Show Average Line ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Show a dashed horizontal line at",
+            "the average silhouette width across",
+            "all observations."
+          )
+        )
+      ),
+      value = TRUE
+    ),
+    shiny$tags$hr(),
     # --- Plot export size ---
     shiny$helpText(
       "Customize the plot size when clicking",
