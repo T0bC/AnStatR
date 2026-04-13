@@ -80,15 +80,45 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
   list(success = TRUE, data = result$result, error = NULL)
 }
 
+#' Fix column names by replacing spaces with underscores
+#' @param data A data.frame
+#' @return List with `data` (modified data.frame) and `renamed_cols` (named vector)
+#' @export
+fix_column_names <- function(data) {
+  original_names <- names(data)
+  has_space <- grepl(" ", original_names)
+  
+  if (!any(has_space)) {
+    return(list(data = data, renamed_cols = character(0)))
+  }
+  
+  new_names <- gsub(" ", "_", original_names)
+  names(data) <- new_names
+  
+  renamed_cols <- setNames(
+    new_names[has_space],
+    original_names[has_space]
+  )
+  
+  rhino$log$info(
+    "Renamed {length(renamed_cols)} column(s) with spaces: {paste(names(renamed_cols), collapse = ', ')}"
+  )
+  
+  list(data = data, renamed_cols = renamed_cols)
+}
+
 #' Validate that a loaded data.frame is usable
 #' @param data The object returned from reading a file
-#' @return List with `valid` (logical) and `message` (character or NULL)
+#' @return List with `valid` (logical), `data` (possibly modified), 
+#'   `renamed_cols` (character vector), and `error` (or NULL)
 #' @export
 validate_data <- function(data) {
   if (!is.data.frame(data)) {
     rhino$log$warn("Validation failed: not a data.frame")
     return(list(
       valid = FALSE,
+      data = NULL,
+      renamed_cols = character(0),
       error = error_handling$simple_error(
         message = "The uploaded file did not produce a data frame.",
         operation_name = "Data Validation"
@@ -99,12 +129,23 @@ validate_data <- function(data) {
     rhino$log$warn("Validation failed: data.frame has 0 rows")
     return(list(
       valid = FALSE,
+      data = NULL,
+      renamed_cols = character(0),
       error = error_handling$simple_error(
         message = "The uploaded file appears to be empty.",
         operation_name = "Data Validation"
       )
     ))
   }
+  
+  # Fix column names with spaces
+  fix_result <- fix_column_names(data)
+  
   rhino$log$info("Data validation passed: {nrow(data)} rows, {ncol(data)} cols")
-  list(valid = TRUE, error = NULL)
+  list(
+    valid = TRUE,
+    data = fix_result$data,
+    renamed_cols = fix_result$renamed_cols,
+    error = NULL
+  )
 }
