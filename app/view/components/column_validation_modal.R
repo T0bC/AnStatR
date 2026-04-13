@@ -25,43 +25,69 @@ create_modal <- function(validation_result) {
     footer = shiny$modalButton("Understood"),
 
     shiny$tags$div(
-      shiny$tags$p(
-        "Your data contains columns that don't strictly",
-        " follow the expected naming conventions."
-      ),
-      shiny$tags$hr(),
+      # Show renamed columns section first if any exist
+      if (length(validation_result$renamed_cols) > 0) {
+        shiny$tags$div(
+          shiny$tags$p(
+            class = "text-info",
+            shiny$tags$strong("Note: "),
+            "Spaces in column names were replaced with underscores ",
+            "(\"_\") for compatibility with the plotting routines."
+          ),
+          shiny$tags$p(
+            class = "text-muted small",
+            paste(
+              names(validation_result$renamed_cols),
+              collapse = ", "
+            )
+          ),
+          shiny$tags$hr()
+        )
+      },
 
-      shiny$tags$h5("Expected Conventions:"),
-      shiny$tags$ul(
-        shiny$tags$li(
-          shiny$tags$strong("Descriptive columns: "),
-          "UPPERCASE letters and underscores only",
-          " (e.g., SPECIES, SAMPLE_ID, DIET)"
-        ),
-        shiny$tags$li(
-          shiny$tags$strong("Measurement columns: "),
-          "Mixed case with numbers",
-          " (e.g., Asfc, epLsar, Sq1, HAsfc9)"
+      if (length(validation_result$ambiguous_cols) > 0) {
+        shiny$tags$div(
+          shiny$tags$p(
+            "Your data contains columns that don't strictly",
+            " follow the expected naming conventions."
+          ),
+          shiny$tags$h5("Expected Conventions:"),
+          shiny$tags$ul(
+            shiny$tags$li(
+              shiny$tags$strong("Descriptive columns: "),
+              "UPPERCASE letters and underscores only",
+              " (e.g., SPECIES, SAMPLE_ID, DIET)"
+            ),
+            shiny$tags$li(
+              shiny$tags$strong("Measurement columns: "),
+              "Mixed case with numbers",
+              " (e.g., Asfc, epLsar, Sq1, HAsfc9)"
+            )
+          )
         )
-      ),
+      },
 
-      shiny$tags$hr(),
-      shiny$tags$h5("Ambiguous Columns Found:"),
-      shiny$tags$p(
-        class = "text-warning",
-        paste(
-          validation_result$ambiguous_cols,
-          collapse = ", "
+      if (length(validation_result$ambiguous_cols) > 0) {
+        shiny$tags$div(
+          shiny$tags$hr(),
+          shiny$tags$h5("Ambiguous Columns Found:"),
+          shiny$tags$p(
+            class = "text-warning",
+            paste(
+              validation_result$ambiguous_cols,
+              collapse = ", "
+            )
+          ),
+          shiny$tags$p(
+            shiny$tags$em(
+              "These columns match the uppercase pattern",
+              " but contain numbers. They will be treated",
+              " as descriptive columns if they have fewer",
+              " than 20 unique values."
+            )
+          )
         )
-      ),
-      shiny$tags$p(
-        shiny$tags$em(
-          "These columns match the uppercase pattern",
-          " but contain numbers. They will be treated",
-          " as descriptive columns if they have fewer",
-          " than 20 unique values."
-        )
-      ),
+      },
 
       if (length(validation_result$descriptive_cols) > 0) {
         shiny$tags$div(
