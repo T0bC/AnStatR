@@ -31,7 +31,7 @@ create_modal <- function(validation_result) {
           shiny$tags$p(
             class = "text-info",
             shiny$tags$strong("Note: "),
-            "Spaces in column names were replaced with underscores ",
+            "Spaces and dots in column names were replaced with underscores ",
             "(\"_\") for compatibility with the plotting routines."
           ),
           shiny$tags$p(
