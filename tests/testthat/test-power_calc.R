@@ -220,3 +220,70 @@ describe("generate_power_curve", {
     expect_true(curve$power[3] > curve$power[1])
   })
 })
+
+# =============================================================================
+# raw effect type with per-group SDs
+# =============================================================================
+
+describe("raw effect type with per-group SDs", {
+  it("handles vector of per-group SDs correctly", {
+    params <- list(
+      solve_for = "power",
+      alpha = 0.05,
+      power_target = 0.80,
+      n_per_group = 20,
+      effect_type = "raw",
+      group_means = c(A = 10, B = 10.5),
+      group_sd = c(1, 2),
+      n_groups = 2,
+      n_ways = 1,
+      approach = "parametric",
+      n_sim = 100
+    )
+    result <- power_calc$perform_power_analysis(params)
+
+    expect_false(error_handling$is_app_error(result))
+    expect_true(result$result$value > 0)
+    expect_true(result$result$value < 1)
+  })
+
+  it("computes different Cohen's f for different SD vectors", {
+    # Same means, different SDs should produce different effect sizes
+    params_small_sd <- list(
+      solve_for = "power",
+      alpha = 0.05,
+      power_target = 0.80,
+      n_per_group = 20,
+      effect_type = "raw",
+      group_means = c(A = 10, B = 11),
+      group_sd = c(1, 1),
+      n_groups = 2,
+      n_ways = 1,
+      approach = "parametric",
+      n_sim = 100
+    )
+
+    params_large_sd <- list(
+      solve_for = "power",
+      alpha = 0.05,
+      power_target = 0.80,
+      n_per_group = 20,
+      effect_type = "raw",
+      group_means = c(A = 10, B = 11),
+      group_sd = c(4, 4),
+      n_groups = 2,
+      n_ways = 1,
+      approach = "parametric",
+      n_sim = 100
+    )
+
+    result_small <- power_calc$perform_power_analysis(params_small_sd)
+    result_large <- power_calc$perform_power_analysis(params_large_sd)
+
+    expect_false(error_handling$is_app_error(result_small))
+    expect_false(error_handling$is_app_error(result_large))
+    # Smaller SD = larger effect size = higher power
+    expect_true(result_small$effect_f > result_large$effect_f)
+    expect_true(result_small$result$value > result_large$result$value)
+  })
+})

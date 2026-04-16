@@ -200,3 +200,53 @@ describe("extract_pilot_stats", {
     expect_true(error_handling$is_app_error(result))
   })
 })
+
+# =============================================================================
+# simulate_group_data — per-group SDs
+# =============================================================================
+
+describe("simulate_group_data with per-group SDs", {
+  it("applies different SDs to each group", {
+    group_means <- c(A = 10, B = 10)
+    group_sd <- c(0.1, 5)
+
+    df <- dummy_data$simulate_group_data(
+      group_means = group_means,
+      group_sd = group_sd,
+      n_per_group = 100,
+      distribution = "normal",
+      seed = 42
+    )
+
+    # Calculate observed SDs per group
+    sd_a <- sd(df$measure[df$group == "A"])
+    sd_b <- sd(df$measure[df$group == "B"])
+
+    # Group A should have much smaller SD than Group B
+    expect_true(sd_a < sd_b)
+    # Observed SDs should be close to specified (within sampling error)
+    expect_true(abs(sd_a - 0.1) < 0.05)
+    expect_true(abs(sd_b - 5) < 1)
+  })
+
+  it("expands single SD to all groups", {
+    group_means <- c(A = 10, B = 20, C = 30)
+    group_sd <- 2
+
+    df <- dummy_data$simulate_group_data(
+      group_means = group_means,
+      group_sd = group_sd,
+      n_per_group = 100,
+      distribution = "normal",
+      seed = 42
+    )
+
+    # All groups should have similar SDs
+    sd_a <- sd(df$measure[df$group == "A"])
+    sd_b <- sd(df$measure[df$group == "B"])
+    sd_c <- sd(df$measure[df$group == "C"])
+
+    expect_true(abs(sd_a - sd_b) < 0.5)
+    expect_true(abs(sd_b - sd_c) < 0.5)
+  })
+})
