@@ -161,7 +161,10 @@ server <- function(id, input_data = NULL) {
         f <- effect$effect_size
         dummy_means <- seq(0, f * sqrt(k) * pooled_sd, length.out = k)
         dummy_means <- dummy_means - mean(dummy_means) + 5
-        names(dummy_means) <- paste0("Group_", seq_len(k))
+
+        # Generate group names from factor structure
+        group_names <- generate_group_names(design_params$factors)
+        names(dummy_means) <- group_names
 
         dummy_df <- dummy_data$simulate_group_data(
           group_means = dummy_means,
@@ -416,6 +419,22 @@ server <- function(id, input_data = NULL) {
       )
     })
   })
+}
+
+# --- Helper: generate group names from factor structure ---
+generate_group_names <- function(factors) {
+  if (is.null(factors) || length(factors) == 0) {
+    return(character(0))
+  }
+
+  if (length(factors) == 1) {
+    return(factors[[1]]$levels)
+  }
+
+  # Multi-way: generate all combinations
+  level_lists <- lapply(factors, function(f) f$levels)
+  grid <- expand.grid(level_lists, stringsAsFactors = FALSE)
+  apply(grid, 1, paste, collapse = "_")
 }
 
 # --- Helper: render design table as HTML ---
