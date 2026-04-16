@@ -66,9 +66,9 @@ tab_server <- function(input, output, session, input_data = NULL) {
       # Unique default levels per factor to avoid collisions in multi-way designs
       default_levels <- switch(
         as.character(i),
-        "1" = "Mat_A, Mat_B",
-        "2" = "Treat_X, Treat_Y",
-        "3" = "Cond_1, Cond_2"
+        "1" = "MatA, MatB",
+        "2" = "TreatX, TreatY",
+        "3" = "Cond1, Cond2"
       )
 
       shiny$tags$div(
