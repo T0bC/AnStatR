@@ -421,6 +421,9 @@ server <- function(id, input_data = NULL) {
   })
 }
 
+# Internal separator for multi-way group names (must match dummy_data.R)
+GROUP_SEP <- ":::"
+
 # --- Helper: generate group names from factor structure ---
 generate_group_names <- function(factors) {
   if (is.null(factors) || length(factors) == 0) {
@@ -431,10 +434,10 @@ generate_group_names <- function(factors) {
     return(factors[[1]]$levels)
   }
 
-  # Multi-way: generate all combinations
+  # Multi-way: generate all combinations using internal separator
   level_lists <- lapply(factors, function(f) f$levels)
   grid <- expand.grid(level_lists, stringsAsFactors = FALSE)
-  apply(grid, 1, paste, collapse = "_")
+  apply(grid, 1, paste, collapse = GROUP_SEP)
 }
 
 # --- Helper: render design table as HTML ---
