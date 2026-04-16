@@ -1,0 +1,231 @@
+#### FAQ — Power Analysis
+
+<details>
+<summary>Where do I find effect size estimates for my study?</summary>
+
+**Meta-analyses and systematic reviews** in your field provide the most reliable effect size estimates. Search for terms like "meta-analysis [your topic]" or "effect size [your measurement type]".
+
+**When no direct estimates exist:**
+- Use related constructs from similar methodologies (e.g., other hardness measures if studying microhardness)
+- Examine Cohen's *d* from two-group studies and convert: $$f = d/2$$
+- Extract partial η² from ANOVA tables and convert: $$f = \\sqrt{\\eta^2 / (1 - \\eta^2)}$$
+- Pilot data from your own lab, inflated by 20–50% to account for optimistic bias
+
+**Conservative strategy:** Plan for the smallest effect size that would be theoretically or practically meaningful, not the average effect found in literature.
+
+</details>
+
+<details>
+<summary>What is the difference between Cohen's d and Cohen's f?</summary>
+
+**Cohen's *d*** compares two groups: it is the standardized mean difference ($\\bar{X}_1 - \\bar{X}_2$) / pooled SD. Range is theoretically unbounded but practically −3 to +3.
+
+**Cohen's *f*** generalizes to multiple groups: it is the standard deviation of standardized group means divided by pooled within-group SD. Range typically 0–1.5.
+
+**Conversion:**
+- For 2 groups: $f = d/2$
+- For *k* groups with equal spacing: $f = d_{\\text{max}} / \\sqrt{2k}$ where $d_{\\text{max}}$ is the largest pairwise Cohen's *d*
+
+The tool uses *f* because it generalizes naturally to factorial designs with multiple factors and interactions.
+
+</details>
+
+<details>
+<summary>Why is 80% power the conventional target? Should I use 90% instead?</summary>
+
+**80% power** (β = 0.20) became standard through historical convention (Cohen, 1988). It represents a 4:1 ratio of Type II to Type I error rates, balancing the cost of false negatives against false positives.
+
+**Consider 90% power when:**
+- Study costs are high and cannot be repeated (underpowered studies waste resources)
+- Missing a true effect has serious consequences (clinical trials, conservation decisions)
+- Effect sizes are uncertain — higher power provides buffer against overestimation
+- You plan to test multiple hypotheses — familywise power decreases
+
+**Trade-off:** 90% power requires approximately 25% larger sample size than 80% power for the same effect size.
+
+</details>
+
+<details>
+<summary>How do I account for multiple factors and interactions in power planning?</summary>
+
+Factorial designs test multiple effects simultaneously. You have three strategies:
+
+**1. Power for specific effect of interest**
+Plan sample size to detect your primary effect (main effect of Factor A or A×B interaction) with target power. Other effects may have higher or lower power.
+
+**2. Bonferroni-adjusted alpha**
+If testing 3 effects (e.g., A, B, A×B), use α = 0.05/3 ≈ 0.017. This maintains familywise error rate but increases required sample size by ~15–20%.
+
+**3. Power for largest effect**
+Plan for the smallest effect you would find theoretically important, recognizing that larger effects will have excess power.
+
+**Recommendation:** Report which effect size determined your sample size in methods sections. Secondary analyses should acknowledge their achieved power may differ.
+
+</details>
+
+<details>
+<summary>What does "Minimum Detectable Effect" tell me about a non-significant result?</summary>
+
+A non-significant p-value (*p* > 0.05) is uninformative without knowing what effect sizes could have been detected. The Minimum Detectable Effect (MDE) answers: "What is the smallest effect I could have found with 80% probability?"
+
+**Interpretation guide:**
+- If MDE is smaller than theoretically important effects → study was adequately powered; null result is informative
+- If MDE is larger than important effects → study was underpowered; null result is inconclusive
+
+**Example:** You find no significant treatment effect. The MDE is *f* = 0.45 (large). Since you would have cared about *f* = 0.25 (medium), you cannot conclude the treatment is ineffective — only that you could not detect medium effects.
+
+Always report MDE alongside non-significant results (Lakens, 2021).
+
+</details>
+
+<details>
+<summary>Should I use parametric or simulation-based (robust/non-parametric) power analysis?</summary>
+
+**Parametric** is faster and exact when assumptions hold. Use when:
+- Data are normally distributed (or will be after appropriate transformation)
+- Groups are balanced or nearly balanced
+- No extreme outliers expected
+
+**Simulation-based** is safer when assumptions are questionable. Use when:
+- Previous data show outliers or heavy tails
+- Groups may become unbalanced due to practical constraints
+- You plan to use robust statistics for the actual analysis (power should match the planned analysis)
+
+**General rule:** If you will analyze with robust methods, compute power with robust methods. The parametric power analysis can overestimate power for trimmed-means or rank-based analyses because those methods discard or downweight extreme values.
+
+</details>
+
+<details>
+<summary>How many simulation iterations do I need?</summary>
+
+Simulation error decreases with the square root of iterations. Guidance:
+
+| Iterations | Standard Error | Use Case |
+|---|---|---|
+| 100 | ~5% | Quick exploration only |
+| 1,000 | ~1.6% | Standard analysis (default) |
+| 5,000 | ~0.7% | Grant proposals, publication |
+| 10,000 | ~0.5% | Final precise estimates |
+
+**Practical approach:** Run 1,000 iterations initially. If results are near decision boundaries (e.g., power = 0.78 when you need 0.80), increase to 5,000–10,000.
+
+Computation time scales linearly with iterations; 10,000 iterations typically completes in under 30 seconds.
+
+</details>
+
+<details>
+<summary>Why does increasing sample size per group eventually stop increasing power?</summary>
+
+Power is bounded at 1.0 (100% detection probability). As sample size increases:
+- Statistical precision improves (narrower confidence intervals)
+- Standard errors decrease
+- Test statistics grow
+
+But once power exceeds ~0.99, additional subjects provide diminishing returns. The power curve asymptotes at 1.0.
+
+**Practical limit:** Most researchers stop at 0.80–0.90 power. Beyond this, consider whether additional resources would be better spent on:
+- Replication studies
+- Multiple measurement occasions
+- Broader sampling frames
+- Larger effect sizes (better measurement precision)
+
+</details>
+
+<details>
+<summary>How do I handle expected missing data or dropouts?</summary>
+
+**Pre-study planning:**
+1. Compute required complete cases (e.g., 25 per group)
+2. Estimate attrition rate from similar studies (typically 10–20%)
+3. Inflate recruitment target: $n_{\\text{recruit}} = n_{\\text{complete}} / (1 - \\text{attrition rate})$
+
+**Example:** Need 25 complete, expect 15% dropout → recruit 25 / 0.85 ≈ 30 per group.
+
+**During analysis:**
+- Use listwise deletion power analysis if missing data will be excluded
+- Consider multiple imputation power analysis for planned missing designs (requires specialized software)
+- Missing completely at random (MCAR) preserves power; missing not at random (MNAR) biases results regardless of power
+
+</details>
+
+<details>
+<summary>What is the relationship between alpha, power, and the false positive rate?</summary>
+
+These concepts are often confused:
+
+| Concept | Symbol | Definition | Controlled by |
+|---|---|---|---|
+| Significance level | α | Probability of false positive when null is true | Researcher (conventionally 0.05) |
+| Type II error rate | β | Probability of false negative when alternative is true | Effect size, sample size, α |
+| Power | 1 − β | Probability of true positive when alternative is true | Effect size, sample size, α |
+| False discovery rate | FDR | Proportion of positives that are false | Depends on α, power, and proportion of true nulls |
+
+**Key insight:** α controls false positives only when the null hypothesis is true. In fields where most tested effects are real, the actual false discovery rate may be lower than α. Conversely, in fields where most effects are null, FDR can exceed α (Ioannidis, 2005).
+
+Pre-registration and replication are stronger safeguards than adjusting α alone.
+
+</details>
+
+<details>
+<summary>My power curve looks strange or non-monotonic — what happened?</summary>
+
+**Normal behavior:** Power should increase monotonically with sample size, asymptoting toward 1.0.
+
+**Common causes of anomalies:**
+- **Insufficient iterations** — Monte Carlo error creates noise; increase iterations
+- **Extreme effect sizes** — Very large *f* (> 1.0) reaches ceiling power at small *n*
+- **Very small alpha** — With α = 0.001, power may remain flat until threshold *n* is reached
+- **Non-parametric with small samples** — Rank tests have discrete distributions; power jumps at specific sample sizes
+
+**Diagnostic:** Check that the simulated data preview shows reasonable patterns. If the preview looks incorrect, verify your group means and standard deviations.
+
+</details>
+
+---
+
+#### References
+
+<details>
+<summary><strong>Click to expand full reference list</strong></summary>
+
+**Core Power Analysis Literature**
+
+- Cohen, J. (1988). *Statistical Power Analysis for the Behavioral Sciences* (2nd ed.). Lawrence Erlbaum Associates. The foundational text for statistical power analysis; defines Cohen's *f* and conventional effect size benchmarks.
+
+- Cohen, J. (1992). A power primer. *Psychological Bulletin, 112*(1), 155–159. Quick-reference guide for power calculations with tabulated sample sizes for common designs.
+
+- Lakens, D. (2021). Sample size justification. *Collabra: Psychology, 7*(1), 12067. <https://doi.org/10.1525/collabra.12067>. Comprehensive guidance on justifying sample sizes in research proposals, including sensitivity analysis and sequential analysis.
+
+**Effect Size Interpretation and Reporting**
+
+- Cumming, G. (2014). The new statistics: Why and how. *Psychological Science, 25*(1), 7–29. <https://doi.org/10.1177/0956797613504966>. Argues for replacing p-values with estimation (effect sizes and confidence intervals).
+
+- Lakens, D. (2013). Calculating and reporting effect sizes to facilitate cumulative science: A practical primer for t-tests and ANOVAs. *Frontiers in Psychology, 4*, 863. <https://doi.org/10.3389/fpsyg.2013.00863>. Practical formulas for converting between effect size metrics.
+
+- Richardson, J. T. E. (2011). Eta squared and partial eta squared as measures of effect size in educational research. *International Education Studies, 7*(2), 1–15. Guidance on converting η² to Cohen's *f* for power analysis.
+
+**Robust and Non-Parametric Methods**
+
+- Wilcox, R. R., & Tian, T. (2011). Measuring effect size: A robust heteroscedastic approach for two or more groups. *Journal of Applied Statistics, 38*(7), 1359–1368. Robust effect size estimation and power considerations.
+
+- Mair, P., & Wilcox, R. (2020). Robust statistical methods in R using the WRS2 package. *Behavior Research Methods*. <https://doi.org/10.3758/s13428-019-01246-w>. Documentation of robust ANOVA methods used in simulation-based power analysis.
+
+- Wilcox, R. R. (2012). *Introduction to Robust Estimation and Hypothesis Testing* (3rd ed.). Academic Press. Comprehensive technical reference for trimmed-means and rank-based methods.
+
+**Methodological and Statistical Reform**
+
+- Ioannidis, J. P. A. (2005). Why most published research findings are false. *PLoS Medicine, 2*(8), e124. <https://doi.org/10.1371/journal.pmed.0020124>. Discusses how low power inflates false discovery rates in literatures with many tested hypotheses.
+
+- Button, K. S., Ioannidis, J. P. A., Mokrysz, C., Nosek, B. A., Flint, J., Robinson, E. S. J., & Munafò, M. R. (2013). Power failure: Why small sample size undermines the reliability of neuroscience. *Nature Reviews Neuroscience, 14*, 365–376. <https://doi.org/10.1038/nrn3475>. Reviews how underpowered studies lead to overestimated effect sizes and irreproducible results.
+
+- Gelman, A., & Carlin, J. (2014). Beyond power calculations: Assessing Type S (sign) and Type M (magnitude) errors. *Perspectives on Psychological Science, 9*(6), 641–651. <https://doi.org/10.1177/1745691614551642>. Critique of traditional power analysis; advocates for design analysis considering sign and magnitude errors.
+
+**Practical Applications**
+
+- Perugini, M., Gallucci, M., & Costantini, G. (2018). A practical primer to power analysis for simple experimental designs. *International Review of Social Psychology, 31*(1), 20. <https://doi.org/10.5334/irsp.181>. Step-by-step guide for conducting power analyses in experimental research.
+
+- Brysbaert, M. (2019). How many participants do we have to include in properly powered experiments? A tutorial. *Journal of Cognition, 2*(1), 16. <https://doi.org/10.5334/joc.72>. Guidance for cognitive and behavioral research with practical examples.
+
+- Faul, F., Erdfelder, E., Lang, A.-G., & Buchner, A. (2007). G*Power 3: A flexible statistical power analysis program for the social, behavioral, and biomedical sciences. *Behavior Research Methods, 39*(2), 175–191. Documentation of widely-used power analysis software (G*Power).
+
+</details>
