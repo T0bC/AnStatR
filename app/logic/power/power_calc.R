@@ -98,12 +98,20 @@ generate_power_curve <- function(params, n_range = NULL) {
 #' Convert raw group means and SD to Cohen's f
 #'
 #' @param group_means Numeric vector of group means
-#' @param pooled_sd Pooled standard deviation
+#' @param group_sd Numeric vector of per-group SDs or single pooled SD
 #' @return Cohen's f effect size
-raw_to_cohens_f <- function(group_means, pooled_sd) {
+raw_to_cohens_f <- function(group_means, group_sd) {
   grand_mean <- mean(group_means)
   ss_between <- sum((group_means - grand_mean)^2)
   k <- length(group_means)
+
+  # Compute pooled SD from per-group SDs if vector provided
+  pooled_sd <- if (length(group_sd) > 1) {
+    sqrt(mean(group_sd^2))
+  } else {
+    group_sd
+  }
+
   # Cohen's f = sqrt(variance of means / pooled variance)
   sqrt(ss_between / k) / pooled_sd
 }
@@ -200,7 +208,12 @@ simulation_power <- function(params, effect_f) {
   # For simulation, we need group means
   if (params$effect_type == "raw") {
     group_means <- params$group_means
-    pooled_sd <- params$group_sd
+    # Compute pooled SD from per-group SDs if vector provided
+    pooled_sd <- if (length(params$group_sd) > 1) {
+      sqrt(mean(params$group_sd^2))
+    } else {
+      params$group_sd
+    }
   } else {
     # Reconstruct means from effect size
     pooled_sd <- 1
