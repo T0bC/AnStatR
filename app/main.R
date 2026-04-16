@@ -14,6 +14,7 @@ box::use(
   app/view/median,
   app/view/pca,
   app/view/plotting,
+  app/view/power,
   app/view/prediction,
   app/view/settings_modal,
   app/view/statistics,
@@ -108,6 +109,13 @@ ui <- function(id) {
       ),
       value = "prediction",
       prediction$ui(ns("prediction"))
+    ),
+    bslib$nav_panel(
+      title = shiny$tagList(
+        bsicons$bs_icon("lightning-charge"), "Power Analysis"
+      ),
+      value = "power",
+      power$ui(ns("power"))
     ),
     bslib$nav_spacer(),
     bslib$nav_item(
@@ -216,6 +224,7 @@ server <- function(id) {
       lda_result = lda_result
     )
     prediction$server("prediction")
+    power$server("power", input_data = load_data_result$data)
     help_modal$server("help", active_page = shiny$reactive(input$active_page))
     settings_modal$server("settings")
 
