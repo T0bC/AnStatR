@@ -5,6 +5,7 @@ box::use(
 )
 
 box::use(
+  app/logic/power/validate,
   app/view/components/sidebar_tabs,
 )
 
@@ -70,7 +71,16 @@ tab_server <- function(input, output, session, input_data = NULL) {
         ),
         shiny$textInput(
           inputId = ns(factor_id),
-          label = "Factor Name:",
+          label = shiny$tags$span(
+            "Factor Name ",
+            bslib$tooltip(
+              bsicons$bs_icon("info-circle", class = "text-muted"),
+              paste(
+                "Use letters, numbers, and underscores.",
+                "Spaces and special characters will be converted automatically."
+              )
+            )
+          ),
           value = default_name,
           placeholder = "e.g., Material"
         ),
@@ -80,7 +90,11 @@ tab_server <- function(input, output, session, input_data = NULL) {
             "Levels ",
             bslib$tooltip(
               bsicons$bs_icon("info-circle", class = "text-muted"),
-              "Enter comma-separated level names, e.g.: Mat_A, Mat_B, Mat_C"
+              paste(
+                "Comma-separated level names (e.g., Mat_A, Mat_B).",
+                "Use letters, numbers, underscores.",
+                "Spaces/special chars will be converted."
+              )
             )
           ),
           value = "Level_1, Level_2",
@@ -112,11 +126,15 @@ tab_server <- function(input, output, session, input_data = NULL) {
     }
   })
 
+  # Track last shown warnings to avoid repeated notifications
+  last_warnings <- shiny$reactiveVal(character(0))
+
   # --- Return reactive with current design structure ---
   design_structure <- shiny$reactive({
     n_factors <- as.integer(input$design_type %||% "1")
 
-    factors <- lapply(seq_len(n_factors), function(i) {
+    # Parse raw factors
+    raw_factors <- lapply(seq_len(n_factors), function(i) {
       factor_name <- input[[paste0("factor_", i)]]
       levels_raw <- input[[paste0("levels_", i)]]
 
@@ -133,12 +151,37 @@ tab_server <- function(input, output, session, input_data = NULL) {
       )
     })
 
-    factors <- Filter(Negate(is.null), factors)
+    raw_factors <- Filter(Negate(is.null), raw_factors)
+
+    # Sanitize factor structure
+    sanitized <- validate$sanitize_factor_structure(raw_factors)
+    factors <- sanitized$factors
+    warnings <- sanitized$warnings
+
+    # Show notifications for new warnings (avoid repeating)
+    prev_warnings <- last_warnings()
+    new_warnings <- setdiff(warnings, prev_warnings)
+    if (length(new_warnings) > 0) {
+      shiny$showNotification(
+        shiny$tags$div(
+          shiny$tags$strong("Input sanitized:"),
+          shiny$tags$ul(
+            lapply(new_warnings, function(w) shiny$tags$li(w))
+          )
+        ),
+        type = "warning",
+        duration = 5
+      )
+      last_warnings(warnings)
+    }
+
+    # Sanitize measure name
+    measure_name <- validate$sanitize_name(input$measure_name %||% "measure")
 
     list(
       n_ways = n_factors,
       factors = factors,
-      measure_name = input$measure_name %||% "measure",
+      measure_name = measure_name,
       n_groups = prod(sapply(factors, function(f) length(f$levels)))
     )
   })
