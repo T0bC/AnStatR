@@ -298,19 +298,24 @@ describe("validate_design_structure", {
 describe("sanitize_name", {
   it("returns unchanged for valid alphanumeric name", {
     expect_equal(validate$sanitize_name("Material"), "Material")
-    expect_equal(validate$sanitize_name("Group_A"), "Group_A")
+    expect_equal(validate$sanitize_name("GroupA"), "GroupA")
     expect_equal(validate$sanitize_name("Test123"), "Test123")
   })
 
-  it("replaces spaces with underscores", {
-    expect_equal(validate$sanitize_name("Group A"), "Group_A")
-    expect_equal(validate$sanitize_name("My Factor"), "My_Factor")
-    expect_equal(validate$sanitize_name("A B C"), "A_B_C")
+  it("removes spaces", {
+    expect_equal(validate$sanitize_name("Group A"), "GroupA")
+    expect_equal(validate$sanitize_name("My Factor"), "MyFactor")
+    expect_equal(validate$sanitize_name("A B C"), "ABC")
   })
 
-  it("replaces dots with underscores", {
-    expect_equal(validate$sanitize_name("Group.A"), "Group_A")
-    expect_equal(validate$sanitize_name("Mat.Type.1"), "Mat_Type_1")
+  it("removes dots", {
+    expect_equal(validate$sanitize_name("Group.A"), "GroupA")
+    expect_equal(validate$sanitize_name("Mat.Type.1"), "MatType1")
+  })
+
+  it("removes underscores", {
+    expect_equal(validate$sanitize_name("Group_A"), "GroupA")
+    expect_equal(validate$sanitize_name("Mat_Type_1"), "MatType1")
   })
 
   it("removes special characters", {
@@ -322,22 +327,12 @@ describe("sanitize_name", {
 
   it("trims leading and trailing whitespace", {
     expect_equal(validate$sanitize_name("  Material  "), "Material")
-    expect_equal(validate$sanitize_name("Group_A "), "Group_A")
-  })
-
-  it("removes leading and trailing underscores", {
-    expect_equal(validate$sanitize_name("_Material_"), "Material")
-    expect_equal(validate$sanitize_name("__Test__"), "Test")
-  })
-
-  it("collapses multiple underscores", {
-    expect_equal(validate$sanitize_name("Group__A"), "Group_A")
-    expect_equal(validate$sanitize_name("A___B___C"), "A_B_C")
+    expect_equal(validate$sanitize_name("GroupA "), "GroupA")
   })
 
   it("prefixes names starting with numbers", {
-    expect_equal(validate$sanitize_name("1Group"), "L_1Group")
-    expect_equal(validate$sanitize_name("123"), "L_123")
+    expect_equal(validate$sanitize_name("1Group"), "L1Group")
+    expect_equal(validate$sanitize_name("123"), "L123")
   })
 
   it("returns 'unnamed' for empty or whitespace-only input", {
@@ -351,9 +346,9 @@ describe("sanitize_name", {
   })
 
   it("handles complex mixed cases", {
-    expect_equal(validate$sanitize_name("Group A (test)"), "Group_A_test")
-    expect_equal(validate$sanitize_name("Mat.Type #1"), "Mat_Type_1")
-    expect_equal(validate$sanitize_name("  Level 1 - A  "), "Level_1_A")
+    expect_equal(validate$sanitize_name("Group A (test)"), "GroupAtest")
+    expect_equal(validate$sanitize_name("Mat.Type #1"), "MatType1")
+    expect_equal(validate$sanitize_name("  Level 1 - A  "), "Level1A")
   })
 })
 
@@ -379,7 +374,7 @@ describe("sanitize_factor_structure", {
     )
     result <- validate$sanitize_factor_structure(factors)
 
-    expect_equal(result$factors[[1]]$name, "My_Material")
+    expect_equal(result$factors[[1]]$name, "MyMaterial")
     expect_true(length(result$warnings) > 0)
   })
 
@@ -389,17 +384,17 @@ describe("sanitize_factor_structure", {
     )
     result <- validate$sanitize_factor_structure(factors)
 
-    expect_equal(result$factors[[1]]$levels, c("Group_A", "GroupB", "Group_C"))
+    expect_equal(result$factors[[1]]$levels, c("GroupA", "GroupB", "GroupC"))
     expect_true(length(result$warnings) > 0)
   })
 
   it("makes duplicate levels unique after sanitization", {
     factors <- list(
-      list(name = "Material", levels = c("Group A", "Group_A"))
+      list(name = "Material", levels = c("Group A", "GroupA"))
     )
     result <- validate$sanitize_factor_structure(factors)
 
-    # Both become "Group_A", so second should be made unique
+    # Both become "GroupA", so second should be made unique
     expect_equal(anyDuplicated(result$factors[[1]]$levels), 0L)
     expect_true(any(grepl("duplicate", result$warnings, ignore.case = TRUE)))
   })
@@ -435,10 +430,15 @@ describe("sanitize_factor_structure", {
 # =============================================================================
 
 describe("needs_sanitization", {
-  it("returns FALSE for valid names", {
+  it("returns FALSE for valid alphanumeric names", {
     expect_false(validate$needs_sanitization("Material"))
-    expect_false(validate$needs_sanitization("Group_A"))
+    expect_false(validate$needs_sanitization("GroupA"))
     expect_false(validate$needs_sanitization("Test123"))
+  })
+
+  it("returns TRUE for names with underscores", {
+    expect_true(validate$needs_sanitization("Group_A"))
+    expect_true(validate$needs_sanitization("Mat_Type"))
   })
 
   it("returns TRUE for names with spaces", {
