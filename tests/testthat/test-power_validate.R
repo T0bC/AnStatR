@@ -290,3 +290,168 @@ describe("validate_design_structure", {
     expect_true(error_handling$is_app_error(result))
   })
 })
+
+# =============================================================================
+# sanitize_name
+# =============================================================================
+
+describe("sanitize_name", {
+  it("returns unchanged for valid alphanumeric name", {
+    expect_equal(validate$sanitize_name("Material"), "Material")
+    expect_equal(validate$sanitize_name("Group_A"), "Group_A")
+    expect_equal(validate$sanitize_name("Test123"), "Test123")
+  })
+
+  it("replaces spaces with underscores", {
+    expect_equal(validate$sanitize_name("Group A"), "Group_A")
+    expect_equal(validate$sanitize_name("My Factor"), "My_Factor")
+    expect_equal(validate$sanitize_name("A B C"), "A_B_C")
+  })
+
+  it("replaces dots with underscores", {
+    expect_equal(validate$sanitize_name("Group.A"), "Group_A")
+    expect_equal(validate$sanitize_name("Mat.Type.1"), "Mat_Type_1")
+  })
+
+  it("removes special characters", {
+    expect_equal(validate$sanitize_name("Group#A"), "GroupA")
+    expect_equal(validate$sanitize_name("Mat@Type"), "MatType")
+    expect_equal(validate$sanitize_name("Test!@#$%"), "Test")
+    expect_equal(validate$sanitize_name("A&B"), "AB")
+  })
+
+  it("trims leading and trailing whitespace", {
+    expect_equal(validate$sanitize_name("  Material  "), "Material")
+    expect_equal(validate$sanitize_name("Group_A "), "Group_A")
+  })
+
+  it("removes leading and trailing underscores", {
+    expect_equal(validate$sanitize_name("_Material_"), "Material")
+    expect_equal(validate$sanitize_name("__Test__"), "Test")
+  })
+
+  it("collapses multiple underscores", {
+    expect_equal(validate$sanitize_name("Group__A"), "Group_A")
+    expect_equal(validate$sanitize_name("A___B___C"), "A_B_C")
+  })
+
+  it("prefixes names starting with numbers", {
+    expect_equal(validate$sanitize_name("1Group"), "L_1Group")
+    expect_equal(validate$sanitize_name("123"), "L_123")
+  })
+
+  it("returns 'unnamed' for empty or whitespace-only input", {
+    expect_equal(validate$sanitize_name(""), "unnamed")
+    expect_equal(validate$sanitize_name("   "), "unnamed")
+    expect_equal(validate$sanitize_name("###"), "unnamed")
+  })
+
+  it("handles NULL input", {
+    expect_equal(validate$sanitize_name(NULL), "")
+  })
+
+  it("handles complex mixed cases", {
+    expect_equal(validate$sanitize_name("Group A (test)"), "Group_A_test")
+    expect_equal(validate$sanitize_name("Mat.Type #1"), "Mat_Type_1")
+    expect_equal(validate$sanitize_name("  Level 1 - A  "), "Level_1_A")
+  })
+})
+
+# =============================================================================
+# sanitize_factor_structure
+# =============================================================================
+
+describe("sanitize_factor_structure", {
+  it("returns unchanged for valid factor structure", {
+    factors <- list(
+      list(name = "Material", levels = c("A", "B", "C"))
+    )
+    result <- validate$sanitize_factor_structure(factors)
+
+    expect_equal(result$factors[[1]]$name, "Material")
+    expect_equal(result$factors[[1]]$levels, c("A", "B", "C"))
+    expect_equal(length(result$warnings), 0)
+  })
+
+  it("sanitizes factor names with spaces", {
+    factors <- list(
+      list(name = "My Material", levels = c("A", "B"))
+    )
+    result <- validate$sanitize_factor_structure(factors)
+
+    expect_equal(result$factors[[1]]$name, "My_Material")
+    expect_true(length(result$warnings) > 0)
+  })
+
+  it("sanitizes level names with special characters", {
+    factors <- list(
+      list(name = "Material", levels = c("Group A", "Group#B", "Group.C"))
+    )
+    result <- validate$sanitize_factor_structure(factors)
+
+    expect_equal(result$factors[[1]]$levels, c("Group_A", "GroupB", "Group_C"))
+    expect_true(length(result$warnings) > 0)
+  })
+
+  it("makes duplicate levels unique after sanitization", {
+    factors <- list(
+      list(name = "Material", levels = c("Group A", "Group_A"))
+    )
+    result <- validate$sanitize_factor_structure(factors)
+
+    # Both become "Group_A", so second should be made unique
+    expect_false(anyDuplicated(result$factors[[1]]$levels))
+    expect_true(any(grepl("duplicate", result$warnings, ignore.case = TRUE)))
+  })
+
+  it("makes duplicate factor names unique", {
+    factors <- list(
+      list(name = "Material", levels = c("A", "B")),
+      list(name = "Material", levels = c("X", "Y"))
+    )
+    result <- validate$sanitize_factor_structure(factors)
+
+    factor_names <- sapply(result$factors, function(f) f$name)
+    expect_false(anyDuplicated(factor_names))
+  })
+
+  it("handles empty factors list", {
+    result <- validate$sanitize_factor_structure(list())
+
+    expect_equal(length(result$factors), 0)
+    expect_equal(length(result$warnings), 0)
+  })
+
+  it("handles NULL input", {
+    result <- validate$sanitize_factor_structure(NULL)
+
+    expect_equal(length(result$factors), 0)
+    expect_equal(length(result$warnings), 0)
+  })
+})
+
+# =============================================================================
+# needs_sanitization
+# =============================================================================
+
+describe("needs_sanitization", {
+  it("returns FALSE for valid names", {
+    expect_false(validate$needs_sanitization("Material"))
+    expect_false(validate$needs_sanitization("Group_A"))
+    expect_false(validate$needs_sanitization("Test123"))
+  })
+
+  it("returns TRUE for names with spaces", {
+    expect_true(validate$needs_sanitization("Group A"))
+    expect_true(validate$needs_sanitization("My Factor"))
+  })
+
+  it("returns TRUE for names with special characters", {
+    expect_true(validate$needs_sanitization("Group#A"))
+    expect_true(validate$needs_sanitization("Mat@Type"))
+  })
+
+  it("returns TRUE for NULL input", {
+    expect_true(validate$needs_sanitization(NULL))
+  })
+})
