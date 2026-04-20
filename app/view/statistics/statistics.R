@@ -18,7 +18,7 @@ box::use(
   app/logic/statistics/robust_tests,
   app/logic/statistics/validate,
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/statistics/adjustments,
   app/view/statistics/bootstrap,
   app/view/statistics/options,
