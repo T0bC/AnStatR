@@ -21,7 +21,7 @@ box::use(
     detect_skewness, transform_skewed
   ],
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
   app/view/lda/plotting_controls,

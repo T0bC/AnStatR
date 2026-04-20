@@ -29,7 +29,7 @@ box::use(
   app/view/cluster/hopkins,
   app/view/cluster/optimal_clusters,
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
 )
 

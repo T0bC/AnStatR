@@ -9,7 +9,7 @@ box::use(
     create_optimal_clusters_ggplot,
   ],
   app/logic/shared/error_handling,
-  app/view/error_display,
+  app/view/shared/error_display,
 )
 
 #' Render optimal clusters panel content

@@ -5,7 +5,7 @@ box::use(
 box::use(
   app/logic/cluster/hopkins[compute_hopkins],
   app/logic/shared/error_handling,
-  app/view/error_display,
+  app/view/shared/error_display,
 )
 
 #' Render Hopkins statistic output panel

@@ -8,7 +8,7 @@ box::use(
 box::use(
   app/logic/cluster/heatmap[create_cluster_heatmap],
   app/logic/shared/error_handling,
-  app/view/error_display,
+  app/view/shared/error_display,
 )
 
 #' Render heatmap panel content
