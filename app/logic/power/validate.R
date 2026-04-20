@@ -132,6 +132,7 @@ needs_sanitization <- function(name) {
 validate_power_inputs <- function(params) {
   distribution <- params$distribution %||% "normal"
   input_mode <- params$input_mode %||% "mean_sd"
+  approach <- params$approach %||% "parametric"
 
   # --- Distribution validation ---
   valid_distributions <- c("normal", "lognormal", "exponential")
@@ -194,6 +195,19 @@ validate_power_inputs <- function(params) {
       message = "At least 2 groups are required for power analysis.",
       operation_name = "power_validate"
     ))
+  }
+
+  # --- Number of simulations (required when simulation path is used) ---
+  requires_simulation <- approach != "parametric" || distribution != "normal"
+  if (requires_simulation) {
+    if (is.null(params$n_sim) || !is.numeric(params$n_sim) ||
+        length(params$n_sim) != 1 || !is.finite(params$n_sim) ||
+        is.na(params$n_sim) || params$n_sim < 1) {
+      return(error_handling$simple_error(
+        message = "Number of simulations must be a finite number greater than or equal to 1.",
+        operation_name = "power_validate"
+      ))
+    }
   }
 
   # --- Effect size validation ---
