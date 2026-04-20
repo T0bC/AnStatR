@@ -66,6 +66,31 @@ simulate_power_with_step_progress <- function(
   )
 }
 
+make_sim_runner <- function(dist_params, n_sim, alpha, approach,
+                            progress_cb, max_steps) {
+  force(dist_params)
+  force(n_sim)
+  force(alpha)
+  force(approach)
+  force(progress_cb)
+  force(max_steps)
+
+  function(n, step_idx, step_label, progress_detail) {
+    simulate_power_with_step_progress(
+      dist_params = dist_params,
+      n = n,
+      n_sim = n_sim,
+      alpha = alpha,
+      approach = approach,
+      progress_cb = progress_cb,
+      step_idx = step_idx,
+      max_steps = max_steps,
+      step_label = step_label,
+      progress_detail = progress_detail
+    )
+  }
+}
+
 build_effect_size_dist_params <- function(effect_size_f, pooled_sd, k, distribution) {
   group_means <- seq(0, effect_size_f * sqrt(k) * pooled_sd, length.out = k)
   group_means <- group_means - mean(group_means)
@@ -712,20 +737,17 @@ find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
   n_low <- 2
   n_high <- MAX_SEARCH_N
   max_steps <- ceiling(log2(MAX_SEARCH_N - n_low)) + 1
+
+  run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
+                             progress_cb, max_steps)
   step_idx <- 0
 
   while (n_high - n_low > 1) {
     step_idx <- step_idx + 1
     n_mid <- floor((n_low + n_high) / 2)
-    power_est <- simulate_power_with_step_progress(
-      dist_params = dist_params,
+    power_est <- run_sim(
       n = n_mid,
-      n_sim = n_sim,
-      alpha = alpha,
-      approach = approach,
-      progress_cb = progress_cb,
       step_idx = step_idx,
-      max_steps = max_steps,
       step_label = paste0("Searching sample size (step ", step_idx, "/", max_steps, ")"),
       progress_detail = paste0("Searching sample size (n=", n_mid, ")")
     )
@@ -741,15 +763,9 @@ find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
   warning_msg <- NULL
   if (n_high == MAX_SEARCH_N) {
     step_idx <- step_idx + 1
-    power_at_max <- simulate_power_with_step_progress(
-      dist_params = dist_params,
+    power_at_max <- run_sim(
       n = MAX_SEARCH_N,
-      n_sim = n_sim,
-      alpha = alpha,
-      approach = approach,
-      progress_cb = progress_cb,
       step_idx = step_idx,
-      max_steps = max_steps,
       step_label = paste0("Checking upper bound n=", MAX_SEARCH_N),
       progress_detail = paste0("Checking upper bound n=", MAX_SEARCH_N)
     )
@@ -772,22 +788,18 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
   f_low <- MDE_SEARCH_RANGE[1]
   f_high <- MDE_SEARCH_RANGE[2]
   max_steps <- ceiling(log2((MDE_SEARCH_RANGE[2] - MDE_SEARCH_RANGE[1]) / 0.01)) + 1
-  step_idx <- 0
 
+  step_idx <- 0
   while (f_high - f_low > 0.01) {
     step_idx <- step_idx + 1
     f_mid <- (f_low + f_high) / 2
     dist_params <- build_effect_size_dist_params(f_mid, pooled_sd, k, distribution)
 
-    power_est <- simulate_power_with_step_progress(
-      dist_params = dist_params,
+    run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
+                               progress_cb, max_steps)
+    power_est <- run_sim(
       n = n,
-      n_sim = n_sim,
-      alpha = alpha,
-      approach = approach,
-      progress_cb = progress_cb,
       step_idx = step_idx,
-      max_steps = max_steps,
       step_label = paste0("Searching minimum detectable effect (step ", step_idx, "/", max_steps, ")"),
       progress_detail = paste0("Searching minimum detectable effect (f=", round(f_mid, 3), ")")
     )
@@ -802,18 +814,13 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
   # Check if target power is achievable at max effect size
   warning_msg <- NULL
   if (abs(f_high - MDE_SEARCH_RANGE[2]) < 0.02) {
-    dist_params <- build_effect_size_dist_params(f_high, pooled_sd, k, distribution)
-
     step_idx <- step_idx + 1
-    power_at_max <- simulate_power_with_step_progress(
-      dist_params = dist_params,
+    dist_params <- build_effect_size_dist_params(f_high, pooled_sd, k, distribution)
+    run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
+                               progress_cb, max_steps)
+    power_at_max <- run_sim(
       n = n,
-      n_sim = n_sim,
-      alpha = alpha,
-      approach = approach,
-      progress_cb = progress_cb,
       step_idx = step_idx,
-      max_steps = max_steps,
       step_label = "Checking upper effect-size bound",
       progress_detail = "Checking upper effect-size bound"
     )
