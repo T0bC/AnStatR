@@ -79,24 +79,16 @@ server <- function(id, input_data = NULL) {
 
     effect_params <- effect_input$tab_server(
       input, output, session,
-      design_reactive = design_result$design
+      design_reactive = design_result$design,
+      mode_reactive = design_result$mode,
+      input_data = input_data
     )
 
-    options_params <- options$tab_server(input, output, session)
-
-    # --- Handle import from loaded data ---
-    shiny$observeEvent(design_result$import_trigger(), {
-      data <- if (!is.null(input_data)) input_data() else NULL
-      if (is.null(data)) return()
-
-      rhino$log$info("Power: Importing factor structure from loaded data")
-      # TODO: Implement auto-population of factor inputs from data
-      # This would require updateSelectInput/updateTextInput calls
-      shiny$showNotification(
-        "Import from loaded data: Feature coming soon",
-        type = "message"
-      )
-    }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    options_params <- options$tab_server(
+      input, output, session,
+      mode_reactive = design_result$mode,
+      effect_params_reactive = effect_params
+    )
 
     # --- Handle compute button click ---
     shiny$observeEvent(input$compute_button, {
@@ -112,13 +104,20 @@ server <- function(id, input_data = NULL) {
       computation_status("computing")
 
       # Build params for power_calc
+      # In import mode, use computed_f if available; otherwise use effect_size
+      effect_size_value <- if (!is.null(effect$computed_f)) {
+        effect$computed_f
+      } else {
+        effect$effect_size
+      }
+
       params <- list(
         solve_for = opts$solve_for,
         alpha = opts$alpha,
         power_target = opts$power_target,
         n_per_group = opts$n_per_group,
         effect_type = effect$effect_type,
-        effect_size = effect$effect_size,
+        effect_size = effect_size_value,
         input_mode = effect$input_mode %||% "mean_sd",
         group_means = effect$group_means,
         group_sd = effect$group_sd,
