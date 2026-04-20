@@ -9,7 +9,7 @@ box::use(
     create_correlation_ggplot,
     render_correlation_girafe,
   ],
-  app/view/error_display,
+  app/view/shared/error_display,
 )
 
 #' Render correlation plot output

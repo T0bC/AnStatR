@@ -20,7 +20,7 @@ box::use(
     detect_skewness, transform_skewed
   ],
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/pca/biplot,
   app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],

@@ -14,7 +14,7 @@ box::use(
   app/logic/power/power_calc,
   app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/power/design,
   app/view/power/effect_input,
   app/view/power/options,

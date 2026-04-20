@@ -27,7 +27,7 @@ box::use(
     validate_unknown_data
   ],
   app/view/components/sidebar_tabs,
-  app/view/error_display,
+  app/view/shared/error_display,
   app/view/prediction/results_display[
     render_prediction_results, build_results_table
   ],
