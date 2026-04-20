@@ -190,6 +190,34 @@ describe("simulation path", {
     expect_true(result$result$value >= 0)
     expect_true(result$result$value <= 1)
   })
+
+  it("returns an app error when n_sim is NA in simulation mode", {
+    params <- make_power_params(
+      solve_for = "power",
+      n_per_group = 30,
+      effect_size = 0.40,
+      n_groups = 3,
+      approach = "robust",
+      n_sim = NA_real_
+    )
+    result <- power_calc$perform_power_analysis(params)
+
+    expect_true(error_handling$is_app_error(result))
+  })
+
+  it("returns an app error when n_sim is non-finite in simulation mode", {
+    params <- make_power_params(
+      solve_for = "power",
+      n_per_group = 30,
+      effect_size = 0.40,
+      n_groups = 3,
+      approach = "nonparametric",
+      n_sim = Inf
+    )
+    result <- power_calc$perform_power_analysis(params)
+
+    expect_true(error_handling$is_app_error(result))
+  })
 })
 
 # =============================================================================
