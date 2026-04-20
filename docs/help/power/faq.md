@@ -181,6 +181,130 @@ Pre-registration and replication are stronger safeguards than adjusting α alone
 
 </details>
 
+<details>
+<summary>How do I use data I loaded in the Load Data module?</summary>
+
+To use imported data for power analysis:
+
+1. **Load your data first** — Import or load your data frame in the **Load Data** module
+2. **Switch to Import mode** — In Power Analysis, go to the **Study Design** tab and select **Import from Data** (radio button appears when data is available)
+3. **Select grouping columns** — Choose 1-3 columns that define your experimental groups
+4. **Select measurement column** — Choose the outcome variable
+5. **Review detected structure** — The tool shows detected factor levels and automatically extracts group statistics
+6. **Proceed to Settings** — Choose what to calculate (sample size recommendation, post-hoc power, or MDE)
+
+**What gets extracted automatically:**
+- Sample size per group
+- Group means and standard deviations
+- Cohen's f (computed from the data)
+- Distribution shape (via Shapiro-Wilk test)
+
+**Note:** When switching to Import mode, the system automatically switches the calculation type to **Power** (post-hoc analysis). Change this in Settings if you want sample size recommendations or MDE instead.
+
+</details>
+
+<details>
+<summary>What is the difference between pre-study and post-hoc power analysis?</summary>
+
+**Pre-study power analysis** (planning phase):
+- **Goal:** Determine required sample size for a future study
+- **Inputs:** Expected effect size (from literature or pilot data), desired power, alpha
+- **Output:** Required sample size per group
+- **Use case:** Grant proposals, study design, ethics applications
+
+**Post-hoc power analysis** (after study completion):
+- **Goal:** Calculate the achieved power given the actual sample size and observed effect
+- **Inputs:** Observed effect size, actual sample size, alpha
+- **Output:** Power achieved (probability of detecting the observed effect)
+- **Use case:** Interpreting non-significant results, reporting study limitations
+
+**Critical distinction:** Pre-study uses *hypothesized* effects; post-hoc uses *observed* effects.
+
+**Using Import mode:**
+- When you import data and select **Sample Size**, you get sample size recommendations for future studies based on the observed effect size
+- When you import data and select **Power**, you get post-hoc power for the imported study
+- When you import data and select **MDE**, you get sensitivity analysis for the imported study
+
+**Controversy note:** Some statisticians criticize post-hoc power as redundant with p-values (if p < 0.05, power was sufficient by definition). However, post-hoc power remains valuable for:
+- Interpreting non-significant results
+- Planning replication studies
+- Meta-analytic power cumulation
+
+</details>
+
+<details>
+<summary>How do I plan sample sizes based on pilot data?</summary>
+
+**Workflow for pilot-to-full study planning:**
+
+1. **Load pilot data** in the **Load Data** module
+2. **Select Import from Data** in the Power Analysis Study Design tab
+3. **Set grouping and measurement columns** to match your design
+4. **In Settings**, select **Sample Size** as the solve target
+5. **Set target power** (typically 0.80 or 0.90)
+6. **Run analysis**
+
+**Interpretation:** The result shows the sample size needed per group in the full study to achieve your target power, assuming the pilot effect size is accurate.
+
+**Important caveats:**
+
+- **Pilot effect sizes are often inflated** — Small samples yield noisy estimates; the true effect is likely smaller than observed
+- **Conservative strategy** — Use 50-80% of the pilot Cohen's f for planning, or compute sample sizes for a range of plausible effects
+- **Pilot variance estimates** — These are more stable than effect size estimates and can be used with more confidence
+- **Sample size recommendation** — In import mode with "Sample Size" selected, the tool recommends sample sizes for *future* studies, not analyzing the pilot itself
+
+**Recommended approach:**
+1. Use the pilot to estimate variance (SD) and get a rough effect size estimate
+2. Plan for power = 0.90 rather than 0.80 to buffer against effect size overestimation
+3. Run sensitivity analysis: compute required N for pilot f, 0.75×pilot f, and 0.5×pilot f
+4. Choose the largest N from this range that is still feasible
+
+</details>
+
+<details>
+<summary>Why can't I enter Cohen's f manually when using imported data?</summary>
+
+When using **Import from Data** mode, the tool derives Cohen's f directly from the observed group means and standard deviations. This is intentional because:
+
+1. **Consistency** — The computed f matches the actual data pattern
+2. **Transparency** — Reviewers can verify the calculation from the displayed group statistics
+3. **Accuracy** — Manual entry risks mismatch between the data and the assumed effect size
+
+**If you want to use a specific Cohen's f:**
+- Switch back to **Manual Entry** mode
+- Enter the f value directly in the Effect Size tab
+- You can still use the pilot study's SD estimates in Raw input mode if you want to simulate with specific variances
+
+**Adjusting the effect size from pilot data:**
+If you believe the pilot effect size is an overestimate (common), you have two options:
+1. **Use Manual mode** with a conservative f value (e.g., 0.6× the computed f from the pilot)
+2. **Run sensitivity analysis** in Import mode with Sample Size target, but interpret the result conservatively (add 25-50% more subjects)
+
+</details>
+
+<details>
+<summary>How does the tool detect the distribution shape from my data?</summary>
+
+The tool uses a statistical test-based approach to detect distribution shape:
+
+1. **Normality test** — Shapiro-Wilk test on the measurement values
+   - If p > 0.05: Classify as **Normal**
+   - If p ≤ 0.05: Proceed to skewness check
+
+2. **Skewness check** (for non-normal data):
+   - If all values are positive: Test log-transformed values
+   - If log-transform improves normality (higher p-value): Classify as **Log-normal**
+   - Otherwise: Default to **Normal** (conservative choice)
+
+**Limitations:**
+- **Small samples** (< 30) — Shapiro-Wilk has low power; may not detect non-normality even when present
+- **Exponential detection** — Currently not automatically detected (would require specialized tests); manually override if you know the data follows an exponential distribution
+- **Bimodal/multimodal** — Not specifically detected; will likely classify as non-normal and default to normal for simulation
+
+**Recommendation:** If you have theoretical or visual (histogram/Q-Q plot) evidence that your data follows a specific distribution, override the auto-detection in the Effect Size tab.
+
+</details>
+
 ---
 
 #### References

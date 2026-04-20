@@ -2,7 +2,9 @@
 
 **Study Design Setup**
 
-Configure factorial structure in the **Study Design** sidebar tab:
+Configure factorial structure in the **Study Design** sidebar tab using either **Manual Entry** or **Import from Data** mode.
+
+**Manual Entry Mode**
 
 | Design | Factors | Total Groups | Use Case |
 |---|---|---|---|
@@ -15,6 +17,28 @@ For each factor, provide:
 - **Levels** — Comma-separated level names (e.g., `Ceramic, Stone, Bone`)
 
 **Measurement Name** — The dependent variable label used in output tables and plots.
+
+**Import from Data Mode**
+
+When you have loaded data in the **Load Data** module, you can import the existing data structure:
+
+1. Select **Import from Data** radio button in the Study Design tab
+2. Select 1-3 **Grouping Columns** — These define your experimental groups (1 column = 1-way, 2 columns = 2-way, etc.)
+3. Select the **Measurement Column** — The outcome variable for analysis
+4. The tool automatically detects the factor structure and displays it as read-only
+
+**Properties automatically extracted from imported data:**
+
+| Property | How it's computed | Usage |
+|---|---|---|
+| **Sample size (n)** per group | Count of non-missing observations in each group | Used for post-hoc power analysis; displayed as "observed N" |
+| **Group means** | Arithmetic mean for each group combination | Basis for computing Cohen's f; shown in statistics table |
+| **Standard deviations** | Within-group SD for each combination | Used for pooled SD calculation; shown in statistics table |
+| **Pooled SD** | Square root of average group variance | Used in Cohen's f formula and power calculations |
+| **Cohen's f** | $\sqrt{\text{between-group variance}} / \text{pooled SD}$ | Primary effect size metric for power analysis |
+| **Distribution** | Shapiro-Wilk test on residuals | Determines simulation method (normal, log-normal, exponential) |
+
+The extracted statistics are displayed in a table format in the **Effect Size** tab, along with the computed Cohen's f value.
 
 ---
 
@@ -51,6 +75,70 @@ This approach is particularly valuable when:
 - Measurement scales have direct interpretable units
 - Published studies report means and SDs but not effect sizes
 - Expected group differences are known from domain expertise
+
+**Import Mode Effect Size**
+
+When using **Import from Data** mode, the effect size is computed automatically from your loaded data:
+
+- **Effect size type** — Always uses raw parameters (mean + SD) derived from the data
+- **Cohen's f** — Computed from the variance of group means relative to the pooled within-group SD
+- **Distribution override** — The auto-detected distribution is shown, but you can override it if needed (normal, log-normal, exponential)
+
+The statistics table shows:
+- Group names (combinations of factor levels)
+- N per group (sample size)
+- Mean per group
+- SD per group
+- Computed Cohen's f (displayed in a highlighted alert)
+
+**Note:** Standardized Cohen's f input is not available in import mode because the tool derives the effect size directly from the observed data.
+
+---
+
+#### Import Mode Workflows
+
+**Workflow 1: Pilot-to-Full Study Planning**
+
+Use pilot data to determine sample sizes for a full-scale study:
+
+1. Load pilot data in **Load Data** module
+2. In Power Analysis, select **Import from Data**
+3. Set grouping and measurement columns
+4. In **Settings**, select **Sample Size** as the solve target
+5. Set desired **Target Power** (typically 0.80 or 0.90)
+6. Run analysis
+
+**Interpretation:** The result shows how many subjects per group you need in the full study to achieve your target power, given the effect size observed in the pilot data. The observed N from the pilot is shown for reference, but the recommendation applies to future studies.
+
+**Caution:** Pilot study effect sizes are often overestimates. Consider sensitivity analysis with a range of plausible effect sizes (e.g., 50-80% of the pilot f).
+
+**Workflow 2: Post-Hoc Power Analysis**
+
+Calculate the achieved power of a completed study:
+
+1. Load completed study data
+2. Select **Import from Data** (auto-switches to Power calculation mode)
+3. Verify the detected factor structure matches your design
+4. Review the computed Cohen's f in the Effect Size tab
+5. Run analysis
+
+**Interpretation:** Shows the probability your study had of detecting the observed effect size. High power (>0.80) means you likely would have detected a true effect; low power suggests the null result may be due to insufficient sample size rather than absence of effect.
+
+**Note:** Post-hoc power is distinct from the p-value. A significant result with low power is still valid; a non-significant result with low power is inconclusive.
+
+**Workflow 3: Sensitivity Analysis (Minimum Detectable Effect)**
+
+Determine what effect size your study could have detected:
+
+1. Load study data
+2. Select **Import from Data**
+3. In **Settings**, select **Minimum Detectable Effect** as the solve target
+4. Set **Target Power** (typically 0.80)
+5. Run analysis
+
+**Interpretation:** The MDE is the smallest Cohen's f your study could have detected with 80% probability. Compare this to theoretically meaningful effect sizes:
+- If MDE < meaningful effect → Study was adequately powered; null results are informative
+- If MDE > meaningful effect → Study was underpowered; null results are inconclusive
 
 ---
 
@@ -112,6 +200,14 @@ If your curve never reaches target power, the effect size is too small for feasi
 - **Dropout inflation** — Increase computed sample size by 15–20% to account for attrition
 - **Sensitivity analysis** — Compute power across a range of plausible effect sizes; report the range in protocols
 - **Pilot-to-full** — Use pilot study variance estimates, but recognize they are uncertain — consider 80% confidence intervals around pilot SDs
+
+**Best Practices for Import Mode**
+
+- **Verify factor structure** — Double-check that detected factor levels match your experimental design (e.g., ensure no typos in group labels created spurious levels)
+- **Check group Ns** — Unequal group sizes are handled by using minimum N; consider whether this is appropriate for your design
+- **Review distribution detection** — The Shapiro-Wilk test may not detect non-normality with small samples; visually inspect your data if unsure
+- **Override with caution** — Only override the auto-detected distribution if you have theoretical or visual evidence supporting a different shape
+- **Document data source** — When reporting results, note that power calculations were based on pilot/preliminary data and may be optimistic
 
 ---
 

@@ -2,13 +2,35 @@
 
 Plan study sample sizes and estimate statistical power for 1-way, 2-way, and 3-way factorial designs. Configure your study design, specify expected effect sizes, and choose what to calculate — the tool computes the third parameter from your inputs.
 
+##### Data Import Mode
+
+Load an existing data frame in the **Load Data** module to enable the **Import from Data** option in the Power Analysis sidebar. This allows you to use pilot data, preliminary measurements, or completed studies as the basis for power calculations.
+
+**How it works:**
+1. Load your data in the **Load Data** tab first
+2. In the Power Analysis module, select **Import from Data** in the Study Design sidebar tab
+3. Select 1-3 **Grouping Columns** that define your experimental groups (determines 1/2/3-way design)
+4. Select the **Measurement Column** containing your outcome variable
+
+**Automatically extracted properties:**
+- **Sample size (n)** per group
+- **Group means** — average value for each group combination
+- **Standard deviations** — within-group variability
+- **Cohen's f** — computed automatically from the observed group means and pooled SD
+- **Distribution shape** — auto-detected using the Shapiro-Wilk test (normal, log-normal, or exponential)
+
+**Use cases for imported data:**
+- **Pilot-to-full study planning** — Use pilot data to calculate proper sample sizes for the full study
+- **Post-hoc power analysis** — Calculate the achieved power of a completed study
+- **Sensitivity analysis** — Determine the minimum detectable effect given your actual sample size
+
 ##### Output Types
 
 Select **Solve for** in the **Settings** sidebar tab to determine what the analysis calculates:
 
-- **Sample Size** *(default)* — Calculates required observations per group to achieve your target power given the effect size and alpha level. Use during study planning to determine recruitment targets.
-- **Power** — Calculates the probability of detecting your specified effect size given a fixed sample size and alpha. Use to evaluate feasibility of existing or published study designs.
-- **Minimum Detectable Effect (MDE)** — Calculates the smallest effect size detectable with your specified sample size and power. Use to interpret non-significant results or set realistic expectations.
+- **Sample Size** *(default)* — Calculates required observations per group to achieve your target power given the effect size and alpha level. Use during study planning to determine recruitment targets. When using imported data, this recommends sample sizes for future studies based on the observed effect size.
+- **Power** — Calculates the probability of detecting your specified effect size given a fixed sample size and alpha. Use to evaluate feasibility of existing or published study designs. When using imported data, this performs post-hoc power analysis using the observed sample size and effect size.
+- **Minimum Detectable Effect (MDE)** — Calculates the smallest effect size detectable with your specified sample size and power. Use to interpret non-significant results or set realistic expectations. When using imported data, this shows what effect size your study could have detected with its actual sample size.
 
 ##### Required Inputs by Output Type
 
