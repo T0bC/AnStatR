@@ -50,27 +50,13 @@ simulate_group_data <- function(group_means,
     group_sd <- rep(group_sd, length(group_means))
   }
 
-  # Generate data per group
+  # Generate data per group using distribution-aware sampling
   data_list <- lapply(seq_along(group_means), function(i) {
     mu <- group_means[i]
     sigma <- group_sd[i]
     n <- n_per_group
 
-    values <- switch(
-      distribution,
-      "normal" = rnorm(n, mean = mu, sd = sigma),
-      "lognormal" = {
-        # Convert mean/sd to log-scale parameters
-        log_mu <- log(mu^2 / sqrt(sigma^2 + mu^2))
-        log_sigma <- sqrt(log(1 + (sigma^2 / mu^2)))
-        rlnorm(n, meanlog = log_mu, sdlog = log_sigma)
-      },
-      "exponential" = {
-        # Exponential with rate = 1/mean, shifted to approximate target
-        rexp(n, rate = 1 / mu)
-      },
-      rnorm(n, mean = mu, sd = sigma)
-    )
+    values <- generate_distribution_samples(mu, sigma, n, distribution)
 
     data.frame(
       .group = rep(group_names[i], n),
@@ -108,6 +94,32 @@ simulate_group_data <- function(group_means,
   names(df)[names(df) == ".value"] <- measure_name
 
   df
+}
+
+#' Generate samples from a specified distribution
+#'
+#' @param mu Mean (observed scale)
+#' @param sigma SD (observed scale)
+#' @param n Sample size
+#' @param distribution Distribution type: "normal", "lognormal", or "exponential"
+#' @return Numeric vector of n samples
+generate_distribution_samples <- function(mu, sigma, n, distribution) {
+  if (distribution == "normal") {
+    rnorm(n, mean = mu, sd = sigma)
+  } else if (distribution == "lognormal") {
+    # Convert observed mean/sd to log-scale parameters
+    if (mu <= 0) mu <- 0.01
+    log_mu <- log(mu^2 / sqrt(sigma^2 + mu^2))
+    log_sigma <- sqrt(log(1 + (sigma^2 / mu^2)))
+    rlnorm(n, meanlog = log_mu, sdlog = log_sigma)
+  } else if (distribution == "exponential") {
+    # Exponential: rate = 1/mean (SD is ignored for exponential)
+    rate <- if (mu > 0) 1 / mu else 1
+    rexp(n, rate = rate)
+  } else {
+    # Fallback to normal
+    rnorm(n, mean = mu, sd = sigma)
+  }
 }
 
 #' Extract group statistics from pilot data
