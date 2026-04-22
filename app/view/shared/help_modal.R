@@ -81,7 +81,7 @@ server <- function(id, active_page) {
     })
 
     get_help_file <- function(tab, section) {
-      box::file("..", "..", "docs", "help", tab, paste0(section, ".md"))
+      box::file("..", "..", "..", "docs", "help", tab, paste0(section, ".md"))
     }
 
     render_section <- function(file_path) {
