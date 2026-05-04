@@ -603,10 +603,22 @@ server <- function(id, input_data, data_version) {
             }
             last_error(NULL)
 
-            # ~35% of viewport height in inches (96 dpi)
             ws <- window_size()
             w_svg <- max(4, ws$width / 100)
-            h_svg <- max(3.5, (ws$height * 0.35) / 96)
+
+            # Per-card height override from JS resize handle (px -> inches)
+            height_input <- input[[paste0("plot_height_", safe_id)]]
+            custom_height_px <- if (!is.null(height_input)) {
+              height_input$height
+            } else {
+              NULL
+            }
+            if (!is.null(custom_height_px) && custom_height_px > 0) {
+              h_svg <- max(3.5, custom_height_px / 96)
+            } else {
+              # Default: ~35% of viewport height in inches (96 dpi)
+              h_svg <- max(3.5, (ws$height * 0.35) / 96)
+            }
 
             ggiraph$girafe(
               ggobj = res$result,
