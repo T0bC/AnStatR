@@ -315,7 +315,7 @@ var TEXAN_DEBUG = false;
 
 (function () {
     var MIN_HEIGHT = 150;
-    var GRIP_CHAR = '⋯'; // Simple ellipsis as grip indicator
+    var GRIP_CHAR = ':::::'; // Simple ellipsis as grip indicator
 
     function getCardInfo(card) {
         var output = card.querySelector('[id*="plot_"]');
