@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.5] - 2026-05-05
+
+### Changed
+
+- **Plotting module**: Plot cards are no longer horizontally resizable; width is fixed at 100% of the container
+- **Plot resize handle** (`index.js`): Drag-to-resize is vertical-only (height), with a minimum height of 150 px and double-click reset to 35 % viewport height
+- **Plot card layout** (`plotting.R`): `girafeOutput` uses `height = "auto"` and `width = "100%"` inside a `responsive-plot` wrapper, ensuring plots fill available width without manual horizontal adjustment
+
 ## [2.0.4] - 2026-04-20
 
 ### Added
