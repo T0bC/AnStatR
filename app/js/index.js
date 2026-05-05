@@ -314,7 +314,10 @@ var TEXAN_DEBUG = false;
 // =============================================================================
 
 (function () {
-    var MIN_HEIGHT = 150;
+    var MIN_HEIGHT_FRACTION = 0.35;
+    function getMinHeight() {
+        return Math.round(window.innerHeight * MIN_HEIGHT_FRACTION);
+    }
     var GRIP_CHAR = ':::::'; // Simple ellipsis as grip indicator
 
     function getCardInfo(card) {
@@ -357,7 +360,7 @@ var TEXAN_DEBUG = false;
 
         function onPointerMove(e) {
             var delta = e.clientY - startY;
-            var newHeight = Math.max(MIN_HEIGHT, startHeight + delta);
+            var newHeight = Math.max(getMinHeight(), startHeight + delta);
             if (responsivePlot) {
                 responsivePlot.style.height = newHeight + 'px';
                 responsivePlot.style.minHeight = newHeight + 'px';
