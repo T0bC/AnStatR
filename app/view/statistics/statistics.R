@@ -516,6 +516,19 @@ server <- function(id, input_data, data_version,
 
 
       computation_status("computing")
+
+      # Immediate notification so user knows computation started
+      shiny$showNotification(
+        paste0(
+          "Computing statistics for ",
+          length(measures), " measure(s) with ",
+          length(x_cols), "-way design. ",
+          "This may take a moment..."
+        ),
+        type = "message",
+        duration = 5
+      )
+
       rhino$log$info(
         "Statistics: computing for ",
         "{length(measures)} measure(s), ",
@@ -531,6 +544,11 @@ server <- function(id, input_data, data_version,
       # Store snapshot so plots don't change if user
       # modifies the Plotting tab after clicking Compute
       snapshotted_plots(cached_plots)
+
+      # Wrap computation in withProgress to force UI flush
+      shiny$withProgress(
+        message = "Computing Statistics",
+        value = 0, {
 
       # --- Run omnibus tests per measurement ---
       n_ways <- length(x_cols)
@@ -652,6 +670,8 @@ server <- function(id, input_data, data_version,
       })
       names(omnibus_results) <- measures
 
+      shiny$incProgress(0.4, detail = "Running omnibus tests...")
+
       # --- Count NAs per measure with per-group breakdown ---
       na_details <- lapply(measures, function(m) {
         df_m <- filter_excluded_rows(data, m)
@@ -672,6 +692,8 @@ server <- function(id, input_data, data_version,
         list(total = total_na, groups = agg)
       })
       names(na_details) <- measures
+
+      shiny$incProgress(0.1, detail = "Running post-hoc tests...")
 
       # --- Run post-hoc tests per measurement ---
       posthoc_results <- if (
@@ -734,6 +756,8 @@ server <- function(id, input_data, data_version,
         NULL
       }
 
+      shiny$incProgress(1, detail = "Finalizing results...")
+
       computation_results(list(
         measures = measures,
         x_axis = x_cols,
@@ -744,6 +768,8 @@ server <- function(id, input_data, data_version,
         na_details = na_details,
         timestamp = Sys.time()
       ))
+      }) # end withProgress
+
       computation_status("done")
 
       rhino$log$info("Statistics: computation complete")
@@ -954,6 +980,33 @@ server <- function(id, input_data, data_version,
                     "trimming are inherited from the",
                     "Plotting tab."
                   )
+                )
+              )
+            )
+          )
+        )
+      }
+
+      # Computing state - show spinner
+      if (status == "computing") {
+        return(
+          bslib$card(
+            bslib$card_header("Computing..."),
+            bslib$card_body(
+              class = paste(
+                "d-flex align-items-center",
+                "justify-content-center"
+              ),
+              style = "min-height: 300px;",
+              shiny$tags$div(
+                class = "text-center",
+                shiny$tags$div(
+                  class = "spinner-border text-primary mb-3",
+                  role = "status"
+                ),
+                shiny$tags$p(
+                  class = "text-muted",
+                  "Running statistical tests..."
                 )
               )
             )
