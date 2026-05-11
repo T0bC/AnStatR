@@ -21,6 +21,9 @@ box::use(
   app/view/summary,
 )
 
+# --- Shiny options ---
+options(shiny.maxRequestSize = 60 * 1024^2) # 60 MB upload limit
+
 #' @export
 ui <- function(id) {
   ns <- shiny$NS(id)
