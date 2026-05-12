@@ -122,6 +122,12 @@ ui <- function(id) {
     ),
     bslib$nav_spacer(),
     bslib$nav_item(
+      shiny$tags$span(
+        style = "font-size: 0.75rem; color: #888; padding-right: 6px;",
+        shiny$textOutput(ns("session_id"), inline = TRUE)
+      )
+    ),
+    bslib$nav_item(
       help_modal$ui(ns("help"))
     ),
     bslib$nav_item(
@@ -134,6 +140,10 @@ ui <- function(id) {
 server <- function(id) {
   shiny$moduleServer(id, function(input, output, session) {
     logging$configure_session_logging()
+
+    output$session_id <- shiny$renderText({
+      paste0("Session ID: ", substr(session$token, 1, 8))
+    })
 
     # In development, stop the app when the browser tab is closed
     if (!identical(Sys.getenv("R_CONFIG_ACTIVE"), "production")) {
