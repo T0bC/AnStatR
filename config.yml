@@ -1,7 +1,7 @@
 default:
   rhino_log_level: !expr Sys.getenv("RHINO_LOG_LEVEL", "INFO")
-  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", "logs/texan.log")
+  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", "logs")
 
 production:
   rhino_log_level: !expr Sys.getenv("RHINO_LOG_LEVEL", "INFO")
-  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", "/app/logs/texan.log")
+  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", "/app/logs")
