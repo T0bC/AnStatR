@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.7] - 2026-05-13
+
+### Added
+
+- **Plotting filter module**: "All / None" toggle link added to each checkbox group label in the filter sidebar, allowing users to select or deselect all levels of a metadata column in a single click
+
 ## [2.0.6] - 2026-05-11
 
 ### Changed
