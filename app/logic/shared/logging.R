@@ -26,20 +26,27 @@ configure_session_logging <- function() {
     # No directory configured: output to console only
     logger$log_appender(logger$appender_stderr)
   } else {
-    if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+    if (!dir.exists(log_dir)) {
+      dir.create(log_dir, recursive = TRUE, showWarnings = TRUE)
+    }
 
-    # Build per-session filename: YYYY_MM_DD_<sessid>.log
-    session <- shiny$getDefaultReactiveDomain()
-    sess_id <- if (!is.null(session)) substr(session$token, 1, 8) else "global"
-    date_str <- format(Sys.time(), "%Y_%m_%d")
-    log_file <- file.path(log_dir, paste0(date_str, "_", sess_id, ".log"))
-
-    if (is_production) {
-      # Production: file only
-      logger$log_appender(logger$appender_file(log_file))
+    if (!dir.exists(log_dir)) {
+      warning(paste0("Could not create log directory '", log_dir, "'. Falling back to console logging."))
+      logger$log_appender(logger$appender_stderr)
     } else {
-      # Local development: both console AND file
-      logger$log_appender(logger$appender_tee(log_file))
+      # Build per-session filename: YYYY_MM_DD_<sessid>.log
+      session <- shiny$getDefaultReactiveDomain()
+      sess_id <- if (!is.null(session)) substr(session$token, 1, 8) else "global"
+      date_str <- format(Sys.time(), "%Y_%m_%d")
+      log_file <- file.path(log_dir, paste0(date_str, "_", sess_id, ".log"))
+
+      if (is_production) {
+        # Production: file only
+        logger$log_appender(logger$appender_file(log_file))
+      } else {
+        # Local development: both console AND file
+        logger$log_appender(logger$appender_tee(log_file))
+      }
     }
   }
 
