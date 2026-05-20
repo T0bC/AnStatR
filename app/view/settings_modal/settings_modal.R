@@ -41,8 +41,21 @@ server <- function(id) {
             icon = bsicons$bs_icon("journal-text"),
             class = "btn-outline-secondary btn-sm"
           ),
+          shiny$tags$a(
+            href = "https://github.com/T0bC/TexAn2.0/issues/new/choose",
+            target = "_blank",
+            rel = "noopener noreferrer",
+            class = "btn btn-outline-secondary btn-sm",
+            style = "margin-left: 8px;",
+            bsicons$bs_icon("bug"),
+            " Report Issue"
+          ),
           footer = shiny$tagList(
-            shiny$helpText(paste("Version:", settings$get_version_string())),
+            shiny$div(
+              style = "text-align: left; flex: 1;",
+              shiny$helpText(paste("Version:", settings$get_version_string())),
+              shiny$helpText(paste("Session ID:", session$token))
+            ),
             shiny$modalButton("Close")
           )
         )
