@@ -32,7 +32,7 @@ server <- function(id) {
       rhino$log$debug("Settings modal opened")
       shiny$showModal(
         shiny$modalDialog(
-          title = "App Settings",
+          title = "About TexAn",
           size = "m",
           easyClose = TRUE,
           shiny$actionButton(
@@ -45,7 +45,7 @@ server <- function(id) {
             href = "https://github.com/T0bC/TexAn2.0/issues/new/choose",
             target = "_blank",
             rel = "noopener noreferrer",
-            class = "btn btn-outline-secondary btn-sm",
+            class = "btn btn-outline-danger btn-sm",
             style = "margin-left: 8px;",
             bsicons$bs_icon("bug"),
             " Report Issue"
