@@ -30,12 +30,12 @@ get_changelog_content <- function() {
 }
 
 #' Parse version info from changelog
-#' Extracts version and date from first ## [x.x.x] - YYYY-MM-DD line
+#' Extracts version and date from first ## [YYYY.patch] - YYYY-MM-DD line
 #' @return List with version and date elements
 #' @export
 get_version_info <- function() {
   lines <- get_changelog_content()
-  version_pattern <- "^## \\[([0-9]+\\.[0-9]+\\.[0-9]+)\\] - ([0-9]{4}-[0-9]{2}-[0-9]{2})"
+  version_pattern <- "^## \\[([0-9]{4}\\.[0-9]+)\\] - ([0-9]{4}-[0-9]{2}-[0-9]{2})"
 
   for (line in lines) {
     match <- regmatches(line, regexec(version_pattern, line))[[1]]
