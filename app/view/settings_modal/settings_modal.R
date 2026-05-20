@@ -54,7 +54,7 @@ server <- function(id) {
             shiny$div(
               style = "text-align: left; flex: 1;",
               shiny$helpText(paste("Version:", settings$get_version_string())),
-              shiny$helpText(paste("Session ID:", session$token))
+              shiny$helpText(paste("Session ID:", substr(session$token, 1, 8)))
             ),
             shiny$modalButton("Close")
           )
