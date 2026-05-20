@@ -653,25 +653,35 @@ details.app-error-details.mt-2 {
   }
 }
 
+// Color picker wrapper for consistent sizing
+.color-picker-wrapper {
+  width: 120px;
+  flex-shrink: 0;
+}
+
 // Compact color picker styling inside sortable items
 .sortable-item .colourpicker-input-container,
 .leaf-item .colourpicker-input-container {
-  width: 32px !important;
-  height: 24px !important;
+  width: 100% !important;
+  height: 26px !important;
 }
 
 .sortable-item .colourpicker-input,
 .leaf-item .colourpicker-input {
-  width: 32px !important;
-  height: 24px !important;
-  padding: 0 !important;
+  width: 100% !important;
+  height: 26px !important;
+  padding: 2px 4px 2px 30px !important;
   border-radius: 4px !important;
+  font-size: 0.75rem !important;
+  font-family: monospace !important;
 }
 
-// Hide the text input part of color picker (show only swatch)
+// Color swatch addon styling
 .sortable-item .colourpicker-input-addon,
 .leaf-item .colourpicker-input-addon {
-  display: none !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 3px !important;
 }
 
 // Form group wrapper - remove margins
