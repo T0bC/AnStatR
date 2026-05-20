@@ -288,13 +288,16 @@ build_single_level_sortable <- function(ns, col, levels, groups,
         bsicons$bs_icon("grip-vertical")
       ),
       shiny$tags$span(class = "flex-grow-1 small", level),
-      colourpicker$colourInput(
-        inputId = ns(color_input_id(level)),
-        label = NULL,
-        value = color,
-        showColour = "background",
-        allowTransparent = FALSE,
-        closeOnClick = TRUE
+      shiny$tags$div(
+        class = "color-picker-wrapper",
+        colourpicker$colourInput(
+          inputId = ns(color_input_id(level)),
+          label = NULL,
+          value = color,
+          showColour = "both",
+          allowTransparent = FALSE,
+          closeOnClick = TRUE
+        )
       )
     )
   })
@@ -436,13 +439,16 @@ build_inner_levels <- function(ns, cols, factor_order, parent_prefix,
           bsicons$bs_icon("grip-vertical")
         ),
         shiny$tags$span(class = "flex-grow-1 small", level),
-        colourpicker$colourInput(
-          inputId = ns(color_input_id(current_prefix)),
-          label = NULL,
-          value = color,
-          showColour = "background",
-          allowTransparent = FALSE,
-          closeOnClick = TRUE
+        shiny$tags$div(
+          class = "color-picker-wrapper",
+          colourpicker$colourInput(
+            inputId = ns(color_input_id(current_prefix)),
+            label = NULL,
+            value = color,
+            showColour = "both",
+            allowTransparent = FALSE,
+            closeOnClick = TRUE
+          )
         )
       )
     } else {
