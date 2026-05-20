@@ -1,12 +1,22 @@
 # Changelog
 
-## [2.0.7] - 2026-05-13
+## [2026.8] - 2026-05-20
+
+### Added
+
+- **Plotting style module**: Unicode symbol previews added to shape dropdown choices for visual representation of R `pch` shapes 0–25
+- **Plotting style module**: Custom shape mapping support with per-group shape dropdowns; dropdowns disable automatically when the shape-by aesthetic is active
+- **Plotting style module**: Drag-and-drop factor ordering with nested sortable tree UI for multi-level X-axis groupings, with integrated color pickers per group
+- **Plotting style module**: Color pickers display hex value input with a visible color swatch add-on for improved visibility
+- **Dependencies**: `sortable` package added for drag-and-drop functionality
+
+## [2026.7] - 2026-05-13
 
 ### Added
 
 - **Plotting filter module**: "All / None" toggle link added to each checkbox group label in the filter sidebar, allowing users to select or deselect all levels of a metadata column in a single click
 
-## [2.0.6] - 2026-05-11
+## [2026.6] - 2026-05-11
 
 ### Changed
 
@@ -16,7 +26,7 @@
 
 - **Statistics module**: Added immediate UI feedback when clicking "Compute Statistics" — users now see a toast notification and progress bar regardless of which statistical approach is selected, preventing the app from appearing frozen during long computations
 
-## [2.0.5] - 2026-05-05
+## [2026.5] - 2026-05-05
 
 ### Changed
 
@@ -24,7 +34,7 @@
 - **Plot resize handle** (`index.js`): Drag-to-resize is vertical-only (height), with a minimum height of 150 px and double-click reset to 35 % viewport height
 - **Plot card layout** (`plotting.R`): `girafeOutput` uses `height = "auto"` and `width = "100%"` inside a `responsive-plot` wrapper, ensuring plots fill available width without manual horizontal adjustment
 
-## [2.0.4] - 2026-04-20
+## [2026.4] - 2026-04-20
 
 ### Added
 
@@ -45,7 +55,7 @@
 - **Factor name sanitization** — Strips special characters and ensures unique factor/level names to prevent R formula parsing errors
 - **Comprehensive help documentation** for Power Analysis module — Overview, Details (with import mode workflows, effect size guidance, statistical approach comparison, and best practices), and FAQ
 
-## [2.0.3] - 2026-04-10
+## [2026.3] - 2026-04-10
 
 ### Added
 
@@ -68,7 +78,7 @@
 - Removed Cross & Jain (1982) reference from Hopkins statistic documentation
 - Disabled markdown linting rules for HTML tags, list spacing, first-line headings, and MD036 (emphasis vs heading)
 
-## [2.0.2] - 2026-04-07
+## [2026.2] - 2026-04-07
 
 ### Fixed
 
@@ -82,7 +92,7 @@
 - Revised default factor recommendations: Z-Score now defaults to 3.0, Modified Z-Score to 3.5
 - Improved help documentation for load data, median calculation, and plotting modules
 
-## [2.0.1] - 2026-04-02
+## [2026.1] - 2026-04-02
 
 ### Changed
 
@@ -91,7 +101,7 @@
 - Help sidebar is now user-resizable via drag handle
 - Fixed cross-platform path resolution for help files (now works on Linux servers)
 
-## [2.0.0] - 2026-03-04
+## [2026.0] - 2026-03-04
 
 ### Added
 
