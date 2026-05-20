@@ -59,7 +59,7 @@ body:
     attributes:
       label: Session ID
       description: Your session ID (shown in Settings). This helps us retrieve the logs.
-      placeholder: e.g. abc123def456
+      placeholder: e.g. a1b2c3d4
     validations:
       required: true
 
