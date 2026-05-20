@@ -280,9 +280,38 @@ collect_shapes <- function(input, groups, default_shape = 19L) {
   shapes
 }
 
-# Generate shape dropdown choices (0-25 with visual labels)
+# Generate shape dropdown choices (0-25 with Unicode symbol previews)
 shape_choices <- function() {
-  stats::setNames(as.character(0:25), as.character(0:25))
+  # Unicode approximations of R pch shapes
+  symbols <- c(
+    "\u25A1",
+    "\u25CB",
+    "\u25B3",
+    "\u002B",
+    "\u00D7",
+    "\u25C7",
+    "\u25BD",
+    "\u2295",
+    "\u2217",
+    "\u22C4",
+    "\u2A01",
+    "\u2606",
+    "\u271B",
+    "\u2A02",
+    "\u25A0",
+    "\u25CF",
+    "\u25B2",
+    "\u25BC",
+    "\u25C6",
+    "\u2B24",
+    "\u25CF",
+    "\u25CF",
+    "\u25A0",
+    "\u25C6",
+    "\u25B2",
+    "\u25BC"
+  )
+  stats::setNames(as.character(0:25), symbols)
 }
 
 # Build nested sortable tree with color pickers at leaf nodes
