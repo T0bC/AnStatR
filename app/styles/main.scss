@@ -653,6 +653,37 @@ details.app-error-details.mt-2 {
   }
 }
 
+// Shape select wrapper for consistent sizing
+.shape-select-wrapper {
+  width: 55px;
+  flex-shrink: 0;
+
+  .form-group {
+    margin: 0 !important;
+  }
+
+  select.form-control,
+  select.form-select {
+    height: 26px !important;
+    padding: 2px 20px 2px 6px !important;
+    font-size: 0.75rem !important;
+    border-radius: 4px !important;
+    background-position: right 4px center !important;
+    background-size: 12px !important;
+  }
+}
+
+// Disabled state for shape selects when "Shape by" is active
+.shape-disabled .shape-select-wrapper {
+  opacity: 0.5;
+  pointer-events: none;
+
+  select {
+    background-color: #e9ecef !important;
+    cursor: not-allowed !important;
+  }
+}
+
 // Color picker wrapper for consistent sizing
 .color-picker-wrapper {
   width: 120px;
