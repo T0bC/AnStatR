@@ -140,6 +140,9 @@ server <- function(id, input_data, data_version) {
       cmap <- style_result$color_map()
       shiny$req(!is.null(cmap))
 
+      # Get factor order from style module
+      fo <- style_result$factor_order()
+
       m <- input$measureVar
       measure <- if (is.null(m) || length(m) == 0) character(0) else m
 
@@ -152,6 +155,7 @@ server <- function(id, input_data, data_version) {
         tooltip_cols  = input$tooltip,
         color_cols    = input$pointColor,
         color_map     = cmap,
+        factor_order  = fo,
         point_style   = list(
           size       = input$pointSize   %||% 4,
           spread     = input$pointSpread %||% 0.15,
@@ -210,11 +214,24 @@ server <- function(id, input_data, data_version) {
     }
 
     make_style_fingerprint <- function(params, data_nrow, data_ncol) {
+      # Convert factor_order to string for fingerprint
+      fo_str <- if (is.null(params$factor_order) ||
+                    length(params$factor_order) == 0) {
+        "NULL"
+      } else {
+        paste(
+          names(params$factor_order),
+          sapply(params$factor_order, paste, collapse = ","),
+          sep = ":", collapse = ";"
+        )
+      }
+
       paste(
         null_to_str(params$x_cols),
         null_to_str(params$tooltip_cols),
         null_to_str(params$color_cols),
         null_to_str(params$color_map),
+        fo_str,
         params$point_style$size,
         params$point_style$spread,
         params$point_style$alpha,
@@ -342,7 +359,8 @@ server <- function(id, input_data, data_version) {
             processing      = params$processing,
             grid_legend     = params$grid_legend,
             stat_line_style = params$stat_line_style,
-            axis_style      = params$axis_style
+            axis_style      = params$axis_style,
+            factor_order    = params$factor_order
           ),
           operation_name = paste("Plot", y_col)
         ) -> exec_result
