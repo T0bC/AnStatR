@@ -42,6 +42,7 @@ create_scatter_plot <- function(data,
                                 x_cols,
                                 y_col,
                                 color_map = NULL,
+                                shape_map = NULL,
                                 color_cols = NULL,
                                 tooltip_cols = NULL,
                                 point_style = list(),
@@ -82,10 +83,25 @@ create_scatter_plot <- function(data,
   color_legend_title <- paste(color_cols, collapse = " | ")
 
   # --- Prepare shape grouping ---
-  shape_prep <- prepare_shape(data, ps$shape_cols)
-  data <- shape_prep$data
-  use_shape <- shape_prep$use_shape
-  shape_legend_title <- shape_prep$legend_title
+  # If shape_map is provided, use custom per-group shapes (no shape aesthetic)
+  # Otherwise, use "Shape by" column mapping if shape_cols is set
+  if (!is.null(shape_map) && length(shape_map) > 0) {
+    # Custom shapes: map each row's .color_group to its shape value
+    data$.point_shape <- vapply(
+      data$.color_group,
+      function(g) if (g %in% names(shape_map)) shape_map[[g]] else 19L,
+      integer(1)
+    )
+    use_shape <- FALSE
+    use_custom_shape <- TRUE
+    shape_legend_title <- NULL
+  } else {
+    shape_prep <- prepare_shape(data, ps$shape_cols)
+    data <- shape_prep$data
+    use_shape <- shape_prep$use_shape
+    use_custom_shape <- FALSE
+    shape_legend_title <- shape_prep$legend_title
+  }
 
   # --- Process data: outliers + trimming ---
   interaction_term <- data_utils$create_interaction(data, x_cols, factor_order)
@@ -103,6 +119,7 @@ create_scatter_plot <- function(data,
     y_col = y_col,
     ps = ps,
     use_shape = use_shape,
+    use_custom_shape = use_custom_shape,
     color_map = color_map,
     color_legend_title = color_legend_title,
     shape_legend_title = shape_legend_title
@@ -387,7 +404,7 @@ apply_processing <- function(data, y_col, interaction_term, proc) {
 
 #' Build the core ggplot with jitter layers for retained / trimmed / outlier
 build_plot <- function(data, x_var, y_col, ps,
-                       use_shape, color_map,
+                       use_shape, use_custom_shape = FALSE, color_map,
                        color_legend_title, shape_legend_title) {
   p <- ggplot2$ggplot(
     data,
@@ -406,6 +423,7 @@ build_plot <- function(data, x_var, y_col, ps,
     rd$.data_id <- retained_idx
 
     if (use_shape) {
+      # Shape by column mapping (aesthetic)
       aes_map <- ggplot2$aes(
         tooltip = .data[[".tooltip"]],
         data_id = .data[[".data_id"]],
@@ -413,23 +431,48 @@ build_plot <- function(data, x_var, y_col, ps,
         fill    = .data[[".color_group"]],
         shape   = .data[[".shape_group"]]
       )
-    } else {
+      p <- p + ggiraph$geom_jitter_interactive(
+        data = rd, mapping = aes_map,
+        hover_nearest = TRUE,
+        position = ggplot2$position_jitter(
+          width = ps$spread, height = 0, seed = 42L
+        ),
+        alpha = ps$alpha, size = ps$size
+      )
+    } else if (use_custom_shape) {
+      # Custom shapes per group: pass shape as a vector (not aesthetic)
       aes_map <- ggplot2$aes(
         tooltip = .data[[".tooltip"]],
         data_id = .data[[".data_id"]],
         color   = .data[[".color_group"]],
         fill    = .data[[".color_group"]]
       )
+      p <- p + ggiraph$geom_jitter_interactive(
+        data = rd, mapping = aes_map,
+        shape = rd$.point_shape,
+        hover_nearest = TRUE,
+        position = ggplot2$position_jitter(
+          width = ps$spread, height = 0, seed = 42L
+        ),
+        alpha = ps$alpha, size = ps$size
+      )
+    } else {
+      # Default: no shape variation
+      aes_map <- ggplot2$aes(
+        tooltip = .data[[".tooltip"]],
+        data_id = .data[[".data_id"]],
+        color   = .data[[".color_group"]],
+        fill    = .data[[".color_group"]]
+      )
+      p <- p + ggiraph$geom_jitter_interactive(
+        data = rd, mapping = aes_map,
+        hover_nearest = TRUE,
+        position = ggplot2$position_jitter(
+          width = ps$spread, height = 0, seed = 42L
+        ),
+        alpha = ps$alpha, size = ps$size
+      )
     }
-
-    p <- p + ggiraph$geom_jitter_interactive(
-      data = rd, mapping = aes_map,
-      hover_nearest = TRUE,
-      position = ggplot2$position_jitter(
-        width = ps$spread, height = 0, seed = 42L
-      ),
-      alpha = ps$alpha, size = ps$size
-    )
   }
 
   # Layer 2: Trimmed points (gray outline, white fill)
