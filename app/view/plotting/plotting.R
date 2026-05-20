@@ -140,8 +140,9 @@ server <- function(id, input_data, data_version) {
       cmap <- style_result$color_map()
       shiny$req(!is.null(cmap))
 
-      # Get factor order from style module
+      # Get factor order and shape map from style module
       fo <- style_result$factor_order()
+      smap <- style_result$shape_map()
 
       m <- input$measureVar
       measure <- if (is.null(m) || length(m) == 0) character(0) else m
@@ -155,6 +156,7 @@ server <- function(id, input_data, data_version) {
         tooltip_cols  = input$tooltip,
         color_cols    = input$pointColor,
         color_map     = cmap,
+        shape_map     = smap,
         factor_order  = fo,
         point_style   = list(
           size       = input$pointSize   %||% 4,
@@ -231,6 +233,7 @@ server <- function(id, input_data, data_version) {
         null_to_str(params$tooltip_cols),
         null_to_str(params$color_cols),
         null_to_str(params$color_map),
+        null_to_str(params$shape_map),
         fo_str,
         params$point_style$size,
         params$point_style$spread,
@@ -353,6 +356,7 @@ server <- function(id, input_data, data_version) {
             x_cols          = params$x_cols,
             y_col           = plot_col,
             color_map       = params$color_map,
+            shape_map       = params$shape_map,
             color_cols      = params$color_cols,
             tooltip_cols    = params$tooltip_cols,
             point_style     = params$point_style,
