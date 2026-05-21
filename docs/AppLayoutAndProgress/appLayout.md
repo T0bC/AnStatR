@@ -5,11 +5,41 @@ flowchart TB
         %% ==================== LOAD DATA MODULE ====================
         subgraph LoadDataModule["📥 Load Data Module"]
             direction TB
-            LD_UI["UI: File Upload / Example Data<br/>📦 DataExplorer · summarytools · DT"]
-            LD_Logic["validate_file_extension()<br/>read_data_file() · validate_data()<br/>fix_column_names()"]
-            LD_Packages["📦 openxlsx (XLSX read)<br/>📦 utils::read.csv (CSV read)<br/>📦 tools::file_ext"]
 
-            LD_UI --> LD_Logic --> LD_Packages
+            LD_Source{"Input source"}
+            LD_Upload["User uploads a file<br/>Accepted: CSV · XLSX"]
+            LD_Example["User selects a built-in example dataset<br/>📦 openxlsx"]
+
+            subgraph LD_CSVOpts["CSV Parsing Options"]
+                direction LR
+                LD_CSV_Header["Has header row<br/>yes / no"]
+                LD_CSV_Delim["Delimiter<br/>comma · semicolon · tab"]
+                LD_CSV_Quote["Quote character<br/>none · double · single"]
+            end
+
+            LD_Read["Parse file into data frame<br/>📦 utils (CSV) · openxlsx (XLSX)"]
+            LD_Validate["Validate structure · fix column names<br/>Flag ambiguous / renamed columns<br/>📦 tools"]
+
+            LD_ColModal["Notify user of column renames"]
+            LD_ErrDisplay["Display structured error on failure"]
+            LD_Log["Log load event · 📦 rhino"]
+
+            LD_Preview["Interactive data table<br/>📦 DT"]
+            LD_Missing["Missing values bar chart<br/>📦 DataExplorer · ggplot2"]
+            LD_Summary["Descriptive data summary<br/>📦 summarytools"]
+
+            LD_Source -->|file| LD_Upload
+            LD_Source -->|example| LD_Example
+            LD_Upload -->|CSV| LD_CSVOpts --> LD_Read
+            LD_Upload -->|XLSX| LD_Read
+            LD_Example --> LD_Read
+            LD_Read -->|success| LD_Validate
+            LD_Read -->|failure| LD_ErrDisplay
+            LD_Read --> LD_Log
+            LD_Validate --> LD_ColModal
+            LD_Validate --> LD_Preview
+            LD_Validate --> LD_Missing
+            LD_Validate --> LD_Summary
         end
 
         %% ==================== MEDIAN MODULE ====================
@@ -17,13 +47,10 @@ flowchart TB
             direction TB
 
             MED_UI["UI: Grouping columns · Quality column<br/>📦 DT (interactive result table)<br/>📦 openxlsx (download handler)"]
-            subgraph MED_Flow["Internal Data Flow"]
-                direction TB
-                MED_Branch{"Grouping selected?"}
-                MED_FilterOnly["Path A: Quality Filter Only<br/>quality_filter::apply_quality_filter()"]
-                MED_FilterGroup["Path B: Filter + Group Median<br/>quality_filter + compute::compute_medians()"]
-                MED_Quality["quality_analysis::analyze_quality_column()<br/>📦 stats (median, aggregate)"]
-            end
+            MED_Branch{"Grouping selected?"}
+            MED_FilterOnly["Path A: Quality Filter Only<br/>quality_filter::apply_quality_filter()"]
+            MED_FilterGroup["Path B: Filter + Group Median<br/>quality_filter + compute::compute_medians()"]
+            MED_Quality["quality_analysis::analyze_quality_column()<br/>📦 stats (median, aggregate)"]
 
             MED_Packages["📦 stats (median, aggregate, setNames)<br/>📦 openxlsx (XLSX export)"]
 
@@ -40,15 +67,12 @@ flowchart TB
             direction TB
 
             PL_UI["UI: 4 sidebar tabs<br/>Data Selection · Filter · Processing · Style<br/>📦 bslib · bsicons · ggiraph (interactive plots)"]
-            subgraph PL_Flow["Internal Data Flow"]
-                direction TB
-                PL_Filter["filter.R: filter_data()<br/>📦 app/logic/shared/data_utils"]
-                PL_Process["data_processing::process_data()<br/>trim · outlier (IQR/Grubbs/Bootstrap)<br/>📦 stats · car · bootstrap"]
-                PL_Normalize["preprocessing/normalize.R<br/>normalise per-group · 📦 stats"]
-                PL_Skew["preprocessing/skewness_transform.R<br/>detect_skewness() · transform_skewed()<br/>📦 moments · bestNormalize"]
-                PL_Scatter["scatter.R → ggplot2 objects<br/>📦 ggplot2 · ggiraph"]
-                PL_Assumptions["assumption_checks.R<br/>check_normality() (Shapiro-Wilk)<br/>check_levene() (Levene's test)<br/>📦 car · stats"]
-            end
+            PL_Filter["filter.R: filter_data()<br/>📦 app/logic/shared/data_utils"]
+            PL_Process["data_processing::process_data()<br/>trim · outlier (IQR/Grubbs/Bootstrap)<br/>📦 stats · car · bootstrap"]
+            PL_Normalize["preprocessing/normalize.R<br/>normalise per-group · 📦 stats"]
+            PL_Skew["preprocessing/skewness_transform.R<br/>detect_skewness() · transform_skewed()<br/>📦 moments · bestNormalize"]
+            PL_Scatter["scatter.R → ggplot2 objects<br/>📦 ggplot2 · ggiraph"]
+            PL_Assumptions["assumption_checks.R<br/>check_normality() (Shapiro-Wilk)<br/>check_levene() (Levene's test)<br/>📦 car · stats"]
 
             PL_Packages["📦 ggplot2 (plots) · ggiraph (interactive)<br/>📦 openxlsx (data download)<br/>📦 car (Levene) · stats (shapiro.test)"]
 
@@ -75,18 +99,15 @@ flowchart TB
             direction TB
 
             STAT_UI["UI: Test options · Adjustments · Bootstrap<br/>📦 DT · bslib"]
-            subgraph STAT_Flow["Internal Flow"]
-                direction TB
-                STAT_Branch{"Test family"}
-                STAT_Param["parametric_tests.R<br/>ANOVA · t-test<br/>📦 stats (aov, t.test)"]
-                STAT_NP["nonparametric_tests.R<br/>Kruskal-Wallis · Mann-Whitney<br/>📦 stats (kruskal.test, wilcox.test)"]
-                STAT_Rob["robust_tests.R<br/>WRS2 equivalents<br/>📦 WRS2 · Rallfun-v43"]
-                STAT_PostH_P["parametric_posthoc.R<br/>Tukey HSD · emmeans<br/>📦 emmeans · multcomp"]
-                STAT_PostH_NP["nonparametric_posthoc.R<br/>Dunn test · pairwise Wilcoxon<br/>📦 dunn.test · stats"]
-                STAT_PostH_R["robust_posthoc.R<br/>📦 WRS2"]
-                STAT_Effect["cliff_delta.R<br/>Cliff's delta effect size<br/>📦 effsize"]
-                STAT_Report["report.R<br/>APA-style formatting"]
-            end
+            STAT_Branch{"Test family"}
+            STAT_Param["parametric_tests.R<br/>ANOVA · t-test<br/>📦 stats (aov, t.test)"]
+            STAT_NP["nonparametric_tests.R<br/>Kruskal-Wallis · Mann-Whitney<br/>📦 stats (kruskal.test, wilcox.test)"]
+            STAT_Rob["robust_tests.R<br/>WRS2 equivalents<br/>📦 WRS2 · Rallfun-v43"]
+            STAT_PostH_P["parametric_posthoc.R<br/>Tukey HSD · emmeans<br/>📦 emmeans · multcomp"]
+            STAT_PostH_NP["nonparametric_posthoc.R<br/>Dunn test · pairwise Wilcoxon<br/>📦 dunn.test · stats"]
+            STAT_PostH_R["robust_posthoc.R<br/>📦 WRS2"]
+            STAT_Effect["cliff_delta.R<br/>Cliff's delta effect size<br/>📦 effsize"]
+            STAT_Report["report.R<br/>APA-style formatting"]
 
             STAT_Packages["📦 stats · WRS2 · emmeans · multcomp<br/>📦 dunn.test · effsize · car"]
 
@@ -105,19 +126,16 @@ flowchart TB
             direction TB
 
             PCA_UI["UI: Data Selection · Plotting Controls<br/>📦 bslib · ggiraph · plotly"]
-            subgraph PCA_Flow["Internal Flow"]
-                direction TB
-                PCA_Clean["preprocessing/na_handling::clean_na_rows()<br/>📦 stats"]
-                PCA_Skew["preprocessing/skewness_transform.R<br/>detect + transform skewed variables<br/>📦 moments · bestNormalize"]
-                PCA_Scale["scaling::scale_data()<br/>📦 stats (scale)"]
-                PCA_KMO["kmo::calculate_kmo()<br/>Sampling adequacy · 📦 psych"]
-                PCA_Opt["optimal_components::calculate_optimal_components()<br/>Parallel analysis · Scree · MAP<br/>📦 psych · nFactors"]
-                PCA_Run["pca::run_pca()<br/>📦 FactoMineR (PCA) · factoextra (extract)"]
-                PCA_Corr["correlation_plot::compute_correlation_data()<br/>📦 stats (cor) · ggcorrplot"]
-                PCA_Biplot["biplot.R / biplot3d.R<br/>📦 factoextra · plotly (3D)"]
-                PCA_Eigen["eigencorplot.R<br/>Dim-metadata correlation · 📦 ggplot2 · ggiraph"]
-                PCA_Export["pca_export.R<br/>create_pca_excel() · create_pca_bundle()<br/>📦 openxlsx"]
-            end
+            PCA_Clean["preprocessing/na_handling::clean_na_rows()<br/>📦 stats"]
+            PCA_Skew["preprocessing/skewness_transform.R<br/>detect + transform skewed variables<br/>📦 moments · bestNormalize"]
+            PCA_Scale["scaling::scale_data()<br/>📦 stats (scale)"]
+            PCA_KMO["kmo::calculate_kmo()<br/>Sampling adequacy · 📦 psych"]
+            PCA_Opt["optimal_components::calculate_optimal_components()<br/>Parallel analysis · Scree · MAP<br/>📦 psych · nFactors"]
+            PCA_Run["pca::run_pca()<br/>📦 FactoMineR (PCA) · factoextra (extract)"]
+            PCA_Corr["correlation_plot::compute_correlation_data()<br/>📦 stats (cor) · ggcorrplot"]
+            PCA_Biplot["biplot.R / biplot3d.R<br/>📦 factoextra · plotly (3D)"]
+            PCA_Eigen["eigencorplot.R<br/>Dim-metadata correlation · 📦 ggplot2 · ggiraph"]
+            PCA_Export["pca_export.R<br/>create_pca_excel() · create_pca_bundle()<br/>📦 openxlsx"]
 
             PCA_Packages["📦 FactoMineR (PCA core) · factoextra (extraction/biplot)<br/>📦 psych (KMO, parallel) · plotly (3D biplot) · ggcorrplot"]
 
@@ -137,21 +155,18 @@ flowchart TB
             direction TB
 
             LDA_UI["UI: Data Selection · Analysis Settings · Plotting Controls<br/>📦 bslib · ggiraph"]
-            subgraph LDA_Flow["Internal Flow"]
-                direction TB
-                LDA_Clean["na_handling::clean_na_rows() · 📦 stats"]
-                LDA_Skew["skewness_transform.R<br/>📦 moments · bestNormalize"]
-                LDA_Scale["pca/scaling::scale_data() · 📦 stats (scale)"]
-                LDA_Split["data_splitting::create_stratified_split()<br/>Train / Test split · 📦 caret"]
-                LDA_Branch{"Method"}
-                LDA_LDA["run_lda() - Linear DA<br/>📦 MASS (lda)"]
-                LDA_QDA["run_qda() - Quadratic DA<br/>📦 MASS (qda)"]
-                LDA_MDA["run_mda() - Mixture DA<br/>📦 mda"]
-                LDA_Predict["run_predict() - posterior probs<br/>📦 MASS (predict.lda/qda)"]
-                LDA_Diag["lda_diagnostics.R<br/>Box-M · Mahalanobis · CV accuracy<br/>📦 heplots · stats"]
-                LDA_Plot["ld_plot.R · lda_var_contrib.R<br/>📦 ggplot2 · ggiraph"]
-                LDA_Export["lda_export.R<br/>create_lda_excel() · create_lda_bundle()<br/>📦 openxlsx"]
-            end
+            LDA_Clean["na_handling::clean_na_rows() · 📦 stats"]
+            LDA_Skew["skewness_transform.R<br/>📦 moments · bestNormalize"]
+            LDA_Scale["pca/scaling::scale_data() · 📦 stats (scale)"]
+            LDA_Split["data_splitting::create_stratified_split()<br/>Train / Test split · 📦 caret"]
+            LDA_Branch{"Method"}
+            LDA_LDA["run_lda() - Linear DA<br/>📦 MASS (lda)"]
+            LDA_QDA["run_qda() - Quadratic DA<br/>📦 MASS (qda)"]
+            LDA_MDA["run_mda() - Mixture DA<br/>📦 mda"]
+            LDA_Predict["run_predict() - posterior probs<br/>📦 MASS (predict.lda/qda)"]
+            LDA_Diag["lda_diagnostics.R<br/>Box-M · Mahalanobis · CV accuracy<br/>📦 heplots · stats"]
+            LDA_Plot["ld_plot.R · lda_var_contrib.R<br/>📦 ggplot2 · ggiraph"]
+            LDA_Export["lda_export.R<br/>create_lda_excel() · create_lda_bundle()<br/>📦 openxlsx"]
 
             LDA_Packages["📦 MASS (lda, qda, predict) · mda (MDA)<br/>📦 caret · heplots (Box-M) · openxlsx"]
 
@@ -174,26 +189,20 @@ flowchart TB
             direction TB
 
             CL_UI["UI: Data Selection · Clustering Settings · Display Options<br/>📦 bslib · ggiraph · plotly"]
-            subgraph CL_Flow["Internal Flow"]
-                direction TB
-                CL_Source{"Data Source?"}
-                CL_Raw["Raw: na_handling + skewness_transform + scale_data<br/>📦 stats · moments · bestNormalize"]
-                CL_PCA["PCA Scores (skip preprocessing)<br/>Dim.1, Dim.2, ... from pca_result"]
-                CL_LDA["LDA Scores (skip preprocessing)<br/>LD1, LD2, ... from lda_result"]
-
-                CL_Hopkins["hopkins::compute_hopkins()<br/>Cluster tendency · 📦 clustertend"]
-                CL_Optimal["optimal_clusters.R<br/>Gap statistic · Elbow · NbClust<br/>📦 NbClust · cluster · stats"]
-                CL_Run["cluster::run_clustering()"]
-                CL_Algo{"Algorithm"}
-
-                CL_KMeans["K-Means / PAM<br/>📦 stats (kmeans) · cluster (pam)"]
-                CL_HClust["Hierarchical<br/>📦 stats (hclust, cutree, dist)"]
-                CL_DBSCAN["DBSCAN (auto eps)<br/>📦 dbscan"]
-
-                CL_Stats["Silhouette · BSS/TSS<br/>📦 cluster (silhouette)"]
-                CL_Heatmap["heatmap.R<br/>📦 pheatmap · ggplot2"]
-                CL_Biplot["cluster_biplot.R<br/>📦 factoextra · ggplot2 · ggiraph"]
-            end
+            CL_Source{"Data Source?"}
+            CL_Raw["Raw: na_handling + skewness_transform + scale_data<br/>📦 stats · moments · bestNormalize"]
+            CL_PCA["PCA Scores (skip preprocessing)<br/>Dim.1, Dim.2, ... from pca_result"]
+            CL_LDA["LDA Scores (skip preprocessing)<br/>LD1, LD2, ... from lda_result"]
+            CL_Hopkins["hopkins::compute_hopkins()<br/>Cluster tendency · 📦 clustertend"]
+            CL_Optimal["optimal_clusters.R<br/>Gap statistic · Elbow · NbClust<br/>📦 NbClust · cluster · stats"]
+            CL_Run["cluster::run_clustering()"]
+            CL_Algo{"Algorithm"}
+            CL_KMeans["K-Means / PAM<br/>📦 stats (kmeans) · cluster (pam)"]
+            CL_HClust["Hierarchical<br/>📦 stats (hclust, cutree, dist)"]
+            CL_DBSCAN["DBSCAN (auto eps)<br/>📦 dbscan"]
+            CL_Stats["Silhouette · BSS/TSS<br/>📦 cluster (silhouette)"]
+            CL_Heatmap["heatmap.R<br/>📦 pheatmap · ggplot2"]
+            CL_Biplot["cluster_biplot.R<br/>📦 factoextra · ggplot2 · ggiraph"]
 
             CL_Packages["📦 cluster (PAM, silhouette) · dbscan · NbClust<br/>📦 stats (kmeans, hclust) · pheatmap · factoextra"]
 
@@ -218,13 +227,10 @@ flowchart TB
             direction TB
 
             PR_UI["UI: Upload new data · Plotting Controls · Results Display<br/>📦 bslib · DT"]
-            subgraph PR_Flow["Internal Flow"]
-                direction TB
-                PR_Load["bundle_io::load_bundle() · validate_bundle()<br/>Load saved LDA RDS bundle · 📦 base (readRDS)"]
-                PR_Valid["validation.R<br/>Check new data vs bundle schema"]
-                PR_Classify["predict.R::run_prediction()<br/>📦 MASS (predict.lda/qda)"]
-                PR_Plots["prediction_plots.R<br/>Posterior probability plots<br/>📦 ggplot2 · DT"]
-            end
+            PR_Load["bundle_io::load_bundle() · validate_bundle()<br/>Load saved LDA RDS bundle · 📦 base (readRDS)"]
+            PR_Valid["validation.R<br/>Check new data vs bundle schema"]
+            PR_Classify["predict.R::run_prediction()<br/>📦 MASS (predict.lda/qda)"]
+            PR_Plots["prediction_plots.R<br/>Posterior probability plots<br/>📦 ggplot2 · DT"]
 
             PR_Packages["📦 MASS (predict.lda/qda) · ggplot2 · DT"]
 
@@ -236,13 +242,10 @@ flowchart TB
             direction TB
 
             PWR_UI["UI: Design · Effect Input · Options<br/>📦 bslib · ggplot2"]
-            subgraph PWR_Flow["Internal Flow"]
-                direction TB
-                PWR_Valid["validate.R<br/>Validate effect size / alpha / n inputs"]
-                PWR_Dummy["dummy_data.R<br/>Generate illustrative dummy dataset<br/>📦 stats (rnorm, sample)"]
-                PWR_Calc["power_calc.R<br/>One-sample / Two-sample / ANOVA<br/>📦 pwr (pwr.t.test, pwr.anova.test) · WebPower"]
-                PWR_Plot["Power curve plot · 📦 ggplot2"]
-            end
+            PWR_Valid["validate.R<br/>Validate effect size / alpha / n inputs"]
+            PWR_Dummy["dummy_data.R<br/>Generate illustrative dummy dataset<br/>📦 stats (rnorm, sample)"]
+            PWR_Calc["power_calc.R<br/>One-sample / Two-sample / ANOVA<br/>📦 pwr (pwr.t.test, pwr.anova.test) · WebPower"]
+            PWR_Plot["Power curve plot · 📦 ggplot2"]
 
             PWR_Packages["📦 pwr · WebPower · stats (power.t.test) · ggplot2"]
 
@@ -316,6 +319,7 @@ flowchart TB
     style SharedInfra fill:#f5f5f5,stroke:#616161,stroke-width:2px
     style ExternalPackages fill:#e0f7fa,stroke:#00838f,stroke-width:2px
 
+    style LD_Source fill:#ffcc80,stroke:#e65100
     style MED_Branch fill:#ffcc80,stroke:#e65100
     style CL_Source fill:#ffcc80,stroke:#e65100
     style CL_Algo fill:#ffcc80,stroke:#e65100
