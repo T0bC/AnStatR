@@ -137,22 +137,64 @@ flowchart TB
         subgraph PlottingModule["📈 Plotting Module"]
             direction TB
 
-            PL_UI["UI: 4 sidebar tabs<br/>Data Selection · Filter · Processing · Style<br/>📦 bslib · bsicons · ggiraph (interactive plots)"]
-            PL_Filter["filter.R: filter_data()<br/>📦 app/logic/shared/data_utils"]
-            PL_Process["data_processing::process_data()<br/>trim · outlier (IQR/Grubbs/Bootstrap)<br/>📦 stats · car · bootstrap"]
-            PL_Normalize["preprocessing/normalize.R<br/>normalise per-group · 📦 stats"]
-            PL_Skew["preprocessing/skewness_transform.R<br/>detect_skewness() · transform_skewed()<br/>📦 moments · bestNormalize"]
-            PL_Scatter["scatter.R → ggplot2 objects<br/>📦 ggplot2 · ggiraph"]
-            PL_Assumptions["assumption_checks.R<br/>check_normality() (Shapiro-Wilk)<br/>check_levene() (Levene's test)<br/>📦 car · stats"]
+            PL_Input["Receive analysis data from Median module
+            ---
+            median-aggregated groups OR raw quality-filtered rows"]
 
-            PL_Packages["📦 ggplot2 (plots) · ggiraph (interactive)<br/>📦 openxlsx (data download)<br/>📦 car (Levene) · stats (shapiro.test)"]
+            PL_XAxis{"Select X-axis nesting structure"}
 
-            PL_UI --> PL_Filter --> PL_Process --> PL_Normalize
-            PL_Process --> PL_Skew
-            PL_Normalize --> PL_Scatter
-            PL_Skew --> PL_Scatter
-            PL_Scatter --> PL_Assumptions
-            PL_Assumptions --> PL_Packages
+            PL_XConfig["Configure grouping hierarchy
+            ---
+            Primary: single descriptive column
+            Secondary: optional nested subgroup column
+            Creates interaction term for plotting"]
+
+            subgraph PL_Options["Processing Options"]
+                direction LR
+                PL_OptFilter["Filter data
+                ---
+    Row: numeric thresholds per measure
+    Group: exclude entire groups by name"]
+                PL_OptTrim["Trim data
+                ---
+    Trim percent: 0% · 5% · 10% · 15% · 20%
+    Trimming method: symmetric · lower only · upper only"]
+                PL_OptNormalize["Normalize data
+                ---
+    Per-group normalization by primary group
+    Reference group: user-selected from levels"]
+                PL_OptOutlier["Outlier detection
+                ---
+    Method: IQR · Z-Score · Adjusted Boxplot · KDE · Isolation Forest · LOF
+    Action: flag · remove"]
+            end
+
+            PL_Plot["Interactive scatter plot with error bars
+            ---
+    📦 ggplot2 · ggiraph"]
+
+            PL_Custom["Plot customization
+            ---
+    Factor reordering: drag-drop level ordering
+    Shapes: custom per X-axis interaction term
+    Colors: custom per X-axis interaction term
+    Themes · error bar display · download options"]
+
+            PL_Assumptions["Check statistical assumptions
+            ---
+    Shapiro-Wilk normality test
+    Levene's test for homogeneity
+    📦 stats · car"]
+
+            PL_Input --> PL_XAxis
+            PL_XAxis --> PL_XConfig
+            PL_XConfig --> PL_Options
+            PL_OptFilter --> PL_Plot
+            PL_OptTrim --> PL_Plot
+            PL_OptNormalize --> PL_Plot
+            PL_OptOutlier --> PL_Plot
+            PL_Plot --> PL_Custom
+            PL_Plot --> PL_Assumptions
         end
 
         %% ==================== SUMMARY MODULE ====================
@@ -359,8 +401,8 @@ flowchart TB
     MedianModule -.->|analysis_data| LDAModule
     MedianModule -.->|analysis_data| ClusterModule
 
-    PlottingModule -.->|processed_data · x_axis · measure_cols · normalize_enabled · transform_info| SummaryModule
-    PlottingModule -.->|processed_data · x_axis · measure_cols · trim_percent · plot_objects · normalize_enabled · transform_info| StatisticsModule
+    PlottingModule -.->|plot_data| SummaryModule
+    PlottingModule -.->|plot_data| StatisticsModule
 
     PCAModule -.->|pca_result| LDAModule
     PCAModule -.->|pca_result| ClusterModule
@@ -392,6 +434,7 @@ flowchart TB
 
     style LD_Source fill:#ffcc80,stroke:#e65100
     style MED_GroupBranch fill:#ffcc80,stroke:#e65100
+    style PL_XAxis fill:#ffcc80,stroke:#e65100
     style CL_Source fill:#ffcc80,stroke:#e65100
     style CL_Algo fill:#ffcc80,stroke:#e65100
     style LDA_Branch fill:#ffcc80,stroke:#e65100
