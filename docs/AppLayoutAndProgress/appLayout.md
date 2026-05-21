@@ -352,6 +352,10 @@ flowchart TB
         subgraph PCAModule["🔵 PCA Module"]
             direction TB
 
+            PCA_Input["Receive analysis data
+            ---
+            Median-aggregated from Median Module OR raw from Load Data"]
+
             subgraph PCA_Config["Configuration"]
                 direction LR
                 PCA_CfgData["Data Selection
@@ -370,11 +374,6 @@ flowchart TB
                 Dimensions: Dim.X · Dim.Y · Dim.Z
                 Export size: width · height (cm)"]
             end
-
-            PCA_InputBranch{"Data source"}
-
-            PCA_FromRaw["Receive raw data from Load Data<br/>|input_data|"]
-            PCA_FromMedian["Receive median-aggregated data from Median Module<br/>|median_data|"]
 
             PCA_Clean["Remove rows with missing values in measurement columns<br/>📦 stats"]
             PCA_SkewDetect["Detect highly skewed variables (|skewness| > 2)<br/>📦 moments"]
@@ -402,14 +401,11 @@ flowchart TB
 
             PCA_PassLDA["Pass PCA result downstream to LDA Module<br/>|pca_result|"]
 
-            PCA_Config --> PCA_InputBranch
-            PCA_InputBranch -->|raw| PCA_FromRaw
-            PCA_InputBranch -->|median| PCA_FromMedian
-            PCA_FromRaw --> PCA_Clean
-            PCA_FromMedian --> PCA_Clean
+            PCA_Input --> PCA_Clean
             PCA_Clean --> PCA_SkewDetect --> PCA_SkewBranch
             PCA_SkewBranch -->|yes| PCA_SkewApply --> PCA_Scale
             PCA_SkewBranch -->|no| PCA_Scale
+            PCA_Config --> PCA_Scale
             PCA_Scale --> PCA_Out_Corr
             PCA_Scale --> PCA_Out_KMO
             PCA_Scale --> PCA_Out_Opt
@@ -602,6 +598,5 @@ flowchart TB
     style LDA_Branch fill:#ffcc80,stroke:#e65100
     style STAT_Omnibus fill:#ffcc80,stroke:#e65100
     style STAT_PostHoc fill:#ffcc80,stroke:#e65100
-    style PCA_InputBranch fill:#ffcc80,stroke:#e65100
     style PCA_SkewBranch fill:#ffcc80,stroke:#e65100
     
