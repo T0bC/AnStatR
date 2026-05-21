@@ -200,38 +200,152 @@ flowchart TB
         %% ==================== SUMMARY MODULE ====================
         subgraph SummaryModule["📋 Summary Module"]
             direction TB
-            SUM_UI["UI: Descriptive summary table per measure x group"]
-            SUM_Compute["summary::compute_summary_table()<br/>Respects normalize_enabled + transform_info from Plotting"]
-            SUM_Packages["📦 stats (mean, sd, median, IQR)<br/>📦 DT (interactive table) · 📦 openxlsx (export)"]
 
-            SUM_UI --> SUM_Compute --> SUM_Packages
+            SUM_Input["Receive processed data from Plotting module
+            ---
+            Includes outlier · trimmed · normalized flag columns"]
+
+            subgraph SUM_Config["Configuration"]
+                direction LR
+                SUM_OptGroup["Group by
+                ---
+                1+ descriptive columns (defaults to Plotting X-axis)"]
+                SUM_OptShapiro["Normality test
+                ---
+                Shapiro-Wilk: off · on"]
+                SUM_OptTransform["Show transformed summary
+                ---
+                Raw values · Normalized values
+                (visible only when normalization is active in Plotting)"]
+            end
+
+            SUM_Compute["Compute grouped descriptive statistics
+            ---
+            n · mean · median · var · sd · sem · cv
+            Respects outlier & trim flags per measurement column
+            📦 stats"]
+
+            SUM_Shapiro["Shapiro-Wilk normality test per group
+            ---
+            W · p-value · normal: yes / no
+            📦 stats"]
+
+            SUM_Tables["Interactive summary table per measurement
+            ---
+            One card per measurement column
+            📦 DT"]
+
+            SUM_DownloadSingle["Export single table as XLSX
+            ---
+            📦 openxlsx"]
+
+            SUM_DownloadAll["Export all tables as multi-sheet XLSX
+            ---
+            📦 openxlsx"]
+
+            SUM_Log["Log computation and download events
+            ---
+            📦 rhino"]
+
+            SUM_ErrDisplay["Display structured error on failure"]
+
+            SUM_Input --> SUM_Config
+            SUM_Config --> SUM_Compute
+            SUM_Compute --> SUM_Shapiro
+            SUM_Compute --> SUM_Tables
+            SUM_Shapiro --> SUM_Tables
+            SUM_Tables --> SUM_DownloadSingle
+            SUM_Tables --> SUM_DownloadAll
+            SUM_Tables --> SUM_Log
+            SUM_Compute -->|failure| SUM_ErrDisplay
         end
 
         %% ==================== STATISTICS MODULE ====================
         subgraph StatisticsModule["📊 Statistics Module"]
             direction TB
 
-            STAT_UI["UI: Test options · Adjustments · Bootstrap<br/>📦 DT · bslib"]
-            STAT_Branch{"Test family"}
-            STAT_Param["parametric_tests.R<br/>ANOVA · t-test<br/>📦 stats (aov, t.test)"]
-            STAT_NP["nonparametric_tests.R<br/>Kruskal-Wallis · Mann-Whitney<br/>📦 stats (kruskal.test, wilcox.test)"]
-            STAT_Rob["robust_tests.R<br/>WRS2 equivalents<br/>📦 WRS2 · Rallfun-v43"]
-            STAT_PostH_P["parametric_posthoc.R<br/>Tukey HSD · emmeans<br/>📦 emmeans · multcomp"]
-            STAT_PostH_NP["nonparametric_posthoc.R<br/>Dunn test · pairwise Wilcoxon<br/>📦 dunn.test · stats"]
-            STAT_PostH_R["robust_posthoc.R<br/>📦 WRS2"]
-            STAT_Effect["cliff_delta.R<br/>Cliff's delta effect size<br/>📦 effsize"]
-            STAT_Report["report.R<br/>APA-style formatting"]
+            STAT_Input["Receive plot data from Plotting module
+            ---
+            Includes outlier · trim · normalization flags"]
 
-            STAT_Packages["📦 stats · WRS2 · emmeans · multcomp<br/>📦 dunn.test · effsize · car"]
+            subgraph STAT_Config["Configuration"]
+                direction LR
+                STAT_OptApproach["Test approach
+                ---
+                Parametric · Nonparametric · Robust"]
+                STAT_OptOmnibus["Omnibus test family
+                ---
+                1-way · 2-way · 3-way design"]
+                STAT_OptAdjust["P-value adjustment
+                ---
+                Holm · Hochberg · Hommel · Bonferroni · FDR"]
+                STAT_OptBootstrap["Bootstrap options
+                ---
+                Enable · Samples · Sample size"]
+            end
 
-            STAT_UI --> STAT_Branch
-            STAT_Branch -->|parametric| STAT_Param --> STAT_PostH_P
-            STAT_Branch -->|nonparametric| STAT_NP --> STAT_PostH_NP
-            STAT_Branch -->|robust| STAT_Rob --> STAT_PostH_R
-            STAT_PostH_P --> STAT_Effect
-            STAT_PostH_NP --> STAT_Effect
-            STAT_PostH_R --> STAT_Effect
-            STAT_Effect --> STAT_Report --> STAT_Packages
+            STAT_Omnibus{"Omnibus test family"}
+            STAT_OmniParam["Classical ANOVA
+            ---
+            F-test for 1/2/3-way designs
+            📦 stats"]
+            STAT_OmniNP["Kruskal-Wallis / ART
+            ---
+            Rank-based for 1/2/3-way designs
+            📦 stats · ARTool"]
+            STAT_OmniRob["Robust ANOVA
+            ---
+            Trimmed means t1way/t2way/t3way
+            📦 WRS2"]
+
+            STAT_PostHoc{"Post-hoc test family"}
+            STAT_PostParam["Parametric pairwise
+            ---
+            Tukey HSD · emmeans
+            📦 stats · emmeans"]
+            STAT_PostNP["Nonparametric pairwise
+            ---
+            Dunn test · Pairwise Wilcoxon · ART contrasts
+            📦 dunn.test · stats · ARTool"]
+            STAT_PostRob["Robust pairwise
+            ---
+            Lincon trimmed means comparisons
+            📦 WRS2"]
+
+            STAT_Effect["Effect size estimation
+            ---
+            Cohen's d · Cliff's Delta
+            📦 effsize"]
+
+            STAT_Report["Generate HTML results report
+            ---
+            APA-style tables with embedded plot
+            📦 htmltools · ggplot2 · base64enc"]
+
+            STAT_Download["Download results as HTML file
+            ---
+            One report per measurement column"]
+
+            STAT_Log["Log computation events
+            ---
+            📦 rhino"]
+
+            STAT_Input --> STAT_Config
+            STAT_Config --> STAT_Omnibus
+            STAT_Omnibus -->|parametric| STAT_OmniParam
+            STAT_Omnibus -->|nonparametric| STAT_OmniNP
+            STAT_Omnibus -->|robust| STAT_OmniRob
+            STAT_OmniParam --> STAT_PostHoc
+            STAT_OmniNP --> STAT_PostHoc
+            STAT_OmniRob --> STAT_PostHoc
+            STAT_PostHoc -->|parametric| STAT_PostParam
+            STAT_PostHoc -->|nonparametric| STAT_PostNP
+            STAT_PostHoc -->|robust| STAT_PostRob
+            STAT_PostParam --> STAT_Effect
+            STAT_PostNP --> STAT_Effect
+            STAT_PostRob --> STAT_Effect
+            STAT_Effect --> STAT_Report --> STAT_Download
+            STAT_Report --> STAT_Log
         end
 
         %% ==================== PCA MODULE ====================
@@ -387,7 +501,7 @@ flowchart TB
         PKG_IO["Data I/O<br/>openxlsx · utils (read.csv)"]
         PKG_Multivar["Multivariate Analysis<br/>FactoMineR · factoextra · MASS · mda"]
         PKG_Cluster["Clustering<br/>cluster · dbscan · NbClust · clustertend"]
-        PKG_Stats["Inference<br/>stats · WRS2 · emmeans · multcomp · dunn.test · effsize · car"]
+        PKG_Stats["Inference<br/>stats · WRS2 · emmeans · multcomp · dunn.test · effsize · ARTool · car"]
         PKG_Power["Power Analysis<br/>pwr · WebPower"]
         PKG_Preproc["Preprocessing<br/>moments · bestNormalize · psych · caret"]
     end
@@ -438,5 +552,6 @@ flowchart TB
     style CL_Source fill:#ffcc80,stroke:#e65100
     style CL_Algo fill:#ffcc80,stroke:#e65100
     style LDA_Branch fill:#ffcc80,stroke:#e65100
-    style STAT_Branch fill:#ffcc80,stroke:#e65100
+    style STAT_Omnibus fill:#ffcc80,stroke:#e65100
+    style STAT_PostHoc fill:#ffcc80,stroke:#e65100
     
