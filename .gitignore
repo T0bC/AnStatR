@@ -12,12 +12,6 @@ logs/
 
 .DS_Store
 
-# IDE & AI tooling
+# IDE
 .vscode/
 .llm/
-
-# Sensitive unpublished research data
-data/test/2024-08-08_MainTable_Poliform_Becker.xlsx
-data/test/2024-08-08_TEST_MainTable_Poliform_Becker - Kopie.xlsx
-data/test/Auafa_Greta_3_1_1.xlsx
-data/test/DMTA_southafrica_median_TM.csv
