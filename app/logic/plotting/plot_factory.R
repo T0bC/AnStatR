@@ -120,7 +120,8 @@ create_plot <- function(plot_type = "scatter",
                         axis_style = list(),
                         boxplot_style = list(),
                         violin_style = list(),
-                        factor_order = NULL) {
+                        factor_order = NULL,
+                        black_points = FALSE) {
   # --- Validate inputs ---
   validation <- plot_helpers$validate_plot_inputs(data, x_cols, y_col)
   if (!is.null(validation)) return(validation)
@@ -189,23 +190,23 @@ create_plot <- function(plot_type = "scatter",
   p <- switch(
     plot_type,
     "scatter" = scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),
     "boxplot" = boxplot_builder$build_boxplot_layers(
       p, data, bp, ps
     ),
     "boxplot_points" = boxplot_builder$build_boxplot_points_layers(
-      p, data, bp, ps, use_shape, use_custom_shape
+      p, data, bp, ps, use_shape, use_custom_shape, black_points
     ),
     "violin" = violin_builder$build_violin_layers(
       p, data, vp, ps
     ),
     "violin_points" = violin_builder$build_violin_points_layers(
-      p, data, vp, ps, use_shape, use_custom_shape
+      p, data, vp, ps, use_shape, use_custom_shape, black_points
     ),
     # Default to scatter
     scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     )
   )
 
