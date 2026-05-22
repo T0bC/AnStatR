@@ -105,7 +105,9 @@ resolve_grid_legend <- function(gl) {
     top_right_borders  = gl$top_right_borders  %||% TRUE,
     show_median        = gl$show_median        %||% TRUE,
     show_sd            = gl$show_sd            %||% TRUE,
-    aspect_ratio       = gl$aspect_ratio       %||% FALSE
+    aspect_ratio       = gl$aspect_ratio       %||% FALSE,
+    show_median_point  = gl$show_median_point  %||% FALSE,
+    show_mean_point    = gl$show_mean_point    %||% FALSE
   )
 }
 
@@ -141,7 +143,8 @@ resolve_boxplot_style <- function(bp) {
   list(
     box_width     = bp$box_width     %||% 0.7,
     show_outliers = bp$show_outliers %||% FALSE,
-    notch         = bp$notch         %||% FALSE
+    notch         = bp$notch         %||% FALSE,
+    alpha         = bp$alpha         %||% 0.6
   )
 }
 
@@ -153,7 +156,8 @@ resolve_violin_style <- function(vp) {
   list(
     violin_width = vp$violin_width %||% 0.9,
     trim         = vp$trim         %||% TRUE,
-    scale        = vp$scale        %||% "width"
+    scale        = vp$scale        %||% "width",
+    alpha        = vp$alpha        %||% 0.6
   )
 }
 
@@ -466,6 +470,104 @@ apply_shape_scale <- function(p, data, shape_legend_title) {
     values = vals, name = shape_legend_title
   )
 }
+
+#' Add a separate "Stats" legend for active stat overlays
+#'
+#' Uses dummy zero-length geom_segment layers mapped to a linetype aesthetic
+#' so the legend does not conflict with the existing color/fill/shape scales.
+#' override.aes swaps in the correct glyph per entry.
+#'
+#' @param p ggplot object
+#' @param gl Resolved grid/legend parameters
+#' @param plot_type Character string plot type
+#' @return ggplot object with stats legend added (or unchanged if none active)
+#' @export
+add_stats_legend <- function(p, gl, plot_type) {
+  if (gl$legend_position == "none") return(p)
+
+  is_scatter <- plot_type == "scatter"
+
+  active <- list()
+
+  if (is_scatter && isTRUE(gl$show_median)) {
+    active[["Median line"]] <- list(
+      shape = NA, linetype = "solid", linewidth = 1
+    )
+  }
+  if (is_scatter && isTRUE(gl$show_sd)) {
+    active[["SD"]] <- list(
+      shape = NA, linetype = "solid", linewidth = 0.5
+    )
+  }
+  if (isTRUE(gl$show_median_point)) {
+    active[["Median"]] <- list(
+      shape = 18, linetype = NA, linewidth = NA
+    )
+  }
+  if (isTRUE(gl$show_mean_point)) {
+    active[["Mean"]] <- list(
+      shape = 13, linetype = NA, linewidth = NA
+    )
+  }
+
+  if (length(active) == 0) return(p)
+
+  labels <- names(active)
+
+  dummy_seg_df <- data.frame(
+    .stat_label = factor(labels, levels = labels),
+    x    = NA_real_,
+    y    = NA_real_,
+    xend = NA_real_,
+    yend = NA_real_,
+    stringsAsFactors = FALSE
+  )
+
+  p <- p + ggplot2$geom_segment(
+    data = dummy_seg_df,
+    ggplot2$aes(
+      x    = .data[["x"]],
+      y    = .data[["y"]],
+      xend = .data[["xend"]],
+      yend = .data[["yend"]],
+      linetype = .data[[".stat_label"]]
+    ),
+    na.rm = TRUE,
+    inherit.aes = FALSE,
+    color = "black",
+    alpha = 0
+  )
+
+  shapes    <- vapply(active, function(e) e$shape,     numeric(1))
+  linetypes <- vapply(active, function(e) {
+    lt <- e$linetype
+    if (is.na(lt)) "blank" else lt
+  }, character(1))
+  linewidths <- vapply(active, function(e) {
+    lw <- e$linewidth
+    if (is.na(lw)) 0 else lw
+  }, numeric(1))
+
+  p <- p +
+    ggplot2$scale_linetype_manual(
+      name   = "Stats",
+      values = stats::setNames(
+        rep("blank", length(labels)), labels
+      ),
+      guide  = ggplot2$guide_legend(
+        override.aes = list(
+          shape     = shapes,
+          linetype  = linetypes,
+          linewidth = linewidths,
+          color     = "black",
+          size      = 3
+        )
+      )
+    )
+
+  p
+}
+
 
 #' Add legendry nested axis guide for multi-column x-axis
 #' @param p ggplot object
