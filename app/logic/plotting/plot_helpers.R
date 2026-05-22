@@ -458,6 +458,22 @@ apply_color_scales <- function(p, color_map, color_legend_title) {
   p
 }
 
+#' Check if shape values are fillable (21-25)
+#' @param shapes Integer vector of shape values
+#' @return Logical vector indicating which shapes are fillable
+#' @export
+is_fillable_shape <- function(shapes) {
+  shapes %in% c(21, 22, 23, 24, 25)
+}
+
+#' Check if any shape in a set is fillable
+#' @param shapes Integer vector of shape values
+#' @return TRUE if any shape is fillable (21-25)
+#' @export
+has_fillable_shapes <- function(shapes) {
+  any(shapes %in% c(21, 22, 23, 24, 25))
+}
+
 #' Apply shape scale to plot
 #' @param p ggplot object
 #' @param data Data frame with .shape_group column
@@ -469,7 +485,14 @@ apply_shape_scale <- function(p, data, shape_legend_title) {
   fillable <- c(21, 22, 23, 24, 25, 3)
   vals <- fillable[base::seq_len(min(n, length(fillable)))]
   p + ggplot2$scale_shape_manual(
-    values = vals, name = shape_legend_title
+    values = vals,
+    name = shape_legend_title,
+    guide = ggplot2$guide_legend(
+      override.aes = list(
+        color = "white",
+        size = 4
+      )
+    )
   )
 }
 
