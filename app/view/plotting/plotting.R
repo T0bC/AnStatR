@@ -14,6 +14,7 @@ box::use(
   app/logic/plotting/assumption_checks,
   app/logic/plotting/data_processing,
   app/logic/preprocessing/normalize,
+  app/logic/plotting/plot_factory,
   app/logic/plotting/scatter,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
@@ -148,9 +149,16 @@ server <- function(id, input_data, data_version) {
       measure <- if (is.null(m) || length(m) == 0) character(0) else m
 
       grid_opts <- input$gridOptions
-      stat_opts <- input$statOptions
+      # Use appropriate stat options based on plot type
+      plot_type <- input$plotType %||% "scatter"
+      stat_opts <- if (plot_type == "scatter") {
+        input$statOptions
+      } else {
+        input$statOptionsNonScatter
+      }
 
       list(
+        plot_type     = plot_type,
         x_cols        = x_axis,
         measure_cols  = measure,
         tooltip_cols  = input$tooltip,
@@ -197,6 +205,16 @@ server <- function(id, input_data, data_version) {
         axis_style    = list(
           tick_length    = input$axisTickLength      %||% 0.15,
           line_thickness = input$axisLineThickness   %||% 0.5
+        ),
+        boxplot_style = list(
+          box_width     = input$boxWidth       %||% 0.7,
+          show_outliers = input$showBoxOutliers %||% FALSE,
+          notch         = input$boxNotch        %||% FALSE
+        ),
+        violin_style  = list(
+          violin_width = input$violinWidth %||% 0.9,
+          trim         = input$violinTrim  %||% TRUE,
+          scale        = input$violinScale %||% "width"
         )
       )
     })
@@ -229,6 +247,7 @@ server <- function(id, input_data, data_version) {
       }
 
       paste(
+        params$plot_type %||% "scatter",
         null_to_str(params$x_cols),
         null_to_str(params$tooltip_cols),
         null_to_str(params$color_cols),
@@ -260,6 +279,12 @@ server <- function(id, input_data, data_version) {
         params$stat_line_style$sd_width,
         params$axis_style$tick_length,
         params$axis_style$line_thickness,
+        params$boxplot_style$box_width %||% 0.7,
+        params$boxplot_style$show_outliers %||% FALSE,
+        params$boxplot_style$notch %||% FALSE,
+        params$violin_style$violin_width %||% 0.9,
+        params$violin_style$trim %||% TRUE,
+        params$violin_style$scale %||% "width",
         data_nrow, data_ncol,
         sep = "|"
       )
@@ -351,7 +376,8 @@ server <- function(id, input_data, data_version) {
         }
 
         error_handling$safe_execute(
-          scatter$create_scatter_plot(
+          plot_factory$create_plot(
+            plot_type       = params$plot_type %||% "scatter",
             data            = data,
             x_cols          = params$x_cols,
             y_col           = plot_col,
@@ -364,6 +390,8 @@ server <- function(id, input_data, data_version) {
             grid_legend     = params$grid_legend,
             stat_line_style = params$stat_line_style,
             axis_style      = params$axis_style,
+            boxplot_style   = params$boxplot_style,
+            violin_style    = params$violin_style,
             factor_order    = params$factor_order
           ),
           operation_name = paste("Plot", y_col)
