@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026.9] - 2026-05-22
+
+### Added
+
+- **Boxplot plot type**: New boxplot option in the plotting module with interactive layers and optional overlaid scatter points
+- **Violin plot type**: New violin plot option with density visualization and optional overlaid scatter points
+- **Plot type selector**: Dropdown to switch between scatter, boxplot, and violin plot types; appears when an X-axis grouping variable is selected
+- **Black points option**: Toggle to render overlaid scatter points in black (instead of group colors) for boxplot and violin plots, improving readability when color is already used for grouping
+- **Plot-type-specific settings panels**: Style and stat options panels now show only the controls relevant to the selected plot type
+
+### Changed
+
+- Scatter points are now rendered beneath boxplot and violin layers for improved visual clarity
+
 ## [2026.8] - 2026-05-20
 
 ### Added
