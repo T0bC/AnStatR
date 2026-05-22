@@ -1,3 +1,4 @@
+%%{init: {"flowchart": {"curve": "step", "defaultRenderer": "elk"}}}%%
 flowchart TB
     subgraph TexAn["TexAn2.0 Application"]
         direction TB
