@@ -160,6 +160,7 @@ create_plot <- function(plot_type = "scatter",
   # --- Prepare shape grouping ---
   use_shape <- FALSE
   use_custom_shape <- FALSE
+  use_fillable_shapes <- FALSE
   shape_legend_title <- NULL
 
   if (shows_points(plot_type)) {
@@ -167,11 +168,15 @@ create_plot <- function(plot_type = "scatter",
       # Custom shapes: map each row's .color_group to its shape value
       data <- plot_helpers$prepare_custom_shapes(data, shape_map)
       use_custom_shape <- TRUE
+      # Check if any custom shapes are fillable (21-25)
+      use_fillable_shapes <- plot_helpers$has_fillable_shapes(shape_map)
     } else {
       shape_prep <- plot_helpers$prepare_shape(data, ps$shape_cols)
       data <- shape_prep$data
       use_shape <- shape_prep$use_shape
       shape_legend_title <- shape_prep$legend_title
+      # Shape aesthetic uses fillable shapes (21-25) via apply_shape_scale()
+      use_fillable_shapes <- use_shape
     }
   }
 
@@ -194,23 +199,23 @@ create_plot <- function(plot_type = "scatter",
   p <- switch(
     plot_type,
     "scatter" = scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
     ),
     "boxplot" = boxplot_builder$build_boxplot_layers(
       p, data, bp, ps, gl
     ),
     "boxplot_points" = boxplot_builder$build_boxplot_points_layers(
-      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
     ),
     "violin" = violin_builder$build_violin_layers(
       p, data, vp, ps, gl
     ),
     "violin_points" = violin_builder$build_violin_points_layers(
-      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
     ),
     # Default to scatter
     scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
     )
   )
 
