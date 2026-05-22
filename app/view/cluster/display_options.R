@@ -92,6 +92,82 @@ tab_ui <- function(ns) {
         )
       )
     ),
+    # --- 3D Biplot dimensions ---
+    shiny$h6(
+      class = "text-muted mb-2 mt-2",
+      "3D Plot Dimensions"
+    ),
+    shiny$fluidRow(
+      shiny$column(
+        4,
+        shiny$selectizeInput(
+          inputId = ns("clusterBiplot3dDimX"),
+          label = shiny$tags$span(
+            "Dim.X ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the dimension for the",
+                "x-axis of the 3D cluster plot."
+              )
+            )
+          ),
+          choices = c(
+            "Dim.1", "Dim.2", "Dim.3"
+          ),
+          selected = "Dim.1"
+        )
+      ),
+      shiny$column(
+        4,
+        shiny$selectizeInput(
+          inputId = ns("clusterBiplot3dDimY"),
+          label = shiny$tags$span(
+            "Dim.Y ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the dimension for the",
+                "y-axis of the 3D cluster plot."
+              )
+            )
+          ),
+          choices = c(
+            "Dim.1", "Dim.2", "Dim.3"
+          ),
+          selected = "Dim.2"
+        )
+      ),
+      shiny$column(
+        4,
+        shiny$selectizeInput(
+          inputId = ns("clusterBiplot3dDimZ"),
+          label = shiny$tags$span(
+            "Dim.Z ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle",
+                class = "text-muted"
+              ),
+              paste(
+                "Select the dimension for the",
+                "z-axis of the 3D cluster plot."
+              )
+            )
+          ),
+          choices = c(
+            "Dim.1", "Dim.2", "Dim.3"
+          ),
+          selected = "Dim.3"
+        )
+      )
+    ),
     shiny$selectizeInput(
       inputId = ns("groupBiplot"),
       label = shiny$tags$span(
@@ -661,4 +737,54 @@ tab_server <- function(input, output, session,
       )
     }
   }, ignoreInit = TRUE)
+
+  # Auto-switch between PCA and Raw based on number of measurement columns
+  # If > 4 columns: use PCA for visualization
+  # If <= 4 columns: use Raw (first two measurement columns)
+  shiny$observe({
+    measure_cols <- input$measureVar
+    if (is.null(measure_cols) || length(measure_cols) == 0) {
+      return()
+    }
+
+    src <- input$data_source
+    is_reduced <- !is.null(src) &&
+      src %in% c("pca_scores", "lda_scores")
+
+    # For already-reduced data, always use raw mode
+    if (is_reduced) {
+      return()
+    }
+
+    n_cols <- length(measure_cols)
+    current_method <- input$reductionMethod
+
+    if (n_cols > 4 && current_method != "pca") {
+      shiny$updateSelectInput(
+        session, "reductionMethod",
+        selected = "pca"
+      )
+      shiny$showNotification(
+        paste0(
+          "Switched to PCA projection for visualization ",
+          "(", n_cols, " variables > 4)."
+        ),
+        type = "message",
+        duration = 3
+      )
+    } else if (n_cols <= 4 && current_method != "raw") {
+      shiny$updateSelectInput(
+        session, "reductionMethod",
+        selected = "raw"
+      )
+      shiny$showNotification(
+        paste0(
+          "Switched to raw data visualization ",
+          "(", n_cols, " variables <= 4)."
+        ),
+        type = "message",
+        duration = 3
+      )
+    }
+  })
 }
