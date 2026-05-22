@@ -45,7 +45,7 @@ create_cluster_biplot3d <- function(data,
     dim_y = dim_y,
     dim_z = dim_z,
     reduction_method = reduction_method,
-    n_clusters = length(unique(clusters[clusters > 0])),
+    n_clusters = length(unique(as.integer(as.character(clusters))[as.integer(as.character(clusters)) > 0])),
     n_measure_cols = length(measure_cols)
   )
 
@@ -77,15 +77,16 @@ create_cluster_biplot3d <- function(data,
         )
       }
 
+      clusters_int_log <- as.integer(as.character(clusters))
       rhino$log$info(
         "3D Cluster Plot: complete ",
         "({dim_x} vs {dim_y} vs {dim_z}, ",
         "method={reduction_method}, ",
-        "{length(unique(clusters[clusters > 0]))}",
+        "{length(unique(clusters_int_log[clusters_int_log > 0]))}",
         " clusters)"
       )
 
-      list(plot = p)
+      p
     },
     operation_name = "3D Cluster Plot",
     context = error_context,
