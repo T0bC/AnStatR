@@ -193,16 +193,16 @@ create_plot <- function(plot_type = "scatter",
       p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),
     "boxplot" = boxplot_builder$build_boxplot_layers(
-      p, data, bp, ps
+      p, data, bp, ps, gl
     ),
     "boxplot_points" = boxplot_builder$build_boxplot_points_layers(
-      p, data, bp, ps, use_shape, use_custom_shape, black_points
+      p, data, bp, ps, gl, use_shape, use_custom_shape, black_points
     ),
     "violin" = violin_builder$build_violin_layers(
-      p, data, vp, ps
+      p, data, vp, ps, gl
     ),
     "violin_points" = violin_builder$build_violin_points_layers(
-      p, data, vp, ps, use_shape, use_custom_shape, black_points
+      p, data, vp, ps, gl, use_shape, use_custom_shape, black_points
     ),
     # Default to scatter
     scatter_builder$build_scatter_layers(
