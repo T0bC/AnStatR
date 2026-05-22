@@ -101,8 +101,8 @@ build_boxplot_layers <- function(p, data, bp, ps, gl = list()) {
 
   # Add outlier and trimmed points if show_outliers is enabled
   if (isTRUE(bp$show_outliers)) {
-    p <- add_outlier_points_layer(p, data, ps)
-    p <- add_trimmed_points_layer(p, data, ps)
+    p <- plot_helpers$add_outlier_points_layer(p, data, ps)
+    p <- plot_helpers$add_trimmed_points_layer(p, data, ps)
   }
 
   p <- scatter_builder$add_stat_point_overlays(p, data, gl)
@@ -148,68 +148,4 @@ build_boxplot_points_layers <- function(p, data, bp, ps, gl = list(),
   p <- scatter_builder$add_stat_point_overlays(p, data, gl)
 
   p
-}
-
-
-#' Add outlier points layer (X marks)
-#'
-#' @param p ggplot object with base aesthetics
-#' @param data Data frame with .is_outlier and .tooltip columns
-#' @param ps Resolved point style parameters
-#' @return ggplot object with outlier points layer added
-#' @export
-add_outlier_points_layer <- function(p, data, ps) {
-  is_outlier <- data[[".is_outlier"]]
-  outlier_idx <- which(is_outlier)
-
-  if (length(outlier_idx) == 0) return(p)
-
-  od <- data[outlier_idx, , drop = FALSE]
-
-  # Inherit x/y from base plot aesthetics, only add tooltip
-  p + ggiraph$geom_jitter_interactive(
-    data = od,
-    ggplot2$aes(
-      tooltip = .data[[".tooltip"]]
-    ),
-    width = ps$spread %||% 0.15,
-    height = 0,
-    size = ps$size %||% 4,
-    alpha = 0.9,
-    shape = 4,  # X mark
-    color = "black",
-    stroke = 1.5
-  )
-}
-
-
-#' Add trimmed points layer (unfilled circles)
-#'
-#' @param p ggplot object with base aesthetics
-#' @param data Data frame with .is_trimmed and .tooltip columns
-#' @param ps Resolved point style parameters
-#' @return ggplot object with trimmed points layer added
-#' @export
-add_trimmed_points_layer <- function(p, data, ps) {
-  is_trimmed <- data[[".is_trimmed"]]
-  trimmed_idx <- which(is_trimmed)
-
-  if (length(trimmed_idx) == 0) return(p)
-
-  td <- data[trimmed_idx, , drop = FALSE]
-
-  # Inherit x/y from base plot aesthetics, only add tooltip
-  p + ggiraph$geom_jitter_interactive(
-    data = td,
-    ggplot2$aes(
-      tooltip = .data[[".tooltip"]]
-    ),
-    width = ps$spread %||% 0.15,
-    height = 0,
-    size = ps$size %||% 4,
-    alpha = 0.7,
-    shape = 1,  # Unfilled circle
-    color = "black",
-    stroke = 1
-  )
 }
