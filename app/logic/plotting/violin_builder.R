@@ -37,7 +37,7 @@ add_violin_layer <- function(p, data, vp, ps) {
       fill = .data[[".color_group"]]
     ),
     width = vp$violin_width,
-    alpha = ps$alpha,
+    alpha = vp$alpha,
     trim = vp$trim,
     scale = vp$scale,
     color = "black",
@@ -74,7 +74,7 @@ add_violin_layer_interactive <- function(p, data, vp, ps) {
       data_id = .data[[".color_group"]]
     ),
     width = vp$violin_width,
-    alpha = ps$alpha,
+    alpha = vp$alpha,
     trim = vp$trim,
     scale = vp$scale,
     color = "black",
@@ -91,10 +91,13 @@ add_violin_layer_interactive <- function(p, data, vp, ps) {
 #' @param data Prepared data frame
 #' @param vp Resolved violin style parameters
 #' @param ps Resolved point style parameters
+#' @param gl Resolved grid/legend parameters (for stat point overlays)
 #' @return ggplot object with violin layers
 #' @export
-build_violin_layers <- function(p, data, vp, ps) {
-  add_violin_layer_interactive(p, data, vp, ps)
+build_violin_layers <- function(p, data, vp, ps, gl = list()) {
+  p <- add_violin_layer_interactive(p, data, vp, ps)
+  p <- scatter_builder$add_stat_point_overlays(p, data, gl)
+  p
 }
 
 
@@ -106,12 +109,13 @@ build_violin_layers <- function(p, data, vp, ps) {
 #' @param data Prepared data frame
 #' @param vp Resolved violin style parameters
 #' @param ps Resolved point style parameters
+#' @param gl Resolved grid/legend parameters (for stat point overlays)
 #' @param use_shape Whether to use shape aesthetic
 #' @param use_custom_shape Whether to use custom shapes
 #' @param black_points Whether to force points to be black
 #' @return ggplot object with violin and scatter layers
 #' @export
-build_violin_points_layers <- function(p, data, vp, ps,
+build_violin_points_layers <- function(p, data, vp, ps, gl = list(),
                                        use_shape = FALSE,
                                        use_custom_shape = FALSE,
                                        black_points = FALSE) {
@@ -122,6 +126,9 @@ build_violin_points_layers <- function(p, data, vp, ps,
 
   # Then add violin on top
   p <- add_violin_layer_interactive(p, data, vp, ps)
+
+  # Stat point overlays (median/mean markers) on top
+  p <- scatter_builder$add_stat_point_overlays(p, data, gl)
 
   p
 }
