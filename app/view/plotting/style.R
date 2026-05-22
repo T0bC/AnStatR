@@ -732,6 +732,25 @@ points_panel <- function(ns) {
         placeholder = "None", maxItems = 3
       )
     ),
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("plotType"), "'] == 'boxplot_points' || ",
+        "input['", ns("plotType"), "'] == 'violin_points'"
+      ),
+      shiny$checkboxInput(
+        ns("blackPoints"),
+        bslib$tooltip(
+          shiny$tags$span(
+            "Black data points ",
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            )
+          ),
+          "Show data points in black while keeping boxplot/violin colors"
+        ),
+        value = FALSE
+      )
+    ),
     shiny$selectizeInput(
       ns("pointColor"),
       bslib$tooltip(
