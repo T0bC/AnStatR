@@ -18,10 +18,11 @@ box::use(
 #' @param ps Resolved point style parameters
 #' @param use_shape Whether to use shape aesthetic from .shape_group
 #' @param use_custom_shape Whether to use custom shapes from .point_shape
+#' @param black_points Whether to force points to be black
 #' @return ggplot object with scatter layers added
 #' @export
 add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
-                               use_custom_shape = FALSE) {
+                               use_custom_shape = FALSE, black_points = FALSE) {
   is_trimmed <- data[[".is_trimmed"]]
   is_outlier <- data[[".is_outlier"]]
   retained_idx <- which(!is_trimmed & !is_outlier)
@@ -35,54 +36,106 @@ add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
 
     if (use_shape) {
       # Shape by column mapping (aesthetic)
-      aes_map <- ggplot2$aes(
-        tooltip = .data[[".tooltip"]],
-        data_id = .data[[".data_id"]],
-        color   = .data[[".color_group"]],
-        fill    = .data[[".color_group"]],
-        shape   = .data[[".shape_group"]]
-      )
-      p <- p + ggiraph$geom_jitter_interactive(
-        data = rd, mapping = aes_map,
-        hover_nearest = TRUE,
-        position = ggplot2$position_jitter(
-          width = ps$spread, height = 0, seed = 42L
-        ),
-        alpha = ps$alpha, size = ps$size
-      )
+      if (black_points) {
+        # Fixed black color with shape aesthetic
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]],
+          shape   = .data[[".shape_group"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size, color = "black", fill = "black"
+        )
+      } else {
+        # Color by column mapping (aesthetic)
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]],
+          color   = .data[[".color_group"]],
+          fill    = .data[[".color_group"]],
+          shape   = .data[[".shape_group"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size
+        )
+      }
     } else if (use_custom_shape) {
       # Custom shapes per group: pass shape as a vector (not aesthetic)
-      aes_map <- ggplot2$aes(
-        tooltip = .data[[".tooltip"]],
-        data_id = .data[[".data_id"]],
-        color   = .data[[".color_group"]],
-        fill    = .data[[".color_group"]]
-      )
-      p <- p + ggiraph$geom_jitter_interactive(
-        data = rd, mapping = aes_map,
-        shape = rd$.point_shape,
-        hover_nearest = TRUE,
-        position = ggplot2$position_jitter(
-          width = ps$spread, height = 0, seed = 42L
-        ),
-        alpha = ps$alpha, size = ps$size
-      )
+      if (black_points) {
+        # Fixed black color with custom shapes
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          shape = rd$.point_shape,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size, color = "black", fill = "black"
+        )
+      } else {
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]],
+          color   = .data[[".color_group"]],
+          fill    = .data[[".color_group"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          shape = rd$.point_shape,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size
+        )
+      }
     } else {
       # Default: no shape variation
-      aes_map <- ggplot2$aes(
-        tooltip = .data[[".tooltip"]],
-        data_id = .data[[".data_id"]],
-        color   = .data[[".color_group"]],
-        fill    = .data[[".color_group"]]
-      )
-      p <- p + ggiraph$geom_jitter_interactive(
-        data = rd, mapping = aes_map,
-        hover_nearest = TRUE,
-        position = ggplot2$position_jitter(
-          width = ps$spread, height = 0, seed = 42L
-        ),
-        alpha = ps$alpha, size = ps$size
-      )
+      if (black_points) {
+        # Fixed black color, no shape variation
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size, color = "black", fill = "black"
+        )
+      } else {
+        # Color by column mapping (aesthetic)
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]],
+          color   = .data[[".color_group"]],
+          fill    = .data[[".color_group"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size
+        )
+      }
     }
   }
 
@@ -182,14 +235,15 @@ add_stat_overlays <- function(p, data, gl, sls) {
 #' @param sls Resolved stat line style parameters
 #' @param use_shape Whether to use shape aesthetic
 #' @param use_custom_shape Whether to use custom shapes
+#' @param black_points Whether to force points to be black
 #' @return ggplot object with all scatter layers
 #' @export
 build_scatter_layers <- function(p, data, ps, gl, sls,
                                  use_shape = FALSE,
-                                 use_custom_shape = FALSE) {
+                                 use_custom_shape = FALSE,
+                                 black_points = FALSE) {
   # Add scatter points
-
-  p <- add_scatter_layers(p, data, ps, use_shape, use_custom_shape)
+  p <- add_scatter_layers(p, data, ps, use_shape, use_custom_shape, black_points)
 
   # Add stat overlays (median/SD)
   p <- add_stat_overlays(p, data, gl, sls)
