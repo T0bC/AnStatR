@@ -59,11 +59,15 @@ render_output <- function(input, output, session,
 
     last_plot(plot_res$result)
 
-    # Adaptive SVG sizing
+    # SVG dimensions: 1 inch per tile + legend/axis margins
+    # coord_fixed(1) ensures tiles are square in the SVG
     n_dims <- nrow(eigencor_res$result$cor_matrix)
     n_meta <- ncol(eigencor_res$result$cor_matrix)
-    width_svg <- min(max(n_meta * 1.2 + 3, 6), 14)
-    height_svg <- min(max(n_dims * 0.8 + 2, 4), 12)
+    tile_inch <- 1.3
+    margin_w <- 3.5  # room for y-axis labels + legend
+    margin_h <- 2.0  # room for x-axis labels
+    width_svg  <- max(n_meta * tile_inch + margin_w, 5)
+    height_svg <- max(n_dims * tile_inch + margin_h, 4)
 
     ggiraph$girafe(
       ggobj = plot_res$result,
@@ -87,6 +91,26 @@ render_output <- function(input, output, session,
         ),
         ggiraph$opts_selection(type = "none")
       )
+    )
+  })
+
+  # Render a container whose pixel height tracks n_dims
+  output$eigencorplot_container <- shiny$renderUI({
+    pca_res <- pca_result()
+    if (is.null(pca_res) || !pca_res$success) {
+      return(ggiraph$girafeOutput(ns("eigencorplot")))
+    }
+    meta <- pca_res$result$ind$meta
+    if (is.null(meta)) {
+      return(ggiraph$girafeOutput(ns("eigencorplot")))
+    }
+    ncp <- if (!is.null(display_ncp)) display_ncp() else 5L
+    if (is.null(ncp)) ncp <- 5L
+    n_dims <- min(ncp, ncol(pca_res$result$ind$coord))
+    px_height <- n_dims * 70L + 110L
+    ggiraph$girafeOutput(
+      ns("eigencorplot"),
+      height = paste0(px_height, "px")
     )
   })
 
