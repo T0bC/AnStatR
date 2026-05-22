@@ -996,18 +996,24 @@ boxplot_panel <- function(ns) {
       ),
       shiny$column(
         6,
-        shiny$checkboxInput(
-          ns("showBoxOutliers"),
-          bslib$tooltip(
-            shiny$tags$span(
-              "Show Outliers ",
-              bsicons$bs_icon(
-                "info-circle", class = "text-muted"
-              )
-            ),
-            "Show outlier points on the boxplot"
+        # Only show outlier checkbox for pure boxplot (not boxplot_points)
+        shiny$conditionalPanel(
+          condition = paste0(
+            "input['", ns("plotType"), "'] == 'boxplot'"
           ),
-          value = FALSE
+          shiny$checkboxInput(
+            ns("showBoxOutliers"),
+            bslib$tooltip(
+              shiny$tags$span(
+                "Show Outliers ",
+                bsicons$bs_icon(
+                  "info-circle", class = "text-muted"
+                )
+              ),
+              "Show outliers detected by the configured algorithm as 'X' marks (requires outlier detection enabled in Processing)"
+            ),
+            value = FALSE
+          )
         )
       )
     ),
