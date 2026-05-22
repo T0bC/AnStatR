@@ -37,7 +37,7 @@ add_boxplot_layer <- function(p, data, bp, ps) {
       fill = .data[[".color_group"]]
     ),
     width = bp$box_width,
-    alpha = ps$alpha,
+    alpha = bp$alpha,
     outlier.shape = if (bp$show_outliers) 19 else NA,
     notch = bp$notch,
     color = "black",
@@ -74,7 +74,7 @@ add_boxplot_layer_interactive <- function(p, data, bp, ps) {
       data_id = .data[[".color_group"]]
     ),
     width = bp$box_width,
-    alpha = ps$alpha,
+    alpha = bp$alpha,
     outlier.shape = if (bp$show_outliers) 19 else NA,
     notch = bp$notch,
     color = "black",
@@ -91,10 +91,13 @@ add_boxplot_layer_interactive <- function(p, data, bp, ps) {
 #' @param data Prepared data frame
 #' @param bp Resolved boxplot style parameters
 #' @param ps Resolved point style parameters
+#' @param gl Resolved grid/legend parameters (for stat point overlays)
 #' @return ggplot object with boxplot layers
 #' @export
-build_boxplot_layers <- function(p, data, bp, ps) {
-  add_boxplot_layer_interactive(p, data, bp, ps)
+build_boxplot_layers <- function(p, data, bp, ps, gl = list()) {
+  p <- add_boxplot_layer_interactive(p, data, bp, ps)
+  p <- scatter_builder$add_stat_point_overlays(p, data, gl)
+  p
 }
 
 
@@ -106,12 +109,13 @@ build_boxplot_layers <- function(p, data, bp, ps) {
 #' @param data Prepared data frame
 #' @param bp Resolved boxplot style parameters
 #' @param ps Resolved point style parameters
+#' @param gl Resolved grid/legend parameters (for stat point overlays)
 #' @param use_shape Whether to use shape aesthetic
 #' @param use_custom_shape Whether to use custom shapes
 #' @param black_points Whether to force points to be black
 #' @return ggplot object with boxplot and scatter layers
 #' @export
-build_boxplot_points_layers <- function(p, data, bp, ps,
+build_boxplot_points_layers <- function(p, data, bp, ps, gl = list(),
                                         use_shape = FALSE,
                                         use_custom_shape = FALSE,
                                         black_points = FALSE) {
@@ -125,6 +129,9 @@ build_boxplot_points_layers <- function(p, data, bp, ps,
   bp_no_outliers$show_outliers <- FALSE
 
   p <- add_boxplot_layer_interactive(p, data, bp_no_outliers, ps)
+
+  # Stat point overlays (median/mean markers) on top
+  p <- scatter_builder$add_stat_point_overlays(p, data, gl)
 
   p
 }
