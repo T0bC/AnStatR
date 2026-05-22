@@ -4,7 +4,8 @@ box::use(
 )
 
 box::use(
-  app/logic/plotting/scatter,
+  app/logic/plotting/plot_factory,
+  app/logic/plotting/plot_helpers,
 )
 
 # =============================================================================
@@ -28,12 +29,12 @@ make_test_data <- function(n = 30) {
 
 describe("create_empty_plot", {
   it("returns a ggplot object", {
-    p <- scatter$create_empty_plot("test message")
+    p <- plot_helpers$create_empty_plot("test message")
     expect_s3_class(p, "gg")
   })
 
   it("uses default message when none provided", {
-    p <- scatter$create_empty_plot()
+    p <- plot_helpers$create_empty_plot()
     expect_s3_class(p, "gg")
   })
 })
@@ -48,7 +49,7 @@ describe("build_tooltip_text", {
     df$.is_trimmed <- FALSE
     df$.is_outlier <- FALSE
 
-    tips <- scatter$build_tooltip_text(
+    tips <- plot_helpers$build_tooltip_text(
       data = df, x_var = "Treatment", x_label = "Treatment",
       y_col = "Value1"
     )
@@ -61,7 +62,7 @@ describe("build_tooltip_text", {
     df$.is_trimmed <- FALSE
     df$.is_outlier <- FALSE
 
-    tips <- scatter$build_tooltip_text(
+    tips <- plot_helpers$build_tooltip_text(
       data = df, x_var = "Treatment", x_label = "Treatment",
       y_col = "Value1", tooltip_cols = "Site"
     )
@@ -73,7 +74,7 @@ describe("build_tooltip_text", {
     df$.is_trimmed <- c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
     df$.is_outlier <- FALSE
 
-    tips <- scatter$build_tooltip_text(
+    tips <- plot_helpers$build_tooltip_text(
       data = df, x_var = "Treatment", x_label = "Treatment",
       y_col = "Value1"
     )
@@ -86,7 +87,7 @@ describe("build_tooltip_text", {
     df$.is_trimmed <- FALSE
     df$.is_outlier <- c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE)
 
-    tips <- scatter$build_tooltip_text(
+    tips <- plot_helpers$build_tooltip_text(
       data = df, x_var = "Treatment", x_label = "Treatment",
       y_col = "Value1"
     )
@@ -101,39 +102,39 @@ describe("build_tooltip_text", {
 
 describe("create_scatter_plot validation", {
   it("returns empty plot for NULL data", {
-    p <- scatter$create_scatter_plot(
-      data = NULL, x_cols = "Treatment", y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = NULL, x_cols = "Treatment", y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
 
   it("returns empty plot for empty data frame", {
-    p <- scatter$create_scatter_plot(
-      data = data.frame(), x_cols = "Treatment", y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = data.frame(), x_cols = "Treatment", y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
 
   it("returns empty plot for missing x column", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "NonExistent", y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "NonExistent", y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
 
   it("returns empty plot for missing y column", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "NonExistent"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "NonExistent"
     )
     expect_s3_class(p, "gg")
   })
 
   it("returns empty plot when x_cols is NULL", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = NULL, y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = NULL, y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
@@ -146,16 +147,16 @@ describe("create_scatter_plot validation", {
 describe("create_scatter_plot basic", {
   it("returns a ggplot for single x column", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
 
   it("returns a ggplot for multiple x columns (nested axis)", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = c("Treatment", "Site"), y_col = "Value1"
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = c("Treatment", "Site"), y_col = "Value1"
     )
     expect_s3_class(p, "gg")
   })
@@ -163,8 +164,8 @@ describe("create_scatter_plot basic", {
   it("applies custom color_map", {
     df <- make_test_data()
     cmap <- c(A = "#FF0000", B = "#00FF00", C = "#0000FF")
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       color_map = cmap
     )
     expect_s3_class(p, "gg")
@@ -172,8 +173,8 @@ describe("create_scatter_plot basic", {
 
   it("handles separate color_cols", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = c("Treatment", "Site"),
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = c("Treatment", "Site"),
       y_col = "Value1", color_cols = "Treatment"
     )
     expect_s3_class(p, "gg")
@@ -187,8 +188,8 @@ describe("create_scatter_plot basic", {
 describe("create_scatter_plot with processing", {
   it("works with trimming enabled", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       processing = list(trim_percent = 10)
     )
     expect_s3_class(p, "gg")
@@ -196,8 +197,8 @@ describe("create_scatter_plot with processing", {
 
   it("works with outlier detection enabled", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       processing = list(outlier_enabled = TRUE, outlier_method = "IQR")
     )
     expect_s3_class(p, "gg")
@@ -205,8 +206,8 @@ describe("create_scatter_plot with processing", {
 
   it("works with KDE outlier detection (probability factor)", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       processing = list(
         outlier_enabled = TRUE,
         outlier_method = "kde",
@@ -218,8 +219,8 @@ describe("create_scatter_plot with processing", {
 
   it("works with both trimming and outlier detection", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       processing = list(
         trim_percent = 10,
         outlier_enabled = TRUE,
@@ -238,8 +239,8 @@ describe("create_scatter_plot with processing", {
 describe("create_scatter_plot style options", {
   it("respects grid_legend settings", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       grid_legend = list(
         h_grid = FALSE, v_grid = FALSE,
         show_median = FALSE, show_sd = FALSE,
@@ -251,8 +252,8 @@ describe("create_scatter_plot style options", {
 
   it("respects aspect_ratio = TRUE", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       grid_legend = list(aspect_ratio = TRUE)
     )
     expect_s3_class(p, "gg")
@@ -260,8 +261,8 @@ describe("create_scatter_plot style options", {
 
   it("respects top_right_borders = FALSE", {
     df <- make_test_data()
-    p <- scatter$create_scatter_plot(
-      data = df, x_cols = "Treatment", y_col = "Value1",
+    p <- plot_factory$create_plot(
+      plot_type = "scatter", data = df, x_cols = "Treatment", y_col = "Value1",
       grid_legend = list(top_right_borders = FALSE)
     )
     expect_s3_class(p, "gg")
