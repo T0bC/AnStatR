@@ -341,26 +341,26 @@ collect_shapes <- function(input, groups, default_shape = 21L) {
 shape_choices <- function() {
   pch_values <- c(0:14, 21:25)
   symbols <- c(
-    "\u25A1",
-    "\u25CB",
-    "\u25B3",
-    "\u002B",
-    "\u00D7",
-    "\u25C7",
-    "\u25BD",
-    "\u2295",
-    "\u2217",
-    "\u22C4",
-    "\u2A01",
-    "\u2606",
-    "\u271B",
-    "\u2A02",
-    "\u25A0",
-    "\u25CF",
-    "\u25A0",
-    "\u25C6",
-    "\u25B2",
-    "\u25BC"
+    "\u25A1",   # pch  0: open square
+    "\u25CB",   # pch  1: open circle
+    "\u25B3",   # pch  2: open triangle up
+    "\u002B",   # pch  3: plus
+    "\u00D7",   # pch  4: cross (X)
+    "\u25C7",   # pch  5: open diamond
+    "\u25BD",   # pch  6: open triangle down
+    "\u22A0",   # pch  7: square with X inside
+    "\u2217",   # pch  8: asterisk
+    "\u25C8",   # pch  9: diamond with plus inside
+    "\u2A01",   # pch 10: circle with plus inside
+    "\u2606",   # pch 11: open star
+    "\u229E",   # pch 12: square with plus inside
+    "\u2297",   # pch 13: circle with X inside
+    "\u29C4",   # pch 14: square with triangle inside
+    "\u25CF",   # pch 21: filled circle (with border)
+    "\u25A0",   # pch 22: filled square (with border)
+    "\u25C6",   # pch 23: filled diamond (with border)
+    "\u25B2",   # pch 24: filled triangle up (with border)
+    "\u25BC"    # pch 25: filled triangle down (with border)
   )
   stats::setNames(as.character(pch_values), symbols)
 }
