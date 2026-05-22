@@ -565,6 +565,21 @@ tab_server <- function(input, output, session,
       choices = c("Dim.1", "Dim.2", "Dim.3"),
       selected = "Dim.2"
     )
+    shiny$updateSelectizeInput(
+      session, "clusterBiplot3dDimX",
+      choices = c("Dim.1", "Dim.2", "Dim.3"),
+      selected = "Dim.1"
+    )
+    shiny$updateSelectizeInput(
+      session, "clusterBiplot3dDimY",
+      choices = c("Dim.1", "Dim.2", "Dim.3"),
+      selected = "Dim.2"
+    )
+    shiny$updateSelectizeInput(
+      session, "clusterBiplot3dDimZ",
+      choices = c("Dim.1", "Dim.2", "Dim.3"),
+      selected = "Dim.3"
+    )
   }, ignoreInit = TRUE)
 
   # Update labelColumn choices from selected metaData
@@ -640,6 +655,43 @@ tab_server <- function(input, output, session,
         choices = measure_cols,
         selected = sel_y
       )
+      # Update 3D dimensions too
+      cur_3d_x <- shiny$isolate(input$clusterBiplot3dDimX)
+      cur_3d_y <- shiny$isolate(input$clusterBiplot3dDimY)
+      cur_3d_z <- shiny$isolate(input$clusterBiplot3dDimZ)
+      sel_3d_x <- if (!is.null(cur_3d_x) &&
+                      cur_3d_x %in% measure_cols) {
+        cur_3d_x
+      } else {
+        measure_cols[1]
+      }
+      sel_3d_y <- if (!is.null(cur_3d_y) &&
+                      cur_3d_y %in% measure_cols) {
+        cur_3d_y
+      } else {
+        measure_cols[min(2, length(measure_cols))]
+      }
+      sel_3d_z <- if (!is.null(cur_3d_z) &&
+                      cur_3d_z %in% measure_cols) {
+        cur_3d_z
+      } else {
+        measure_cols[min(3, length(measure_cols))]
+      }
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimX",
+        choices = measure_cols,
+        selected = sel_3d_x
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimY",
+        choices = measure_cols,
+        selected = sel_3d_y
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimZ",
+        choices = measure_cols,
+        selected = sel_3d_z
+      )
     } else if (method == "pca") {
       # Restore PCA dimension choices; the actual
       # number of dims is updated after clustering
@@ -662,6 +714,22 @@ tab_server <- function(input, output, session,
           session, "clusterBiplotDimY",
           choices = dim_choices,
           selected = "Dim.2"
+        )
+        # Reset 3D dimensions too
+        shiny$updateSelectizeInput(
+          session, "clusterBiplot3dDimX",
+          choices = dim_choices,
+          selected = "Dim.1"
+        )
+        shiny$updateSelectizeInput(
+          session, "clusterBiplot3dDimY",
+          choices = dim_choices,
+          selected = "Dim.2"
+        )
+        shiny$updateSelectizeInput(
+          session, "clusterBiplot3dDimZ",
+          choices = dim_choices,
+          selected = "Dim.3"
         )
       }
     }
@@ -738,10 +806,11 @@ tab_server <- function(input, output, session,
     }
   }, ignoreInit = TRUE)
 
-  # Auto-switch between PCA and Raw based on number of measurement columns
-  # If > 4 columns: use PCA for visualization
-  # If <= 4 columns: use Raw (first two measurement columns)
-  shiny$observe({
+  # Auto-switch between PCA and Raw based on number of measurement columns.
+  # Triggers ONLY when measureVar changes (not reductionMethod) so it does
+  # not fight with manual user selections or other observers.
+  # If > 4 columns: default to PCA; If <= 4 columns: default to Raw.
+  shiny$observeEvent(input$measureVar, {
     measure_cols <- input$measureVar
     if (is.null(measure_cols) || length(measure_cols) == 0) {
       return()
@@ -757,34 +826,17 @@ tab_server <- function(input, output, session,
     }
 
     n_cols <- length(measure_cols)
-    current_method <- input$reductionMethod
 
-    if (n_cols > 4 && current_method != "pca") {
+    if (n_cols > 4) {
       shiny$updateSelectInput(
         session, "reductionMethod",
         selected = "pca"
       )
-      shiny$showNotification(
-        paste0(
-          "Switched to PCA projection for visualization ",
-          "(", n_cols, " variables > 4)."
-        ),
-        type = "message",
-        duration = 3
-      )
-    } else if (n_cols <= 4 && current_method != "raw") {
+    } else {
       shiny$updateSelectInput(
         session, "reductionMethod",
         selected = "raw"
       )
-      shiny$showNotification(
-        paste0(
-          "Switched to raw data visualization ",
-          "(", n_cols, " variables <= 4)."
-        ),
-        type = "message",
-        duration = 3
-      )
     }
-  })
+  }, ignoreInit = FALSE)
 }
