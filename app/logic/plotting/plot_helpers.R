@@ -1,5 +1,6 @@
 box::use(
   ggplot2,
+  ggiraph,
   legendry,
   rhino,
 )
@@ -154,10 +155,11 @@ resolve_boxplot_style <- function(bp) {
 #' @export
 resolve_violin_style <- function(vp) {
   list(
-    violin_width = vp$violin_width %||% 0.9,
-    trim         = vp$trim         %||% TRUE,
-    scale        = vp$scale        %||% "width",
-    alpha        = vp$alpha        %||% 0.6
+    violin_width  = vp$violin_width  %||% 0.9,
+    trim          = vp$trim          %||% TRUE,
+    scale         = vp$scale         %||% "width",
+    alpha         = vp$alpha         %||% 0.6,
+    show_outliers = vp$show_outliers %||% FALSE
   )
 }
 
@@ -565,5 +567,70 @@ add_nested_axis <- function(p) {
   )
   p + ggplot2$guides(
     x = legendry$guide_axis_nested(levels_text = centered_text)
+  )
+}
+
+
+#' Add outlier points layer (X marks)
+#'
+#' @param p ggplot object with base aesthetics
+#' @param data Data frame with .is_outlier and .tooltip columns
+#' @param ps Resolved point style parameters
+#' @return ggplot object with outlier points layer added
+#' @export
+add_outlier_points_layer <- function(p, data, ps) {
+  is_outlier <- data[[".is_outlier"]]
+  outlier_idx <- which(is_outlier)
+
+  if (length(outlier_idx) == 0) return(p)
+
+  od <- data[outlier_idx, , drop = FALSE]
+
+  # Inherit x/y from base plot aesthetics, only add tooltip
+  p + ggiraph$geom_jitter_interactive(
+    data = od,
+    ggplot2$aes(
+      tooltip = .data[[".tooltip"]]
+    ),
+    width = ps$spread %||% 0.15,
+    height = 0,
+    size = ps$size %||% 4,
+    alpha = 0.9,
+    shape = 4,  # X mark
+    color = "gray40",
+    stroke = 1.5
+  )
+}
+
+
+#' Add trimmed points layer (unfilled circles)
+#'
+#' @param p ggplot object with base aesthetics
+#' @param data Data frame with .is_trimmed and .tooltip columns
+#' @param ps Resolved point style parameters
+#' @return ggplot object with trimmed points layer added
+#' @export
+add_trimmed_points_layer <- function(p, data, ps) {
+  is_trimmed <- data[[".is_trimmed"]]
+  trimmed_idx <- which(is_trimmed)
+
+  if (length(trimmed_idx) == 0) return(p)
+
+  td <- data[trimmed_idx, , drop = FALSE]
+
+  # Inherit x/y from base plot aesthetics, only add tooltip
+  p + ggiraph$geom_jitter_interactive(
+    data = td,
+    ggplot2$aes(
+      tooltip = .data[[".tooltip"]]
+    ),
+    width = ps$spread %||% 0.15,
+    height = 0,
+    size = ps$size %||% 4,
+    alpha = 0.7,
+    shape = 21,  # Circle with fillable center
+    color = "gray40",
+    fill = "white",
+    stroke = 1
   )
 }
