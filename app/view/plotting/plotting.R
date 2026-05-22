@@ -149,13 +149,8 @@ server <- function(id, input_data, data_version) {
       measure <- if (is.null(m) || length(m) == 0) character(0) else m
 
       grid_opts <- input$gridOptions
-      # Use appropriate stat options based on plot type
       plot_type <- input$plotType %||% "scatter"
-      stat_opts <- if (plot_type == "scatter") {
-        input$statOptions
-      } else {
-        input$statOptionsNonScatter
-      }
+      stat_opts <- input$statOptions
 
       list(
         plot_type     = plot_type,
