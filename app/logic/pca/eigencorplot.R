@@ -194,16 +194,25 @@ create_eigencor_plot <- function(eigencor_data) {
       )
       df$data_id <- paste0("ec_", df$dim, "_", df$meta)
 
-      # Adaptive text size
-      total_cells <- n_dims * n_meta
-      text_size <- if (total_cells <= 20) {
-        5
-      } else if (total_cells <= 50) {
-        4.6
-      } else if (total_cells <= 100) {
-        4
+      # Adaptive text sizes based on grid dimensions
+      max_dim <- max(n_dims, n_meta)
+      cell_text_size <- if (max_dim <= 5) {
+        5.5
+      } else if (max_dim <= 8) {
+        5.0
+      } else if (max_dim <= 12) {
+        4.4
       } else {
         3.8
+      }
+      axis_text_size <- if (max_dim <= 5) {
+        13
+      } else if (max_dim <= 8) {
+        12
+      } else if (max_dim <= 12) {
+        11
+      } else {
+        10
       }
 
       # Symmetric colour limits
@@ -225,7 +234,7 @@ create_eigencor_plot <- function(eigencor_data) {
         ) +
         ggplot2$geom_text(
           ggplot2$aes(label = label),
-          size = text_size,
+          size = cell_text_size,
           color = ifelse(
             abs(df$r) > 0.6, "white", "black"
           )
@@ -241,17 +250,18 @@ create_eigencor_plot <- function(eigencor_data) {
         ggplot2$theme_minimal() +
         ggplot2$theme(
           legend.position = "right",
-          legend.key.height = ggplot2$unit(1.5, "cm"),
-          legend.key.width = ggplot2$unit(0.4, "cm"),
-          legend.text = ggplot2$element_text(size = 11),
-          legend.title = ggplot2$element_text(size = 12),
+          legend.key.height = ggplot2$unit(1.8, "cm"),
+          legend.key.width = ggplot2$unit(0.5, "cm"),
+          legend.text = ggplot2$element_text(size = axis_text_size),
+          legend.title = ggplot2$element_text(size = axis_text_size + 3),
           axis.title = ggplot2$element_blank(),
           axis.text.x = ggplot2$element_text(
-            size = 11, angle = 45, hjust = 1
+            size = axis_text_size, angle = 45, hjust = 1
           ),
-          axis.text.y = ggplot2$element_text(size = 11),
+          axis.text.y = ggplot2$element_text(size = axis_text_size),
           panel.grid = ggplot2$element_blank()
-        )
+        ) +
+        ggplot2$coord_fixed(ratio = 1)
 
       p
     },
