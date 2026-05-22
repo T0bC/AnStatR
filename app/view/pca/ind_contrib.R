@@ -99,11 +99,11 @@ render_output <- function(input, output, session,
     last_plot(plot_res$result)
 
     # SVG sizing: width scales with dims,
-    # height is fixed for jitter readability
+    # height proportional to dims but clamped
     n_dims_vis <- min(
       ncp, ncol(pca_res$result$ind$contrib)
     )
-    width_svg <- min(max(n_dims_vis * 1.5 + 2, 6), 14)
+    width_svg <- min(max(n_dims_vis * 2.5 + 3, 8), 16)
     height_svg <- 6
 
     ggiraph$girafe(
@@ -111,6 +111,7 @@ render_output <- function(input, output, session,
       width_svg = width_svg,
       height_svg = height_svg,
       options = list(
+        ggiraph$opts_sizing(rescale = TRUE, width = 1),
         ggiraph$opts_hover(
           css = paste0(
             "fill-opacity:1;",
@@ -128,6 +129,20 @@ render_output <- function(input, output, session,
         ),
         ggiraph$opts_selection(type = "none")
       )
+    )
+  })
+
+  # Render a fixed-height container for the faceted landscape plot
+  output$ind_contrib_container <- shiny$renderUI({
+    pca_res <- pca_result()
+    if (is.null(pca_res) || !pca_res$success) {
+      return(ggiraph$girafeOutput(ns("ind_contrib_plot")))
+    }
+    ncp <- if (!is.null(display_ncp)) display_ncp() else 5L
+    if (is.null(ncp)) ncp <- 5L
+    ggiraph$girafeOutput(
+      ns("ind_contrib_plot"),
+      height = "420px"
     )
   })
 
