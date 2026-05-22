@@ -15,7 +15,6 @@ box::use(
   app/logic/plotting/data_processing,
   app/logic/preprocessing/normalize,
   app/logic/plotting/plot_factory,
-  app/logic/plotting/scatter,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
   app/view/plotting/data_selection,
