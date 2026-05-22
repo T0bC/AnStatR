@@ -9,7 +9,7 @@ box::use(
 )
 
 box::use(
-  app/logic/plotting/scatter,
+  app/logic/plotting/plot_factory,
   app/logic/power/dummy_data,
   app/logic/power/power_calc,
   app/logic/shared/error_handling,
@@ -501,10 +501,11 @@ server <- function(id, input_data = NULL) {
       }
 
       # Create scatter plot using existing logic
-      p <- scatter$create_scatter_plot(
-        data = df,
-        x_cols = x_cols,
-        y_col = measure_col,
+      p <- plot_factory$create_plot(
+        plot_type  = "scatter",
+        data       = df,
+        x_cols     = x_cols,
+        y_col      = measure_col,
         point_style = list(size = 3, alpha = 0.7),
         grid_legend = list(show_median = TRUE, show_sd = TRUE)
       )
