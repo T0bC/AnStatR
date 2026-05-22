@@ -1018,12 +1018,43 @@ missing values · normalization · skewness
     style PWR_Error fill:#e6c8e5,stroke:#966697
 
     %% Edges colored by origin module - 12px thick
-    linkStyle 0,1 stroke:#8dd3c7,stroke-width:12px
-    linkStyle 2,3,4,5,12 stroke:#ffffb3,stroke-width:12px
-    linkStyle 6,7,13 stroke:#bebada,stroke-width:12px
-    linkStyle 8,9,15 stroke:#fdb462,stroke-width:12px
-    linkStyle 10,11,16 stroke:#b3de69,stroke-width:12px
-    linkStyle 17 stroke:#fccde5,stroke-width:12px
-    linkStyle 18 stroke:#d9d9d9,stroke-width:12px
-    linkStyle 19 stroke:#bc80bd,stroke-width:12px
+    %% LoadDataModule (teal, indices 0-12)
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12 stroke:#5a968d,stroke-width:12px
+    %% MedianModule (yellow, indices 13-22)
+    linkStyle 13,14,15,16,17,18,19,20,21,22 stroke:#cccc8f,stroke-width:12px
+    %% PlottingModule (lavender, indices 23-31)
+    linkStyle 23,24,25,26,27,28,29,30,31 stroke:#8f8ba3,stroke-width:12px
+    %% SummaryModule (coral, indices 32-40)
+    linkStyle 32,33,34,35,36,37,38,39,40 stroke:#c9665b,stroke-width:12px
+    %% StatisticsModule (blue, indices 41-57)
+    linkStyle 41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57 stroke:#668da9,stroke-width:12px
+    %% PCAModule (orange, indices 58-78)
+    linkStyle 58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78 stroke:#ca8f4e,stroke-width:12px
+    %% LDAModule (green, indices 79-104)
+    linkStyle 79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104 stroke:#8fb154,stroke-width:12px
+    %% ClusterModule (pink, indices 105-121)
+    linkStyle 105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121 stroke:#c9a4b7,stroke-width:12px
+    %% PredictionModule (gray, indices 122-143)
+    linkStyle 122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 stroke:#aeaeae,stroke-width:12px
+    %% PowerModule (purple, indices 144-160)
+    linkStyle 144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160 stroke:#966697,stroke-width:12px
+    %% Inter-module data flow connectors - colored by origin subgraph
+    %% LoadDataModule origin (teal): → MedianModule, → PowerModule
+    linkStyle 161,162 stroke:#8dd3c7,stroke-width:18px
+    %% MedianModule origin (yellow): → PlottingModule, → PCAModule, → LDAModule, → ClusterModule, → SharedInfra
+    linkStyle 163,164,165,166,173 stroke:#ffffb3,stroke-width:18px
+    %% PlottingModule origin (lavender): → SummaryModule, → StatisticsModule, → SharedInfra
+    linkStyle 167,168,174 stroke:#bebada,stroke-width:18px
+    %% PCAModule origin (orange): → LDAModule, → ClusterModule, → SharedInfra
+    linkStyle 169,170,176 stroke:#fdb462,stroke-width:18px
+    %% LDAModule origin (green): → ClusterModule, → PredictionModule, → SharedInfra
+    linkStyle 171,172,177 stroke:#b3de69,stroke-width:18px
+    %% StatisticsModule origin (blue): → SharedInfra
+    linkStyle 175 stroke:#80b1d3,stroke-width:18px
+    %% ClusterModule origin (pink): → SharedInfra
+    linkStyle 178 stroke:#fccde5,stroke-width:18px
+    %% PredictionModule origin (gray): → SharedInfra
+    linkStyle 179 stroke:#d9d9d9,stroke-width:18px
+    %% PowerModule origin (purple): → SharedInfra
+    linkStyle 180 stroke:#bc80bd,stroke-width:18px
     
