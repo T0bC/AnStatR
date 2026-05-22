@@ -160,7 +160,8 @@ create_plot <- function(plot_type = "scatter",
   # --- Prepare shape grouping ---
   use_shape <- FALSE
   use_custom_shape <- FALSE
-  use_fillable_shapes <- FALSE
+  # Default path renders shape 21 (fill only); skip color scale unless non-fillable custom shapes present
+  skip_color_scale <- shows_points(plot_type)
   shape_legend_title <- NULL
 
   if (shows_points(plot_type)) {
@@ -168,15 +169,15 @@ create_plot <- function(plot_type = "scatter",
       # Custom shapes: map each row's .color_group to its shape value
       data <- plot_helpers$prepare_custom_shapes(data, shape_map)
       use_custom_shape <- TRUE
-      # Check if any custom shapes are fillable (21-25)
-      use_fillable_shapes <- plot_helpers$has_fillable_shapes(shape_map)
+      # Keep color scale only when at least one non-fillable shape (0-14) is present
+      skip_color_scale <- plot_helpers$all_fillable_shapes(shape_map)
     } else {
       shape_prep <- plot_helpers$prepare_shape(data, ps$shape_cols)
       data <- shape_prep$data
       use_shape <- shape_prep$use_shape
       shape_legend_title <- shape_prep$legend_title
-      # Shape aesthetic uses fillable shapes (21-25) via apply_shape_scale()
-      use_fillable_shapes <- use_shape
+      # apply_shape_scale() always uses 21-25: fill aesthetic only, skip color scale
+      skip_color_scale <- TRUE
     }
   }
 
@@ -199,28 +200,28 @@ create_plot <- function(plot_type = "scatter",
   p <- switch(
     plot_type,
     "scatter" = scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),
     "boxplot" = boxplot_builder$build_boxplot_layers(
       p, data, bp, ps, gl
     ),
     "boxplot_points" = boxplot_builder$build_boxplot_points_layers(
-      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
+      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),
     "violin" = violin_builder$build_violin_layers(
       p, data, vp, ps, gl
     ),
     "violin_points" = violin_builder$build_violin_points_layers(
-      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
+      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),
     # Default to scatter
     scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points, use_fillable_shapes
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     )
   )
 
   # --- Apply color scales ---
-  p <- plot_helpers$apply_color_scales(p, color_map, color_legend_title)
+  p <- plot_helpers$apply_color_scales(p, color_map, color_legend_title, skip_color_scale)
 
   # --- Apply shape scale if using shape aesthetic ---
   if (use_shape) {
@@ -228,12 +229,9 @@ create_plot <- function(plot_type = "scatter",
   }
 
   # --- Labels ---
-  p <- p + ggplot2$labs(
-    x = x_label,
-    y = y_col,
-    color = color_legend_title,
-    fill = color_legend_title
-  )
+  labs_args <- list(x = x_label, y = y_col, fill = color_legend_title)
+  if (!skip_color_scale) labs_args$color <- color_legend_title
+  p <- p + do.call(ggplot2$labs, labs_args)
 
   # --- Theme ---
   p <- plot_helpers$apply_theme(p, x_cols, gl, ax)
