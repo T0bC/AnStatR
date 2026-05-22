@@ -20,6 +20,7 @@ box::use(
     detect_skewness, transform_skewed
   ],
   app/view/cluster/cluster_biplot,
+  app/view/cluster/cluster_biplot3d,
   app/view/cluster/cluster_results,
   app/view/cluster/cluster_silhouette,
   app/view/cluster/clustering_settings,
@@ -551,41 +552,71 @@ server <- function(id, input_data, data_version,
             )
           )
 
-          # Update biplot dimension choices
+          # Update biplot dimension choices.
+          # For raw mode (or already-reduced sources)
+          # use actual column names; for PCA mode use
+          # Dim.* labels.
+          current_method <- input$reductionMethod
           if (is_reduced) {
-            # Already-reduced data: use actual column
-            # names as axis choices (e.g. Dim.1 for PCA,
-            # ld1 for LDA) and force raw scatter mode
             shiny$updateSelectInput(
               session, "reductionMethod",
               selected = "raw"
             )
-            dim_choices <- measure_cols
+            pca_dim_choices <- measure_cols
+            raw_dim_choices <- measure_cols
           } else {
             n_dims <- min(
               length(measure_cols),
               nrow(analysis_data) - 1
             )
-            dim_choices <- paste0(
+            pca_dim_choices <- paste0(
               "Dim.", seq_len(n_dims)
             )
+            raw_dim_choices <- measure_cols
           }
-          for (dim_id in c(
-            "clusterBiplotDimX",
-            "clusterBiplotDimY"
-          )) {
+
+          # Choose which set to apply based on method
+          use_raw <- is_reduced ||
+            (!is.null(current_method) &&
+             current_method == "raw")
+          dim_choices <- if (use_raw) {
+            raw_dim_choices
+          } else {
+            pca_dim_choices
+          }
+
+          # 2D dims
+          dim_2d_ids <- c("clusterBiplotDimX", "clusterBiplotDimY")
+          for (i in seq_along(dim_2d_ids)) {
+            dim_id <- dim_2d_ids[i]
             current <- input[[dim_id]]
             sel <- if (!is.null(current) &&
                        current %in% dim_choices) {
               current
             } else {
-              dim_choices[min(
-                which(dim_id == c(
-                  "clusterBiplotDimX",
-                  "clusterBiplotDimY"
-                )),
-                length(dim_choices)
-              )]
+              dim_choices[min(i, length(dim_choices))]
+            }
+            shiny$updateSelectizeInput(
+              session, dim_id,
+              choices = dim_choices,
+              selected = sel
+            )
+          }
+
+          # 3D dims
+          dim_3d_ids <- c(
+            "clusterBiplot3dDimX",
+            "clusterBiplot3dDimY",
+            "clusterBiplot3dDimZ"
+          )
+          for (i in seq_along(dim_3d_ids)) {
+            dim_id <- dim_3d_ids[i]
+            current <- input[[dim_id]]
+            sel <- if (!is.null(current) &&
+                       current %in% dim_choices) {
+              current
+            } else {
+              dim_choices[min(i, length(dim_choices))]
             }
             shiny$updateSelectizeInput(
               session, dim_id,
@@ -801,14 +832,14 @@ server <- function(id, input_data, data_version,
         )
       }
 
-      # Cluster biplot panel
+      # Cluster biplot panel (2D)
       biplot_err <- biplot_state$error()
       biplot_panel <- if (!is.null(res)) {
         biplot_title <- shiny$tags$span(
           bsicons$bs_icon(
             "diagram-2", class = "me-1"
           ),
-          "Cluster Biplot"
+          "Cluster Biplot (2D)"
         )
         biplot_content <- if (
           error_handling$is_app_error(biplot_err)
@@ -826,6 +857,34 @@ server <- function(id, input_data, data_version,
           value = "cluster_biplot_panel",
           biplot_content,
           download_buttons(ns, "cluster_biplot")
+        )
+      }
+
+      # Cluster biplot 3D panel
+      biplot3d_err <- biplot3d_state$error()
+      biplot3d_panel <- if (!is.null(res)) {
+        biplot3d_title <- shiny$tags$span(
+          bsicons$bs_icon(
+            "box", class = "me-1"
+          ),
+          "Cluster 3D Plot"
+        )
+        biplot3d_content <- if (
+          error_handling$is_app_error(biplot3d_err)
+        ) {
+          error_display$error_alert_structured(
+            biplot3d_err, type = "danger"
+          )
+        } else {
+          cluster_biplot3d$render_biplot3d_content(
+            res, ns
+          )
+        }
+        bslib$accordion_panel(
+          title = biplot3d_title,
+          value = "cluster_biplot3d_panel",
+          biplot3d_content
+          # Note: 3D plot is plotly - download not supported yet
         )
       }
 
@@ -867,6 +926,7 @@ server <- function(id, input_data, data_version,
           hopkins_panel,
           opt_panel,
           biplot_panel,
+          biplot3d_panel,
           silhouette_panel,
           cluster_results_panel,
           heatmap_panel
@@ -904,7 +964,7 @@ server <- function(id, input_data, data_version,
       measure_cols_rv = measure_cols_store
     )
 
-    # Delegate cluster biplot rendering
+    # Delegate cluster biplot rendering (2D)
     biplot_state <- cluster_biplot$render_output(
       input, output, session,
       cluster_result_rv = result,
@@ -918,6 +978,16 @@ server <- function(id, input_data, data_version,
     register_plot_downloads(
       output, input, "cluster_biplot",
       biplot_state$plot, "Cluster_Biplot"
+    )
+
+    # Delegate cluster biplot rendering (3D)
+    biplot3d_state <- cluster_biplot3d$render_output(
+      input, output, session,
+      cluster_result_rv = result,
+      membership_data_rv = membership_data,
+      analysis_data_rv = analysis_data_store,
+      cleaned_data_rv = cleaned_data_store,
+      measure_cols_rv = measure_cols_store
     )
 
     # Delegate cluster silhouette rendering
