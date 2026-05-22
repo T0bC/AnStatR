@@ -77,7 +77,6 @@ COPY config.yml config.yml
 COPY dependencies.R dependencies.R
 COPY CHANGELOG.md CHANGELOG.md
 COPY app/ app/
-COPY www/ www/
 COPY docs/help/ docs/help/
 
 # ---------- Runtime configuration ----------
