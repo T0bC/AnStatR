@@ -1,5 +1,21 @@
 # Changelog
 
+## [2026.10] - 2026-05-22
+
+### Added
+
+- **3D Cluster Plot**: Interactive 3D scatter plot in the Cluster module with PCA projection and raw data visualization modes; supports cluster-colored points, centroid markers, and metadata-based grouping
+- **Outlier overlay for violin/boxplot**: Optional outlier and trimmed-point layers for violin and boxplot plot types with distinct shapes and independent visibility control
+- **Median & Mean point markers**: Per-group ◆ (median) and ⊕ (mean) point overlays available across all plot types with a dedicated stats legend
+- **Independent alpha controls**: Separate alpha sliders for scatter points and box/violin fills when using "with points" plot types
+- **Improved shape rendering**: Fillable shapes (pch 21–25) now always render with white borders; shape choices restricted to exclude solid-filled shapes for consistent border support
+- **3D dimension selectors**: Auto-switching dimension selectors that update both 2D and 3D inputs when toggling between PCA and raw reduction methods
+
+### Fixed
+
+- **3D Cluster Plot**: Corrected return value so `renderPlotly` receives the plotly figure directly instead of a wrapped list; fixes empty/2D plot rendering
+- **Cluster count calculation**: Factor cluster vectors are now converted to integer before filtering, eliminating factor comparison warnings in log output
+
 ## [2026.9] - 2026-05-22
 
 ### Added
