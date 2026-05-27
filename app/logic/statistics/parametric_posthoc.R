@@ -332,11 +332,22 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 perform_combined_parametric_posthoc <- function(
     df, x_axis, measure_col,
     p_adjust_method = "bonferroni",
-    filter_valid = FALSE) {
+    filter_valid = FALSE,
+    is_rm = FALSE,
+    id_col = NULL,
+    within_col = NULL) {
   rhino$log$info(
     "combined_parametric_posthoc: starting for",
-    " measure='{measure_col}'"
+    " measure='{measure_col}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_parametric_posthoc(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      p_adjust_method = p_adjust_method
+    ))
+  }
 
   tukey_result <- perform_tukey_hsd(
     df = df, x_axis = x_axis, measure_col = measure_col
@@ -457,4 +468,133 @@ perform_combined_parametric_posthoc <- function(
   )
 
   merged
+}
+
+
+# =============================================================================
+# Repeated Measures Parametric Post-Hoc
+# =============================================================================
+
+#' Perform RM Parametric Post-Hoc (Paired t-tests + Paired Cohen's d)
+#'
+#' Computes pairwise paired t-tests and paired Cohen's d for all
+#' pairs of within-subject factor levels.
+#'
+#' @param df Data frame (long format)
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @param p_adjust_method Character, p-value adjustment method
+#' @return Data frame with paired posthoc results or app_error
+#' @export
+perform_rm_parametric_posthoc <- function(
+    df, x_axis, measure_col,
+    id_col, within_col,
+    p_adjust_method = "bonferroni") {
+  rhino$log$info(
+    "rm_parametric_posthoc: starting for",
+    " measure='{measure_col}'"
+  )
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    test_type = "rm_parametric_posthoc"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+
+      levels_w <- levels(df[[within_col]])
+      n_levels <- length(levels_w)
+
+      if (n_levels < 2) {
+        stop(paste0(
+          "Paired post-hoc requires at least 2 levels ",
+          "in '", within_col, "'."
+        ))
+      }
+
+      results <- list()
+      for (i in 1:(n_levels - 1)) {
+        for (j in (i + 1):n_levels) {
+          g1_label <- levels_w[i]
+          g2_label <- levels_w[j]
+
+          g1_data <- df[
+            df[[within_col]] == g1_label,
+            c(id_col, measure_col)
+          ]
+          g2_data <- df[
+            df[[within_col]] == g2_label,
+            c(id_col, measure_col)
+          ]
+
+          # Merge by ID to align pairs
+          paired <- merge(
+            g1_data, g2_data,
+            by = id_col, suffixes = c(".1", ".2")
+          )
+          vals1 <- paired[[paste0(measure_col, ".1")]]
+          vals2 <- paired[[paste0(measure_col, ".2")]]
+
+          # Paired t-test
+          t_res <- stats$t.test(
+            vals1, vals2, paired = TRUE
+          )
+
+          # Paired Cohen's d (dz = mean_diff / sd_diff)
+          diffs <- vals1 - vals2
+          mean_diff <- mean(diffs, na.rm = TRUE)
+          sd_diff <- stats$sd(diffs, na.rm = TRUE)
+          d_z <- mean_diff / sd_diff
+          n_pairs <- sum(!is.na(diffs))
+          se_d <- sqrt(1 / n_pairs + d_z^2 / (2 * n_pairs))
+          d_ci_lower <- d_z - 1.96 * se_d
+          d_ci_upper <- d_z + 1.96 * se_d
+
+          results[[length(results) + 1]] <- data.frame(
+            Interaction = paste(g1_label, "vs.", g2_label),
+            Paired.t.statistic = signif(
+              t_res$statistic[["t"]], 3
+            ),
+            Paired.t.p.value = signif(t_res$p.value, 3),
+            Paired.d = signif(d_z, 3),
+            Paired.d.ci.lower = signif(d_ci_lower, 3),
+            Paired.d.ci.upper = signif(d_ci_upper, 3),
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+
+      merged <- do.call(rbind, results)
+
+      # Apply p-value adjustment
+      if ("Paired.t.p.value" %in% names(merged) &&
+          is.numeric(merged$Paired.t.p.value)) {
+        merged$Paired.t.p.adjusted <- stats$p.adjust(
+          merged$Paired.t.p.value, method = p_adjust_method
+        )
+      }
+
+      # Round numeric columns
+      numeric_cols <- vapply(merged, is.numeric, logical(1))
+      merged[numeric_cols] <- lapply(
+        merged[numeric_cols], function(x) signif(x, 3)
+      )
+
+      merged
+    },
+    operation_name = "rm_parametric_posthoc",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }
