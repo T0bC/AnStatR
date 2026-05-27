@@ -592,6 +592,16 @@ perform_rm_parametric_posthoc <- function(
     " measure='{measure_col}'"
   )
 
+  # Validate within_col is in x_axis
+  if (!within_col %in% x_axis) {
+    return(error_handling$simple_error(
+      message = paste0(
+        "Within-subject factor '", within_col, "' must be in x_axis."
+      ),
+      operation_name = "rm_parametric_posthoc"
+    ))
+  }
+
   error_context <- list(
     measure = measure_col,
     id_col = id_col,
