@@ -769,41 +769,6 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
 # Repeated Measures Robust Post-Hoc
 # =============================================================================
 
-#' Classify comparison as paired, unpaired, or skip
-#'
-#' @param g1_label First group label (e.g., "A.T1")
-#' @param g2_label Second group label (e.g., "A.T2")
-#' @param x_axis Character vector of factor names in order
-#' @param within_col Character, the within-subject factor name
-#' @return Character: "paired", "unpaired", or "skip"
-#' @keywords internal
-classify_robust_comparison <- function(g1_label, g2_label, x_axis, within_col) {
-  g1_parts <- strsplit(as.character(g1_label), ".", fixed = TRUE)[[1]]
-  g2_parts <- strsplit(as.character(g2_label), ".", fixed = TRUE)[[1]]
-
-  within_idx <- which(x_axis == within_col)
-  between_idx <- which(x_axis != within_col)
-
-  # Check if between-subject factors all match
-  between_match <- if (length(between_idx) > 0) {
-    all(g1_parts[between_idx] == g2_parts[between_idx])
-  } else {
-    TRUE
-  }
-
-  # Check if within-subject factor matches
-  within_match <- (g1_parts[within_idx] == g2_parts[within_idx])
-
-  if (between_match && !within_match) {
-    "paired"
-  } else if (!between_match && within_match) {
-    "unpaired"
-  } else {
-    "skip"
-  }
-}
-
-
 #' Compute paired Yuen statistics (trimmed means)
 #'
 #' @param df Data frame with interaction_group column
@@ -839,6 +804,15 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
 
 
 #' Perform RM Robust Post-Hoc (Hybrid approach)
+#'
+#' Uses a hybrid approach: run unpaired tests first, then replace paired comparisons.
+#'
+#' Why this approach over computing paired/unpaired separately:
+#' - Reuses existing unpaired infrastructure (lincon + Cliff's Delta)
+#' - Ensures consistent output format and column structure
+#' - Avoids duplicating complex merging/formatting logic
+#' - Unpaired results for between-subject comparisons remain valid
+#' - Only within-subject (paired) comparisons need correction
 #'
 #' Strategy:
 #' 1. Run standard unpaired posthoc (lincon + Cliff's Delta) with filter_valid=TRUE
@@ -925,7 +899,7 @@ perform_rm_robust_posthoc <- function(
           g1 <- all_groups[i]
           g2 <- all_groups[j]
 
-          comp_type <- classify_robust_comparison(g1, g2, x_axis, within_col)
+          comp_type <- validation_utils$classify_rm_comparison(g1, g2, x_axis, within_col)
 
           if (comp_type == "paired") {
             paired_row <- compute_paired_yuen_stats(
