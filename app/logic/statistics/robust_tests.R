@@ -103,12 +103,23 @@ perform_t1way <- function(df, x_axis, measure_col,
                           tr_value,
                           use_bootstrap = FALSE,
                           boot_samples = 599,
-                          boot_sample_size = NULL) {
+                          boot_sample_size = NULL,
+                          is_rm = FALSE,
+                          id_col = NULL,
+                          within_col = NULL) {
   rhino$log$info(
     "t1way: starting for measure='{measure_col}',",
     " grouping='{x_axis[1]}',",
-    " bootstrap={use_bootstrap}"
+    " bootstrap={use_bootstrap}, rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_robust(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      tr_value = tr_value
+    ))
+  }
 
   omnibus$run_omnibus_test(
     df = df,
@@ -218,12 +229,23 @@ perform_t2way <- function(df, x_axis, measure_col,
                           tr_value,
                           use_bootstrap = FALSE,
                           boot_samples = 599,
-                          boot_sample_size = NULL) {
+                          boot_sample_size = NULL,
+                          is_rm = FALSE,
+                          id_col = NULL,
+                          within_col = NULL) {
   rhino$log$info(
     "t2way: starting for measure='{measure_col}',",
     " factors='{x_axis[1]}' * '{x_axis[2]}',",
-    " bootstrap={use_bootstrap}"
+    " bootstrap={use_bootstrap}, rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_robust(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      tr_value = tr_value
+    ))
+  }
 
   omnibus$run_omnibus_test(
     df = df,
@@ -364,4 +386,137 @@ perform_t3way <- function(df, x_axis, measure_col,
     boot_sample_size = boot_sample_size,
     config = t3way_config
   )
+}
+
+
+# =============================================================================
+# Repeated Measures Robust ANOVA
+# =============================================================================
+
+#' Perform Repeated Measures Robust ANOVA
+#'
+#' 1-way within: Uses WRS2::rmanova() with trimmed means on wide-format data.
+#' Mixed (between x within): Uses WRS2::bwtrim() for split-plot designs.
+#'
+#' @param df Data frame (long format)
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @param tr_value Numeric, trim proportion
+#' @return Data frame with RM robust ANOVA results, or structured app_error
+#' @export
+perform_rm_robust <- function(df, x_axis, measure_col,
+                               id_col, within_col,
+                               tr_value = 0.2) {
+  rhino$log$info(
+    "rm_robust: starting for measure='{measure_col}',",
+    " id='{id_col}', within='{within_col}'"
+  )
+
+  between_cols <- setdiff(x_axis, within_col)
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    between_cols = paste(between_cols, collapse = ", "),
+    n_observations = nrow(df),
+    test_type = "robust_rm_anova"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      # Validate columns
+      if (!id_col %in% names(df)) {
+        stop(paste0("ID column '", id_col, "' not found."))
+      }
+      if (!within_col %in% names(df)) {
+        stop(paste0(
+          "Within-subject factor '", within_col,
+          "' not found."
+        ))
+      }
+
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+      for (bc in between_cols) {
+        df[[bc]] <- as.factor(df[[bc]])
+      }
+
+      # Validate balanced design
+      id_within_counts <- table(df[[id_col]], df[[within_col]])
+      if (any(id_within_counts != 1)) {
+        stop(paste0(
+          "Unbalanced repeated measures design. ",
+          "Each subject must appear exactly once per ",
+          "level of '", within_col, "'."
+        ))
+      }
+
+      if (length(between_cols) == 0) {
+        # Pure within-subject: WRS2::rmanova
+        # Long-format: y=response, groups=within-factor, blocks=ID
+        rm_result <- WRS2$rmanova(
+          y = df[[measure_col]],
+          groups = df[[within_col]],
+          blocks = df[[id_col]],
+          tr = tr_value
+        )
+
+        data.frame(
+          Effect = within_col,
+          Test.Statistic = signif(rm_result$test, 3),
+          p.value = signif(rm_result$p.value, 3),
+          stringsAsFactors = FALSE
+        )
+      } else {
+        # Mixed design: WRS2::bwtrim
+        # bwtrim(formula, id, data, tr)
+        # formula: measure ~ between * within
+        formula_str <- paste0(
+          "`", measure_col, "` ~ `",
+          paste(c(between_cols, within_col), collapse = "` * `"),
+          "`"
+        )
+        formula_obj <- stats$as.formula(formula_str)
+
+        bw_result <- WRS2$bwtrim(
+          formula = formula_obj,
+          id = df[[id_col]],
+          data = df,
+          tr = tr_value
+        )
+
+        # bwtrim returns Qa, Qb, Qab, A.p.value, B.p.value, AB.p.value
+        # for 2-way mixed design
+        effect_labels <- c(
+          between_cols[1], within_col,
+          paste0(between_cols[1], ":", within_col)
+        )
+
+        data.frame(
+          Effect = effect_labels,
+          Q.Statistic = signif(
+            c(bw_result$Qa, bw_result$Qb, bw_result$Qab), 3
+          ),
+          p.value = signif(
+            c(
+              bw_result$A.p.value,
+              bw_result$B.p.value,
+              bw_result$AB.p.value
+            ), 3
+          ),
+          stringsAsFactors = FALSE
+        )
+      }
+    },
+    operation_name = "rm_robust",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }
