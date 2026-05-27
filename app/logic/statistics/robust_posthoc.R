@@ -815,9 +815,10 @@ perform_rm_robust_posthoc <- function(
         tr = tr_value
       )
 
-      # rmmcp returns $comp matrix with columns:
-      # Group, Group, psihat, ci.lower, ci.upper, p.value, p.crit
-      comp <- as.data.frame(rmmcp_result$comp)
+      # rmmcp returns $comp matrix with columns (positional):
+      # [1] Group, [2] Group, [3] psihat, [4] ci.lower,
+      # [5] ci.upper, [6] p.value, [7] p.crit
+      comp <- rmmcp_result$comp
 
       # Use fnames for level labels
       level_names <- rmmcp_result$fnames
@@ -826,10 +827,10 @@ perform_rm_robust_posthoc <- function(
 
       merged <- data.frame(
         Interaction = paste(g1_labels, "vs.", g2_labels),
-        RM.Lincon.psihat = signif(comp$psihat, 3),
-        RM.Lincon.ci.lower = signif(comp$ci.lower, 3),
-        RM.Lincon.ci.upper = signif(comp$ci.upper, 3),
-        RM.Lincon.p.value = signif(comp$p.value, 3),
+        RM.Lincon.psihat = signif(comp[, 3], 3),
+        RM.Lincon.ci.lower = signif(comp[, 4], 3),
+        RM.Lincon.ci.upper = signif(comp[, 5], 3),
+        RM.Lincon.p.value = signif(comp[, 6], 3),
         stringsAsFactors = FALSE
       )
 
