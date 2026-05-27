@@ -103,11 +103,21 @@ perform_kruskal1way <- function(df, x_axis, measure_col,
                                 tr_value = 0,
                                 use_bootstrap = FALSE,
                                 boot_samples = 599,
-                                boot_sample_size = NULL) {
+                                boot_sample_size = NULL,
+                                is_rm = FALSE,
+                                id_col = NULL,
+                                within_col = NULL) {
   rhino$log$info(
     "kruskal1way: starting for measure='{measure_col}',",
-    " grouping='{x_axis[1]}'"
+    " grouping='{x_axis[1]}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_nonparametric(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col
+    ))
+  }
 
   # Force bootstrap off for non-parametric tests
   omnibus$run_omnibus_test(
@@ -298,11 +308,21 @@ perform_art2way <- function(df, x_axis, measure_col,
                             tr_value = 0,
                             use_bootstrap = FALSE,
                             boot_samples = 599,
-                            boot_sample_size = NULL) {
+                            boot_sample_size = NULL,
+                            is_rm = FALSE,
+                            id_col = NULL,
+                            within_col = NULL) {
   rhino$log$info(
     "art2way: starting for measure='{measure_col}',",
-    " factors='{x_axis[1]}' * '{x_axis[2]}'"
+    " factors='{x_axis[1]}' * '{x_axis[2]}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_nonparametric(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col
+    ))
+  }
 
   # Force bootstrap off for non-parametric tests
   omnibus$run_omnibus_test(
@@ -507,4 +527,144 @@ perform_art3way <- function(df, x_axis, measure_col,
     boot_sample_size = NULL,
     config = art3way_config
   )
+}
+
+
+# =============================================================================
+# Repeated Measures Non-Parametric Tests
+# =============================================================================
+
+#' Perform Repeated Measures Non-Parametric Test
+#'
+#' 1-way within: Uses Friedman rank-sum test (stats::friedman.test).
+#' Mixed (between x within): Uses ARTool::art() with Error(ID) term.
+#'
+#' @param df Data frame (long format)
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @return Data frame with test results, or structured app_error
+#' @export
+perform_rm_nonparametric <- function(df, x_axis, measure_col,
+                                      id_col, within_col) {
+  rhino$log$info(
+    "rm_nonparametric: starting for measure='{measure_col}',",
+    " id='{id_col}', within='{within_col}'"
+  )
+
+  between_cols <- setdiff(x_axis, within_col)
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    between_cols = paste(between_cols, collapse = ", "),
+    n_observations = nrow(df),
+    test_type = "nonparametric_rm"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      # Validate columns
+      if (!id_col %in% names(df)) {
+        stop(paste0("ID column '", id_col, "' not found."))
+      }
+      if (!within_col %in% names(df)) {
+        stop(paste0(
+          "Within-subject factor '", within_col,
+          "' not found."
+        ))
+      }
+
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+      for (bc in between_cols) {
+        df[[bc]] <- as.factor(df[[bc]])
+      }
+
+      # Remove NAs in response
+      na_mask <- is.na(df[[measure_col]])
+      if (any(na_mask)) {
+        rhino$log$warn(
+          "rm_nonparametric: Dropping {sum(na_mask)}",
+          " row(s) with NA in '{measure_col}'"
+        )
+        df <- df[!na_mask, , drop = FALSE]
+      }
+
+      # Validate balanced design
+      id_within_counts <- table(df[[id_col]], df[[within_col]])
+      if (any(id_within_counts != 1)) {
+        stop(paste0(
+          "Unbalanced repeated measures design. ",
+          "Each subject must appear exactly once per ",
+          "level of '", within_col, "'."
+        ))
+      }
+
+      if (length(between_cols) == 0) {
+        # Pure within-subject: Friedman test
+        # Requires a matrix: rows = subjects, cols = conditions
+        wide_df <- stats$reshape(
+          df[, c(id_col, within_col, measure_col)],
+          idvar = id_col,
+          timevar = within_col,
+          direction = "wide"
+        )
+        measure_cols_wide <- setdiff(names(wide_df), id_col)
+        y_matrix <- as.matrix(
+          wide_df[, measure_cols_wide, drop = FALSE]
+        )
+
+        friedman_result <- stats$friedman.test(y_matrix)
+
+        data.frame(
+          Effect = within_col,
+          Df = as.integer(
+            friedman_result$parameter[["df"]]
+          ),
+          Chi.Sq.Statistic = signif(
+            friedman_result$statistic[["Friedman chi-squared"]], 3
+          ),
+          p.value = signif(friedman_result$p.value, 3),
+          stringsAsFactors = FALSE
+        )
+      } else {
+        # Mixed design: ART with Error(ID) term
+        fixed_terms <- paste0(
+          "`", c(between_cols, within_col), "`",
+          collapse = " * "
+        )
+        formula_str <- paste0(
+          "`", measure_col, "` ~ ", fixed_terms,
+          " + Error(`", id_col, "`)"
+        )
+        formula_obj <- stats$as.formula(formula_str)
+
+        art_result <- run_art_anova(formula_obj, df)
+
+        # Extract effect rows
+        effect_names <- rownames(art_result)
+        data.frame(
+          Effect = effect_names,
+          Df = as.integer(art_result[, "Df"]),
+          Df.res = as.integer(art_result[, "Df.res"]),
+          F.Statistic = signif(
+            art_result[, "F value"], 3
+          ),
+          p.value = signif(art_result[, "Pr(>F)"], 3),
+          stringsAsFactors = FALSE,
+          row.names = NULL
+        )
+      }
+    },
+    operation_name = "rm_nonparametric",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }
