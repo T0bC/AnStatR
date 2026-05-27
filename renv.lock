@@ -1,15 +1,35 @@
 {
   "R": {
-    "Version": "4.5.2",
+    "Version": "4.6.0",
     "Repositories": [
       {
         "Name": "https://CRAN.R-project.org",
         "URL": "https://CRAN.R-project.org"
+      },
+      {
+        "Name": "BioCsoft",
+        "URL": "https://bioconductor.org/packages/3.23/bioc"
+      },
+      {
+        "Name": "BioCann",
+        "URL": "https://bioconductor.org/packages/3.23/data/annotation"
+      },
+      {
+        "Name": "BioCexp",
+        "URL": "https://bioconductor.org/packages/3.23/data/experiment"
+      },
+      {
+        "Name": "BioCworkflows",
+        "URL": "https://bioconductor.org/packages/3.23/workflows"
+      },
+      {
+        "Name": "BioCbooks",
+        "URL": "https://bioconductor.org/packages/3.23/books"
       }
     ]
   },
   "Bioconductor": {
-    "Version": "3.22"
+    "Version": "3.23"
   },
   "Packages": {
     "ARTool": {
@@ -93,7 +113,7 @@
     },
     "BiocVersion": {
       "Package": "BiocVersion",
-      "Version": "3.22.0",
+      "Version": "3.23.1",
       "Source": "Bioconductor",
       "Title": "Set the appropriate version of Bioconductor packages",
       "Description": "This package provides repository information for the appropriate version of Bioconductor.",
@@ -105,13 +125,14 @@
       "License": "Artistic-2.0",
       "Encoding": "UTF-8",
       "RoxygenNote": "6.0.1",
-      "Repository": "https://bioc-release.r-universe.dev",
-      "RemoteUrl": "https://github.com/bioc/BiocVersion",
-      "RemoteRef": "RELEASE_3_22",
-      "RemoteSha": "fea53ac938311018c7513d2339cdd5f928cd72c5",
+      "Repository": "https://bioc.r-universe.dev",
       "NeedsCompilation": "no",
       "Author": "Martin Morgan [aut], Marcel Ramos [ctb], Bioconductor Package Maintainer [ctb, cre]",
-      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>"
+      "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/bioc/BiocVersion",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "252d7c8f03a39a9b83f6de7e9dbf9a5ee6584365"
     },
     "DEoptimR": {
       "Package": "DEoptimR",
@@ -421,7 +442,7 @@
       "License": "GPL (>= 2)",
       "LazyLoad": "yes",
       "NeedsCompilation": "yes",
-      "Repository": "http://cran.r-project.org",
+      "Repository": "CRAN",
       "LinkingTo": [
         "Rcpp",
         "lamW"
@@ -470,10 +491,10 @@
     },
     "Matrix": {
       "Package": "Matrix",
-      "Version": "1.7-4",
+      "Version": "1.7-5",
       "Source": "Repository",
       "VersionNote": "do also bump src/version.h, inst/include/Matrix/version.h",
-      "Date": "2025-08-27",
+      "Date": "2026-03-20",
       "Priority": "recommended",
       "Title": "Sparse and Dense Matrix Classes and Methods",
       "Description": "A rich hierarchy of sparse and dense matrix classes, including general, symmetric, triangular, and diagonal matrices with numeric, logical, or pattern entries.  Efficient methods for operating on such matrices, often wrapping the 'BLAS', 'LAPACK', and 'SuiteSparse' libraries.",
@@ -750,13 +771,13 @@
     },
     "RcppArmadillo": {
       "Package": "RcppArmadillo",
-      "Version": "15.2.3-1",
-      "Source": "Local",
+      "Version": "15.2.6-1",
+      "Source": "Repository",
       "Type": "Package",
       "Title": "'Rcpp' Integration for the 'Armadillo' Templated Linear Algebra Library",
-      "Date": "2025-12-16",
+      "Date": "2026-04-20",
       "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\", comment = c(ORCID = \"0000-0001-6419-907X\")), person(\"Romain\", \"Francois\", role = \"aut\", comment = c(ORCID = \"0000-0002-2444-4226\")), person(\"Doug\", \"Bates\", role = \"aut\", comment = c(ORCID = \"0000-0001-8316-9503\")), person(\"Binxiang\", \"Ni\", role = \"aut\"), person(\"Conrad\", \"Sanderson\", role = \"aut\", comment = c(ORCID = \"0000-0002-0049-4501\")))",
-      "Description": "'Armadillo' is a templated C++ linear algebra library aiming towards a good balance between speed and ease of use. It provides high-level syntax and functionality deliberately similar to Matlab. It is useful for algorithm development directly in C++, or quick conversion of research code into production environments. It provides efficient classes for vectors, matrices and cubes where dense and sparse matrices are supported. Integer, floating point and complex numbers are supported. A sophisticated expression evaluator (based on template meta-programming) automatically combines several operations to increase speed and efficiency. Dynamic evaluation automatically chooses optimal code paths based on detected matrix structures. Matrix decompositions are provided through integration with LAPACK, or one of its high performance drop-in replacements (such as 'MKL' or 'OpenBLAS'). It can automatically use 'OpenMP' multi-threading (parallelisation) to speed up computationally expensive operations. . The 'RcppArmadillo' package includes the header files from the 'Armadillo' library; users do not need to install 'Armadillo' itself in order to use 'RcppArmadillo'. Starting from release 15.0.0, the minimum compilation standard is C++14 so 'Armadillo' version 14.6.3 is included as a fallback when an R package forces the C++11 standard. Package authors should set a '#define' to select the 'current' version, or select the 'legacy' version (also chosen as default) if they must. See 'GitHub issue #475' for details. . Since release 7.800.0, 'Armadillo' is licensed under Apache License 2; previous releases were under licensed as MPL 2.0 from version 3.800.0 onwards and LGPL-3 prior to that; 'RcppArmadillo' (the 'Rcpp' bindings/bridge to Armadillo) is licensed under the GNU GPL version 2 or later, as is the rest of 'Rcpp'.",
+      "Description": "'Armadillo' is a templated C++ linear algebra library aiming towards a good balance between speed and ease of use. It provides high-level syntax and functionality deliberately similar to Matlab. It is useful for algorithm development directly in C++, or quick conversion of research code into production environments. It provides efficient classes for vectors, matrices and cubes where dense and sparse matrices are supported. Integer, floating point and complex numbers are supported. A sophisticated expression evaluator (based on template meta-programming) automatically combines several operations to increase speed and efficiency. Dynamic evaluation automatically chooses optimal code paths based on detected matrix structures. Matrix decompositions are provided through integration with LAPACK, or one of its high performance drop-in replacements (such as 'MKL' or 'OpenBLAS'). It can automatically use 'OpenMP' multi-threading (parallelisation) to speed up computationally expensive operations. . The 'RcppArmadillo' package includes the header files from the 'Armadillo' library; users do not need to install 'Armadillo' itself in order to use 'RcppArmadillo'. Starting from release 15.0.0, the minimum compilation standard is C++14. . Since release 7.800.0, 'Armadillo' is licensed under Apache License 2; previous releases were under licensed as MPL 2.0 from version 3.800.0 onwards and LGPL-3 prior to that; 'RcppArmadillo' (the 'Rcpp' bindings/bridge to Armadillo) is licensed under the GNU GPL version 2 or later, as is the rest of 'Rcpp'.",
       "License": "GPL (>= 2)",
       "LazyLoad": "yes",
       "Depends": [
@@ -766,7 +787,7 @@
         "Rcpp"
       ],
       "Imports": [
-        "Rcpp (>= 1.0.12)",
+        "Rcpp (>= 1.1.1)",
         "stats",
         "utils",
         "methods"
@@ -781,17 +802,17 @@
       "URL": "https://github.com/RcppCore/RcppArmadillo, https://dirk.eddelbuettel.com/code/rcpp.armadillo.html",
       "BugReports": "https://github.com/RcppCore/RcppArmadillo/issues",
       "RoxygenNote": "6.0.1",
+      "Encoding": "UTF-8",
+      "VignetteBuilder": "Rcpp",
       "NeedsCompilation": "yes",
       "Author": "Dirk Eddelbuettel [aut, cre] (ORCID: <https://orcid.org/0000-0001-6419-907X>), Romain Francois [aut] (ORCID: <https://orcid.org/0000-0002-2444-4226>), Doug Bates [aut] (ORCID: <https://orcid.org/0000-0001-8316-9503>), Binxiang Ni [aut], Conrad Sanderson [aut] (ORCID: <https://orcid.org/0000-0002-0049-4501>)",
       "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
-      "Repository": "CRAN",
-      "RemoteType": "local",
-      "RemoteUrl": "C:/Users/meissnerto/Downloads/RcppArmadillo_15.2.3-1.zip"
+      "Repository": "CRAN"
     },
     "RcppEigen": {
       "Package": "RcppEigen",
       "Version": "0.3.4.0.2",
-      "Source": "Local",
+      "Source": "Repository",
       "Type": "Package",
       "Title": "'Rcpp' Integration for the 'Eigen' Templated Linear Algebra Library",
       "Date": "2024-08-23",
@@ -823,9 +844,7 @@
       "NeedsCompilation": "yes",
       "Author": "Doug Bates [aut] (<https://orcid.org/0000-0001-8316-9503>), Dirk Eddelbuettel [aut, cre] (<https://orcid.org/0000-0001-6419-907X>), Romain Francois [aut] (<https://orcid.org/0000-0002-2444-4226>), Yixuan Qiu [aut] (<https://orcid.org/0000-0003-0109-6692>), Authors of Eigen [cph] (Authorship and copyright in included Eigen library as detailed in inst/COPYRIGHTS)",
       "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
-      "Repository": "CRAN",
-      "RemoteType": "local",
-      "RemoteUrl": "C:/Users/meissnerto/Downloads/RcppEigen_0.3.4.0.2.zip"
+      "Repository": "CRAN"
     },
     "RcppParallel": {
       "Package": "RcppParallel",
@@ -1229,7 +1248,7 @@
       "NeedsCompilation": "no",
       "Author": "Ryan A Peterson [aut, cre] (ORCID: <https://orcid.org/0000-0002-4650-5798>)",
       "Maintainer": "Ryan A Peterson <ryan-peterson@uiowa.edu>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "boot": {
       "Package": "boot",
@@ -1708,7 +1727,7 @@
       "NeedsCompilation": "no",
       "Author": "Joyce Cahoon [aut] (ORCID: <https://orcid.org/0000-0001-7217-4702>), Davis Vaughan [aut], Max Kuhn [cre, aut] (ORCID: <https://orcid.org/0000-0003-2402-136X>), Alex Hayes [aut], Julia Silge [aut] (ORCID: <https://orcid.org/0000-0002-3671-836X>), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Max Kuhn <max@posit.co>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "ca": {
       "Package": "ca",
@@ -2039,7 +2058,7 @@
       "NeedsCompilation": "yes",
       "Author": "Davis Vaughan [aut, cre], Posit Software, PBC [cph, fnd]",
       "Maintainer": "Davis Vaughan <davis@posit.co>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "cluster": {
       "Package": "cluster",
@@ -2689,7 +2708,7 @@
       "License": "GPL (>= 2)",
       "LazyData": "yes",
       "NeedsCompilation": "no",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "diffobj": {
       "Package": "diffobj",
@@ -2835,7 +2854,7 @@
       "NeedsCompilation": "no",
       "Author": "Folashade Daniel [cre], Microsoft Corporation [aut, cph], Steve Weston [aut], Dan Tenenbaum [ctb]",
       "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "doRNG": {
       "Package": "doRNG",
@@ -2875,7 +2894,7 @@
       "NeedsCompilation": "no",
       "Author": "Renaud Gaujoux [aut], Emilio L. Sáenz Guillén [cre]",
       "Maintainer": "Emilio L. Sáenz Guillén <Emilio.Saenz-Guillen@citystgeorges.ac.uk>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "donut": {
       "Package": "donut",
@@ -3437,10 +3456,10 @@
     },
     "foreign": {
       "Package": "foreign",
-      "Version": "0.8-90",
+      "Version": "0.8-91",
       "Source": "Repository",
       "Priority": "recommended",
-      "Date": "2025-03-31",
+      "Date": "2026-01-29",
       "Title": "Read Data Stored by 'Minitab', 'S', 'SAS', 'SPSS', 'Stata', 'Systat', 'Weka', 'dBase', ...",
       "Depends": [
         "R (>= 4.0.0)"
@@ -3461,7 +3480,7 @@
       "MailingList": "R-help@r-project.org",
       "URL": "https://svn.r-project.org/R-packages/trunk/foreign/",
       "NeedsCompilation": "yes",
-      "Author": "R Core Team [aut, cph, cre] (02zz1nj61), Roger Bivand [ctb, cph], Vincent J. Carey [ctb, cph], Saikat DebRoy [ctb, cph], Stephen Eglen [ctb, cph], Rajarshi Guha [ctb, cph], Swetlana Herbrandt [ctb], Nicholas Lewin-Koh [ctb, cph], Mark Myatt [ctb, cph], Michael Nelson [ctb], Ben Pfaff [ctb], Brian Quistorff [ctb], Frank Warmerdam [ctb, cph], Stephen Weigand [ctb, cph], Free Software Foundation, Inc. [cph]",
+      "Author": "R Core Team [aut, cph, cre] (ROR: <https://ror.org/02zz1nj61>), Roger Bivand [ctb, cph], Vincent J. Carey [ctb, cph], Saikat DebRoy [ctb, cph], Stephen Eglen [ctb, cph], Rajarshi Guha [ctb, cph], Swetlana Herbrandt [ctb], Nicholas Lewin-Koh [ctb, cph], Mark Myatt [ctb, cph], Michael Nelson [ctb], Ben Pfaff [ctb], Brian Quistorff [ctb], Frank Warmerdam [ctb, cph], Stephen Weigand [ctb, cph], Free Software Foundation, Inc. [cph]",
       "Maintainer": "R Core Team <R-core@R-project.org>",
       "Repository": "CRAN"
     },
@@ -3608,7 +3627,7 @@
       "NeedsCompilation": "no",
       "Author": "Henrik Bengtsson [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-7579-5165>), R Core Team [cph, ctb]",
       "Maintainer": "Henrik Bengtsson <henrikb@braju.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "gclus": {
       "Package": "gclus",
@@ -3636,7 +3655,7 @@
     },
     "gdtools": {
       "Package": "gdtools",
-      "Version": "0.5.0",
+      "Version": "0.5.1",
       "Source": "Repository",
       "Title": "Font Metrics and Font Management Utilities for R Graphics",
       "Authors@R": "c( person(\"David\", \"Gohel\", , \"david.gohel@ardata.fr\", role = c(\"aut\", \"cre\")), person(\"Hadley\", \"Wickham\", , \"hadley@rstudio.com\", role = \"aut\"), person(\"Lionel\", \"Henry\", , \"lionel@rstudio.com\", role = \"aut\"), person(\"Jeroen\", \"Ooms\", , \"jeroen@berkeley.edu\", role = \"aut\", comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"Yixuan\", \"Qiu\", role = \"ctb\"), person(\"R Core Team\", role = \"cph\", comment = \"Cairo code from X11 device\"), person(\"ArData\", role = \"cph\"), person(\"RStudio\", role = \"cph\") )",
@@ -3664,8 +3683,8 @@
         "Rcpp"
       ],
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.3",
       "SystemRequirements": "cairo, freetype2, fontconfig",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "yes",
       "Author": "David Gohel [aut, cre], Hadley Wickham [aut], Lionel Henry [aut], Jeroen Ooms [aut] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Yixuan Qiu [ctb], R Core Team [cph] (Cairo code from X11 device), ArData [cph], RStudio [cph]",
       "Maintainer": "David Gohel <david.gohel@ardata.fr>",
@@ -3971,7 +3990,7 @@
       "RoxygenNote": "7.3.2",
       "NeedsCompilation": "yes",
       "Author": "Mark van der Loo [aut, cre], David Turner [ctb]",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "gridExtra": {
       "Package": "gridExtra",
@@ -4203,7 +4222,7 @@
       "NeedsCompilation": "no",
       "Author": "Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>), R Consortium [fnd], Posit Software, PBC [fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "hopkins": {
       "Package": "hopkins",
@@ -4542,7 +4561,7 @@
       "NeedsCompilation": "yes",
       "Author": "Andrea Peters [aut], Torsten Hothorn [aut, cre], Brian D. Ripley [ctb], Terry Therneau [ctb], Beth Atkinson [ctb]",
       "Maintainer": "Torsten Hothorn <Torsten.Hothorn@R-project.org>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "isoband": {
       "Package": "isoband",
@@ -4864,9 +4883,9 @@
     },
     "lattice": {
       "Package": "lattice",
-      "Version": "0.22-7",
+      "Version": "0.22-9",
       "Source": "Repository",
-      "Date": "2025-03-31",
+      "Date": "2026-02-03",
       "Priority": "recommended",
       "Title": "Trellis Graphics for R",
       "Authors@R": "c(person(\"Deepayan\", \"Sarkar\", role = c(\"aut\", \"cre\"), email = \"deepayan.sarkar@r-project.org\", comment = c(ORCID = \"0000-0003-4107-1553\")), person(\"Felix\", \"Andrews\", role = \"ctb\"), person(\"Kevin\", \"Wright\", role = \"ctb\", comment = \"documentation\"), person(\"Neil\", \"Klepeis\", role = \"ctb\"), person(\"Johan\", \"Larsson\", role = \"ctb\", comment = \"miscellaneous improvements\"), person(\"Zhijian (Jason)\", \"Wen\", role = \"cph\", comment = \"filled contour code\"), person(\"Paul\", \"Murrell\", role = \"ctb\", email = \"paul@stat.auckland.ac.nz\"), person(\"Stefan\", \"Eng\", role = \"ctb\", comment = \"violin plot improvements\"), person(\"Achim\", \"Zeileis\", role = \"ctb\", comment = \"modern colors\"), person(\"Alexandre\", \"Courtiol\", role = \"ctb\", comment = \"generics for larrows, lpolygon, lrect and lsegments\") )",
@@ -4897,7 +4916,7 @@
       "URL": "https://lattice.r-forge.r-project.org/",
       "BugReports": "https://github.com/deepayan/lattice/issues",
       "NeedsCompilation": "yes",
-      "Author": "Deepayan Sarkar [aut, cre] (<https://orcid.org/0000-0003-4107-1553>), Felix Andrews [ctb], Kevin Wright [ctb] (documentation), Neil Klepeis [ctb], Johan Larsson [ctb] (miscellaneous improvements), Zhijian (Jason) Wen [cph] (filled contour code), Paul Murrell [ctb], Stefan Eng [ctb] (violin plot improvements), Achim Zeileis [ctb] (modern colors), Alexandre Courtiol [ctb] (generics for larrows, lpolygon, lrect and lsegments)",
+      "Author": "Deepayan Sarkar [aut, cre] (ORCID: <https://orcid.org/0000-0003-4107-1553>), Felix Andrews [ctb], Kevin Wright [ctb] (documentation), Neil Klepeis [ctb], Johan Larsson [ctb] (miscellaneous improvements), Zhijian (Jason) Wen [cph] (filled contour code), Paul Murrell [ctb], Stefan Eng [ctb] (violin plot improvements), Achim Zeileis [ctb] (modern colors), Alexandre Courtiol [ctb] (generics for larrows, lpolygon, lrect and lsegments)",
       "Maintainer": "Deepayan Sarkar <deepayan.sarkar@r-project.org>",
       "Repository": "CRAN"
     },
@@ -5643,7 +5662,7 @@
     "mda": {
       "Package": "mda",
       "Version": "0.5-5",
-      "Source": "Local",
+      "Source": "Repository",
       "Date": "2024-11-05",
       "Authors@R": "c(person(given = \"Trevor\", family = \"Hastie\", role = c(\"aut\",\"cre\"), comment=\"Original co-author of the S package `mda`\", email = \"hastie@stanford.edu\"), person(given =  \"Robert\", family = \"Tibshirani\", role = \"aut\", comment=\"Original co-author of the S package `mda`\"), person(given =  \"Balasubramanian\", family = \"Narasimhan\", role = \"ctb\", comment=\"Contributed to the upgrading of code\"), person(given =  \"Friedrich\", family = \"Leisch\", role = \"ctb\", comment=\"Original R port from the S package\"), person(given = \"Kurt\", family = \"Hornik\", role = \"ctb\", comment=\"Original R port from the S package\"), person(given = \"Brian\",   family = \"Ripley\", role = \"ctb\", comment=\"Original R port from the S package\"))",
       "Description": "Mixture and flexible discriminant analysis, multivariate adaptive regression splines (MARS), BRUTO, and vector-response smoothing splines. Hastie, Tibshirani and Friedman (2009) \"Elements of Statistical Learning (second edition, chap 12)\" Springer, New York.",
@@ -5661,9 +5680,7 @@
       "Repository": "CRAN",
       "NeedsCompilation": "yes",
       "Author": "Trevor Hastie [aut, cre] (Original co-author of the S package `mda`), Robert Tibshirani [aut] (Original co-author of the S package `mda`), Balasubramanian Narasimhan [ctb] (Contributed to the upgrading of code), Friedrich Leisch [ctb] (Original R port from the S package), Kurt Hornik [ctb] (Original R port from the S package), Brian Ripley [ctb] (Original R port from the S package)",
-      "Maintainer": "Trevor Hastie <hastie@stanford.edu>",
-      "RemoteType": "local",
-      "RemoteUrl": "C:/Users/meissnerto/Downloads/mda_0.5-5.zip"
+      "Maintainer": "Trevor Hastie <hastie@stanford.edu>"
     },
     "memoise": {
       "Package": "memoise",
@@ -5697,14 +5714,14 @@
     },
     "mgcv": {
       "Package": "mgcv",
-      "Version": "1.9-3",
+      "Version": "1.9-4",
       "Source": "Repository",
       "Authors@R": "person(given = \"Simon\", family = \"Wood\", role = c(\"aut\", \"cre\"), email = \"simon.wood@r-project.org\")",
       "Title": "Mixed GAM Computation Vehicle with Automatic Smoothness Estimation",
-      "Description": "Generalized additive (mixed) models, some of their extensions and  other generalized ridge regression with multiple smoothing  parameter estimation by (Restricted) Marginal Likelihood,  Generalized Cross Validation and similar, or using iterated  nested Laplace approximation for fully Bayesian inference. See  Wood (2017) <doi:10.1201/9781315370279> for an overview.  Includes a gam() function, a wide variety of smoothers, 'JAGS'  support and distributions beyond the exponential family.",
+      "Description": "Generalized additive (mixed) models, some of their extensions and  other generalized ridge regression with multiple smoothing  parameter estimation by (Restricted) Marginal Likelihood,  Cross Validation and similar, or using iterated nested Laplace approximation for fully Bayesian inference. See Wood (2025) <doi:10.1146/annurev-statistics-112723-034249> for an overview. Includes a gam() function, a wide variety of smoothers, 'JAGS' support and distributions beyond the exponential family.",
       "Priority": "recommended",
       "Depends": [
-        "R (>= 3.6.0)",
+        "R (>= 4.4.0)",
         "nlme (>= 3.1-64)"
       ],
       "Imports": [
@@ -5947,9 +5964,9 @@
     },
     "nlme": {
       "Package": "nlme",
-      "Version": "3.1-168",
+      "Version": "3.1-169",
       "Source": "Repository",
-      "Date": "2025-03-31",
+      "Date": "2026-03-27",
       "Priority": "recommended",
       "Title": "Linear and Nonlinear Mixed Effects Models",
       "Authors@R": "c(person(\"José\", \"Pinheiro\", role = \"aut\", comment = \"S version\"), person(\"Douglas\", \"Bates\", role = \"aut\", comment = \"up to 2007\"), person(\"Saikat\", \"DebRoy\", role = \"ctb\", comment = \"up to 2002\"), person(\"Deepayan\", \"Sarkar\", role = \"ctb\", comment = \"up to 2005\"), person(\"EISPACK authors\", role = \"ctb\", comment = \"src/rs.f\"), person(\"Siem\", \"Heisterkamp\", role = \"ctb\", comment = \"Author fixed sigma\"), person(\"Bert\", \"Van Willigen\",role = \"ctb\", comment = \"Programmer fixed sigma\"), person(\"Johannes\", \"Ranke\", role = \"ctb\", comment = \"varConstProp()\"), person(\"R Core Team\", email = \"R-core@R-project.org\", role = c(\"aut\", \"cre\"), comment = c(ROR = \"02zz1nj61\")))",
@@ -5975,7 +5992,7 @@
       "MailingList": "R-help@r-project.org",
       "URL": "https://svn.r-project.org/R-packages/trunk/nlme/",
       "NeedsCompilation": "yes",
-      "Author": "José Pinheiro [aut] (S version), Douglas Bates [aut] (up to 2007), Saikat DebRoy [ctb] (up to 2002), Deepayan Sarkar [ctb] (up to 2005), EISPACK authors [ctb] (src/rs.f), Siem Heisterkamp [ctb] (Author fixed sigma), Bert Van Willigen [ctb] (Programmer fixed sigma), Johannes Ranke [ctb] (varConstProp()), R Core Team [aut, cre] (02zz1nj61)",
+      "Author": "José Pinheiro [aut] (S version), Douglas Bates [aut] (up to 2007), Saikat DebRoy [ctb] (up to 2002), Deepayan Sarkar [ctb] (up to 2005), EISPACK authors [ctb] (src/rs.f), Siem Heisterkamp [ctb] (Author fixed sigma), Bert Van Willigen [ctb] (Programmer fixed sigma), Johannes Ranke [ctb] (varConstProp()), R Core Team [aut, cre] (ROR: <https://ror.org/02zz1nj61>)",
       "Maintainer": "R Core Team <R-core@R-project.org>",
       "Repository": "CRAN"
     },
@@ -6046,7 +6063,7 @@
       "Author": "Juergen Gross [aut], Uwe Ligges [aut, cre]",
       "Maintainer": "Uwe Ligges <ligges@statistik.tu-dortmund.de>",
       "NeedsCompilation": "no",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "numDeriv": {
       "Package": "numDeriv",
@@ -6065,7 +6082,7 @@
       "Maintainer": "Paul Gilbert <pgilbert.ttv9z@ncf.ca>",
       "URL": "http://optimizer.r-forge.r-project.org/",
       "NeedsCompilation": "no",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "openssl": {
       "Package": "openssl",
@@ -6690,7 +6707,7 @@
       "NeedsCompilation": "no",
       "Author": "Gabor Csardi [aut, cre], Bill Denney [ctb] (<https://orcid.org/0000-0002-5759-428X>), Christophe Regouby [ctb]",
       "Maintainer": "Gabor Csardi <csardi.gabor@gmail.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "processx": {
       "Package": "processx",
@@ -6807,7 +6824,7 @@
       "NeedsCompilation": "no",
       "Author": "Gábor Csárdi [aut, cre], Rich FitzJohn [aut], Posit Software, PBC [cph, fnd]",
       "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "progressr": {
       "Package": "progressr",
@@ -7691,7 +7708,7 @@
       "NeedsCompilation": "no",
       "Author": "Renaud Gaujoux [aut, cre], Max Kuhn [ctb]",
       "Maintainer": "Renaud Gaujoux <renozao@protonmail.com>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "robustbase": {
       "Package": "robustbase",
@@ -7753,11 +7770,11 @@
     },
     "rpart": {
       "Package": "rpart",
-      "Version": "4.1.24",
+      "Version": "4.1.27",
       "Source": "Repository",
       "Priority": "recommended",
-      "Date": "2025-01-06",
-      "Authors@R": "c(person(\"Terry\", \"Therneau\", role = \"aut\", email = \"therneau@mayo.edu\"), person(\"Beth\", \"Atkinson\", role = c(\"aut\", \"cre\"), email = \"atkinson@mayo.edu\"), person(\"Brian\", \"Ripley\", role = \"trl\", email = \"ripley@stats.ox.ac.uk\", comment = \"producer of the initial R port, maintainer 1999-2017\"))",
+      "Date": "2026-03-26",
+      "Authors@R": "c(person(\"Terry\", \"Therneau\", role = \"aut\", email = \"therneau@mayo.edu\"), person(\"Beth\", \"Atkinson\", role = c(\"aut\", \"cre\"), email = \"atkinson@mayo.edu\"), person(\"Brian\", \"Ripley\", role = \"trl\", email = \"Brian.Ripley@R-project.org\", comment = \"producer of the initial R port, maintainer 1999-2017\"))",
       "Description": "Recursive partitioning for classification,  regression and survival trees.  An implementation of most of the  functionality of the 1984 book by Breiman, Friedman, Olshen and Stone.",
       "Title": "Recursive Partitioning and Regression Trees",
       "Depends": [
@@ -7994,7 +8011,7 @@
       "Description": "Functions for plotting graphical shapes such as ellipses, circles, cylinders, arrows, ...",
       "License": "GPL (>= 3)",
       "NeedsCompilation": "no",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "shiny": {
       "Package": "shiny",
@@ -8237,7 +8254,7 @@
       "NeedsCompilation": "yes",
       "Author": "Emil Hvitfeldt [aut, cre] (ORCID: <https://orcid.org/0000-0002-0679-1945>), Davis Vaughan [ctb], Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Emil Hvitfeldt <emil.hvitfeldt@posit.co>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "stringi": {
       "Package": "stringi",
@@ -8418,11 +8435,11 @@
     },
     "survival": {
       "Package": "survival",
-      "Version": "3.8-3",
+      "Version": "3.8-6",
       "Source": "Repository",
       "Title": "Survival Analysis",
       "Priority": "recommended",
-      "Date": "2024-12-17",
+      "Date": "2026-01-09",
       "Depends": [
         "R (>= 3.5.0)"
       ],
@@ -8857,7 +8874,7 @@
       "NeedsCompilation": "no",
       "Author": "Diethelm Wuertz [aut] (original code), Tobias Setz [aut], Yohan Chalabi [aut], Martin Maechler [ctb] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Joe W. Byers [ctb], Georgi N. Boshnakov [cre, aut] (ORCID: <https://orcid.org/0000-0003-2839-346X>)",
       "Maintainer": "Georgi N. Boshnakov <georgi.boshnakov@manchester.ac.uk>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "timechange": {
       "Package": "timechange",
@@ -8943,7 +8960,7 @@
       "NeedsCompilation": "yes",
       "Author": "Davis Vaughan [aut, cre], Posit Software, PBC [cph, fnd], Tree-sitter authors [cph] (Tree-sitter C library)",
       "Maintainer": "Davis Vaughan <davis@posit.co>",
-      "Repository": "https://packagemanager.posit.co/cran/latest"
+      "Repository": "CRAN"
     },
     "treesitter.r": {
       "Package": "treesitter.r",
@@ -8970,7 +8987,7 @@
       "NeedsCompilation": "yes",
       "Author": "Davis Vaughan [aut, cre], Posit Software, PBC [cph, fnd], Tree-sitter authors [cph] (Tree-sitter C headers and parser.c)",
       "Maintainer": "Davis Vaughan <davis@posit.co>",
-      "Repository": "https://packagemanager.posit.co/cran/latest"
+      "Repository": "CRAN"
     },
     "tzdb": {
       "Package": "tzdb",
@@ -9000,7 +9017,7 @@
       "NeedsCompilation": "yes",
       "Author": "Davis Vaughan [aut, cre], Howard Hinnant [cph] (Author of the included date library), Posit Software, PBC [cph, fnd]",
       "Maintainer": "Davis Vaughan <davis@posit.co>",
-      "Repository": "http://cran.r-project.org"
+      "Repository": "CRAN"
     },
     "urca": {
       "Package": "urca",
@@ -9109,10 +9126,10 @@
     },
     "vegan": {
       "Package": "vegan",
-      "Version": "2.7-3",
+      "Version": "2.7-5",
       "Source": "Repository",
       "Title": "Community Ecology Package",
-      "Authors@R": "c(person(\"Jari\", \"Oksanen\", role=c(\"aut\",\"cre\"), email=\"jhoksane@gmail.com\"), person(\"Gavin L.\", \"Simpson\", role=\"aut\", email=\"ucfagls@gmail.com\"), person(\"F. Guillaume\", \"Blanchet\", role=\"aut\"), person(\"Roeland\", \"Kindt\", role=\"aut\"), person(\"Pierre\", \"Legendre\", role=\"aut\"), person(\"Peter R.\", \"Minchin\", role=\"aut\"), person(\"R.B.\", \"O'Hara\", role=\"aut\"), person(\"Peter\", \"Solymos\", role=\"aut\"), person(\"M. Henry H.\", \"Stevens\", role=\"aut\"), person(\"Eduard\", \"Szoecs\", role=\"aut\"), person(\"Helene\", \"Wagner\", role=\"aut\"), person(\"Matt\", \"Barbour\", role=\"aut\"), person(\"Michael\", \"Bedward\", role=\"aut\"), person(\"Ben\", \"Bolker\", role=\"aut\"), person(\"Daniel\", \"Borcard\", role=\"aut\"), person(\"Tuomas\", \"Borman\", role=\"aut\"), person(\"Gustavo\", \"Carvalho\", role=\"aut\"), person(\"Michael\", \"Chirico\", role=\"aut\"), person(\"Miquel\", \"De Caceres\", role=\"aut\"), person(\"Sebastien\", \"Durand\", role=\"aut\"), person(\"Heloisa Beatriz Antoniazi\", \"Evangelista\", role=\"aut\"), person(\"Rich\", \"FitzJohn\", role=\"aut\"), person(\"Michael\", \"Friendly\", role=\"aut\"), person(\"Brendan\",\"Furneaux\", role=\"aut\"), person(\"Geoffrey\", \"Hannigan\", role=\"aut\"), person(\"Mark O.\", \"Hill\", role=\"aut\"), person(\"Leo\", \"Lahti\", role=\"aut\"), person(\"Cameron\", \"Martino\", role=\"aut\"), person(\"Dan\", \"McGlinn\", role=\"aut\"), person(\"Marie-Helene\", \"Ouellette\", role=\"aut\"), person(\"Eduardo\", \"Ribeiro Cunha\", role=\"aut\"), person(\"Tyler\", \"Smith\", role=\"aut\"), person(\"Adrian\", \"Stier\", role=\"aut\"), person(\"Cajo J.F.\", \"Ter Braak\", role=\"aut\"), person(\"James\", \"Weedon\", role=\"aut\"))",
+      "Authors@R": "c(person(\"Jari\", \"Oksanen\", role=c(\"aut\",\"cre\"), email=\"jhoksane@gmail.com\", comment = c(ORCID=\"0000-0001-7102-9626\")), person(\"Gavin L.\", \"Simpson\", role=\"aut\", email=\"ucfagls@gmail.com\", comment = c(ORCID = \"0000-0002-9084-8413\")), person(\"F. Guillaume\", \"Blanchet\", role=\"aut\"), person(\"Roeland\", \"Kindt\", role=\"aut\"), person(\"Pierre\", \"Legendre\", role=\"aut\"), person(\"Peter R.\", \"Minchin\", role=\"aut\"), person(\"R.B.\", \"O'Hara\", role=\"aut\"), person(\"Peter\", \"Solymos\", role=\"aut\"), person(\"M. Henry H.\", \"Stevens\", role=\"aut\"), person(\"Eduard\", \"Szoecs\", role=\"aut\"), person(\"Helene\", \"Wagner\", role=\"aut\"), person(\"Matt\", \"Barbour\", role=\"ctb\"), person(\"Michael\", \"Bedward\", role=\"aut\"), person(\"Henrik\", \"Bengtsson\", role=\"ctb\"), person(\"Ben\", \"Bolker\", role=\"aut\"), person(\"Daniel\", \"Borcard\", role=\"aut\"), person(\"Tuomas\", \"Borman\", role=\"ctb\"), person(\"Gustavo\", \"Carvalho\", role=\"aut\"), person(\"Michael\", \"Chirico\", role=\"ctb\"), person(\"Miquel\", \"De Caceres\", role=\"aut\"), person(\"Sebastien\", \"Durand\", role=\"aut\"), person(\"Heloisa Beatriz Antoniazi\", \"Evangelista\", role=\"aut\"), person(\"Rich\", \"FitzJohn\", role=\"ctb\"), person(\"Michael\", \"Friendly\", role=\"ctb\"), person(\"Brendan\",\"Furneaux\", role=\"ctb\"), person(\"Geoffrey\", \"Hannigan\", role=\"aut\"), person(\"Isaac\", \"Heida\", role=\"ctb\"), person(\"Mark O.\", \"Hill\", role=\"aut\"), person(\"Leo\", \"Lahti\", role=\"aut\"), person(\"Cameron\", \"Martino\", role=\"aut\"), person(\"Dan\", \"McGlinn\", role=\"ctb\"), person(\"Marie-Helene\", \"Ouellette\", role=\"aut\"), person(\"Eduardo\", \"Ribeiro Cunha\", role=\"aut\"), person(\"Tyler\", \"Smith\", role=\"aut\"), person(\"Adrian\", \"Stier\", role=\"aut\"), person(\"Cajo J.F.\", \"Ter Braak\", role=\"aut\"), person(\"James\", \"Weedon\", role=\"aut\"))",
       "Depends": [
         "permute (>= 0.9-0)",
         "R (>= 4.1.0)"
@@ -9134,7 +9151,7 @@
       "BugReports": "https://github.com/vegandevs/vegan/issues",
       "URL": "https://vegandevs.github.io/vegan/, https://github.com/vegandevs/vegan",
       "NeedsCompilation": "yes",
-      "Author": "Jari Oksanen [aut, cre], Gavin L. Simpson [aut], F. Guillaume Blanchet [aut], Roeland Kindt [aut], Pierre Legendre [aut], Peter R. Minchin [aut], R.B. O'Hara [aut], Peter Solymos [aut], M. Henry H. Stevens [aut], Eduard Szoecs [aut], Helene Wagner [aut], Matt Barbour [aut], Michael Bedward [aut], Ben Bolker [aut], Daniel Borcard [aut], Tuomas Borman [aut], Gustavo Carvalho [aut], Michael Chirico [aut], Miquel De Caceres [aut], Sebastien Durand [aut], Heloisa Beatriz Antoniazi Evangelista [aut], Rich FitzJohn [aut], Michael Friendly [aut], Brendan Furneaux [aut], Geoffrey Hannigan [aut], Mark O. Hill [aut], Leo Lahti [aut], Cameron Martino [aut], Dan McGlinn [aut], Marie-Helene Ouellette [aut], Eduardo Ribeiro Cunha [aut], Tyler Smith [aut], Adrian Stier [aut], Cajo J.F. Ter Braak [aut], James Weedon [aut]",
+      "Author": "Jari Oksanen [aut, cre] (ORCID: <https://orcid.org/0000-0001-7102-9626>), Gavin L. Simpson [aut] (ORCID: <https://orcid.org/0000-0002-9084-8413>), F. Guillaume Blanchet [aut], Roeland Kindt [aut], Pierre Legendre [aut], Peter R. Minchin [aut], R.B. O'Hara [aut], Peter Solymos [aut], M. Henry H. Stevens [aut], Eduard Szoecs [aut], Helene Wagner [aut], Matt Barbour [ctb], Michael Bedward [aut], Henrik Bengtsson [ctb], Ben Bolker [aut], Daniel Borcard [aut], Tuomas Borman [ctb], Gustavo Carvalho [aut], Michael Chirico [ctb], Miquel De Caceres [aut], Sebastien Durand [aut], Heloisa Beatriz Antoniazi Evangelista [aut], Rich FitzJohn [ctb], Michael Friendly [ctb], Brendan Furneaux [ctb], Geoffrey Hannigan [aut], Isaac Heida [ctb], Mark O. Hill [aut], Leo Lahti [aut], Cameron Martino [aut], Dan McGlinn [ctb], Marie-Helene Ouellette [aut], Eduardo Ribeiro Cunha [aut], Tyler Smith [aut], Adrian Stier [aut], Cajo J.F. Ter Braak [aut], James Weedon [aut]",
       "Maintainer": "Jari Oksanen <jhoksane@gmail.com>",
       "Repository": "CRAN"
     },
