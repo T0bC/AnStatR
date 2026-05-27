@@ -1,5 +1,4 @@
 box::use(
-  dplyr,
   dunn.test[dunn.test],
   rhino,
   stats,

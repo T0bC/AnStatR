@@ -1,5 +1,4 @@
 box::use(
-  dplyr,
   rhino,
   stats,
 )
