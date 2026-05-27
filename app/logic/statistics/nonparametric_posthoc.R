@@ -654,11 +654,11 @@ combine_multiway <- function(df, x_axis, measure_col,
 # Repeated Measures Non-Parametric Post-Hoc
 # =============================================================================
 
-#' Perform RM Non-Parametric Post-Hoc (Paired Wilcoxon Signed-Rank)
+#' Perform RM Non-Parametric Post-Hoc (Paired + Unpaired comparisons)
 #'
-#' For multi-way designs (e.g., TREATMENT × TIME), creates full
-#' interaction groups and performs paired Wilcoxon signed-rank tests
-#' within each between-subject group.
+#' For multi-way designs (e.g., TREATMENT × TIME), returns both:
+#' - Paired comparisons (within-subject): same subjects across time
+#' - Unpaired comparisons (between-subject): different subjects at same time
 #'
 #' @param df Data frame (long format)
 #' @param x_axis Character vector of grouping columns
@@ -666,7 +666,7 @@ combine_multiway <- function(df, x_axis, measure_col,
 #' @param id_col Character, subject ID column name
 #' @param within_col Character, within-subject factor column name
 #' @param p_adjust_method Character, p-value adjustment method
-#' @return Data frame with paired Wilcoxon results or app_error
+#' @return Data frame with paired and unpaired Wilcoxon results or app_error
 #' @export
 perform_rm_nonparametric_posthoc <- function(
     df, x_axis, measure_col,
@@ -708,10 +708,11 @@ perform_rm_nonparametric_posthoc <- function(
       n_groups <- length(all_groups)
 
       if (n_groups < 2) {
-        stop("Paired post-hoc requires at least 2 groups.")
+        stop("Post-hoc requires at least 2 groups.")
       }
 
-      results <- list()
+      paired_results <- list()
+      unpaired_results <- list()
 
       # All pairwise comparisons between interaction groups
       for (i in 1:(n_groups - 1)) {
@@ -738,65 +739,93 @@ perform_rm_nonparametric_posthoc <- function(
             }
           }
 
-          if (!between_match) {
-            # Skip: different between-subject groups
-            next
-          }
+          # Check if within-subject factor matches
+          within_match <- (g1_parts[within_idx] == g2_parts[within_idx])
 
           # Get data for each group
           g1_data <- df[
             df$interaction_group == g1_label,
-            c(id_col, measure_col)
+            c(id_col, measure_col),
+            drop = FALSE
           ]
           g2_data <- df[
             df$interaction_group == g2_label,
-            c(id_col, measure_col)
+            c(id_col, measure_col),
+            drop = FALSE
           ]
 
-          # Merge by ID to align pairs
-          paired <- merge(
-            g1_data, g2_data,
-            by = id_col, suffixes = c(".1", ".2")
-          )
+          if (between_match && !within_match) {
+            # PAIRED comparison: same between-group, different within-level
+            paired <- merge(
+              g1_data, g2_data,
+              by = id_col, suffixes = c(".1", ".2")
+            )
 
-          if (nrow(paired) < 2) {
-            next
+            if (nrow(paired) < 2) next
+
+            vals1 <- paired[[paste0(measure_col, ".1")]]
+            vals2 <- paired[[paste0(measure_col, ".2")]]
+
+            # Paired Wilcoxon signed-rank test
+            wilcox_res <- stats$wilcox.test(
+              vals1, vals2,
+              paired = TRUE, exact = FALSE
+            )
+
+            paired_results[[length(paired_results) + 1]] <- data.frame(
+              Interaction = paste(g1_label, "vs.", g2_label),
+              Type = "Paired",
+              Paired.Wilcox.V = signif(unname(wilcox_res$statistic), 3),
+              Paired.Wilcox.p.value = signif(wilcox_res$p.value, 3),
+              stringsAsFactors = FALSE
+            )
+          } else if (!between_match && within_match) {
+            # UNPAIRED comparison: different between-group, same within-level
+            vals1 <- g1_data[[measure_col]]
+            vals2 <- g2_data[[measure_col]]
+
+            if (length(vals1) < 2 || length(vals2) < 2) next
+
+            # Independent Wilcoxon rank-sum test
+            wilcox_res <- stats$wilcox.test(
+              vals1, vals2,
+              paired = FALSE, exact = FALSE
+            )
+
+            unpaired_results[[length(unpaired_results) + 1]] <- data.frame(
+              Interaction = paste(g1_label, "vs.", g2_label),
+              Type = "Unpaired",
+              Wilcox.W = signif(unname(wilcox_res$statistic), 3),
+              Wilcox.p.value = signif(wilcox_res$p.value, 3),
+              stringsAsFactors = FALSE
+            )
           }
-
-          vals1 <- paired[[paste0(measure_col, ".1")]]
-          vals2 <- paired[[paste0(measure_col, ".2")]]
-
-          # Paired Wilcoxon signed-rank test
-          wilcox_res <- stats$wilcox.test(
-            vals1, vals2,
-            paired = TRUE, exact = FALSE
-          )
-
-          results[[length(results) + 1]] <- data.frame(
-            Interaction = paste(g1_label, "vs.", g2_label),
-            Paired.Wilcox.V = signif(
-              wilcox_res$statistic[["V"]], 3
-            ),
-            Paired.Wilcox.p.value = signif(
-              wilcox_res$p.value, 3
-            ),
-            stringsAsFactors = FALSE
-          )
+          # Skip comparisons where both between AND within differ
         }
       }
 
-      if (length(results) == 0) {
-        stop("No valid paired comparisons found.")
+      # Combine results
+      all_results <- c(paired_results, unpaired_results)
+      if (length(all_results) == 0) {
+        stop("No valid comparisons found.")
       }
 
-      merged <- do.call(rbind, results)
+      merged <- do.call(rbind, all_results)
 
-      # Apply p-value adjustment
-      if ("Paired.Wilcox.p.value" %in% names(merged) &&
-          is.numeric(merged$Paired.Wilcox.p.value)) {
-        merged$Paired.Wilcox.p.adjusted <- stats$p.adjust(
-          merged$Paired.Wilcox.p.value,
-          method = p_adjust_method
+      # Apply p-value adjustment (separately for paired and unpaired)
+      paired_mask <- merged$Type == "Paired"
+      unpaired_mask <- merged$Type == "Unpaired"
+
+      if (any(paired_mask) && "Paired.Wilcox.p.value" %in% names(merged)) {
+        merged$Paired.Wilcox.p.adjusted <- NA_real_
+        merged$Paired.Wilcox.p.adjusted[paired_mask] <- stats$p.adjust(
+          merged$Paired.Wilcox.p.value[paired_mask], method = p_adjust_method
+        )
+      }
+      if (any(unpaired_mask) && "Wilcox.p.value" %in% names(merged)) {
+        merged$Wilcox.p.adjusted <- NA_real_
+        merged$Wilcox.p.adjusted[unpaired_mask] <- stats$p.adjust(
+          merged$Wilcox.p.value[unpaired_mask], method = p_adjust_method
         )
       }
 
@@ -805,6 +834,10 @@ perform_rm_nonparametric_posthoc <- function(
       merged[numeric_cols] <- lapply(
         merged[numeric_cols], function(x) signif(x, 3)
       )
+
+      # Sort: Paired first, then Unpaired
+      merged <- merged[order(merged$Type, merged$Interaction), ]
+      rownames(merged) <- NULL
 
       merged
     },
