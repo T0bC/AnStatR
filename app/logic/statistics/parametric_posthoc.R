@@ -674,7 +674,8 @@ perform_rm_parametric_posthoc <- function(
         merged$Cohen.p.value, method = p_adjust_method
       )
 
-      # Keep Type column for filtering/debugging (UI removes it for display)
+      # Remove Type column so UI routes through normal two-table rendering
+      merged$Type <- NULL
 
       # Round numeric columns
       numeric_cols <- vapply(merged, is.numeric, logical(1))
