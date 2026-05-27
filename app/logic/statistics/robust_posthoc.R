@@ -892,10 +892,10 @@ perform_rm_robust_posthoc <- function(
             paired_results[[length(paired_results) + 1]] <- data.frame(
               Interaction = paste(g1_label, "vs.", g2_label),
               Type = "Paired",
-              RM.Lincon.psihat = signif(yuen_res$diff, 3),
-              RM.Lincon.ci.lower = signif(yuen_res$conf.int[1], 3),
-              RM.Lincon.ci.upper = signif(yuen_res$conf.int[2], 3),
-              RM.Lincon.p.value = signif(yuen_res$p.value, 3),
+              psihat = signif(yuen_res$diff, 3),
+              ci.lower = signif(yuen_res$conf.int[1], 3),
+              ci.upper = signif(yuen_res$conf.int[2], 3),
+              p.value = signif(yuen_res$p.value, 3),
               stringsAsFactors = FALSE
             )
           } else if (!between_match && within_match) {
@@ -921,10 +921,10 @@ perform_rm_robust_posthoc <- function(
             unpaired_results[[length(unpaired_results) + 1]] <- data.frame(
               Interaction = paste(g1_label, "vs.", g2_label),
               Type = "Unpaired",
-              Lincon.psihat = signif(yuen_res$diff, 3),
-              Lincon.ci.lower = signif(yuen_res$conf.int[1], 3),
-              Lincon.ci.upper = signif(yuen_res$conf.int[2], 3),
-              Lincon.p.value = signif(yuen_res$p.value, 3),
+              psihat = signif(yuen_res$diff, 3),
+              ci.lower = signif(yuen_res$conf.int[1], 3),
+              ci.upper = signif(yuen_res$conf.int[2], 3),
+              p.value = signif(yuen_res$p.value, 3),
               stringsAsFactors = FALSE
             )
           }
@@ -938,22 +938,21 @@ perform_rm_robust_posthoc <- function(
         stop("No valid comparisons found.")
       }
 
-      merged <- dplyr$bind_rows(all_results)
+      merged <- do.call(rbind, all_results)
 
       # Apply p-value adjustment (separately for paired and unpaired)
       paired_mask <- merged$Type == "Paired"
       unpaired_mask <- merged$Type == "Unpaired"
 
-      if (any(paired_mask) && "RM.Lincon.p.value" %in% names(merged)) {
-        merged$RM.Lincon.p.adjusted <- NA_real_
-        merged$RM.Lincon.p.adjusted[paired_mask] <- stats$p.adjust(
-          merged$RM.Lincon.p.value[paired_mask], method = p_adjust_method
+      merged$p.adjusted <- NA_real_
+      if (any(paired_mask)) {
+        merged$p.adjusted[paired_mask] <- stats$p.adjust(
+          merged$p.value[paired_mask], method = p_adjust_method
         )
       }
-      if (any(unpaired_mask) && "Lincon.p.value" %in% names(merged)) {
-        merged$Lincon.p.adjusted <- NA_real_
-        merged$Lincon.p.adjusted[unpaired_mask] <- stats$p.adjust(
-          merged$Lincon.p.value[unpaired_mask], method = p_adjust_method
+      if (any(unpaired_mask)) {
+        merged$p.adjusted[unpaired_mask] <- stats$p.adjust(
+          merged$p.value[unpaired_mask], method = p_adjust_method
         )
       }
 
