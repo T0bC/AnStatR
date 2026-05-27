@@ -392,7 +392,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
 # =============================================================================
 
 describe("perform_rm_parametric_posthoc 2-way RM", {
-  it("returns data.frame with unified columns", {
+  it("returns data.frame with Tukey and Cohen columns", {
     df <- make_rm_twoway_data(n_subjects = 10)
     result <- parametric_posthoc$perform_rm_parametric_posthoc(
       df = df,
@@ -405,10 +405,11 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
     expect_true(is.data.frame(result))
     expect_true("Interaction" %in% names(result))
     expect_true("Type" %in% names(result))
-    expect_true("statistic" %in% names(result))
-    expect_true("p.value" %in% names(result))
-    expect_true("effect.size" %in% names(result))
-    expect_true("p.adjusted" %in% names(result))
+    expect_true("Tukey.diff" %in% names(result))
+    expect_true("Tukey.p.value" %in% names(result))
+    expect_true("Tukey.p.adjusted" %in% names(result))
+    expect_true("Cohen.d" %in% names(result))
+    expect_true("Cohen.p.adjusted" %in% names(result))
     expect_true(nrow(result) > 0)
   })
 
