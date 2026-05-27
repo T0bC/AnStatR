@@ -402,16 +402,19 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       within_col = "TIME",
       p_adjust_method = "bonferroni"
     )
-    cat("\n=== DEBUG: result class ===\n")
-    cat("Class:", class(result), "\n")
-    cat("Is data.frame:", is.data.frame(result), "\n")
-    if (error_handling$is_app_error(result)) {
-      cat("Error message:", result$message, "\n")
-    } else {
-      cat("Names:", paste(names(result), collapse = ", "), "\n")
-      cat("Nrow:", nrow(result), "\n")
-    }
-    cat("=== END DEBUG ===\n")
+
+    cat("\n=== DEBUG: RM Parametric Posthoc Result ===\n")
+    cat("Column names:", paste(names(result), collapse = ", "), "\n\n")
+
+    cat("--- PAIRED rows (Type == 'Paired') ---\n")
+    paired <- result[result$Type == "Paired", ]
+    print(paired[1:min(2, nrow(paired)), ])
+
+    cat("\n--- UNPAIRED rows (Type == 'Unpaired') ---\n")
+    unpaired <- result[result$Type == "Unpaired", ]
+    print(unpaired[1:min(2, nrow(unpaired)), ])
+    cat("=== END DEBUG ===\n\n")
+
     expect_true(is.data.frame(result))
     expect_true("Interaction" %in% names(result))
     expect_true("Type" %in% names(result))
