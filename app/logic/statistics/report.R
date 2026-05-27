@@ -149,106 +149,6 @@ build_omnibus_html <- function(omnibus_result,
 }
 
 
-#' Build HTML for mixed RM post-hoc results (Paired + Unpaired)
-#'
-#' Splits the results by Type column and renders separate tables
-#' for paired (within-subject) and unpaired (between-subject) comparisons.
-#'
-#' @param posthoc_result Data frame with Type column
-#' @return Character string with HTML
-build_rm_mixed_posthoc_html <- function(posthoc_result) {
-  html_parts <- list()
-  html_parts[[1]] <- "<h2>Pairwise Comparisons (Repeated Measures)</h2>\n"
-
-  # Split by Type
-  paired_df <- posthoc_result[posthoc_result$Type == "Paired", , drop = FALSE]
-  unpaired_df <- posthoc_result[posthoc_result$Type == "Unpaired", , drop = FALSE]
-
-  # Helper to clean column names and remove empty columns
-
-  clean_df <- function(df, prefix_pattern, label) {
-    if (nrow(df) == 0) return(NULL)
-
-    # Remove Type column
-    df$Type <- NULL
-
-    # Keep only columns with data (non-NA)
-    cols_with_data <- vapply(df, function(x) !all(is.na(x)), logical(1))
-    df <- df[, cols_with_data, drop = FALSE]
-
-    # Clean column names - remove prefixes
-    names(df) <- gsub(prefix_pattern, "", names(df))
-    names(df) <- gsub("^\\.", "", names(df))
-
-    list(df = df, label = label)
-  }
-
-  # Process paired comparisons
-  if (nrow(paired_df) > 0) {
-    # Detect paired test type
-    if (any(grepl("^Paired\\.t\\.", names(paired_df)))) {
-      paired_clean <- clean_df(
-        paired_df, "^Paired\\.(t\\.|d\\.?)", "Paired t-Test + Cohen's d"
-      )
-    } else if (any(grepl("^RM\\.Lincon\\.", names(paired_df)))) {
-      paired_clean <- clean_df(
-        paired_df, "^RM\\.Lincon\\.", "Paired Trimmed Means (Yuen)"
-      )
-    } else if (any(grepl("^Paired\\.Wilcox\\.", names(paired_df)))) {
-      paired_clean <- clean_df(
-        paired_df, "^Paired\\.Wilcox\\.", "Paired Wilcoxon Signed-Rank"
-      )
-    } else {
-      paired_clean <- list(df = paired_df, label = "Paired Comparisons")
-      paired_clean$df$Type <- NULL
-    }
-
-    if (!is.null(paired_clean) && nrow(paired_clean$df) > 0) {
-      html_parts[[length(html_parts) + 1]] <- paste0(
-        "<h3>Within-Subject (Paired): ",
-        htmltools$htmlEscape(paired_clean$label),
-        "</h3>\n",
-        df_to_html_table(paired_clean$df),
-        "\n"
-      )
-    }
-  }
-
-  # Process unpaired comparisons
-  if (nrow(unpaired_df) > 0) {
-    # Detect unpaired test type
-    if (any(grepl("^Tukey\\.", names(unpaired_df)))) {
-      unpaired_clean <- clean_df(
-        unpaired_df, "^(Tukey\\.|Cohen\\.?)", "Independent t-Test + Cohen's d"
-      )
-    } else if (any(grepl("^Lincon\\.", names(unpaired_df)))) {
-      unpaired_clean <- clean_df(
-        unpaired_df, "^Lincon\\.", "Independent Trimmed Means (Yuen)"
-      )
-    } else if (any(grepl("^Wilcox\\.", names(unpaired_df)))) {
-      unpaired_clean <- clean_df(
-        unpaired_df, "^Wilcox\\.", "Independent Wilcoxon Rank-Sum"
-      )
-    } else {
-      unpaired_clean <- list(df = unpaired_df, label = "Unpaired Comparisons")
-      unpaired_clean$df$Type <- NULL
-    }
-
-    if (!is.null(unpaired_clean) && nrow(unpaired_clean$df) > 0) {
-      html_parts[[length(html_parts) + 1]] <- paste0(
-        "<h3>Between-Subject (Unpaired): ",
-        htmltools$htmlEscape(unpaired_clean$label),
-        "</h3>\n",
-        df_to_html_table(unpaired_clean$df),
-        "\n"
-      )
-    }
-  }
-
-  paste0(html_parts, collapse = "")
-}
-
-
 #' Build the post-hoc section HTML
 #'
 #' Detects column prefixes (Lincon/Cliff vs Tukey/Cohen)
@@ -274,12 +174,6 @@ build_posthoc_html <- function(posthoc_result) {
   if (!is.data.frame(posthoc_result) ||
       nrow(posthoc_result) == 0) {
     return("")
-  }
-
-  # Check for mixed RM format (has Type column with Paired/Unpaired)
-  has_type_col <- "Type" %in% names(posthoc_result)
-  if (has_type_col) {
-    return(build_rm_mixed_posthoc_html(posthoc_result))
   }
 
   # Detect prefix set
