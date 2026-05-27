@@ -1,4 +1,5 @@
 box::use(
+  dplyr,
   rhino,
   stats,
 )
@@ -656,7 +657,7 @@ perform_rm_parametric_posthoc <- function(
         stop("No valid comparisons found.")
       }
 
-      merged <- do.call(rbind, all_results)
+      merged <- dplyr$bind_rows(all_results)
 
       # Apply p-value adjustment (separately for paired and unpaired)
       paired_mask <- merged$Type == "Paired"
