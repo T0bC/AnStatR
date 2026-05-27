@@ -368,13 +368,24 @@ perform_t3way <- function(df, x_axis, measure_col,
                           tr_value,
                           use_bootstrap = FALSE,
                           boot_samples = 599,
-                          boot_sample_size = NULL) {
+                          boot_sample_size = NULL,
+                          is_rm = FALSE,
+                          id_col = NULL,
+                          within_col = NULL) {
   rhino$log$info(
     "t3way: starting for measure='{measure_col}',",
     " factors='{x_axis[1]}' * '{x_axis[2]}'",
     " * '{x_axis[3]}',",
-    " bootstrap={use_bootstrap}"
+    " bootstrap={use_bootstrap}, rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_robust(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      tr_value = tr_value
+    ))
+  }
 
   omnibus$run_omnibus_test(
     df = df,
@@ -395,8 +406,12 @@ perform_t3way <- function(df, x_axis, measure_col,
 
 #' Perform Repeated Measures Robust ANOVA
 #'
-#' 1-way within: Uses WRS2::rmanova() with trimmed means on wide-format data.
-#' Mixed (between x within): Uses WRS2::bwtrim() for split-plot designs.
+#' Supports 1-way and 2-way mixed designs with within-subject factors.
+#' - 1-way within: Uses WRS2::rmanova()
+#' - 2-way mixed (1B x 1W): Uses WRS2::bwtrim()
+#'
+#' For 3-way RM designs, robust methods are not available in WRS2.
+#' Consider using nonparametric alternatives (ARTool) instead.
 #'
 #' @param df Data frame (long format)
 #' @param x_axis Character vector of grouping columns
@@ -409,12 +424,16 @@ perform_t3way <- function(df, x_axis, measure_col,
 perform_rm_robust <- function(df, x_axis, measure_col,
                                id_col, within_col,
                                tr_value = 0.2) {
+  between_cols <- setdiff(x_axis, within_col)
+  n_between <- length(between_cols)
+  n_ways <- length(x_axis)
+
   rhino$log$info(
     "rm_robust: starting for measure='{measure_col}',",
-    " id='{id_col}', within='{within_col}'"
+    " id='{id_col}', within='{within_col}',",
+    " between='{paste(between_cols, collapse=\", \")}',",
+    " design={n_between}B x 1W"
   )
-
-  between_cols <- setdiff(x_axis, within_col)
 
   error_context <- list(
     measure = measure_col,
@@ -422,19 +441,29 @@ perform_rm_robust <- function(df, x_axis, measure_col,
     within_col = within_col,
     between_cols = paste(between_cols, collapse = ", "),
     n_observations = nrow(df),
+    design = paste0(n_between, "B x 1W"),
     test_type = "robust_rm_anova"
   )
 
   test_result <- error_handling$safe_execute(
     expr = {
+      # Check for unsupported 3-way RM designs
+      if (n_ways >= 3) {
+        stop(paste0(
+          "3-way repeated measures designs are not supported for ",
+          "robust tests (WRS2::bwtrim only supports 1 between x 1 within). ",
+          "Please use the nonparametric approach instead, which supports ",
+          "3-way RM designs via ARTool."
+        ))
+      }
+
       # Validate columns
       if (!id_col %in% names(df)) {
         stop(paste0("ID column '", id_col, "' not found."))
       }
       if (!within_col %in% names(df)) {
         stop(paste0(
-          "Within-subject factor '", within_col,
-          "' not found."
+          "Within-subject factor '", within_col, "' not found."
         ))
       }
 
@@ -454,9 +483,8 @@ perform_rm_robust <- function(df, x_axis, measure_col,
         ))
       }
 
-      if (length(between_cols) == 0) {
-        # Pure within-subject: WRS2::rmanova
-        # Long-format: y=response, groups=within-factor, blocks=ID
+      if (n_between == 0) {
+        # Pure within-subject (1-way): WRS2::rmanova
         rm_result <- WRS2$rmanova(
           y = df[[measure_col]],
           groups = df[[within_col]],
@@ -470,10 +498,8 @@ perform_rm_robust <- function(df, x_axis, measure_col,
           p.value = signif(rm_result$p.value, 3),
           stringsAsFactors = FALSE
         )
-      } else {
-        # Mixed design: WRS2::bwtrim
-        # bwtrim(formula, id, data, tr)
-        # formula: measure ~ between * within
+      } else if (n_between == 1) {
+        # 2-way mixed (1B x 1W): WRS2::bwtrim
         formula_str <- paste0(
           "`", measure_col, "` ~ `",
           paste(c(between_cols, within_col), collapse = "` * `"),
@@ -488,8 +514,6 @@ perform_rm_robust <- function(df, x_axis, measure_col,
           tr = tr_value
         )
 
-        # bwtrim returns Qa, Qb, Qab, A.p.value, B.p.value, AB.p.value
-        # for 2-way mixed design
         effect_labels <- c(
           between_cols[1], within_col,
           paste0(between_cols[1], ":", within_col)
@@ -509,6 +533,13 @@ perform_rm_robust <- function(df, x_axis, measure_col,
           ),
           stringsAsFactors = FALSE
         )
+      } else {
+        stop(paste0(
+          "Unsupported RM design: ", n_between, " between x 1 within. ",
+          "Robust RM ANOVA supports only 1-way within or ",
+          "2-way mixed (1 between x 1 within) designs. ",
+          "For more complex designs, use nonparametric alternatives."
+        ))
       }
     },
     operation_name = "rm_robust",
