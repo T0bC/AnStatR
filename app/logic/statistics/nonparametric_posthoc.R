@@ -381,12 +381,23 @@ perform_combined_nonparametric_posthoc <- function(
     df, x_axis, measure_col,
     p_adjust_method = "bonferroni",
     filter_valid = FALSE,
-    posthoc_method = "dunn") {
+    posthoc_method = "dunn",
+    is_rm = FALSE,
+    id_col = NULL,
+    within_col = NULL) {
   rhino$log$info(
     "combined_nonparametric_posthoc: starting for",
     " measure='{measure_col}',",
-    " method='{posthoc_method}'"
+    " method='{posthoc_method}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_nonparametric_posthoc(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      p_adjust_method = p_adjust_method
+    ))
+  }
 
   n_ways <- length(x_axis)
 
@@ -636,4 +647,126 @@ combine_multiway <- function(df, x_axis, measure_col,
   )
 
   art_result
+}
+
+
+# =============================================================================
+# Repeated Measures Non-Parametric Post-Hoc
+# =============================================================================
+
+#' Perform RM Non-Parametric Post-Hoc (Paired Wilcoxon Signed-Rank)
+#'
+#' Computes pairwise paired Wilcoxon signed-rank tests for all
+#' pairs of within-subject factor levels.
+#'
+#' @param df Data frame (long format)
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @param p_adjust_method Character, p-value adjustment method
+#' @return Data frame with paired Wilcoxon results or app_error
+#' @export
+perform_rm_nonparametric_posthoc <- function(
+    df, x_axis, measure_col,
+    id_col, within_col,
+    p_adjust_method = "bonferroni") {
+  rhino$log$info(
+    "rm_nonparametric_posthoc: starting for",
+    " measure='{measure_col}'"
+  )
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    test_type = "rm_nonparametric_posthoc"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+
+      levels_w <- levels(df[[within_col]])
+      n_levels <- length(levels_w)
+
+      if (n_levels < 2) {
+        stop(paste0(
+          "Paired Wilcoxon post-hoc requires at least ",
+          "2 levels in '", within_col, "'."
+        ))
+      }
+
+      results <- list()
+      for (i in 1:(n_levels - 1)) {
+        for (j in (i + 1):n_levels) {
+          g1_label <- levels_w[i]
+          g2_label <- levels_w[j]
+
+          g1_data <- df[
+            df[[within_col]] == g1_label,
+            c(id_col, measure_col)
+          ]
+          g2_data <- df[
+            df[[within_col]] == g2_label,
+            c(id_col, measure_col)
+          ]
+
+          # Merge by ID to align pairs
+          paired <- merge(
+            g1_data, g2_data,
+            by = id_col, suffixes = c(".1", ".2")
+          )
+          vals1 <- paired[[paste0(measure_col, ".1")]]
+          vals2 <- paired[[paste0(measure_col, ".2")]]
+
+          # Paired Wilcoxon signed-rank test
+          wilcox_res <- stats$wilcox.test(
+            vals1, vals2,
+            paired = TRUE, exact = FALSE
+          )
+
+          results[[length(results) + 1]] <- data.frame(
+            Interaction = paste(
+              g1_label, "vs.", g2_label
+            ),
+            Paired.Wilcox.V = signif(
+              wilcox_res$statistic[["V"]], 3
+            ),
+            Paired.Wilcox.p.value = signif(
+              wilcox_res$p.value, 3
+            ),
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+
+      merged <- do.call(rbind, results)
+
+      # Apply p-value adjustment
+      if ("Paired.Wilcox.p.value" %in% names(merged) &&
+          is.numeric(merged$Paired.Wilcox.p.value)) {
+        merged$Paired.Wilcox.p.adjusted <- stats$p.adjust(
+          merged$Paired.Wilcox.p.value,
+          method = p_adjust_method
+        )
+      }
+
+      # Round numeric columns
+      numeric_cols <- vapply(merged, is.numeric, logical(1))
+      merged[numeric_cols] <- lapply(
+        merged[numeric_cols], function(x) signif(x, 3)
+      )
+
+      merged
+    },
+    operation_name = "rm_nonparametric_posthoc",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }
