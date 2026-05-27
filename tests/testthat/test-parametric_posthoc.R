@@ -392,7 +392,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
 # =============================================================================
 
 describe("perform_rm_parametric_posthoc 2-way RM", {
-  it("returns data.frame with both paired and unpaired comparisons", {
+  it("returns data.frame with unified columns", {
     df <- make_rm_twoway_data(n_subjects = 10)
     result <- parametric_posthoc$perform_rm_parametric_posthoc(
       df = df,
@@ -402,22 +402,13 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       within_col = "TIME",
       p_adjust_method = "bonferroni"
     )
-
-    cat("\n=== DEBUG: RM Parametric Posthoc Result ===\n")
-    cat("Column names:", paste(names(result), collapse = ", "), "\n\n")
-
-    cat("--- PAIRED rows (Type == 'Paired') ---\n")
-    paired <- result[result$Type == "Paired", ]
-    print(paired[1:min(2, nrow(paired)), ])
-
-    cat("\n--- UNPAIRED rows (Type == 'Unpaired') ---\n")
-    unpaired <- result[result$Type == "Unpaired", ]
-    print(unpaired[1:min(2, nrow(unpaired)), ])
-    cat("=== END DEBUG ===\n\n")
-
     expect_true(is.data.frame(result))
     expect_true("Interaction" %in% names(result))
     expect_true("Type" %in% names(result))
+    expect_true("statistic" %in% names(result))
+    expect_true("p.value" %in% names(result))
+    expect_true("effect.size" %in% names(result))
+    expect_true("p.adjusted" %in% names(result))
     expect_true(nrow(result) > 0)
   })
 
