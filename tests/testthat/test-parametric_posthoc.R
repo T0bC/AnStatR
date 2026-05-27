@@ -402,6 +402,16 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       within_col = "TIME",
       p_adjust_method = "bonferroni"
     )
+    cat("\n=== DEBUG: result class ===\n")
+    cat("Class:", class(result), "\n")
+    cat("Is data.frame:", is.data.frame(result), "\n")
+    if (error_handling$is_app_error(result)) {
+      cat("Error message:", result$message, "\n")
+    } else {
+      cat("Names:", paste(names(result), collapse = ", "), "\n")
+      cat("Nrow:", nrow(result), "\n")
+    }
+    cat("=== END DEBUG ===\n")
     expect_true(is.data.frame(result))
     expect_true("Interaction" %in% names(result))
     expect_true("Type" %in% names(result))
