@@ -449,3 +449,83 @@ describe("perform_combined_posthoc bootstrap", {
     expect_true("Cliff.psihat" %in% names(result))
   })
 })
+
+# =============================================================================
+# Helper: create repeated measures test data
+# =============================================================================
+
+make_rm_twoway_data <- function(n_subjects = 10) {
+  set.seed(42)
+  grid <- expand.grid(
+    ID = paste0("S", seq_len(n_subjects)),
+    COMPOSITE = c("A", "B"),
+    TIME = c("T1", "T2"),
+    stringsAsFactors = FALSE
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    ifelse(grid$TIME == "T2", 0.5, 0)
+  grid
+}
+
+# =============================================================================
+# perform_rm_robust_posthoc — 2-way RM happy path
+# =============================================================================
+
+describe("perform_rm_robust_posthoc 2-way RM", {
+  it("returns data.frame with both paired and unpaired comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Interaction" %in% names(result))
+    expect_true("Type" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+
+  it("contains both Paired and Unpaired types", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Paired" %in% result$Type)
+    expect_true("Unpaired" %in% result$Type)
+  })
+})
+
+# =============================================================================
+# perform_combined_posthoc — RM path via is_rm flag
+# =============================================================================
+
+describe("perform_combined_posthoc RM path", {
+  it("routes to RM posthoc when is_rm=TRUE", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Type" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+})
