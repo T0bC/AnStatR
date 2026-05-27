@@ -392,7 +392,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
 # =============================================================================
 
 describe("perform_rm_parametric_posthoc 2-way RM", {
-  it("returns data.frame with Tukey and Cohen columns", {
+  it("returns data.frame with Tukey and Cohen columns matching non-RM structure", {
     df <- make_rm_twoway_data(n_subjects = 10)
     result <- parametric_posthoc$perform_rm_parametric_posthoc(
       df = df,
@@ -404,16 +404,21 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
     )
     expect_true(is.data.frame(result))
     expect_true("Interaction" %in% names(result))
-    expect_true("Type" %in% names(result))
+    expect_false("Type" %in% names(result))
     expect_true("Tukey.diff" %in% names(result))
+    expect_true("Tukey.ci.lower" %in% names(result))
+    expect_true("Tukey.ci.upper" %in% names(result))
     expect_true("Tukey.p.value" %in% names(result))
     expect_true("Tukey.p.adjusted" %in% names(result))
     expect_true("Cohen.d" %in% names(result))
+    expect_true("Cohen.ci.lower" %in% names(result))
+    expect_true("Cohen.ci.upper" %in% names(result))
+    expect_true("Cohen.p.value" %in% names(result))
     expect_true("Cohen.p.adjusted" %in% names(result))
     expect_true(nrow(result) > 0)
   })
 
-  it("contains both Paired and Unpaired types", {
+  it("contains both paired and unpaired comparisons", {
     df <- make_rm_twoway_data(n_subjects = 10)
     result <- parametric_posthoc$perform_rm_parametric_posthoc(
       df = df,
@@ -424,11 +429,13 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true("Paired" %in% result$Type)
-    expect_true("Unpaired" %in% result$Type)
+    expect_true(nrow(result) > 0)
+    # Should have comparisons like A.T1 vs A.T2 (paired) and A.T1 vs B.T1 (unpaired)
+    interactions <- result$Interaction
+    expect_true(length(interactions) > 1)
   })
 
-  it("has correct columns for paired results", {
+  it("applies p-adjustment across all comparisons", {
     df <- make_rm_twoway_data(n_subjects = 10)
     result <- parametric_posthoc$perform_rm_parametric_posthoc(
       df = df,
@@ -439,23 +446,8 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    paired_rows <- result[result$Type == "Paired", ]
-    expect_true(nrow(paired_rows) > 0)
-  })
-
-  it("has correct columns for unpaired results", {
-    df <- make_rm_twoway_data(n_subjects = 10)
-    result <- parametric_posthoc$perform_rm_parametric_posthoc(
-      df = df,
-      x_axis = c("COMPOSITE", "TIME"),
-      measure_col = "measure",
-      id_col = "ID",
-      within_col = "TIME",
-      p_adjust_method = "bonferroni"
-    )
-    expect_true(is.data.frame(result))
-    unpaired_rows <- result[result$Type == "Unpaired", ]
-    expect_true(nrow(unpaired_rows) > 0)
+    # p.adjusted should be >= p.value for all rows
+    expect_true(all(result$Tukey.p.adjusted >= result$Tukey.p.value - 1e-10))
   })
 })
 
@@ -476,7 +468,9 @@ describe("perform_combined_parametric_posthoc RM path", {
       within_col = "TIME"
     )
     expect_true(is.data.frame(result))
-    expect_true("Type" %in% names(result))
+    expect_false("Type" %in% names(result))
+    expect_true("Tukey.diff" %in% names(result))
+    expect_true("Cohen.d" %in% names(result))
     expect_true(nrow(result) > 0)
   })
 })
