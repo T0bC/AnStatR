@@ -474,3 +474,175 @@ describe("perform_combined_parametric_posthoc RM path", {
     expect_true(nrow(result) > 0)
   })
 })
+
+# =============================================================================
+# DEBUG: Inspect column structures for RM refactoring
+# =============================================================================
+
+describe("DEBUG: Column structure inspection", {
+  it("prints unpaired vs RM comparison", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    # Standard unpaired result with filter_valid=TRUE (no RM)
+    unpaired_result <- parametric_posthoc$perform_combined_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    # RM result (hybrid approach)
+    rm_result <- parametric_posthoc$perform_rm_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    cat("\n\n========== UNPAIRED (filter_valid=TRUE) ==========\n")
+    print(unpaired_result[, c("Interaction", "Tukey.diff", "Tukey.p.value", "Cohen.d")])
+
+    cat("\n========== RM (HYBRID) ==========\n")
+    print(rm_result[, c("Interaction", "Tukey.diff", "Tukey.p.value", "Cohen.d")])
+
+    cat("\n========== COMPARISON ==========\n")
+    cat("Both should have 4 rows (valid comparisons only)\n")
+    cat("Paired rows (A.T1 vs A.T2, B.T1 vs B.T2) should differ\n")
+    cat("Unpaired rows (A.T1 vs B.T1, A.T2 vs B.T2) should match\n")
+    cat("=================================\n\n")
+
+    expect_equal(nrow(unpaired_result), nrow(rm_result))
+    expect_true(is.data.frame(rm_result))
+  })
+})
+
+# =============================================================================
+# perform_rm_parametric_posthoc — validation tests
+# =============================================================================
+
+describe("perform_rm_parametric_posthoc hybrid approach", {
+  it("returns same row count as filter_valid unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- parametric_posthoc$perform_rm_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    expect_equal(nrow(rm_result), nrow(unpaired))
+  })
+
+  it("has different p-values for paired comparisons vs unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- parametric_posthoc$perform_rm_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    # Find paired comparisons (A.T1 vs A.T2, B.T1 vs B.T2)
+    paired_interactions <- c("A.T1 vs. A.T2", "B.T1 vs. B.T2")
+
+    for (int in paired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Paired test should give different p-value than unpaired
+        expect_false(
+          isTRUE(all.equal(unpaired_row$Tukey.p.value, rm_row$Tukey.p.value)),
+          info = paste("Paired comparison", int, "should differ")
+        )
+      }
+    }
+  })
+
+  it("has same p-values for unpaired (between-subject) comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- parametric_posthoc$perform_rm_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    # Find unpaired comparisons (A.T1 vs B.T1, A.T2 vs B.T2)
+    unpaired_interactions <- c("A.T1 vs. B.T1", "A.T2 vs. B.T2")
+
+    for (int in unpaired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Between-subject comparisons should be identical
+        expect_equal(
+          unpaired_row$Tukey.p.value, rm_row$Tukey.p.value,
+          tolerance = 1e-6,
+          info = paste("Unpaired comparison", int, "should match")
+        )
+      }
+    }
+  })
+
+  it("applies p-adjustment correctly across all comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    rm_result <- parametric_posthoc$perform_rm_parametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "bonferroni"
+    )
+
+    # p.adjusted should be >= p.value (bonferroni multiplies by n)
+    expect_true(all(rm_result$Tukey.p.adjusted >= rm_result$Tukey.p.value - 1e-10))
+
+    # With 4 comparisons, bonferroni should multiply by 4 (capped at 1)
+    expected_adj <- pmin(rm_result$Tukey.p.value * 4, 1)
+    expect_equal(rm_result$Tukey.p.adjusted, expected_adj, tolerance = 1e-3)
+  })
+})
