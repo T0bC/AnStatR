@@ -165,6 +165,39 @@ filter_excluded_rows <- function(df, measure_col) {
   df[keep, , drop = FALSE]
 }
 
+# --- Private helper: render mixed RM post-hoc (Paired + Unpaired) ---
+render_rm_mixed_posthoc <- function(display_df, params) {
+  # Remove Type column and any all-NA columns for clean display
+  display_df$Type <- NULL
+  cols_with_data <- vapply(display_df, function(x) !all(is.na(x)), logical(1))
+  display_df <- display_df[, cols_with_data, drop = FALSE]
+
+  if (nrow(display_df) == 0) {
+    return(shiny$tags$div(
+      class = "mt-3 text-muted small px-2",
+      "No pairwise comparisons available."
+    ))
+  }
+
+  shiny$tags$div(
+    class = "mt-3 px-2",
+    shiny$tags$h6(
+      class = "text-primary mb-2",
+      bsicons$bs_icon("table", class = "me-1"),
+      "Pairwise Comparisons (Repeated Measures)"
+    ),
+    shiny$tags$p(
+      class = "text-muted small mb-2",
+      "Comparisons within the same group across time use paired tests; ",
+      "comparisons between groups at the same time point use unpaired tests."
+    ),
+    shiny$tags$div(
+      class = "table-responsive",
+      build_posthoc_table(display_df)
+    )
+  )
+}
+
 # --- Private helper: render post-hoc result as UI ---
 render_posthoc_result <- function(result, x_axis, params) {
   if (is.null(result)) return(NULL)
@@ -185,6 +218,12 @@ render_posthoc_result <- function(result, x_axis, params) {
 
   if (is.data.frame(result) && nrow(result) > 0) {
     display_df <- result
+
+    # Check for mixed RM format (has Type column with Paired/Unpaired)
+    has_type_col <- "Type" %in% names(display_df)
+    if (has_type_col) {
+      return(render_rm_mixed_posthoc(display_df, params))
+    }
 
     # Detect which prefix set is present
     has_lincon <- any(grepl("^Lincon\\.", names(display_df)))
