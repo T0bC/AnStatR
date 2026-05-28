@@ -654,8 +654,8 @@ perform_rm_nonparametric <- function(df, x_axis, measure_col,
 
         art_result <- run_art_anova(formula_obj, df)
 
-        # Extract effect rows
-        effect_names <- rownames(art_result)
+        # Extract effect rows (column 1 for RM anova tables)
+        effect_names <- as.character(art_result[, 1])
         data.frame(
           Effect = effect_names,
           Df = as.integer(art_result[, "Df"]),
