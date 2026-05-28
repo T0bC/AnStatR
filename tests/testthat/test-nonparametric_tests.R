@@ -1,4 +1,3 @@
-<<<<<<< C:/Users/meissnerto/Desktop/TexAn2.0/tests/testthat/test-nonparametric_tests.R
 box::use(
   testthat[describe, expect_equal, expect_true, expect_false, it],
 )
