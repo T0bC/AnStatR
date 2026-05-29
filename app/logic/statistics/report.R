@@ -155,8 +155,10 @@ build_omnibus_html <- function(omnibus_result,
 #' and splits into two side-by-side tables.
 #'
 #' @param posthoc_result Data frame or app_error or NULL
+#' @param params Optional list with test_approach / RM settings,
+#'   used to annotate which tests were applied to paired rows
 #' @return Character string with HTML
-build_posthoc_html <- function(posthoc_result) {
+build_posthoc_html <- function(posthoc_result, params = NULL) {
   if (is.null(posthoc_result)) return("")
 
   if (error_handling$is_app_error(posthoc_result)) {
@@ -238,6 +240,27 @@ build_posthoc_html <- function(posthoc_result) {
     ))
   }
 
+  # Repeated-measures annotation: headers stay identical to the
+  # unpaired output, so describe which rows used paired tests.
+  rm_note_html <- ""
+  if (!is.null(params) &&
+      isTRUE(params$is_repeated_measures) &&
+      identical(params$test_approach, "parametric") &&
+      has_tukey) {
+    wn <- params$rm_within_col %||% "the within-subject factor"
+    rm_note_html <- paste0(
+      '<p class="rm-note"><strong>Repeated measures:</strong> ',
+      "comparisons where the between-subject factor(s) are ",
+      "identical and only ", htmltools$htmlEscape(wn),
+      " differs (e.g. A.T1 vs. A.T2) were computed with ",
+      "<strong>paired t-tests</strong> and ",
+      "<strong>Cohen's dz</strong>. All remaining comparisons ",
+      "use <strong>Tukey HSD</strong> and ",
+      "<strong>Cohen's d</strong> (independent samples). ",
+      "Column headers are identical for both test regimes.</p>\n"
+    )
+  }
+
   # Handle single-table RM formats (no right panel)
   if (is.null(right_prefix)) {
     left_cols <- grep(
@@ -253,6 +276,7 @@ build_posthoc_html <- function(posthoc_result) {
     )
     return(paste0(
       "<h2>Pairwise Comparisons</h2>\n",
+      rm_note_html,
       "<h3>", htmltools$htmlEscape(left_label), "</h3>\n",
       df_to_html_table(left_df),
       "\n"
@@ -328,6 +352,7 @@ build_posthoc_html <- function(posthoc_result) {
 
   paste0(
     "<h2>Pairwise Comparisons</h2>\n",
+    rm_note_html,
     '<div class="two-tables">\n',
     '<div class="table-panel">\n',
     "<h3>", htmltools$htmlEscape(left_label), "</h3>\n",
@@ -428,7 +453,7 @@ generate_html_report <- function(measure,
   )
 
   # --- Post-hoc ---
-  posthoc_html <- build_posthoc_html(posthoc_result)
+  posthoc_html <- build_posthoc_html(posthoc_result, params)
 
   # --- Assemble full document ---
   paste0(
