@@ -17,6 +17,7 @@
     - [Prediction](#prediction)
     - [Power Analysis](#power-analysis)
   - [Getting Started](#getting-started)
+  - [License](#license)
 
 ## Overview
 
@@ -82,3 +83,9 @@ shiny::runApp()  # Start the application
 ```
 
 Requires R >= 4.1. Dependencies are managed via renv.
+
+## License
+
+AnStatR is released under the **GNU General Public License v3.0 (GPL-3)**. See [LICENSE](LICENSE) for details.
+
+**Exception — Rallfun-v43.R:** The file `app/logic/statistics/Rallfun-v43.R` is a modified version of Rand Wilcox's Rallfun collection, distributed under the **USC-RL v1.0** license (academic and non-commercial use only). This file is not covered by the GPL-3 license of the surrounding application. Source: <https://osf.io/xhe8u/>. Reference: Wilcox, R. R. (2022). *Introduction to Robust Estimation and Hypothesis Testing* (5th ed.). Academic Press.
