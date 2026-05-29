@@ -1,8 +1,8 @@
-# TexAn2.0
+# AnStatR
 
 ## Table of Contents
 
-- [TexAn2.0](#texan20)
+- [AnStatR](#anstatr)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Modules](#modules)
@@ -20,7 +20,7 @@
 
 ## Overview
 
-TexAn2.0 is an R/Shiny application for statistical analysis of measurement data. The application provides a modular workflow from data import through exploratory visualization to advanced multivariate analysis and statistical testing.
+AnStatR is an R/Shiny application for statistical analysis of measurement data. The application provides a modular workflow from data import through exploratory visualization to advanced multivariate analysis and statistical testing.
 
 ## Modules
 
@@ -69,8 +69,8 @@ Plan study sample sizes and estimate statistical power for 1-way, 2-way, and 3-w
 Clone the repository and run locally with R:
 
 ```bash
-git clone https://github.com/yourusername/TexAn2.0.git
-cd TexAn2.0
+git clone https://github.com/yourusername/AnStatR.git
+cd AnStatR
 ```
 
 In R:
