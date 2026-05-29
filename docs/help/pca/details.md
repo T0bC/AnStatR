@@ -25,7 +25,7 @@ The PCA computation itself ignores metadata; it operates purely on measurement c
 <details>
 <summary><strong>PCA Computation Method</strong></summary>
 
-The application uses `stats::prcomp()` from the R stats package, which performs PCA via singular value decomposition (SVD) of the data matrix. This approach is numerically stable and computationally efficient compared to eigen-decomposition of the covariance matrix (Jolliffe & Cadima, 2016).
+The application uses `stats::prcomp()` from the R stats package, which performs PCA via singular value decomposition (SVD) of the data matrix. This approach is numerically stable and computationally efficient compared to eigen-decomposition of the covariance matrix.
 
 The mathematical formulation follows:
 
@@ -52,14 +52,14 @@ Scaling decisions fundamentally change the PCA solution and interpretation:
 | **Center only** | Covariance matrix | Same units; variance carries information | High-variance variables dominate components |
 | **None** | Raw cross-products | Already standardized data | Arbitrary scale differences bias results |
 
-**Key insight**: With "Scale & Center", variables contribute equally to component formation regardless of original variance. With "Center only", high-variance variables exert stronger influence on the principal components (Bro & Smilde, 2014).
+**Key insight**: With "Scale & Center", variables contribute equally to component formation regardless of original variance. With "Center only", high-variance variables exert stronger influence on the principal components.
 
 </details>
 
 <details>
 <summary><strong>Data Normalization</strong></summary>
 
-The **bestNormalize** package (Peterson & Cavanaugh, 2020) automatically selects optimal transformations for skewed variables (|skewness| > 2). Candidate transformations include:
+The **bestNormalize** package automatically selects optimal transformations for skewed variables (|skewness| > 2). Candidate transformations include:
 
 | Method | Formula | Best For |
 |--------|---------|----------|
@@ -97,7 +97,7 @@ The eigenvalue table is the primary reference for component importance:
 | **Variance %** | Proportion of total variance | Cumulative target typically 70-90% |
 | **Cumulative %** | Running total of explained variance | Stop when adding components yields diminishing returns |
 
-**Kaiser-Guttman Rule**: Components with eigenvalues exceeding 1.0 explain more variance than the average original variable (standardized data), justifying retention (Guttman, 1954; Kaiser, 1960).
+**Kaiser-Guttman Rule**: Components with eigenvalues exceeding 1.0 explain more variance than the average original variable (standardized data), justifying retention.
 
 **Variable Results**
 
@@ -158,7 +158,7 @@ The UI reports the overall KMO measure with a classification badge (e.g., **"KMO
 | 0.50-0.59 | Miserable | Red | Questionable; review variable correlations |
 | < 0.50 | Unacceptable | Red | Do not proceed with PCA |
 
-Check the **Individual Variable KMO** table for specific variables with low MSA (< 0.5). Removing these variables often improves the overall KMO measure (Kaiser, 1970; Cerny & Kaiser, 1977).
+Check the **Individual Variable KMO** table for specific variables with low MSA (< 0.5). Removing these variables often improves the overall KMO measure.
 
 **Variance Explained Thresholds**
 
@@ -178,13 +178,3 @@ Check the **Individual Variable KMO** table for specific variables with low MSA 
 - **Inspect biplot layer by layer** — Examine "Individuals" and "Variables" separately before combined view
 - **Download full results** — The Excel export contains all coordinates, contributions, and cos² for external validation
 - **Handle missing data proactively** — Review which rows are excluded; systematic missingness may bias results
-
-**References**
-
-- Bro, R., & Smilde, A. K. (2014). Principal component analysis. *Analytical Methods*, 6(9), 2812–2831.
-- Cerny, C. A., & Kaiser, H. F. (1977). A study of a measure of sampling adequacy for factor-analytic correlation matrices. *Multivariate Behavioral Research*, 12(1), 43–47.
-- Guttman, L. (1954). Some necessary conditions for common-factor analysis. *Psychometrika*, 19(2), 149–161.
-- Kaiser, H. F. (1960). The application of electronic computers to factor analysis. *Educational and Psychological Measurement*, 20(1), 141–151.
-- Kaiser, H. F. (1970). A second generation little jiffy. *Psychometrika*, 35(4), 401–415.
-- Jolliffe, I. T., & Cadima, J. (2016). Principal component analysis: a review and recent developments. *Philosophical Transactions of the Royal Society A*, 374(2065), 20150202.
-- Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization: a semiparametric transformation built for the cross-validation era. *Journal of Applied Statistics*, 47(13-15), 2312–2327.

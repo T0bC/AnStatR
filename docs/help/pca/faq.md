@@ -171,17 +171,13 @@ A variable can have low contribution (little influence) but high cos² (well-rep
 <details>
 <summary>Which R packages power the PCA computation?</summary>
 
-The PCA module uses the following packages for statistical computation and visualization:
-
-| Package | Version | Purpose | Citation |
-|---------|---------|---------|----------|
-| **stats** | Base R | Core PCA via `prcomp()` | R Core Team (2024). *R: A Language and Environment for Statistical Computing*. R Foundation |
-| **psych** | ≥2.4.0 | KMO measure and factor analysis utilities | Revelle, W. (2024). *psych: Procedures for Psychological, Psychometric, and Personality Research*. R package |
-| **bestNormalize** | ≥1.0.0 | Automatic normalization of skewed data | Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization. *Journal of Applied Statistics*, 47(13-15), 2312-2327 |
-| **ggplot2** | ≥3.4.0 | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer |
-| **ggiraph** | ≥0.8.0 | Interactive SVG graphics for web | Gohel, D. (2024). *ggiraph: Make Interactive ggplot2*. R package |
-| **plotly** | ≥4.10.0 | 3D biplot rendering | Sievert, C. (2020). *Interactive Web-Based Data Visualization with R, plotly, and shiny*. CRC Press |
-
-Additional supporting packages: **DT** (interactive tables), **bslib** (UI components), **shiny** (application framework).
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **psych** | KMO measure and factor analysis utilities | Revelle, W. (2026). *psych: Procedures for Psychological, Psychometric, and Personality Research*. <https://CRAN.R-project.org/package=psych> |
+| **ggiraph** | Interactive SVG graphics | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
+| **ggplot2** | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
+| **ggrepel** | Non-overlapping text labels | Slowikowski, K. (2026). *ggrepel: Automatically Position Non-Overlapping Text Labels with 'ggplot2'*. <https://doi.org/10.32614/CRAN.package.ggrepel> |
+| **plotly** | 3D biplot rendering | Sievert, C. (2020). *Interactive Web-Based Data Visualization with R, plotly, and shiny*. Chapman and Hall/CRC. <https://plotly-r.com> |
+| **scales** | Plot scales and colour utilities | Wickham, H., Pedersen, T. L., & Seidel, D. (2025). *scales: Scale Functions for Visualization*. <https://doi.org/10.32614/CRAN.package.scales> |
 
 </details>

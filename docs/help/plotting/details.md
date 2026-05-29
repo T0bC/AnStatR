@@ -35,7 +35,7 @@ Flags values where `|z| > factor`, with `z = (x - mean) / SD`.
 
 Uses median and MAD (Median Absolute Deviation) instead of mean/SD. Flags values where the modified z-score exceeds the factor threshold.
 
-Formula: `M = 0.6745 × (x - median) / MAD`, where MAD is the raw (unscaled) median absolute deviation. The constant 0.6745 ≈ 1/1.4826 scales the result to be comparable with standard z-scores under normality (Iglewicz & Hoaglin, 1993).
+Formula: `M = 0.6745 × (x - median) / MAD`, where MAD is the raw (unscaled) median absolute deviation. The constant 0.6745 ≈ 1/1.4826 scales the result to be comparable with standard z-scores under normality.
 
 - **Best for**: Skewed distributions
 - **Factor range**: 3.5–4.5 (default: 3.5)
@@ -46,7 +46,7 @@ Formula: `M = 0.6745 × (x - median) / MAD`, where MAD is the raw (unscaled) med
 <details>
 <summary><strong>Adjusted Boxplot</strong></summary>
 
-Skewness-adjusted IQR method using the medcouple (MC) statistic (Hubert & Vandervieren, 2008). Adjusts upper and lower bounds asymmetrically based on distribution skewness using exponential functions:
+Skewness-adjusted IQR method using the medcouple (MC) statistic. Adjusts upper and lower bounds asymmetrically based on distribution skewness using exponential functions:
 
 - For MC ≥ 0: `[Q1 − factor × e^(−4×MC) × IQR, Q3 + factor × e^(3×MC) × IQR]`
 - For MC < 0: `[Q1 − factor × e^(−3×MC) × IQR, Q3 + factor × e^(4×MC) × IQR]`

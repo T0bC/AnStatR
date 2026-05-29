@@ -50,7 +50,7 @@ Cohen's *f* is the standard effect size metric for ANOVA power analysis. It repr
 
 $$f = \\frac{\\sigma_{\\text{means}}}{\\sigma_{\\text{within}}}$$
 
-Conventional benchmarks (Cohen, 1988):
+Conventional benchmarks:
 
 | Effect Size | *f* value | Interpretation |
 |---|---|---|
@@ -163,7 +163,7 @@ Researchers traditionally focus on achieving *p* < 0.05, but this binary thresho
 - **Effect size** quantifies the magnitude of the phenomenon
 - **Power** indicates the reliability of the detection mechanism
 
-A study can yield *p* < 0.05 with trivial effect sizes if *n* is large enough (overpowered), or miss meaningful effects with *p* > 0.05 if underpowered. Reporting all three — significance, effect size, and achieved power — provides complete evidence (Cumming, 2014; Lakens, 2021).
+A study can yield *p* < 0.05 with trivial effect sizes if *n* is large enough (overpowered), or miss meaningful effects with *p* > 0.05 if underpowered. Reporting all three — significance, effect size, and achieved power — provides complete evidence.
 
 **Interpreting the Power Curve**
 
