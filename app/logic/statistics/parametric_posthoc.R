@@ -503,6 +503,9 @@ compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
   sd_diff <- stats$sd(diffs, na.rm = TRUE)
   n_pairs <- sum(!is.na(diffs))
   se_mean <- sd_diff / sqrt(n_pairs)
+  # t critical value for the paired difference CI (analog of the
+  # unpaired Tukey CI); normal 1.96 under-covers for small n.
+  t_crit <- stats$qt(0.975, df = n_pairs - 1)
 
   # Cohen's dz (paired effect size) = mean_diff / sd_diff
   # Direction: g1 - g2 to match Cohen's d convention (mean1 - mean2)
@@ -515,8 +518,8 @@ compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
   data.frame(
     Interaction = paste(g1_label, "vs.", g2_label),
     Tukey.diff = tukey_diff,
-    Tukey.ci.lower = tukey_diff - 1.96 * se_mean,
-    Tukey.ci.upper = tukey_diff + 1.96 * se_mean,
+    Tukey.ci.lower = tukey_diff - t_crit * se_mean,
+    Tukey.ci.upper = tukey_diff + t_crit * se_mean,
     Tukey.p.value = t_res$p.value,
     Cohen.d = d_z,
     Cohen.ci.lower = d_z - 1.96 * se_d,
