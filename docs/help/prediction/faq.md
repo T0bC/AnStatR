@@ -132,7 +132,7 @@ Several configurations produce specific behaviour:
 - **PCA bundle with many components**: all PC dimensions stored in the bundle are used for projection. The overlay plot defaults to `Dim.1` vs `Dim.2`; use the **X Axis / Y Axis** selectors in Plot Settings to explore other dimensions
 - **Bundle trained on PCA scores (two-stage PCA → LDA)**: the unknown data must already be structured as PCA score columns (e.g., `Dim.1`, `Dim.2`, …). Raw measurements cannot be directly used with such a bundle — they must first be projected through the same PCA model
 - **Column present but all values are NA**: the column passes the presence check but will be all-NA after reading. Validation does not detect this; the prediction will fail at the `predict()` call. Inspect the unknown file before uploading
-- **Bundle created by a different TexAn version**: the `app_version` field is checked for display only; older bundles are accepted as long as all required fields are present. If a field was added in a newer version and is absent, the relevant feature (e.g., range validation) silently degrades
+- **Bundle created by a different AnStatR version**: the `app_version` field is checked for display only; older bundles are accepted as long as all required fields are present. If a field was added in a newer version and is absent, the relevant feature (e.g., range validation) silently degrades
 
 </details>
 
@@ -152,25 +152,9 @@ If the plot is missing and you expected it: check the results table for a `score
 <details>
 <summary>Which R packages are used for the prediction computation?</summary>
 
-| Package | Version | Purpose | Citation |
-|---------|---------|---------|----------|
-| **MASS** | ≥ 7.3 | LDA and QDA prediction via `MASS::lda()` / `MASS::qda()` and `stats::predict()` | Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer. ISBN 0-387-95457-0 |
-| **mda** | ≥ 0.5 | MDA prediction via `mda::mda()` and `stats::predict()` | Hastie, T., & Tibshirani, R. (1996). Discriminant analysis by Gaussian mixtures. *Journal of the Royal Statistical Society: Series B*, 58(1), 155–176 |
-| **bestNormalize** | ≥ 1.0 | Applies stored skewness transformations to unknown data | Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization. *Journal of Applied Statistics*, 47(13-15), 2312–2327 |
-| **ggplot2** | ≥ 3.4 | Overlay plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer |
-| **ggiraph** | ≥ 0.8 | Interactive SVG overlay plots with hover tooltips | Gohel, D. (2024). *ggiraph: Make ggplot2 Graphics Interactive*. R package |
-| **DT** | ≥ 0.28 | Interactive results table | Xie, Y., Cheng, J., & Tan, X. (2024). *DT: A Wrapper of the JavaScript Library DataTables*. R package |
-| **openxlsx** | ≥ 4.2 | Excel export of prediction results | Schauberger, P., & Walker, A. (2023). *openxlsx: Read, Write and Edit xlsx Files*. R package |
-
-Additional supporting packages: **stats** (base R `predict()`, `scale()`), **bslib** / **shiny** (application framework and UI).
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **ggiraph** | Interactive SVG overlay plots | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
+| **ggplot2** | Overlay plot generation | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
 
 </details>
-
-**References**
-
-- Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, 7(2), 179–188.
-- Hastie, T., & Tibshirani, R. (1996). Discriminant analysis by Gaussian mixtures. *Journal of the Royal Statistical Society: Series B*, 58(1), 155–176.
-- Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.
-- McLachlan, G. J. (2004). *Discriminant Analysis and Statistical Pattern Recognition*. Wiley.
-- Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization: A robust method for normalizing data. *Journal of Applied Statistics*, 47(13-15), 2312–2327.
-- Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer.

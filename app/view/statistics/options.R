@@ -61,6 +61,27 @@ tab_ui <- function(ns) {
       )
     ),
     shiny$tags$hr(),
+    # Repeated measures controls
+    shiny$checkboxInput(
+      inputId = ns("is_repeated_measures"),
+      label = shiny$tags$span(
+        "Repeated Measures ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Enable for within-subject / repeated",
+            "measures designs. Requires an ID column",
+            "identifying subjects and a within-subject",
+            "factor on the X-axis."
+          )
+        )
+      ),
+      value = FALSE
+    ),
+    shiny$uiOutput(ns("rm_options_ui")),
+    shiny$tags$hr(),
     # Filter significant p-values
     shiny$checkboxInput(
       inputId = ns("filter_p_values"),
@@ -89,9 +110,11 @@ tab_ui <- function(ns) {
 #' @param session Shiny session object from the parent module
 #' @param plotting_x_axis Reactive returning X-axis columns from Plotting
 #' @param plotting_trim_percent Reactive returning trim % from Plotting
+#' @param input_data Reactive returning the current data frame
 #' @export
 tab_server <- function(input, output, session,
-                       plotting_x_axis, plotting_trim_percent) {
+                       plotting_x_axis, plotting_trim_percent,
+                       input_data = NULL) {
   # --- Trim value display (read-only from Plotting) ---
   output$trim_value_display <- shiny$renderUI({
     tr <- if (!is.null(plotting_trim_percent)) {
@@ -109,6 +132,82 @@ tab_server <- function(input, output, session,
         paste0(
           "Trim: ", tr_val, "%",
           " (from Plotting tab)"
+        )
+      )
+    )
+  })
+
+  # --- Repeated measures options (conditional) ---
+  output$rm_options_ui <- shiny$renderUI({
+    if (!isTRUE(input$is_repeated_measures)) return(NULL)
+
+    # Derive descriptive column choices from data
+    data <- if (!is.null(input_data)) input_data() else NULL
+    desc_choices <- if (!is.null(data)) {
+      all_cols <- names(data)
+      # descriptive = uppercase-only columns
+      desc <- all_cols[grepl("^[A-Z0-9_]+$", all_cols)]
+      if (length(desc) == 0) all_cols else desc
+    } else {
+      character(0)
+    }
+
+    # Within-subject factor choices from x-axis
+    x_choices <- if (!is.null(plotting_x_axis)) {
+      plotting_x_axis()
+    } else {
+      character(0)
+    }
+
+    shiny$tags$div(
+      class = "mt-2 mb-2 ps-3 border-start border-primary border-2",
+      shiny$selectInput(
+        inputId = session$ns("rm_id_col"),
+        label = shiny$tags$span(
+          "ID Column (Subject) ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Select the column that uniquely",
+              "identifies each subject/specimen.",
+              "Must be a descriptive column in",
+              "your dataset."
+            )
+          )
+        ),
+        choices = desc_choices,
+        selected = NULL
+      ),
+      shiny$selectInput(
+        inputId = session$ns("rm_within_col"),
+        label = shiny$tags$span(
+          "Within-Subject Factor ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Select which X-axis factor is the",
+              "within-subject (repeated) factor.",
+              "Remaining X-axis factors are treated",
+              "as between-subject."
+            )
+          )
+        ),
+        choices = x_choices,
+        selected = if (length(x_choices) > 0) {
+          x_choices[length(x_choices)]
+        } else {
+          NULL
+        }
+      ),
+      shiny$tags$small(
+        class = "text-muted d-block mt-1",
+        paste(
+          "Each subject must appear exactly once",
+          "per level of the within-subject factor."
         )
       )
     )

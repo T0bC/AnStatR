@@ -141,7 +141,7 @@
 
 ### Added
 
-- Feature complete release of TexAn 2.0
+- Feature complete release of AnStatR
 - Complete rewrite using Rhino framework
 - LDA (Linear Discriminant Analysis) module
 - Cluster analysis module

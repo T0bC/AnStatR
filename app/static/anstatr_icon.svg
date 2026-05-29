@@ -1,0 +1,39 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AnStatR">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a6ea2"/>
+      <stop offset="100%" stop-color="#044d73"/>
+    </linearGradient>
+    <linearGradient id="triLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1489c2"/>
+      <stop offset="100%" stop-color="#0b6593"/>
+    </linearGradient>
+    <linearGradient id="triDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#043b59"/>
+      <stop offset="100%" stop-color="#022c43"/>
+    </linearGradient>
+    <clipPath id="iconClip">
+      <polygon points="12,2 52,2 62,12 62,52 52,62 12,62 2,52 2,12"/>
+    </clipPath>
+  </defs>
+
+  <!-- Faceted low-poly background with sharp 45° chamfered corners -->
+  <g clip-path="url(#iconClip)">
+    <rect x="2" y="2" width="60" height="60" fill="url(#bgGrad)"/>
+    <polygon points="2,2 40,2 2,62" fill="url(#triLight)" opacity="0.5"/>
+    <polygon points="62,62 62,18 22,62" fill="url(#triDark)" opacity="0.6"/>
+    <polygon points="62,2 38,2 62,30" fill="url(#triLight)" opacity="0.28"/>
+  </g>
+
+  <!-- Biplot motif: scatter cloud + loading vectors -->
+  <line x1="14" y1="50" x2="50" y2="13" stroke="#f3b8c8" stroke-width="3" stroke-linecap="round"/>
+  <line x1="14" y1="50" x2="52" y2="40" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="50" cy="13" r="3.4" fill="#f3b8c8"/>
+  <circle cx="52" cy="40" r="3.2" fill="#ffffff" opacity="0.85"/>
+  <circle cx="25" cy="34" r="3.6" fill="#ffffff" opacity="0.95"/>
+  <circle cx="37" cy="43" r="3" fill="#ffffff" opacity="0.7"/>
+  <circle cx="43" cy="27" r="3.4" fill="#ffffff" opacity="0.85"/>
+  <circle cx="31" cy="24" r="2.6" fill="#ffffff" opacity="0.55"/>
+  <circle cx="46" cy="38" r="3" fill="#ffffff" opacity="0.8"/>
+  <circle cx="36" cy="32" r="2.8" fill="#ffffff" opacity="0.7"/>
+</svg>

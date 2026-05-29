@@ -75,7 +75,7 @@ tab_layout <- function(
   sidebar_ui <- do.call(
     bslib$sidebar,
     c(
-      list(title = NULL, class = "texan-sidebar"),
+      list(title = NULL, class = "anstatr-sidebar"),
       sidebar_elements
     )
   )

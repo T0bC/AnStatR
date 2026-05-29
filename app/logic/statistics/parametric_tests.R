@@ -114,11 +114,21 @@ perform_anova1way <- function(df, x_axis, measure_col,
                                tr_value = 0,
                                use_bootstrap = FALSE,
                                boot_samples = 599,
-                               boot_sample_size = NULL) {
+                               boot_sample_size = NULL,
+                               is_rm = FALSE,
+                               id_col = NULL,
+                               within_col = NULL) {
   rhino$log$info(
     "anova1way: starting for measure='{measure_col}',",
-    " grouping='{x_axis[1]}'"
+    " grouping='{x_axis[1]}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_anova(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col
+    ))
+  }
 
   # Force bootstrap off for parametric tests
   omnibus$run_omnibus_test(
@@ -260,11 +270,21 @@ perform_anova2way <- function(df, x_axis, measure_col,
                                tr_value = 0,
                                use_bootstrap = FALSE,
                                boot_samples = 599,
-                               boot_sample_size = NULL) {
+                               boot_sample_size = NULL,
+                               is_rm = FALSE,
+                               id_col = NULL,
+                               within_col = NULL) {
   rhino$log$info(
     "anova2way: starting for measure='{measure_col}',",
-    " factors='{x_axis[1]}' * '{x_axis[2]}'"
+    " factors='{x_axis[1]}' * '{x_axis[2]}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_anova(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col
+    ))
+  }
 
   omnibus$run_omnibus_test(
     df = df,
@@ -427,12 +447,22 @@ perform_anova3way <- function(df, x_axis, measure_col,
                                tr_value = 0,
                                use_bootstrap = FALSE,
                                boot_samples = 599,
-                               boot_sample_size = NULL) {
+                               boot_sample_size = NULL,
+                               is_rm = FALSE,
+                               id_col = NULL,
+                               within_col = NULL) {
   rhino$log$info(
     "anova3way: starting for measure='{measure_col}',",
     " factors='{x_axis[1]}' * '{x_axis[2]}'",
-    " * '{x_axis[3]}'"
+    " * '{x_axis[3]}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_anova(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col
+    ))
+  }
 
   omnibus$run_omnibus_test(
     df = df,
@@ -444,4 +474,140 @@ perform_anova3way <- function(df, x_axis, measure_col,
     boot_sample_size = NULL,
     config = anova3way_config
   )
+}
+
+
+# =============================================================================
+# Repeated Measures Parametric ANOVA
+# =============================================================================
+
+#' Perform Repeated Measures Parametric ANOVA
+#'
+#' Uses stats::aov() with Error(ID/within_factor) for within-subject
+#' designs. For mixed designs (between x within), the between-subject
+#' factors are included as fixed effects.
+#'
+#' @param df Data frame containing the data
+#' @param x_axis Character vector of grouping columns (all factors on X-axis)
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @return Data frame with RM ANOVA results, or structured app_error
+#' @export
+perform_rm_anova <- function(df, x_axis, measure_col,
+                              id_col, within_col) {
+  rhino$log$info(
+    "rm_anova: starting for measure='{measure_col}',",
+    " id='{id_col}', within='{within_col}'"
+  )
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    x_axis = paste(x_axis, collapse = ", "),
+    n_observations = nrow(df),
+    test_type = "parametric_rm_anova"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      # Validate RM design
+      if (!id_col %in% names(df)) {
+        stop(paste0("ID column '", id_col, "' not found in data."))
+      }
+      if (!within_col %in% names(df)) {
+        stop(paste0(
+          "Within-subject factor '", within_col,
+          "' not found in data."
+        ))
+      }
+
+      # Convert to factors
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+
+      # Identify between-subject factors
+      between_cols <- setdiff(x_axis, within_col)
+      for (bc in between_cols) {
+        df[[bc]] <- as.factor(df[[bc]])
+      }
+
+      # Validate balanced design: each ID must appear once per
+      # within-factor level
+      id_within_counts <- table(df[[id_col]], df[[within_col]])
+      if (any(id_within_counts != 1)) {
+        stop(paste0(
+          "Unbalanced repeated measures design. ",
+          "Each subject must appear exactly once per ",
+          "level of '", within_col, "'."
+        ))
+      }
+
+      # Build formula with Error() term
+      # Pure within-subject: measure ~ within + Error(ID/within)
+      # Mixed design: measure ~ between * within + Error(ID/within)
+      if (length(between_cols) == 0) {
+        formula_str <- paste0(
+          "`", measure_col, "` ~ `", within_col,
+          "` + Error(`", id_col, "` / `", within_col, "`)"
+        )
+      } else {
+        fixed_terms <- paste0(
+          "`", c(between_cols, within_col), "`",
+          collapse = " * "
+        )
+        formula_str <- paste0(
+          "`", measure_col, "` ~ ", fixed_terms,
+          " + Error(`", id_col, "` / `", within_col, "`)"
+        )
+      }
+
+      formula_obj <- stats$as.formula(formula_str)
+      model <- stats$aov(formula_obj, data = df)
+      model_summary <- summary(model)
+
+      # Extract results from all strata
+      results_rows <- list()
+      for (stratum_name in names(model_summary)) {
+        stratum_table <- model_summary[[stratum_name]][[1]]
+        # Skip Residuals-only strata
+        effect_rows <- rownames(stratum_table)
+        for (eff in effect_rows) {
+          if (grepl("^Residuals", eff)) next
+          row_data <- stratum_table[eff, ]
+          results_rows[[length(results_rows) + 1]] <- data.frame(
+            Effect = trimws(eff),
+            Df = as.integer(row_data[["Df"]]),
+            SS = signif(row_data[["Sum Sq"]], 3),
+            MS = signif(row_data[["Mean Sq"]], 3),
+            F.Statistic = if (!is.na(row_data[["F value"]])) {
+              signif(row_data[["F value"]], 3)
+            } else {
+              NA_real_
+            },
+            p.value = if (!is.na(row_data[["Pr(>F)"]])) {
+              signif(row_data[["Pr(>F)"]], 3)
+            } else {
+              NA_real_
+            },
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+
+      if (length(results_rows) == 0) {
+        stop("RM ANOVA returned no effect rows.")
+      }
+
+      do.call(rbind, results_rows)
+    },
+    operation_name = "rm_anova",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }

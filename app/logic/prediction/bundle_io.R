@@ -93,7 +93,7 @@ validate_bundle <- function(bundle) {
       message = paste0(
         "Bundle is missing required fields: ",
         paste(missing, collapse = ", "),
-        ". This file may not be a TexAn prediction",
+        ". This file may not be a AnStatR prediction",
         " bundle."
       )
     ))

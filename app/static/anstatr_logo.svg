@@ -1,0 +1,49 @@
+<svg width="226" height="64" viewBox="0 0 226 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AnStatR">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a6ea2"/>
+      <stop offset="100%" stop-color="#044d73"/>
+    </linearGradient>
+    <linearGradient id="triLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1489c2"/>
+      <stop offset="100%" stop-color="#0b6593"/>
+    </linearGradient>
+    <linearGradient id="triDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#043b59"/>
+      <stop offset="100%" stop-color="#022c43"/>
+    </linearGradient>
+    <clipPath id="logoClip">
+      <polygon points="14,2 212,2 224,14 224,50 212,62 14,62 2,50 2,14"/>
+    </clipPath>
+  </defs>
+
+  <!-- Faceted low-poly background with sharp 45° chamfered corners -->
+  <g clip-path="url(#logoClip)">
+    <rect x="2" y="2" width="222" height="60" fill="url(#bgGrad)"/>
+    <polygon points="2,2 134,2 2,62" fill="url(#triLight)" opacity="0.5"/>
+    <polygon points="224,62 224,10 78,62" fill="url(#triDark)" opacity="0.6"/>
+    <polygon points="224,2 158,2 224,44" fill="url(#triLight)" opacity="0.28"/>
+    <polygon points="74,2 124,2 82,62 38,62" fill="#ffffff" opacity="0.04"/>
+  </g>
+
+  <!-- Wordmark: AnStatR — capitals A S R in white, connectors milky-red -->
+  <text x="18" y="43"
+        font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="700" letter-spacing="0.5">
+    <tspan font-size="34" fill="#ffffff">A</tspan><tspan font-size="29" fill="#f3b8c8" font-weight="600">n</tspan><tspan font-size="34" fill="#ffffff">S</tspan><tspan font-size="29" fill="#f3b8c8" font-weight="600">tat</tspan><tspan font-size="34" fill="#ffffff">R</tspan>
+  </text>
+
+  <!-- Statistics motif: enlarged biplot — scatter cloud + loading vectors -->
+  <!-- Loading vectors (PCA/LDA biplot arrows) -->
+  <line x1="156" y1="54" x2="206" y2="12" stroke="#f3b8c8" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="156" y1="54" x2="212" y2="42" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="206" cy="12" r="3.2" fill="#f3b8c8"/>
+  <circle cx="212" cy="42" r="3" fill="#ffffff" opacity="0.85"/>
+  <!-- Scatter cloud (XY / 3D scatter — varied size & opacity for depth) -->
+  <circle cx="172" cy="38" r="3.4" fill="#ffffff" opacity="0.95"/>
+  <circle cx="186" cy="46" r="2.6" fill="#ffffff" opacity="0.7"/>
+  <circle cx="192" cy="30" r="3.2" fill="#ffffff" opacity="0.85"/>
+  <circle cx="178" cy="26" r="2.2" fill="#ffffff" opacity="0.55"/>
+  <circle cx="198" cy="40" r="2.8" fill="#ffffff" opacity="0.8"/>
+  <circle cx="184" cy="34" r="2.4" fill="#ffffff" opacity="0.7"/>
+</svg>

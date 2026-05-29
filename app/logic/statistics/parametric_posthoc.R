@@ -332,11 +332,22 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 perform_combined_parametric_posthoc <- function(
     df, x_axis, measure_col,
     p_adjust_method = "bonferroni",
-    filter_valid = FALSE) {
+    filter_valid = FALSE,
+    is_rm = FALSE,
+    id_col = NULL,
+    within_col = NULL) {
   rhino$log$info(
     "combined_parametric_posthoc: starting for",
-    " measure='{measure_col}'"
+    " measure='{measure_col}', rm={is_rm}"
   )
+
+  if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
+    return(perform_rm_parametric_posthoc(
+      df = df, x_axis = x_axis, measure_col = measure_col,
+      id_col = id_col, within_col = within_col,
+      p_adjust_method = p_adjust_method
+    ))
+  }
 
   tukey_result <- perform_tukey_hsd(
     df = df, x_axis = x_axis, measure_col = measure_col
@@ -457,4 +468,246 @@ perform_combined_parametric_posthoc <- function(
   )
 
   merged
+}
+
+
+# =============================================================================
+# Repeated Measures Parametric Post-Hoc
+# =============================================================================
+
+#' Compute paired comparison statistics
+#'
+#' @param df Data frame
+#' @param g1_label First group label
+#' @param g2_label Second group label
+#' @param id_col Subject ID column
+#' @param measure_col Measurement column
+#' @return Data frame row with paired stats, or NULL if insufficient data
+#' @keywords internal
+compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
+  g1_data <- df[df$interaction_group == g1_label, c(id_col, measure_col), drop = FALSE]
+  g2_data <- df[df$interaction_group == g2_label, c(id_col, measure_col), drop = FALSE]
+
+  paired <- merge(g1_data, g2_data, by = id_col, suffixes = c(".1", ".2"))
+  if (nrow(paired) < 2) return(NULL)
+
+  vals1 <- paired[[paste0(measure_col, ".1")]]
+  vals2 <- paired[[paste0(measure_col, ".2")]]
+
+  # Paired t-test (sign doesn't affect p-value)
+  t_res <- stats$t.test(vals1, vals2, paired = TRUE)
+
+  # Compute differences for effect size
+  diffs <- vals1 - vals2
+  mean_diff <- mean(diffs, na.rm = TRUE)
+  sd_diff <- stats$sd(diffs, na.rm = TRUE)
+  n_pairs <- sum(!is.na(diffs))
+  se_mean <- sd_diff / sqrt(n_pairs)
+  # t critical value for the paired difference CI (analog of the
+  # unpaired Tukey CI); normal 1.96 under-covers for small n.
+  t_crit <- stats$qt(0.975, df = n_pairs - 1)
+
+  # Cohen's dz (paired effect size) = mean_diff / sd_diff
+  # Direction: g1 - g2 to match Cohen's d convention (mean1 - mean2)
+  d_z <- mean_diff / sd_diff
+  se_d <- sqrt(1 / n_pairs + d_z^2 / (2 * n_pairs))
+
+  # Tukey.diff uses opposite convention (g2 - g1) based on observed unpaired output
+  tukey_diff <- -mean_diff
+
+  data.frame(
+    Interaction = paste(g1_label, "vs.", g2_label),
+    Tukey.diff = tukey_diff,
+    Tukey.ci.lower = tukey_diff - t_crit * se_mean,
+    Tukey.ci.upper = tukey_diff + t_crit * se_mean,
+    Tukey.p.value = t_res$p.value,
+    Cohen.d = d_z,
+    Cohen.ci.lower = d_z - 1.96 * se_d,
+    Cohen.ci.upper = d_z + 1.96 * se_d,
+    Cohen.p.value = t_res$p.value,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+#' Perform RM Parametric Post-Hoc (Hybrid approach)
+#'
+#' Uses a hybrid approach: run unpaired tests first, then replace paired comparisons.
+#'
+#' Why this approach over computing paired/unpaired separately:
+#' - Reuses existing unpaired infrastructure (Tukey HSD, Cohen's d)
+#' - Ensures consistent output format and column structure
+#' - Avoids duplicating complex merging/formatting logic
+#' - Unpaired results for between-subject comparisons remain valid
+#' - Only within-subject (paired) comparisons need correction
+#'
+#' Strategy:
+#' 1. Run standard unpaired posthoc (Tukey + Cohen's d) with filter_valid=TRUE
+#' 2. Identify which comparisons are "within-subject" (paired)
+#' 3. Compute paired t-test + Cohen's dz for those rows
+#' 4. Replace unpaired values with paired values for within-subject rows
+#' 5. Apply p-value correction on final combined raw p-values
+#'
+#' @param df Data frame (long format)
+#' @param x_axis Character vector of grouping columns
+#' @param measure_col Character, measurement column name
+#' @param id_col Character, subject ID column name
+#' @param within_col Character, within-subject factor column name
+#' @param p_adjust_method Character, p-value adjustment method
+#' @return Data frame with combined results or app_error
+#' @export
+perform_rm_parametric_posthoc <- function(
+    df, x_axis, measure_col,
+    id_col, within_col,
+    p_adjust_method = "bonferroni") {
+  rhino$log$info(
+    "rm_parametric_posthoc: starting for",
+    " measure='{measure_col}'"
+  )
+
+  # Validate within_col is in x_axis
+  if (!within_col %in% x_axis) {
+    return(error_handling$simple_error(
+      message = paste0(
+        "Within-subject factor '", within_col, "' must be in x_axis."
+      ),
+      operation_name = "rm_parametric_posthoc"
+    ))
+  }
+
+  error_context <- list(
+    measure = measure_col,
+    id_col = id_col,
+    within_col = within_col,
+    x_axis = x_axis,
+    test_type = "rm_parametric_posthoc"
+  )
+
+  test_result <- error_handling$safe_execute(
+    expr = {
+      # Prepare factors
+      df[[id_col]] <- as.factor(df[[id_col]])
+      df[[within_col]] <- as.factor(df[[within_col]])
+      for (var in x_axis) {
+        df[[var]] <- as.factor(df[[var]])
+      }
+
+      # Create interaction group
+      if (length(x_axis) > 1) {
+        df$interaction_group <- interaction(df[x_axis], sep = ".")
+      } else {
+        df$interaction_group <- df[[x_axis[1]]]
+      }
+
+      # Step 1: Get unpaired base results (no p-adjustment yet)
+      unpaired_base <- perform_combined_parametric_posthoc(
+        df = df,
+        x_axis = x_axis,
+        measure_col = measure_col,
+        p_adjust_method = "none",
+        filter_valid = TRUE,
+        is_rm = FALSE
+      )
+
+      if (error_handling$is_app_error(unpaired_base)) {
+        stop(unpaired_base$message)
+      }
+
+      # Step 2: Classify each comparison and compute paired stats where needed
+      all_groups <- levels(df$interaction_group)
+      paired_replacements <- list()
+
+      for (i in 1:(length(all_groups) - 1)) {
+        for (j in (i + 1):length(all_groups)) {
+          g1 <- all_groups[i]
+          g2 <- all_groups[j]
+
+          comp_type <- validation_utils$classify_rm_comparison(g1, g2, x_axis, within_col)
+
+          if (comp_type == "paired") {
+            paired_row <- compute_paired_stats(
+              df, g1, g2, id_col, measure_col
+            )
+            if (!is.null(paired_row)) {
+              paired_replacements[[length(paired_replacements) + 1]] <- paired_row
+            }
+          }
+        }
+      }
+
+      # Step 3: Replace unpaired rows with paired results
+      if (length(paired_replacements) > 0) {
+        paired_df <- do.call(rbind, paired_replacements)
+
+        # Normalize interaction keys for matching
+        unpaired_norm <- validation_utils$normalize_interaction(unpaired_base)
+        paired_norm <- validation_utils$normalize_interaction(paired_df)
+
+        # For each paired row, find and replace in unpaired_base
+        for (pk in paired_norm$InteractionKey) {
+          match_idx <- which(unpaired_norm$InteractionKey == pk)
+          if (length(match_idx) == 1) {
+            paired_row <- paired_norm[paired_norm$InteractionKey == pk, ]
+            # Replace values (keep structure from unpaired_base)
+            cols_to_replace <- c(
+              "Tukey.diff", "Tukey.ci.lower", "Tukey.ci.upper", "Tukey.p.value",
+              "Cohen.d", "Cohen.ci.lower", "Cohen.ci.upper", "Cohen.p.value"
+            )
+            for (col in cols_to_replace) {
+              if (col %in% names(unpaired_base) && col %in% names(paired_row)) {
+                unpaired_base[match_idx, col] <- paired_row[[col]]
+              }
+            }
+          }
+        }
+      }
+
+      # Step 4: Apply p-value adjustment on final combined raw p-values
+      # Remove any existing p.adjusted columns first
+      unpaired_base$Tukey.p.adjusted <- NULL
+      unpaired_base$Cohen.p.adjusted <- NULL
+
+      if ("Tukey.p.value" %in% names(unpaired_base)) {
+        unpaired_base$Tukey.p.adjusted <- stats$p.adjust(
+          unpaired_base$Tukey.p.value, method = p_adjust_method
+        )
+      }
+      if ("Cohen.p.value" %in% names(unpaired_base)) {
+        unpaired_base$Cohen.p.adjusted <- stats$p.adjust(
+          unpaired_base$Cohen.p.value, method = p_adjust_method
+        )
+      }
+
+      # Reorder columns
+      desired_order <- c(
+        "Interaction",
+        "Tukey.diff", "Tukey.ci.lower", "Tukey.ci.upper",
+        "Tukey.p.value", "Tukey.p.adjusted",
+        "Cohen.d", "Cohen.ci.lower", "Cohen.ci.upper",
+        "Cohen.p.value", "Cohen.p.adjusted"
+      )
+      final_cols <- intersect(desired_order, names(unpaired_base))
+      extra_cols <- setdiff(names(unpaired_base), desired_order)
+      result <- unpaired_base[, c(final_cols, extra_cols), drop = FALSE]
+
+      # Round numeric columns
+      numeric_cols <- vapply(result, is.numeric, logical(1))
+      result[numeric_cols] <- lapply(
+        result[numeric_cols], function(x) signif(x, 3)
+      )
+
+      # Sort by Interaction
+      result <- result[order(result$Interaction), ]
+      rownames(result) <- NULL
+
+      result
+    },
+    operation_name = "rm_parametric_posthoc",
+    context = error_context,
+    error_parser = error_handling$stat_error_parser
+  )
+
+  if (!test_result$success) return(test_result$error)
+
+  test_result$result
 }

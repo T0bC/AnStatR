@@ -95,8 +95,6 @@ Seven rows: A, B, C, A:B, A:C, B:C, A:B:C — same column structure as 2-way. A 
 | 0.330–0.474 | Medium |
 | ≥ 0.474 | Large |
 
-*(Romano et al., 2006)*
-
 </details>
 
 ---
@@ -159,8 +157,6 @@ Classical ANOVA (`stats::aov()`) partitions total variance into between-group an
 | 0.2–0.5 | Small |
 | 0.5–0.8 | Medium |
 | ≥ 0.8 | Large |
-
-*(Cohen, 1988)*
 
 </details>
 
@@ -316,26 +312,6 @@ When enabled, the robust omnibus and Lincon post-hoc computations are repeated a
 | `Cliff.psihat` (δ) | Robust / Non-Param 1-way | Rank-based effect size (−1 to +1) |
 | `estimate` | Non-Param 2/3-way (ART Contrasts panel) | Contrast estimate on aligned-rank scale |
 | `d` | Non-Param 2/3-way (ART Cohen's d panel) | Cohen's *d* derived from ART model |
-
-</details>
-
----
-
-#### Used Libraries
-
-<details>
-<summary><strong>R packages used in this module</strong></summary>
-
-| Package | Role |
-|---|---|
-| `WRS2` | Robust trimmed-means ANOVA (`t1way`, `t2way`, `t3way`) and linear contrasts (`lincon`) |
-| `stats` (base R) | Classical ANOVA (`aov`, `TukeyHSD`), Kruskal-Wallis (`kruskal.test`), pairwise Wilcoxon (`pairwise.wilcox.test`), p-value adjustment (`p.adjust`) |
-| `ARTool` | Aligned Rank Transform omnibus tests (`art`, `anova.art`) and pairwise contrasts (`art.con`, `artlm.con`) |
-| `emmeans` | Estimated marginal means used internally by `art.con` for ART contrast extraction |
-| `dunn.test` | Dunn's test post-hoc for Kruskal-Wallis designs |
-| `dplyr` | Data manipulation in robust post-hoc pipeline |
-
-All packages are managed via `renv` and declared in `renv.lock`.
 
 </details>
 

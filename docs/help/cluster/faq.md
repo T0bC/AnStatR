@@ -249,20 +249,15 @@ Several data configurations produce errors or unexpected behaviour:
 <details>
 <summary>Which R packages power the Cluster module computation?</summary>
 
-The cluster analysis module uses the following packages for statistical computation and visualisation:
-
 | Package | Purpose | Citation |
-|---------|---------|---------|
-| **stats** (base R) | K-Means (`kmeans()`), hierarchical clustering (`hclust()`, `cutree()`), distance matrices (`dist()`) | R Core Team (2024). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing |
-| **cluster** | PAM (`pam()`), silhouette widths (`silhouette()`), Gap statistic (`clusGap()`, `maxSE()`) | Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., & Hornik, K. (2023). *cluster: Cluster Analysis Basics and Extensions*. R package version 2.1.x |
-| **dbscan** | DBSCAN (`dbscan()`), k-nearest-neighbour distances (`kNNdist()`) | Hahsler, M., Piekenbrock, M., & Doran, D. (2019). dbscan: Fast density-based clustering with R. *Journal of Statistical Software*, 91(1), 1–30. doi:10.18637/jss.v091.i01 |
-| **hopkins** | Hopkins clusterability statistic (`hopkins()`) | Ripley, B., & Maechler, M. (2022). *hopkins: Calculate Hopkins Statistic to Assess Clustering Tendency*. R package |
-| **bestNormalize** | Optional skewness correction before clustering | Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization. *Journal of Applied Statistics*, 47(13–15), 2312–2327. doi:10.1080/02664763.2019.1630372 |
-| **ggplot2** | Optimal clusters plot, cluster biplot | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer |
-| **ggiraph** | Interactive SVG plots with hover tooltips | Gohel, D., & Skintzos, P. (2024). *ggiraph: Make 'ggplot2' Graphics Interactive*. R package |
-| **plotly** | Interactive heatmap with dendrogram | Sievert, C. (2020). *Interactive Web-Based Data Visualization with R, plotly, and shiny*. Chapman and Hall/CRC |
-| **DT** | Interactive cluster membership and profile tables | Xie, Y., Cheng, J., & Tan, X. (2024). *DT: A Wrapper of the JavaScript Library 'DataTables'*. R package |
-
-Additional supporting packages: **openxlsx** (Excel export), **bslib** (UI layout), **shiny** (application framework).
+|---------|---------|----------|
+| **cluster** | PAM, silhouette, Gap statistic | Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., & Hornik, K. (2026). *cluster: Cluster Analysis Basics and Extensions*. <https://CRAN.R-project.org/package=cluster> |
+| **dbscan** | DBSCAN, k-NN distances | Hahsler, M., & Piekenbrock, M. (2025). *dbscan: Density-Based Spatial Clustering of Applications with Noise (DBSCAN) and Related Algorithms*. <https://doi.org/10.32614/CRAN.package.dbscan> |
+| **ggiraph** | Interactive SVG plots | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
+| **ggplot2** | Optimal clusters plot, cluster biplot | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
+| **heatmaply** | Interactive heatmap with dendrogram | Galili, T., O'Callaghan, A., Sidi, J., & Sievert, C. (2017). *heatmaply: an R package for creating interactive cluster heatmaps for online publishing*. *Bioinformatics*. <https://doi.org/10.1093/bioinformatics/btx657> |
+| **hopkins** | Hopkins clusterability statistic | Wright, K. (2023). *hopkins: Calculate Hopkins Statistic for Clustering*. <https://doi.org/10.32614/CRAN.package.hopkins> |
+| **plotly** | Interactive 3D/heatmap plots | Sievert, C. (2020). *Interactive Web-Based Data Visualization with R, plotly, and shiny*. Chapman and Hall/CRC. <https://plotly-r.com> |
+| **scales** | Plot scales and colour utilities | Wickham, H., Pedersen, T. L., & Seidel, D. (2025). *scales: Scale Functions for Visualization*. <https://doi.org/10.32614/CRAN.package.scales> |
 
 </details>

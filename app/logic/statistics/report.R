@@ -101,7 +101,8 @@ render_plot_base64 <- function(plot_object,
 #' @return Character string with HTML
 build_omnibus_html <- function(omnibus_result,
                                x_axis,
-                               approach) {
+                               approach,
+                               is_rm = FALSE) {
   if (is.null(omnibus_result)) {
     return("")
   }
@@ -120,13 +121,19 @@ build_omnibus_html <- function(omnibus_result,
   if (is.data.frame(omnibus_result) &&
       nrow(omnibus_result) > 0) {
     n_ways <- length(x_axis)
+    rm_prefix <- if (isTRUE(is_rm)) "RM " else ""
     header_label <- if (approach == "robust") {
       paste0(
-        "Robust ", n_ways, "-Way ANOVA",
+        rm_prefix, "Robust ", n_ways, "-Way ANOVA",
         " \u2014 Trimmed Means (t", n_ways, "way)"
       )
+    } else if (approach == "nonparametric") {
+      paste0(
+        rm_prefix, "Non-Parametric ", n_ways,
+        "-Way ANOVA"
+      )
     } else {
-      paste0("Classical ", n_ways, "-Way ANOVA")
+      paste0(rm_prefix, "Classical ", n_ways, "-Way ANOVA")
     }
 
     return(paste0(
@@ -148,8 +155,10 @@ build_omnibus_html <- function(omnibus_result,
 #' and splits into two side-by-side tables.
 #'
 #' @param posthoc_result Data frame or app_error or NULL
+#' @param params Optional list with test_approach / RM settings,
+#'   used to annotate which tests were applied to paired rows
 #' @return Character string with HTML
-build_posthoc_html <- function(posthoc_result) {
+build_posthoc_html <- function(posthoc_result, params = NULL) {
   if (is.null(posthoc_result)) return("")
 
   if (error_handling$is_app_error(posthoc_result)) {
@@ -171,12 +180,33 @@ build_posthoc_html <- function(posthoc_result) {
 
   # Detect prefix set
   has_lincon <- any(grepl("^Lincon\\.", names(posthoc_result)))
+  has_rm_lincon <- any(grepl("^RM\\.Lincon\\.", names(posthoc_result)))
   has_tukey <- any(grepl("^Tukey\\.", names(posthoc_result)))
+  has_paired_t <- any(grepl("^Paired\\.t\\.", names(posthoc_result)))
+  has_paired_d <- any(grepl("^Paired\\.d", names(posthoc_result)))
+  has_paired_wilcox <- any(grepl(
+    "^Paired\\.Wilcox\\.", names(posthoc_result)
+  ))
   has_dunn <- any(grepl("^Dunn\\.", names(posthoc_result)))
   has_wilcox <- any(grepl("^Wilcox\\.", names(posthoc_result)))
   has_art <- any(grepl("^ART\\.", names(posthoc_result)))
 
-  if (has_lincon) {
+  if (has_paired_t && has_paired_d) {
+    left_prefix <- "Paired.t"
+    left_label <- "Paired t-Test"
+    right_prefix <- "Paired.d"
+    right_label <- "Paired Cohen's d"
+  } else if (has_rm_lincon) {
+    left_prefix <- "RM.Lincon"
+    left_label <- "RM Lincon (Trimmed Means)"
+    right_prefix <- NULL
+    right_label <- NULL
+  } else if (has_paired_wilcox) {
+    left_prefix <- "Paired.Wilcox"
+    left_label <- "Paired Wilcoxon"
+    right_prefix <- NULL
+    right_label <- NULL
+  } else if (has_lincon) {
     left_prefix <- "Lincon"
     left_label <- "Lincon"
     right_prefix <- "Cliff"
@@ -210,6 +240,49 @@ build_posthoc_html <- function(posthoc_result) {
     ))
   }
 
+  # Repeated-measures annotation: headers stay identical to the
+  # unpaired output, so describe which rows used paired tests.
+  rm_note_html <- ""
+  if (!is.null(params) &&
+      isTRUE(params$is_repeated_measures) &&
+      identical(params$test_approach, "parametric") &&
+      has_tukey) {
+    wn <- params$rm_within_col %||% "the within-subject factor"
+    rm_note_html <- paste0(
+      '<p class="rm-note"><strong>Repeated measures:</strong> ',
+      "comparisons where the between-subject factor(s) are ",
+      "identical and only ", htmltools$htmlEscape(wn),
+      " differs (e.g. A.T1 vs. A.T2) were computed with ",
+      "<strong>paired t-tests</strong> and ",
+      "<strong>Cohen's dz</strong>. All remaining comparisons ",
+      "use <strong>Tukey HSD</strong> and ",
+      "<strong>Cohen's d</strong> (independent samples). ",
+      "Column headers are identical for both test regimes.</p>\n"
+    )
+  }
+
+  # Handle single-table RM formats (no right panel)
+  if (is.null(right_prefix)) {
+    left_cols <- grep(
+      paste0("^", left_prefix, "\\."),
+      names(posthoc_result), value = TRUE
+    )
+    left_df <- posthoc_result[
+      , c("Interaction", left_cols), drop = FALSE
+    ]
+    names(left_df) <- gsub(
+      paste0("^", left_prefix, "\\."), "",
+      names(left_df)
+    )
+    return(paste0(
+      "<h2>Pairwise Comparisons</h2>\n",
+      rm_note_html,
+      "<h3>", htmltools$htmlEscape(left_label), "</h3>\n",
+      df_to_html_table(left_df),
+      "\n"
+    ))
+  }
+
   # For ART, split by explicit column names
   if (has_art) {
     art_left_names <- c(
@@ -222,6 +295,21 @@ build_posthoc_html <- function(posthoc_result) {
     left_cols <- intersect(art_left_names, names(posthoc_result))
     right_cols <- intersect(
       art_right_names, names(posthoc_result)
+    )
+  } else if (has_paired_t && has_paired_d) {
+    paired_t_names <- c(
+      "Paired.t.statistic",
+      "Paired.t.p.value", "Paired.t.p.adjusted"
+    )
+    paired_d_names <- c(
+      "Paired.d", "Paired.d.ci.lower",
+      "Paired.d.ci.upper"
+    )
+    left_cols <- intersect(
+      paired_t_names, names(posthoc_result)
+    )
+    right_cols <- intersect(
+      paired_d_names, names(posthoc_result)
     )
   } else {
     left_cols <- grep(
@@ -249,6 +337,13 @@ build_posthoc_html <- function(posthoc_result) {
   if (has_art) {
     names(right_df) <- gsub("^ART\\.d\\.", "", names(right_df))
     names(right_df) <- gsub("^ART\\.d$", "d", names(right_df))
+  } else if (has_paired_t && has_paired_d) {
+    names(right_df) <- gsub(
+      "^Paired\\.d\\.", "", names(right_df)
+    )
+    names(right_df) <- gsub(
+      "^Paired\\.d$", "d", names(right_df)
+    )
   } else {
     names(right_df) <- gsub(
       paste0("^", right_prefix, "\\."), "", names(right_df)
@@ -257,6 +352,7 @@ build_posthoc_html <- function(posthoc_result) {
 
   paste0(
     "<h2>Pairwise Comparisons</h2>\n",
+    rm_note_html,
     '<div class="two-tables">\n',
     '<div class="table-panel">\n',
     "<h3>", htmltools$htmlEscape(left_label), "</h3>\n",
@@ -299,6 +395,23 @@ generate_html_report <- function(measure,
     params$test_approach
   )
 
+  # RM meta info
+  rm_html <- ""
+  if (isTRUE(params$is_repeated_measures)) {
+    rm_html <- paste0(
+      "<strong>Design Type:</strong> Repeated Measures",
+      "<br>\n",
+      "<strong>ID Column:</strong> ",
+      htmltools$htmlEscape(
+        params$rm_id_col %||% "(not set)"
+      ), "<br>\n",
+      "<strong>Within-Subject Factor:</strong> ",
+      htmltools$htmlEscape(
+        params$rm_within_col %||% "(not set)"
+      ), "<br>\n"
+    )
+  }
+
   meta_html <- paste0(
     '<div class="meta-info">\n',
     "<strong>Approach:</strong> ",
@@ -308,6 +421,7 @@ generate_html_report <- function(measure,
     " (", htmltools$htmlEscape(
       paste(x_axis, collapse = ", ")
     ), ")<br>\n",
+    rm_html,
     "<strong>Bootstrap:</strong> ",
     ifelse(isTRUE(params$use_bootstrap), "Yes", "No"),
     "<br>\n",
@@ -334,11 +448,12 @@ generate_html_report <- function(measure,
   # --- Omnibus ---
   omnibus_html <- build_omnibus_html(
     omnibus_result, x_axis,
-    params$test_approach %||% "unknown"
+    params$test_approach %||% "unknown",
+    is_rm = isTRUE(params$is_repeated_measures)
   )
 
   # --- Post-hoc ---
-  posthoc_html <- build_posthoc_html(posthoc_result)
+  posthoc_html <- build_posthoc_html(posthoc_result, params)
 
   # --- Assemble full document ---
   paste0(
@@ -435,7 +550,7 @@ generate_html_report <- function(measure,
   ', omnibus_html, '
   ', posthoc_html, '
   <div class="footer">
-    <p>Generated by TexAn 2.0 on ',
+    <p>Generated by AnStatR on ',
     format(timestamp, "%Y-%m-%d %H:%M:%S"),
     '</p>
   </div>
