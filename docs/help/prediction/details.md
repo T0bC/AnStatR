@@ -40,7 +40,7 @@ Before prediction, the unknown data is transformed using parameters stored in th
 
 **Step 1 — Skewness transformations** (`transform_params`)
 
-If skewness normalization was enabled during model training, `bestNormalize` (Peterson & Cavanaugh, 2020) transformation objects are stored in the bundle. The same transformations (Box-Cox, Yeo-Johnson, log, square-root — whichever was selected per column) are applied to the corresponding unknown data columns using `predict()` on the stored transformer objects.
+If skewness normalization was enabled during model training, `bestNormalize` transformation objects are stored in the bundle. The same transformations (Box-Cox, Yeo-Johnson, log, square-root — whichever was selected per column) are applied to the corresponding unknown data columns using `predict()` on the stored transformer objects.
 
 **Step 2 — Scaling** (LDA / MDA / QDA only)
 
@@ -67,7 +67,7 @@ All prediction dispatches through R's generic `stats::predict()` applied to the 
 
 Interpreting PCA projections: an unknown that projects close to a cluster of training specimens in PC space shares a similar multivariate profile with those specimens. An unknown that falls far from all training specimens (extrapolation zone) may have a measurement profile outside the range the training data can describe reliably.
 
-**LDA** (Fisher, 1936; Venables & Ripley, 2002)
+**LDA**
 
 `predict.lda(model, newdata)` returns:
 - `$class` — predicted group label (maximum posterior)
@@ -80,11 +80,11 @@ $$\hat{k} = \underset{k}{\arg\max}\; P(k \mid \mathbf{x}) = \underset{k}{\arg\ma
 
 where $f_k(\mathbf{x})$ is the multivariate Gaussian density under the pooled within-group covariance.
 
-**MDA** (Hastie & Tibshirani, 1996)
+**MDA**
 
 `predict.mda(model, newdata)` is called three times to retrieve the predicted class (default), posterior probabilities (`type = "posterior"`), and discriminant variates (`type = "variates"`). Classification uses the mixture model posteriors summed across subclass components within each group.
 
-**QDA** (Hastie, Tibshirani & Friedman, 2009; Venables & Ripley, 2002)
+**QDA**
 
 `predict.qda(model, newdata)` returns `$class` and `$posterior` using per-group quadratic discriminant functions. Because QDA does not produce linear discriminant axes, LD scores for visualization are obtained by projecting the preprocessed unknown data through a **companion LDA** model stored in the bundle (`bundle$lda_model`). This companion LDA is fitted on the same training data for visualization purposes only and does not influence classification.
 
