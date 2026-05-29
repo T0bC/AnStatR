@@ -1,5 +1,32 @@
 # Changelog
 
+## [2026.11] - 2026-05-29
+
+### Added
+
+- **Repeated measures non-parametric post-hoc analysis**: Paired Wilcoxon signed-rank tests for within-subject comparisons in repeated measures designs
+- **Paired Cliff's delta**: Effect size computation for within-subject nonparametric post-hoc comparisons; ART-only columns are blanked in mixed designs
+- **Repeated-measures annotations**: Explanatory notes in post-hoc report and table clarifying paired vs unpaired test usage and effect size differences
+- **t-distribution critical values**: Used for paired difference confidence intervals instead of normal approximation
+- **Comprehensive test coverage**: Added repeated measures ANOVA tests for 1-way, 2-way, and 3-way designs with balanced data validation; added repeated measures post-hoc tests for 1-way and 3-way designs
+- **AnStatR branding**: New icon and logo with faceted low-poly background and biplot motif, including ASR monogram variant; navbar now displays the full logo SVG at 32 px height
+- **License documentation**: Added License section to README with GPL-3 and USC-RL exception for `Rallfun-v43.R`
+- **Header documentation for `Rallfun-v43.R`**: Source attribution, modification notes, and license clarification
+
+### Changed
+
+- **Complete project rebrand**: Renamed from TexAn / TexAn2.0 to AnStatR throughout README, issue templates, documentation, UI components, CSS classes (`texan-sidebar` → `anstatr-sidebar`), and debug functions (`_texanDbg` → `_anstatrDbg`)
+- **Package citations updated**: Documentation now includes DOIs and URLs for cited packages; inline citations removed from cluster analysis, LDA, and prediction documentation details sections
+- **Deploy script**: Changed from `git pull` to `fetch+reset` for forced sync with `origin/main`
+- **renv configuration**: Configured with Bioconductor 3.23 and enabled lockfile sanitization
+- **Default clustering algorithm**: Changed from K-Means to Hierarchical with reordered algorithm choices to match the new default
+- **`docs/forPublication/`**: Added to `.gitignore`
+
+### Fixed
+
+- Removed merge conflict marker and duplicate code from `nonparametric_tests.R`
+- **Docker image build**: Removed `www/` directory from the build to reduce image size
+
 ## [2026.10] - 2026-05-22
 
 ### Added
