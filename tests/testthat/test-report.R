@@ -42,9 +42,9 @@ describe("build_posthoc_html robust RM note", {
         rm_within_col = "TIME"
       )
     )
-    expect_true(grepl("Repeated measures:", html, fixed = TRUE))
+    expect_true(grepl("Repeated measures", html, fixed = TRUE))
     expect_true(grepl("yuend", html, fixed = TRUE))
-    expect_true(grepl("explanatory measure of effect size", html, fixed = TRUE))
+    expect_true(grepl("AKP", html, fixed = TRUE))
     expect_true(grepl("TIME", html, fixed = TRUE))
   })
 
@@ -58,12 +58,12 @@ describe("build_posthoc_html robust RM note", {
         rm_within_col = "TIME"
       )
     )
-    expect_false(grepl("Repeated measures:", html, fixed = TRUE))
+    expect_false(grepl("Repeated measures", html, fixed = TRUE))
   })
 
   it("omits the note when params is NULL", {
     df <- make_lincon_cliff_df()
     html <- report$build_posthoc_html(df, params = NULL)
-    expect_false(grepl("Repeated measures:", html, fixed = TRUE))
+    expect_false(grepl("Repeated measures", html, fixed = TRUE))
   })
 })
