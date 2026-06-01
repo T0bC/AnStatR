@@ -481,6 +481,27 @@ perform_rm_robust <- function(df, x_axis, measure_col,
         df[[bc]] <- as.factor(df[[bc]])
       }
 
+      # Listwise deletion for repeated measures: drop rows with a missing
+      # measurement, then remove any subject that no longer has a complete
+      # set of within-subject observations. This keeps the design balanced
+      # so WRS2::rmanova / bwtrim can run.
+      df <- df[!is.na(df[[measure_col]]), , drop = FALSE]
+      n_within_levels <- length(unique(df[[within_col]]))
+      obs_per_subject <- table(droplevels(df[[id_col]]))
+      complete_ids <- names(obs_per_subject)[
+        obs_per_subject == n_within_levels
+      ]
+      df <- df[as.character(df[[id_col]]) %in% complete_ids, , drop = FALSE]
+      df[[id_col]] <- droplevels(as.factor(df[[id_col]]))
+
+      if (nrow(df) == 0 || length(complete_ids) < 2) {
+        stop(paste0(
+          "Not enough subjects with complete repeated-measures data ",
+          "after removing missing values. At least 2 subjects must have ",
+          "a measurement at every level of '", within_col, "'."
+        ))
+      }
+
       # Validate balanced design
       id_within_counts <- table(df[[id_col]], df[[within_col]])
       if (any(id_within_counts != 1)) {
