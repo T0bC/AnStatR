@@ -1,3 +1,12 @@
+# =============================================================================
+# Rallfun-v43.R — Rand Wilcox's collection of robust statistical functions
+# Source:   https://osf.io/xhe8u/ (Wilcox, 2024)
+# Modified: select functions have been adapted for output formatting and
+#           integration with AnStatR (Meißner, 2024). All modifications are
+#           clearly marked with # MODIFIED: <reason> comments inline.
+# License:  USC-RL v1.0 (see below). This file is NOT covered by the GPL-3
+#           license of the surrounding AnStatR application.
+# =============================================================================
 #
 #License: USC-RL v1.0
 #The Software is made available for academic or non-commercial purposes only. The license is for 

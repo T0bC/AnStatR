@@ -16,5 +16,10 @@ logs/
 .vscode/
 .llm/
 
+<<<<<<< HEAD
 # Project
 /docs/forPublication/
+=======
+# Publication docs
+docs/forPublication/
+>>>>>>> 04445ed1db6aee6fbe23ea159082e2088285feb9

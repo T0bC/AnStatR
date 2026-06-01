@@ -120,3 +120,13 @@ The application imports only the **first sheet** of XLSX files. If your data is 
 Also verify there are no empty rows at the top of the sheet, as these are skipped during import.
 
 </details>
+
+<details>
+<summary>Which R packages are used for data loading and summary?</summary>
+
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **openxlsx** | Reading xlsx files | Schauberger, P., & Walker, A. (2025). *openxlsx: Read, Write and Edit xlsx Files*. <https://doi.org/10.32614/CRAN.package.openxlsx> |
+| **summarytools** | Data summary statistics | Comtois, D. (2026). *summarytools: Tools to Quickly and Neatly Summarize Data*. <https://doi.org/10.32614/CRAN.package.summarytools> |
+
+</details>

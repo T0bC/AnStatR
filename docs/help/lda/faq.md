@@ -96,7 +96,7 @@ If MDA LOO-CV accuracy is lower than LDA LOO-CV accuracy with the same data, the
 <details>
 <summary>What does the "t-distribution" estimation method do and how do I choose Nu?</summary>
 
-The `t` method (Gnanadesikan, Kettenring & Landwehr, 1997) replaces the classical Gaussian assumption with a multivariate t-distribution, making the estimated means and covariance matrices less sensitive to outliers. The **Nu (degrees of freedom)** parameter controls robustness:
+The `t` method replaces the classical Gaussian assumption with a multivariate t-distribution, making the estimated means and covariance matrices less sensitive to outliers. The **Nu (degrees of freedom)** parameter controls robustness:
 
 | Nu | Behaviour |
 |----|-----------|
@@ -171,17 +171,14 @@ Several data configurations produce warnings or errors:
 <details>
 <summary>Which R packages power the LDA / QDA / MDA computation?</summary>
 
-The discriminant analysis module uses the following packages for statistical computation and visualisation:
-
-| Package | Version | Purpose | Citation |
-|---------|---------|---------|----------|
-| **MASS** | ≥ 7.3 | LDA and QDA via `MASS::lda()` and `MASS::qda()` | Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer. ISBN 0-387-95457-0 |
-| **mda** | ≥ 0.5 | Mixture Discriminant Analysis via `mda::mda()` | Hastie, T., & Tibshirani, R. (1996). Discriminant analysis by Gaussian mixtures. *Journal of the Royal Statistical Society: Series B*, 58(1), 155–176 |
-| **bestNormalize** | ≥ 1.0 | Optional skewness correction before analysis | Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization. *Journal of Applied Statistics*, 47(13-15), 2312–2327 |
-| **ggplot2** | ≥ 3.4 | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer |
-| **ggiraph** | ≥ 0.8 | Interactive SVG plots with hover tooltips | Gohel, D. (2024). *ggiraph: Make Interactive ggplot2*. R package |
-| **DT** | ≥ 0.28 | Interactive result tables | Xie, Y., Cheng, J., & Tan, X. (2024). *DT: A Wrapper of the JavaScript Library DataTables*. R package |
-
-Additional supporting packages: **stats** (base R predict/scale), **bslib** (UI layout), **shiny** (application framework).
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **MASS** | LDA and QDA | Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer. <https://www.stats.ox.ac.uk/pub/MASS4/> |
+| **mda** | Mixture Discriminant Analysis | Hastie, T., & Tibshirani, R. (2024). *mda: Mixture and Flexible Discriminant Analysis*. <https://doi.org/10.32614/CRAN.package.mda> |
+| **colorspace** | Colour palettes and manipulation | Zeileis, A., Fisher, J. C., Hornik, K., Ihaka, R., McWhite, C. D., Murrell, P., Stauffer, R., & Wilke, C. O. (2020). *colorspace: A Toolbox for Manipulating and Assessing Colors and Palettes*. *Journal of Statistical Software*, 96(1), 1–49. <https://doi.org/10.18637/jss.v096.i01> |
+| **ggiraph** | Interactive SVG plots | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
+| **ggplot2** | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
+| **openxlsx** | Excel export of results | Schauberger, P., & Walker, A. (2025). *openxlsx: Read, Write and Edit xlsx Files*. <https://doi.org/10.32614/CRAN.package.openxlsx> |
+| **scales** | Plot scales and colour utilities | Wickham, H., Pedersen, T. L., & Seidel, D. (2025). *scales: Scale Functions for Visualization*. <https://doi.org/10.32614/CRAN.package.scales> |
 
 </details>

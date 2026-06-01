@@ -2,8 +2,8 @@
 set -e
 
 # ── Configuration ──────────────────────────────────────
-APP_DIR="/opt/shinyapps/TexAn2.0"    # Change to your app path
-IMAGE_NAME="texan"                   # Change to your image name
+APP_DIR="/opt/shinyapps/AnStatR"    # Change to your app path
+IMAGE_NAME="anstatr"                   # Change to your image name
 # ───────────────────────────────────────────────────────
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

@@ -405,3 +405,335 @@ describe("perform_combined_nonparametric_posthoc error propagation", {
     expect_true(error_handling$is_app_error(result))
   })
 })
+
+# =============================================================================
+# Helper: create repeated measures test data
+# =============================================================================
+
+make_rm_twoway_data <- function(n_subjects = 10) {
+  set.seed(42)
+  grid <- expand.grid(
+    ID = paste0("S", seq_len(n_subjects)),
+    COMPOSITE = c("A", "B"),
+    TIME = c("T1", "T2"),
+    stringsAsFactors = FALSE
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    ifelse(grid$TIME == "T2", 0.5, 0)
+  grid
+}
+
+make_rm_oneway_data <- function(n_subjects = 15, n_times = 3) {
+  set.seed(42)
+  grid <- expand.grid(
+    ID = paste0("S", seq_len(n_subjects)),
+    TIME = paste0("T", seq_len(n_times)),
+    stringsAsFactors = FALSE
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    as.integer(factor(grid$TIME)) +
+    rep(rnorm(n_subjects, sd = 0.5), times = n_times)
+  grid
+}
+
+# =============================================================================
+# perform_rm_nonparametric_posthoc — 1-way RM (pure within, paired Wilcoxon)
+# =============================================================================
+
+describe("perform_rm_nonparametric_posthoc 1-way RM", {
+  it("returns Wilcox + Cliff columns (no ART) for pure within design", {
+    df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
+    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = "TIME",
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Interaction" %in% names(result))
+    expect_true("Wilcox.p.value" %in% names(result))
+    expect_true("Wilcox.p.adjusted" %in% names(result))
+    expect_true("Cliff.psihat" %in% names(result))
+    expect_false(any(grepl("^ART\\.", names(result))))
+  })
+
+  it("returns C(k,2) comparisons for k within-subject levels", {
+    df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
+    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = "TIME",
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_equal(nrow(result), 3)
+  })
+
+  it("produces Cliff's delta bounded in [-1, 1]", {
+    df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
+    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = "TIME",
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(all(result$Cliff.psihat >= -1 & result$Cliff.psihat <= 1))
+  })
+})
+
+# =============================================================================
+# perform_rm_nonparametric_posthoc — 2-way RM happy path
+# =============================================================================
+
+describe("perform_rm_nonparametric_posthoc 2-way RM", {
+  it("returns data.frame with ART columns matching non-RM structure", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Interaction" %in% names(result))
+    expect_false("Type" %in% names(result))
+    expect_true("ART.estimate" %in% names(result))
+    expect_true("ART.p.value" %in% names(result))
+    expect_true("ART.p.adjusted" %in% names(result))
+    expect_true("ART.d" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+
+  it("returns same row count as filter_valid unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    expect_equal(nrow(rm_result), nrow(unpaired))
+  })
+
+  it("has different p-values for paired comparisons vs unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    # Find paired comparisons (A.T1 vs A.T2, B.T1 vs B.T2)
+    paired_interactions <- c("A.T1 vs. A.T2", "B.T1 vs. B.T2")
+
+    for (int in paired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Paired test should give different p-value than unpaired
+        expect_false(
+          isTRUE(all.equal(unpaired_row$ART.p.value, rm_row$ART.p.value)),
+          info = paste("Paired comparison", int, "should differ")
+        )
+      }
+    }
+  })
+
+  it("has same p-values for unpaired (between-subject) comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    # Find unpaired comparisons (A.T1 vs B.T1, A.T2 vs B.T2)
+    unpaired_interactions <- c("A.T1 vs. B.T1", "A.T2 vs. B.T2")
+
+    for (int in unpaired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Between-subject comparisons should be identical
+        expect_equal(
+          unpaired_row$ART.p.value, rm_row$ART.p.value,
+          tolerance = 1e-6,
+          info = paste("Unpaired comparison", int, "should match")
+        )
+      }
+    }
+  })
+
+  it("applies p-adjustment correctly across all comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "bonferroni"
+    )
+
+    # p.adjusted should be >= p.value (bonferroni multiplies by n)
+    expect_true(all(rm_result$ART.p.adjusted >= rm_result$ART.p.value - 1e-10))
+
+    # With 4 comparisons, bonferroni should multiply by 4 (capped at 1)
+    expected_adj <- pmin(rm_result$ART.p.value * 4, 1)
+    expect_equal(rm_result$ART.p.adjusted, expected_adj, tolerance = 1e-3)
+  })
+
+  it("blanks ART-only columns and sets Cliff's delta for paired rows", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    paired_interactions <- c("A.T1 vs. A.T2", "B.T1 vs. B.T2")
+    unpaired_interactions <- c("A.T1 vs. B.T1", "A.T2 vs. B.T2")
+
+    for (int in paired_interactions) {
+      row <- rm_result[rm_result$Interaction == int, ]
+      if (nrow(row) == 1) {
+        # ART-only statistics have no paired analog -> blanked
+        expect_true(is.na(row$ART.estimate))
+        expect_true(is.na(row$ART.t.ratio))
+        # Paired Cliff's delta is a real effect size in [-1, 1]
+        expect_false(is.na(row$ART.d))
+        expect_true(row$ART.d >= -1 && row$ART.d <= 1)
+      }
+    }
+
+    for (int in unpaired_interactions) {
+      row <- rm_result[rm_result$Interaction == int, ]
+      if (nrow(row) == 1) {
+        # Between-subject rows keep their ART-C statistics
+        expect_false(is.na(row$ART.estimate))
+        expect_false(is.na(row$ART.t.ratio))
+      }
+    }
+  })
+})
+
+# =============================================================================
+# perform_combined_nonparametric_posthoc — RM path via is_rm flag
+# =============================================================================
+
+describe("perform_combined_nonparametric_posthoc RM path", {
+  it("routes to RM posthoc when is_rm=TRUE", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "bonferroni",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_false("Type" %in% names(result))
+    expect_true("ART.p.value" %in% names(result))
+    expect_true("ART.d" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+})
+
+# =============================================================================
+# DEBUG: Inspect nonparametric column structures
+# =============================================================================
+
+describe("DEBUG: Nonparametric column structure inspection", {
+  it("prints unpaired vs RM comparison", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    # Standard unpaired result with filter_valid=TRUE (no RM)
+    unpaired_result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    # RM result (hybrid approach)
+    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      p_adjust_method = "none"
+    )
+
+    cat("\n\n========== NP UNPAIRED (filter_valid=TRUE) ==========\n")
+    print(unpaired_result[, c("Interaction", "ART.estimate", "ART.p.value", "ART.d")])
+
+    cat("\n========== NP RM (HYBRID) ==========\n")
+    print(rm_result[, c("Interaction", "ART.estimate", "ART.p.value", "ART.d")])
+
+    cat("\n========== COMPARISON ==========\n")
+    cat("Both should have 4 rows (valid comparisons only)\n")
+    cat("Paired rows (A.T1 vs A.T2, B.T1 vs B.T2) p-values should differ\n")
+    cat("Unpaired rows (A.T1 vs B.T1, A.T2 vs B.T2) should match\n")
+    cat("=================================\n\n")
+
+    expect_equal(nrow(unpaired_result), nrow(rm_result))
+    expect_true(is.data.frame(rm_result))
+  })
+})

@@ -462,3 +462,263 @@ describe("perform_art3way ignores bootstrap", {
     expect_equal(result_no_boot, result_with_boot)
   })
 })
+
+# =============================================================================
+# Helper: create repeated measures data (pure within-subject)
+# =============================================================================
+
+make_rm_within_data <- function(n_subjects = 15, n_conditions = 3) {
+  set.seed(42)
+  subjects <- rep(paste0("S", seq_len(n_subjects)), each = n_conditions)
+  conditions <- rep(paste0("T", seq_len(n_conditions)), times = n_subjects)
+  values <- rnorm(n_subjects * n_conditions) +
+    rep(seq_len(n_conditions), times = n_subjects) +
+    rep(rnorm(n_subjects, sd = 0.5), each = n_conditions)
+  data.frame(
+    id = subjects,
+    time = conditions,
+    measure = values,
+    stringsAsFactors = FALSE
+  )
+}
+
+# =============================================================================
+# Helper: create repeated measures data (mixed design: between x within)
+# =============================================================================
+
+make_rm_mixed_data <- function(n_per_group = 8, n_conditions = 3) {
+  set.seed(42)
+  n_groups <- 2
+  n_subjects <- n_per_group * n_groups
+  subjects <- paste0("S", seq_len(n_subjects))
+  group <- rep(c("Ctrl", "Treat"), each = n_per_group)
+  df <- expand.grid(
+    id = subjects,
+    time = paste0("T", seq_len(n_conditions)),
+    stringsAsFactors = FALSE
+  )
+  df$group <- rep(group, each = n_conditions)
+  df$measure <- rnorm(nrow(df)) +
+    ifelse(df$group == "Treat", 2, 0) +
+    rep(seq_len(n_conditions), times = n_subjects) * 0.5 +
+    rep(rnorm(n_subjects, sd = 0.5), each = n_conditions)
+  df
+}
+
+# =============================================================================
+# perform_rm_nonparametric — Friedman (pure within-subject)
+# =============================================================================
+
+describe("perform_rm_nonparametric (Friedman)", {
+  it("returns a data frame with expected columns for pure within-subject", {
+    df <- make_rm_within_data(n_subjects = 15, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(
+      names(result),
+      c("Effect", "Df", "Chi.Sq.Statistic", "p.value")
+    )
+    expect_equal(nrow(result), 1)
+  })
+
+  it("returns correct effect label", {
+    df <- make_rm_within_data(n_subjects = 15, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_equal(result$Effect, "time")
+  })
+
+  it("returns numeric Chi.Sq and p.value", {
+    df <- make_rm_within_data(n_subjects = 20, n_conditions = 4)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.numeric(result$Chi.Sq.Statistic))
+    expect_true(is.numeric(result$p.value))
+    expect_true(result$p.value >= 0 && result$p.value <= 1)
+  })
+
+  it("returns integer Df", {
+    df <- make_rm_within_data(n_subjects = 15, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.integer(result$Df))
+    expect_equal(result$Df, 2L)
+  })
+
+  it("detects differences between conditions with strong signal", {
+    set.seed(123)
+    n_subjects <- 30
+    subj_effect <- rnorm(n_subjects, mean = 0, sd = 0.5)
+    subjects <- rep(paste0("S", seq_len(n_subjects)), each = 3)
+    conditions <- rep(c("Low", "Mid", "High"), times = n_subjects)
+    values <- rep(subj_effect, each = 3) +
+      rep(c(0, 3, 6), times = n_subjects) +
+      rnorm(n_subjects * 3, mean = 0, sd = 0.2)
+    df <- data.frame(
+      id = subjects,
+      time = conditions,
+      measure = values,
+      stringsAsFactors = FALSE
+    )
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(result$p.value < 0.05)
+    expect_true(result$Chi.Sq.Statistic > 1)
+  })
+})
+
+# =============================================================================
+# perform_rm_nonparametric — Mixed design (ART + Error)
+# =============================================================================
+
+describe("perform_rm_nonparametric (mixed ART)", {
+  it("returns a data frame with expected columns for mixed design", {
+    df <- make_rm_mixed_data(n_per_group = 8, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = c("group", "time"),
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(
+      names(result),
+      c("Effect", "Df", "Df.res", "F.Statistic", "p.value")
+    )
+    expect_equal(nrow(result), 3)
+  })
+
+  it("returns correct effect labels", {
+    df <- make_rm_mixed_data(n_per_group = 8, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = c("group", "time"),
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_equal(
+      result$Effect,
+      c("group", "time", "group:time")
+    )
+  })
+
+  it("returns numeric F statistics and p-values", {
+    df <- make_rm_mixed_data(n_per_group = 10, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = c("group", "time"),
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.numeric(result$F.Statistic))
+    expect_true(all(result$p.value >= 0 & result$p.value <= 1))
+  })
+
+  it("returns integer Df and Df.res values", {
+    df <- make_rm_mixed_data(n_per_group = 8, n_conditions = 3)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = c("group", "time"),
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(is.integer(result$Df))
+    expect_true(is.integer(result$Df.res))
+  })
+
+  it("detects between-subject main effect with strong signal", {
+    set.seed(99)
+    n_per_group <- 10
+    subjects <- paste0("S", seq_len(n_per_group * 2))
+    group <- rep(c("Ctrl", "Treat"), each = n_per_group)
+    df <- expand.grid(
+      id = subjects,
+      time = c("T1", "T2"),
+      stringsAsFactors = FALSE
+    )
+    df$group <- rep(group, each = 2)
+    df$measure <- rnorm(nrow(df)) +
+      ifelse(df$group == "Treat", 4, 0)
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = c("group", "time"),
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(result$p.value[1] < 0.05)
+  })
+})
+
+# =============================================================================
+# perform_rm_nonparametric — validation errors
+# =============================================================================
+
+describe("perform_rm_nonparametric validation", {
+  it("returns app_error when ID column is missing", {
+    df <- make_rm_within_data()
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "nonexistent",
+      within_col = "time"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+
+  it("returns app_error when within column is missing", {
+    df <- make_rm_within_data()
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "nonexistent"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+
+  it("returns app_error for unbalanced design", {
+    df <- make_rm_within_data(n_subjects = 10, n_conditions = 3)
+    df <- rbind(df, df[1, ])
+    result <- nonparametric_tests$perform_rm_nonparametric(
+      df = df,
+      x_axis = "time",
+      measure_col = "measure",
+      id_col = "id",
+      within_col = "time"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+})

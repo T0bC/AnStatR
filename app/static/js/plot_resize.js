@@ -142,14 +142,14 @@ function initializeWindowSize(targetId, windowInputId) {
 
 // =============================================================================
 // DEBUG: Visible on-screen overlay for environments without a console.
-// Set TEXAN_DEBUG = true to enable. Disabled by default.
+// Set ANSTATR_DEBUG = true to enable. Disabled by default.
 // =============================================================================
 
-var TEXAN_DEBUG = false;
+var ANSTATR_DEBUG = false;
 
 (function () {
-    if (!TEXAN_DEBUG) {
-        window._texanDbg = function () { };
+    if (!ANSTATR_DEBUG) {
+        window._anstatrDbg = function () { };
         return;
     }
 
@@ -159,7 +159,7 @@ var TEXAN_DEBUG = false;
     function ensureOverlay() {
         if (debugEl) return;
         debugEl = document.createElement('div');
-        debugEl.id = 'texan-debug-overlay';
+        debugEl.id = 'anstatr-debug-overlay';
         debugEl.style.cssText = [
             'position:fixed', 'bottom:0', 'left:0', 'right:0',
             'max-height:40vh', 'overflow:auto', 'background:rgba(0,0,0,0.85)',
@@ -177,7 +177,7 @@ var TEXAN_DEBUG = false;
         debugEl.scrollTop = debugEl.scrollHeight;
     }
 
-    window._texanDbg = dbg;
+    window._anstatrDbg = dbg;
 })();
 
 // =============================================================================

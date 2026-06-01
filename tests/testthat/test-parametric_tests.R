@@ -460,3 +460,135 @@ describe("perform_anova3way ignores bootstrap", {
     expect_equal(result_no_boot, result_with_boot)
   })
 })
+
+# =============================================================================
+# Helpers: repeated measures (balanced) data, 1-way / 2-way / 3-way
+# =============================================================================
+
+make_rm_oneway_data <- function(n_subjects = 12) {
+  set.seed(42)
+  grid <- expand.grid(
+    ID = paste0("S", seq_len(n_subjects)),
+    TIME = c("T1", "T2", "T3"),
+    stringsAsFactors = FALSE
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$TIME == "T2", 0.5, 0) +
+    ifelse(grid$TIME == "T3", 1.0, 0)
+  grid
+}
+
+# COMPOSITE is between-subjects: each subject belongs to one composite
+# and is measured at every TIME (within-subject) level.
+make_rm_twoway_data <- function(n_per_group = 8) {
+  set.seed(42)
+  subjects <- expand.grid(
+    subj = seq_len(n_per_group),
+    COMPOSITE = c("A", "B"),
+    stringsAsFactors = FALSE
+  )
+  subjects$ID <- paste0("S", seq_len(nrow(subjects)))
+  grid <- merge(
+    subjects[, c("ID", "COMPOSITE")],
+    data.frame(TIME = c("T1", "T2"), stringsAsFactors = FALSE),
+    by = NULL
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    ifelse(grid$TIME == "T2", 0.5, 0)
+  grid[, c("ID", "COMPOSITE", "TIME", "measure")]
+}
+
+# COMPOSITE and TREATMENT are between-subjects: each subject belongs to one
+# COMPOSITE x TREATMENT cell and is measured at every TIME (within) level.
+make_rm_threeway_data <- function(n_per_group = 5) {
+  set.seed(42)
+  cells <- expand.grid(
+    COMPOSITE = c("A", "B"),
+    TREATMENT = c("C", "D"),
+    stringsAsFactors = FALSE
+  )
+  subjects <- cells[rep(seq_len(nrow(cells)), each = n_per_group), ]
+  subjects$ID <- paste0("S", seq_len(nrow(subjects)))
+  grid <- merge(
+    subjects[, c("ID", "COMPOSITE", "TREATMENT")],
+    data.frame(TIME = c("T1", "T2"), stringsAsFactors = FALSE),
+    by = NULL
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    ifelse(grid$TREATMENT == "D", 0.4, 0) +
+    ifelse(grid$TIME == "T2", 0.5, 0)
+  grid[, c("ID", "COMPOSITE", "TREATMENT", "TIME", "measure")]
+}
+
+# =============================================================================
+# perform_rm_anova — column structure must match the unpaired output
+# =============================================================================
+
+describe("perform_rm_anova omnibus (1/2/3-way)", {
+  expected_cols <- c(
+    "Effect", "Df", "SS", "MS", "F.Statistic", "p.value"
+  )
+
+  it("1-way RM returns the unpaired column structure", {
+    df <- make_rm_oneway_data(n_subjects = 12)
+    result <- parametric_tests$perform_anova1way(
+      df = df,
+      x_axis = "TIME",
+      measure_col = "measure",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(names(result), expected_cols)
+    # one within-subject effect
+    expect_true(any(grepl("TIME", result$Effect)))
+  })
+
+  it("2-way RM (between x within) returns 3 effects", {
+    df <- make_rm_twoway_data(n_per_group = 8)
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(names(result), expected_cols)
+    expect_equal(nrow(result), 3)
+  })
+
+  it("3-way RM (2 between x within) returns 7 effects", {
+    df <- make_rm_threeway_data(n_per_group = 5)
+    result <- parametric_tests$perform_anova3way(
+      df = df,
+      x_axis = c("COMPOSITE", "TREATMENT", "TIME"),
+      measure_col = "measure",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_equal(names(result), expected_cols)
+    expect_equal(nrow(result), 7)
+  })
+
+  it("returns app_error on unbalanced RM design", {
+    df <- make_rm_twoway_data(n_per_group = 8)
+    # Drop one row to unbalance the design
+    df <- df[-1, , drop = FALSE]
+    result <- parametric_tests$perform_anova2way(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(error_handling$is_app_error(result))
+  })
+})

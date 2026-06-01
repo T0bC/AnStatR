@@ -449,3 +449,250 @@ describe("perform_combined_posthoc bootstrap", {
     expect_true("Cliff.psihat" %in% names(result))
   })
 })
+
+# =============================================================================
+# Helper: create repeated measures test data
+# =============================================================================
+
+make_rm_twoway_data <- function(n_subjects = 10) {
+  set.seed(42)
+  grid <- expand.grid(
+    ID = paste0("S", seq_len(n_subjects)),
+    COMPOSITE = c("A", "B"),
+    TIME = c("T1", "T2"),
+    stringsAsFactors = FALSE
+  )
+  grid$measure <- rnorm(nrow(grid)) +
+    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    ifelse(grid$TIME == "T2", 0.5, 0)
+  grid
+}
+
+# =============================================================================
+# perform_rm_robust_posthoc — 2-way RM happy path
+# =============================================================================
+
+describe("perform_rm_robust_posthoc 2-way RM", {
+  it("returns data.frame with Lincon and Cliff columns matching non-RM structure", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+    expect_true(is.data.frame(result))
+    expect_true("Interaction" %in% names(result))
+    expect_false("Type" %in% names(result))
+    expect_true("Lincon.psihat" %in% names(result))
+    expect_true("Lincon.p.value" %in% names(result))
+    expect_true("Lincon.p.adjusted" %in% names(result))
+    expect_true("Cliff.psihat" %in% names(result))
+    expect_true("Cliff.p.adjusted" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+
+  it("returns same row count as filter_valid unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    expect_equal(nrow(rm_result), nrow(unpaired))
+  })
+
+  it("has different p-values for paired comparisons vs unpaired", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    # Find paired comparisons (A.T1 vs A.T2, B.T1 vs B.T2)
+    paired_interactions <- c("A.T1 vs. A.T2", "B.T1 vs. B.T2")
+
+    for (int in paired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Paired test should give different p-value than unpaired
+        expect_false(
+          isTRUE(all.equal(unpaired_row$Lincon.p.value, rm_row$Lincon.p.value)),
+          info = paste("Paired comparison", int, "should differ")
+        )
+      }
+    }
+  })
+
+  it("has same p-values for unpaired (between-subject) comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    # Find unpaired comparisons (A.T1 vs B.T1, A.T2 vs B.T2)
+    unpaired_interactions <- c("A.T1 vs. B.T1", "A.T2 vs. B.T2")
+
+    for (int in unpaired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Between-subject comparisons should be identical
+        expect_equal(
+          unpaired_row$Lincon.p.value, rm_row$Lincon.p.value,
+          tolerance = 1e-6,
+          info = paste("Unpaired comparison", int, "should match")
+        )
+      }
+    }
+  })
+
+  it("applies p-adjustment correctly across all comparisons", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni"
+    )
+
+    # p.adjusted should be >= p.value (bonferroni multiplies by n)
+    expect_true(all(rm_result$Lincon.p.adjusted >= rm_result$Lincon.p.value - 1e-10))
+
+    # With 4 comparisons, bonferroni should multiply by 4 (capped at 1)
+    expected_adj <- pmin(rm_result$Lincon.p.value * 4, 1)
+    expect_equal(rm_result$Lincon.p.adjusted, expected_adj, tolerance = 1e-3)
+  })
+})
+
+# =============================================================================
+# perform_combined_posthoc — RM path via is_rm flag
+# =============================================================================
+
+describe("perform_combined_posthoc RM path", {
+  it("routes to RM posthoc when is_rm=TRUE", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+    result <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "bonferroni",
+      is_rm = TRUE,
+      id_col = "ID",
+      within_col = "TIME"
+    )
+    expect_true(is.data.frame(result))
+    expect_false("Type" %in% names(result))
+    expect_true("Lincon.p.value" %in% names(result))
+    expect_true("Cliff.psihat" %in% names(result))
+    expect_true(nrow(result) > 0)
+  })
+})
+
+# =============================================================================
+# DEBUG: Inspect robust column structures
+# =============================================================================
+
+describe("DEBUG: Robust column structure inspection", {
+  it("prints unpaired vs RM comparison", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    # Standard unpaired result with filter_valid=TRUE (no RM)
+    unpaired_result <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    # RM result (hybrid approach)
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    cat("\n\n========== ROBUST UNPAIRED (filter_valid=TRUE) ==========\n")
+    print(unpaired_result[, c("Interaction", "Lincon.psihat", "Lincon.p.value", "Cliff.psihat")])
+
+    cat("\n========== ROBUST RM (HYBRID) ==========\n")
+    print(rm_result[, c("Interaction", "Lincon.psihat", "Lincon.p.value", "Cliff.psihat")])
+
+    cat("\n========== COMPARISON ==========\n")
+    cat("Both should have 4 rows (valid comparisons only)\n")
+    cat("Paired rows (A.T1 vs A.T2, B.T1 vs B.T2) Lincon p-values should differ\n")
+    cat("Unpaired rows (A.T1 vs B.T1, A.T2 vs B.T2) should match\n")
+    cat("Cliff.psihat should be identical (not replaced)\n")
+    cat("=================================\n\n")
+
+    expect_equal(nrow(unpaired_result), nrow(rm_result))
+    expect_true(is.data.frame(rm_result))
+  })
+})

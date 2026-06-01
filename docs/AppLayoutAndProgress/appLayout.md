@@ -1,6 +1,6 @@
 %%{init: {"flowchart": {"curve": "step", "defaultRenderer": "elk"}}}%%
 flowchart TB
-    subgraph TexAn["TexAn2.0 Application"]
+    subgraph AnStatR["AnStatR Application"]
         direction TB
 
         %% ==================== LOAD DATA MODULE ====================
