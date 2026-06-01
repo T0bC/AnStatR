@@ -1,8 +1,8 @@
-# TexAn2.0
+# AnStatR
 
 ## Table of Contents
 
-- [TexAn2.0](#texan20)
+- [AnStatR](#anstatr)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Modules](#modules)
@@ -17,10 +17,11 @@
     - [Prediction](#prediction)
     - [Power Analysis](#power-analysis)
   - [Getting Started](#getting-started)
+  - [License](#license)
 
 ## Overview
 
-TexAn2.0 is an R/Shiny application for statistical analysis of measurement data. The application provides a modular workflow from data import through exploratory visualization to advanced multivariate analysis and statistical testing.
+AnStatR is an R/Shiny application for statistical analysis of measurement data. The application provides a modular workflow from data import through exploratory visualization to advanced multivariate analysis and statistical testing.
 
 ## Modules
 
@@ -69,8 +70,8 @@ Plan study sample sizes and estimate statistical power for 1-way, 2-way, and 3-w
 Clone the repository and run locally with R:
 
 ```bash
-git clone https://github.com/yourusername/TexAn2.0.git
-cd TexAn2.0
+git clone https://github.com/yourusername/AnStatR.git
+cd AnStatR
 ```
 
 In R:
@@ -82,3 +83,9 @@ shiny::runApp()  # Start the application
 ```
 
 Requires R >= 4.1. Dependencies are managed via renv.
+
+## License
+
+AnStatR is released under the **GNU General Public License v3.0 (GPL-3)**. See [LICENSE](LICENSE) for details.
+
+**Exception — Rallfun-v43.R:** The file `app/logic/statistics/Rallfun-v43.R` is a modified version of Rand Wilcox's Rallfun collection, distributed under the **USC-RL v1.0** license (academic and non-commercial use only). This file is not covered by the GPL-3 license of the surrounding application. Source: <https://osf.io/xhe8u/>. Reference: Wilcox, R. R. (2022). *Introduction to Robust Estimation and Hypothesis Testing* (5th ed.). Academic Press.

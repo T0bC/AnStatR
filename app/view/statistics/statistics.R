@@ -25,7 +25,8 @@ box::use(
 )
 
 # --- Private helper: render omnibus result as UI ---
-render_omnibus_result <- function(result, x_axis, approach) {
+render_omnibus_result <- function(result, x_axis, approach,
+                                  is_rm = FALSE) {
   if (is.null(result)) {
     return(shiny$tags$div(
       class = "text-muted small px-2",
@@ -41,23 +42,26 @@ render_omnibus_result <- function(result, x_axis, approach) {
 
   if (is.data.frame(result) && nrow(result) > 0) {
     n_ways <- length(x_axis)
+    rm_prefix <- if (isTRUE(is_rm)) "RM " else ""
     header_label <- if (approach == "robust") {
       paste0(
-        "Robust ", n_ways, "-Way ANOVA",
+        rm_prefix, "Robust ", n_ways, "-Way ANOVA",
         " \u2014 Trimmed Means (t", n_ways, "way)"
       )
     } else if (approach == "nonparametric") {
-      if (n_ways == 1) {
+      if (n_ways == 1 && !isTRUE(is_rm)) {
         "Non-Parametric 1-Way \u2014 Kruskal-Wallis"
+      } else if (n_ways == 1 && isTRUE(is_rm)) {
+        "RM Non-Parametric 1-Way \u2014 Friedman"
       } else {
         paste0(
-          "Non-Parametric ", n_ways,
+          rm_prefix, "Non-Parametric ", n_ways,
           "-Way \u2014 Aligned Rank Transform"
         )
       }
     } else {
       paste0(
-        "Classical ", n_ways, "-Way ANOVA"
+        rm_prefix, "Classical ", n_ways, "-Way ANOVA"
       )
     }
 
@@ -161,6 +165,39 @@ filter_excluded_rows <- function(df, measure_col) {
   df[keep, , drop = FALSE]
 }
 
+# --- Private helper: render mixed RM post-hoc (Paired + Unpaired) ---
+render_rm_mixed_posthoc <- function(display_df, params) {
+  # Remove Type column and any all-NA columns for clean display
+  display_df$Type <- NULL
+  cols_with_data <- vapply(display_df, function(x) !all(is.na(x)), logical(1))
+  display_df <- display_df[, cols_with_data, drop = FALSE]
+
+  if (nrow(display_df) == 0) {
+    return(shiny$tags$div(
+      class = "mt-3 text-muted small px-2",
+      "No pairwise comparisons available."
+    ))
+  }
+
+  shiny$tags$div(
+    class = "mt-3 px-2",
+    shiny$tags$h6(
+      class = "text-primary mb-2",
+      bsicons$bs_icon("table", class = "me-1"),
+      "Pairwise Comparisons (Repeated Measures)"
+    ),
+    shiny$tags$p(
+      class = "text-muted small mb-2",
+      "Comparisons within the same group across time use paired tests; ",
+      "comparisons between groups at the same time point use unpaired tests."
+    ),
+    shiny$tags$div(
+      class = "table-responsive",
+      build_posthoc_table(display_df)
+    )
+  )
+}
+
 # --- Private helper: render post-hoc result as UI ---
 render_posthoc_result <- function(result, x_axis, params) {
   if (is.null(result)) return(NULL)
@@ -182,15 +219,39 @@ render_posthoc_result <- function(result, x_axis, params) {
   if (is.data.frame(result) && nrow(result) > 0) {
     display_df <- result
 
+    # Check for mixed RM format (has Type column with Paired/Unpaired)
+    has_type_col <- "Type" %in% names(display_df)
+    if (has_type_col) {
+      return(render_rm_mixed_posthoc(display_df, params))
+    }
+
     # Detect which prefix set is present
     has_lincon <- any(grepl("^Lincon\\.", names(display_df)))
+    has_rm_lincon <- any(grepl(
+      "^RM\\.Lincon\\.", names(display_df)
+    ))
     has_tukey <- any(grepl("^Tukey\\.", names(display_df)))
+    has_paired_t <- any(grepl(
+      "^Paired\\.t\\.", names(display_df)
+    ))
+    has_paired_d <- any(grepl(
+      "^Paired\\.d", names(display_df)
+    ))
+    has_paired_wilcox <- any(grepl(
+      "^Paired\\.Wilcox\\.", names(display_df)
+    ))
     has_dunn <- any(grepl("^Dunn\\.", names(display_df)))
     has_wilcox <- any(grepl("^Wilcox\\.", names(display_df)))
     has_art <- any(grepl("^ART\\.", names(display_df)))
 
     # Determine the p-adjusted column for filtering
-    p_adj_col <- if (has_lincon) {
+    p_adj_col <- if (has_paired_t) {
+      "Paired.t.p.adjusted"
+    } else if (has_rm_lincon) {
+      "RM.Lincon.p.adjusted"
+    } else if (has_paired_wilcox) {
+      "Paired.Wilcox.p.adjusted"
+    } else if (has_lincon) {
       "Lincon.p.adjusted"
     } else if (has_tukey) {
       "Tukey.p.adjusted"
@@ -222,7 +283,22 @@ render_posthoc_result <- function(result, x_axis, params) {
     }
 
     # Determine left/right panel prefixes and labels
-    if (has_lincon) {
+    if (has_paired_t && has_paired_d) {
+      left_prefix <- "Paired.t"
+      left_label <- "Paired t-Test"
+      right_prefix <- "Paired.d"
+      right_label <- "Paired Cohen's d"
+    } else if (has_rm_lincon) {
+      left_prefix <- "RM.Lincon"
+      left_label <- "RM Lincon (Trimmed Means)"
+      right_prefix <- NULL
+      right_label <- NULL
+    } else if (has_paired_wilcox) {
+      left_prefix <- "Paired.Wilcox"
+      left_label <- "Paired Wilcoxon"
+      right_prefix <- NULL
+      right_label <- NULL
+    } else if (has_lincon) {
       left_prefix <- "Lincon"
       left_label <- "Lincon"
       right_prefix <- "Cliff"
@@ -261,15 +337,34 @@ render_posthoc_result <- function(result, x_axis, params) {
       )
       left_cols <- intersect(art_left_names, names(display_df))
       right_cols <- intersect(art_right_names, names(display_df))
+    } else if (has_paired_t && has_paired_d) {
+      paired_t_names <- c(
+        "Paired.t.statistic",
+        "Paired.t.p.value", "Paired.t.p.adjusted"
+      )
+      paired_d_names <- c(
+        "Paired.d", "Paired.d.ci.lower",
+        "Paired.d.ci.upper"
+      )
+      left_cols <- intersect(
+        paired_t_names, names(display_df)
+      )
+      right_cols <- intersect(
+        paired_d_names, names(display_df)
+      )
     } else {
       left_cols <- grep(
         paste0("^", left_prefix, "\\."),
         names(display_df), value = TRUE
       )
-      right_cols <- grep(
-        paste0("^", right_prefix, "\\."),
-        names(display_df), value = TRUE
-      )
+      right_cols <- if (!is.null(right_prefix)) {
+        grep(
+          paste0("^", right_prefix, "\\."),
+          names(display_df), value = TRUE
+        )
+      } else {
+        character(0)
+      }
     }
 
     # Left table: Interaction + left columns, strip prefix
@@ -280,15 +375,96 @@ render_posthoc_result <- function(result, x_axis, params) {
       paste0("^", left_prefix, "\\."), "", names(left_df)
     )
 
+    # Single-panel layout (no right side, e.g. RM robust/NP)
+    if (is.null(right_prefix) || length(right_cols) == 0) {
+      return(shiny$tags$div(
+        class = "mt-3 px-2",
+        shiny$tags$h6(
+          class = "text-primary mb-2",
+          bsicons$bs_icon("table", class = "me-1"),
+          "Pairwise Comparisons"
+        ),
+        shiny$tags$h6(
+          class = "text-secondary mb-1 small fw-bold",
+          left_label
+        ),
+        shiny$tags$div(
+          class = "table-responsive",
+          build_posthoc_table(left_df)
+        )
+      ))
+    }
+
     # Right table: right columns only, strip prefix
     right_df <- display_df[, right_cols, drop = FALSE]
     if (has_art) {
       names(right_df) <- gsub("^ART\\.d\\.", "", names(right_df))
       names(right_df) <- gsub("^ART\\.d$", "d", names(right_df))
+    } else if (has_paired_t && has_paired_d) {
+      names(right_df) <- gsub(
+        "^Paired\\.d\\.", "", names(right_df)
+      )
+      names(right_df) <- gsub(
+        "^Paired\\.d$", "d", names(right_df)
+      )
     } else {
       names(right_df) <- gsub(
         paste0("^", right_prefix, "\\."), "", names(right_df)
       )
+    }
+
+    rm_note <- if (isTRUE(params$is_repeated_measures) &&
+                   identical(params$test_approach, "parametric")) {
+      wn <- params$rm_within_col %||% "the within-subject factor"
+      shiny$tags$p(
+        class = "text-muted small mb-2",
+        shiny$tags$strong("Repeated measures: "),
+        "comparisons where the between-subject factor(s) are ",
+        "identical and only ", shiny$tags$em(wn),
+        " differs (e.g. A.T1 vs. A.T2) were computed with ",
+        shiny$tags$strong("paired t-tests"), " and ",
+        shiny$tags$strong("Cohen's dz"),
+        ". All remaining comparisons use ",
+        shiny$tags$strong("Tukey HSD"), " and ",
+        shiny$tags$strong("Cohen's d"),
+        " (independent samples). Column headers are identical ",
+        "for both test regimes."
+      )
+    } else if (isTRUE(params$is_repeated_measures) &&
+               identical(params$test_approach, "nonparametric")) {
+      wn <- params$rm_within_col %||% "the within-subject factor"
+      if (length(x_axis) <= 1) {
+        # 1-way pure within: every comparison is paired
+        shiny$tags$p(
+          class = "text-muted small mb-2",
+          shiny$tags$strong("Repeated measures: "),
+          "all pairwise comparisons of ", shiny$tags$em(wn),
+          " levels were computed with ",
+          shiny$tags$strong("paired Wilcoxon signed-rank tests"),
+          " and ",
+          shiny$tags$strong("matched-pairs Cliff's delta"),
+          " (reported in the Cliff's Delta panel)."
+        )
+      } else {
+        shiny$tags$p(
+          class = "text-muted small mb-2",
+          shiny$tags$strong("Repeated measures: "),
+          "comparisons where the between-subject factor(s) are ",
+          "identical and only ", shiny$tags$em(wn),
+          " differs (e.g. A.T1 vs. A.T2) were computed with ",
+          shiny$tags$strong("paired Wilcoxon signed-rank tests"),
+          " and ", shiny$tags$strong("matched-pairs Cliff's delta"),
+          " (placed in the effect-size column; the ART estimate, SE, ",
+          "df and t-ratio cells are left blank for these rows as they ",
+          "have no paired analog). All remaining comparisons use ",
+          shiny$tags$strong("ART-C contrasts"), " and ",
+          shiny$tags$strong("ART Cohen's d"),
+          " (independent samples). Column headers are identical ",
+          "for both test regimes."
+        )
+      }
+    } else {
+      NULL
     }
 
     return(shiny$tags$div(
@@ -298,6 +474,7 @@ render_posthoc_result <- function(result, x_axis, params) {
         bsicons$bs_icon("table", class = "me-1"),
         "Pairwise Comparisons"
       ),
+      rm_note,
       shiny$tags$div(
         class = "d-flex gap-3",
         # Left panel
@@ -405,7 +582,8 @@ server <- function(id, input_data, data_version,
     options$tab_server(
       input, output, session,
       plotting_x_axis = plotting_x_axis,
-      plotting_trim_percent = plotting_trim_percent
+      plotting_trim_percent = plotting_trim_percent,
+      input_data = input_data
     )
 
     # --- Collect statistics parameters ---
@@ -428,7 +606,13 @@ server <- function(id, input_data, data_version,
         filter_valid_comparisons =
           input$filter_valid_comparisons %||% FALSE,
         np_posthoc_method =
-          input$np_posthoc_method %||% "dunn"
+          input$np_posthoc_method %||% "dunn",
+        is_repeated_measures =
+          input$is_repeated_measures %||% FALSE,
+        rm_id_col =
+          input$rm_id_col,
+        rm_within_col =
+          input$rm_within_col
       )
     })
 
@@ -550,10 +734,16 @@ server <- function(id, input_data, data_version,
         message = "Computing Statistics",
         value = 0, {
 
+      # --- Collect RM parameters ---
+      rm_active <- isTRUE(params$is_repeated_measures)
+      rm_id <- params$rm_id_col
+      rm_within <- params$rm_within_col
+
       # --- Run omnibus tests per measurement ---
       n_ways <- length(x_cols)
       omnibus_results <- lapply(measures, function(m) {
         df_m <- filter_excluded_rows(data, m)
+
         if (params$test_approach == "robust") {
           if (n_ways == 1) {
             robust_tests$perform_t1way(
@@ -563,7 +753,10 @@ server <- function(id, input_data, data_version,
               tr_value = tr_val,
               use_bootstrap = params$use_bootstrap,
               boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size
+              boot_sample_size = params$boot_sample_size,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 2) {
             robust_tests$perform_t2way(
@@ -573,7 +766,10 @@ server <- function(id, input_data, data_version,
               tr_value = tr_val,
               use_bootstrap = params$use_bootstrap,
               boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size
+              boot_sample_size = params$boot_sample_size,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 3) {
             robust_tests$perform_t3way(
@@ -583,7 +779,10 @@ server <- function(id, input_data, data_version,
               tr_value = tr_val,
               use_bootstrap = params$use_bootstrap,
               boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size
+              boot_sample_size = params$boot_sample_size,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else {
             error_handling$simple_error(
@@ -600,21 +799,30 @@ server <- function(id, input_data, data_version,
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 2) {
             parametric_tests$perform_anova2way(
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 3) {
             parametric_tests$perform_anova3way(
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else {
             error_handling$simple_error(
@@ -632,21 +840,30 @@ server <- function(id, input_data, data_version,
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 2) {
             nonparametric_tests$perform_art2way(
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else if (n_ways == 3) {
             nonparametric_tests$perform_art3way(
               df = df_m,
               x_axis = x_cols,
               measure_col = m,
-              tr_value = tr_val
+              tr_value = tr_val,
+              is_rm = rm_active,
+              id_col = rm_id,
+              within_col = rm_within
             )
           } else {
             error_handling$simple_error(
@@ -713,7 +930,10 @@ server <- function(id, input_data, data_version,
               params$p_val_cor_method,
             filter_valid = isTRUE(
               params$filter_valid_comparisons
-            )
+            ),
+            is_rm = rm_active,
+            id_col = rm_id,
+            within_col = rm_within
           )
         })
         names(ph) <- measures
@@ -729,7 +949,10 @@ server <- function(id, input_data, data_version,
               params$p_val_cor_method,
             filter_valid = isTRUE(
               params$filter_valid_comparisons
-            )
+            ),
+            is_rm = rm_active,
+            id_col = rm_id,
+            within_col = rm_within
           )
         })
         names(ph) <- measures
@@ -747,7 +970,10 @@ server <- function(id, input_data, data_version,
               params$filter_valid_comparisons
             ),
             posthoc_method =
-              params$np_posthoc_method
+              params$np_posthoc_method,
+            is_rm = rm_active,
+            id_col = rm_id,
+            within_col = rm_within
           )
         })
         names(ph) <- measures
@@ -1196,7 +1422,10 @@ server <- function(id, input_data, data_version,
                 render_omnibus_result(
                   results$omnibus[[m]],
                   results$x_axis,
-                  results$params$test_approach
+                  results$params$test_approach,
+                  is_rm = isTRUE(
+                    results$params$is_repeated_measures
+                  )
                 ),
                 # Post-hoc pairwise comparisons
                 if (

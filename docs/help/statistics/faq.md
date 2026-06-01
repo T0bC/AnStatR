@@ -43,7 +43,7 @@ For `t1way`, the statistic is named `F_statistic` and carries an effect size mea
 
 Cliff's Delta (δ) is a non-parametric rank-based effect size. For each pair of observations across two groups, it counts how often a value from Group A exceeds a value from Group B (minus the reverse), divided by the total number of pairs. It ranges from −1 (all values in Group B exceed Group A) through 0 (no systematic difference) to +1 (all values in Group A exceed Group B).
 
-Unlike Cohen's *d*, Cliff's Delta does not assume normality or equal variances, making it the natural companion to robust and non-parametric test frameworks. The conventional thresholds (|δ| < 0.147 negligible, 0.147–0.330 small, 0.330–0.474 medium, ≥ 0.474 large) follow Romano et al. (2006).
+Unlike Cohen's *d*, Cliff's Delta does not assume normality or equal variances, making it the natural companion to robust and non-parametric test frameworks. The conventional thresholds are |δ| < 0.147 negligible, 0.147–0.330 small, 0.330–0.474 medium, and ≥ 0.474 large.
 
 Always check both the p-value (adjusted) **and** δ: a statistically significant result with a negligible δ is unlikely to be practically meaningful.
 
@@ -167,5 +167,20 @@ If you change the Plotting configuration after computing, the statistics results
 Each result card in the main panel has a **download icon** (↓) in the card header, next to the *n*-way badge. Clicking it downloads a self-contained HTML file containing the plot (as an interactive SVG), the omnibus table, and the post-hoc pairwise comparisons. The filename includes the measurement name and a timestamp.
 
 The report captures the state at compute time, including all parameter settings (approach, adjustment method, bootstrap status). Use this file for archiving, sharing, or embedding in reports.
+
+</details>
+
+<details>
+<summary>Which R packages power the Statistics module?</summary>
+
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **ARTool** | Aligned Rank Transform (ART) factorial ANOVA | Kay, M., Elkin, L. A., Higgins, J. J., & Wobbrock, J. O. (2025). *ARTool: Aligned Rank Transform for Nonparametric Factorial ANOVAs*. <https://doi.org/10.5281/zenodo.594511> |
+| **base64enc** | Base64 encoding for exports | Urbanek, S. (2026). *base64enc: Tools for 'base64' Encoding*. <https://doi.org/10.32614/CRAN.package.base64enc> |
+| **dplyr** | Data manipulation in post-hoc pipeline | Wickham, H., Francois, R., Henry, L., Muller, K., & Vaughan, D. (2026). *dplyr: A Grammar of Data Manipulation*. <https://doi.org/10.32614/CRAN.package.dplyr> |
+| **dunn.test** | Dunn's test post-hoc | Dinno, A. (2026). *dunn.test: Dunn's Test of Multiple Comparisons Using Rank Sums*. <https://doi.org/10.32614/CRAN.package.dunn.test> |
+| **ggplot2** | Plot generation | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
+| **htmltools** | HTML generation for reports | Cheng, J., Sievert, C., Schloerke, B., Chang, W., Xie, Y., & Allen, J. (2025). *htmltools: Tools for HTML*. <https://doi.org/10.32614/CRAN.package.htmltools> |
+| **WRS2** | Robust trimmed-means ANOVA and contrasts | Mair, P., & Wilcox, R. (2020). Robust statistical methods in R using the WRS2 package. *Behavior Research Methods*, 52, 464-488. <https://doi.org/10.3758/s13428-019-01246-w> |
 
 </details>

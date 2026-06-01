@@ -24,7 +24,7 @@ Where p = number of measurement variables, G = number of groups.
 <details>
 <summary><strong>LDA Computation Method</strong></summary>
 
-LDA is implemented via `MASS::lda()` (Venables & Ripley, 2002). The algorithm finds the projection matrix $\mathbf{W}$ that maximises the ratio of between-group scatter $\mathbf{S}_B$ to within-group scatter $\mathbf{S}_W$:
+LDA is implemented via `MASS::lda()`. The algorithm finds the projection matrix $\mathbf{W}$ that maximises the ratio of between-group scatter $\mathbf{S}_B$ to within-group scatter $\mathbf{S}_W$:
 
 $$\mathbf{W} = \underset{\mathbf{W}}{\arg\max} \frac{|\mathbf{W}^\top \mathbf{S}_B \mathbf{W}|}{|\mathbf{W}^\top \mathbf{S}_W \mathbf{W}|}$$
 
@@ -32,27 +32,23 @@ This is solved as a generalised eigenvalue problem. The resulting eigenvectors a
 
 The number of usable discriminant axes is $\min(p,\, G - 1)$. With two groups there is exactly one LD axis; additional groups yield additional axes.
 
-**References**: Fisher (1936); McLachlan (2004); Venables & Ripley (2002).
-
 </details>
 
 <details>
 <summary><strong>QDA Computation Method</strong></summary>
 
-QDA is implemented via `MASS::qda()` (Venables & Ripley, 2002). Unlike LDA, QDA estimates a separate covariance matrix $\boldsymbol{\Sigma}_k$ for each group $k$. The quadratic discriminant function for group $k$ is:
+QDA is implemented via `MASS::qda()`. Unlike LDA, QDA estimates a separate covariance matrix $\boldsymbol{\Sigma}_k$ for each group $k$. The quadratic discriminant function for group $k$ is:
 
 $$\delta_k(\mathbf{x}) = -\tfrac{1}{2} \log|\boldsymbol{\Sigma}_k| - \tfrac{1}{2} (\mathbf{x} - \boldsymbol{\mu}_k)^\top \boldsymbol{\Sigma}_k^{-1} (\mathbf{x} - \boldsymbol{\mu}_k) + \log \pi_k$$
 
 Because each group needs to invert its own $p \times p$ covariance matrix, at least $p + 1$ observations per group are required. QDA does not produce discriminant axes; the companion LDA fit (fitted automatically on the same data) is used for LD-space visualisation only.
-
-**References**: Hastie, Tibshirani & Friedman (2009); Venables & Ripley (2002).
 
 </details>
 
 <details>
 <summary><strong>MDA Computation Method</strong></summary>
 
-MDA is implemented via `mda::mda()` (Hastie & Tibshirani, 1996). Each group is modelled as a mixture of `subclasses` Gaussian sub-populations:
+MDA is implemented via `mda::mda()`. Each group is modelled as a mixture of `subclasses` Gaussian sub-populations:
 
 $$P(\mathbf{x} \mid \text{group}\, k) = \sum_{r} \pi_{kr}\, \mathcal{N}(\mathbf{x};\, \boldsymbol{\mu}_{kr},\, \boldsymbol{\Sigma})$$
 
@@ -62,14 +58,12 @@ Key MDA settings:
 - **Subclasses per group** — number of Gaussian components per class (default 3; set to 1 to recover standard LDA behaviour)
 - **Max EM iterations** — convergence limit for the EM algorithm (increase to 20–50 if deviance is still decreasing)
 
-**References**: Hastie & Tibshirani (1996); Fraley & Raftery (2002).
-
 </details>
 
 <details>
 <summary><strong>Using PCA Scores as LDA Input</strong></summary>
 
-The **Data Source** toggle in the Data Selection tab allows LDA / QDA / MDA to be run on **PCA scores** (the individual coordinates from a prior PCA run) instead of the raw measurements. This two-stage approach is well established in morphometrics and texture analysis (Ripley, 1996; Zelditch, Swiderski & Sheets, 2012) - @TM need to reread those sources, fultext not yet available to me.
+The **Data Source** toggle in the Data Selection tab allows LDA / QDA / MDA to be run on **PCA scores** (the individual coordinates from a prior PCA run) instead of the raw measurements. This two-stage approach is well established in morphometrics and texture analysis.
 
 ###### Benefits
 
@@ -89,8 +83,6 @@ Using PCA scores as input decouples the LDA discriminant coefficients from the o
 
 **Practical guideline**: use PCA scores as input primarily as a methodological fix for dimensionality problems or collinearity. When the primary goal is identifying *which original measurements discriminate the groups*, run LDA directly on the raw (scaled) variables — provided the sample size per group comfortably exceeds the variable count.
 
-**References**: Ripley (1996); Zelditch, Swiderski & Sheets (2012); Mitteroecker & Gunz (2009).
-
 </details>
 
 <details>
@@ -104,14 +96,14 @@ Scaling decisions directly affect the within-group and between-group scatter mat
 | **Center only** | Covariance matrix | High-variance variables exert stronger influence on discriminant directions | All variables share the same unit and variance differences are scientifically meaningful |
 | **No scaling** | Raw cross-products | Raw scale dominates; variables with large absolute values can monopolise LD axes | Data already preprocessed to a common scale |
 
-**Critical note**: Because LDA computes a ratio of scatter matrices, variables with very large raw variance can render other variables effectively invisible even if they carry genuine group-discriminating information. **Scale & Center is strongly recommended** for mixed-unit data (McLachlan, 2004). Scaling does not need to be applied when using PCA scores as input — the PCA step has already standardized the feature space.
+**Critical note**: Because LDA computes a ratio of scatter matrices, variables with very large raw variance can render other variables effectively invisible even if they carry genuine group-discriminating information. **Scale & Center is strongly recommended** for mixed-unit data. Scaling does not need to be applied when using PCA scores as input — the PCA step has already standardized the feature space.
 
 </details>
 
 <details>
 <summary><strong>Data Normalisation</strong></summary>
 
-The **Normalize skewed variables** option uses the `bestNormalize` package (Peterson & Cavanaugh, 2020) to transform variables with |skewness| > 2 before analysis. Candidate transformations include Box-Cox, Yeo-Johnson, log, and square-root. The transformation that best achieves normality (assessed by the Pearson P/df statistic) is selected automatically.
+The **Normalize skewed variables** option uses the `bestNormalize` package to transform variables with |skewness| > 2 before analysis. Candidate transformations include Box-Cox, Yeo-Johnson, log, and square-root. The transformation that best achieves normality (assessed by the Pearson P/df statistic) is selected automatically.
 
 **LDA is formally derived under the assumption of multivariate normality within groups.** Extreme skewness inflates within-group scatter estimates, distorts the covariance matrix, and can reduce classification accuracy. Normalisation reduces this risk but alters the measurement scale — interpret discriminant coefficients with caution after transformation. The transformation parameters are stored in the RDS export for full reproducibility.
 
@@ -376,21 +368,9 @@ The **Variable Contributions** jitter plot (visible when discriminant coefficien
 
 - **Start with LDA** — use QDA or MDA only when you have evidence that the equal-covariance assumption is violated or group shapes are clearly non-elliptical
 - **Scale & Center by default** — essential for mixed-unit data; omit only when all variables share the same unit and variance is meaningful
-- **Use PCA scores for high-dimensional data** — when p approaches n per group, run PCA first and use the PCA scores (≥ 90% variance) as LDA input (Ripley, 1996)
+- **Use PCA scores for high-dimensional data** — when p approaches n per group, run PCA first and use the PCA scores (≥ 90% variance) as LDA input
 - **Compare resubstitution vs. CV accuracy** — a gap > 10% suggests overfitting; reduce p or switch to PCA-based input
 - **Inspect the Proportion of Trace first** — if LD1 captures < 50%, examine higher axes; two-dimensional plots may miss important separation
 - **Enable diagnostics overlay** — covariance ellipsis mismatch between per-group and pooled estimates is the key visual test for the LDA equal-covariance assumption
 - **Download full results** — the Excel export contains the full proportion of trace, discriminant coefficients, posterior probabilities, and per-class accuracy for reporting
 
-**References**
-
-- Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, 7(2), 179–188.
-- Fraley, C., & Raftery, A. E. (2002). Model-based clustering, discriminant analysis, and density estimation. *Journal of the American Statistical Association*, 97(458), 611–631.
-- Hastie, T., & Tibshirani, R. (1996). Discriminant analysis by Gaussian mixtures. *Journal of the Royal Statistical Society: Series B*, 58(1), 155–176.
-- Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning* (2nd ed.). Springer.
-- McLachlan, G. J. (2004). *Discriminant Analysis and Statistical Pattern Recognition*. Wiley.
-- Peterson, R. A., & Cavanaugh, J. E. (2020). Ordered quantile normalization. *Journal of Applied Statistics*, 47(13-15), 2312–2327.
-- Mitteroecker, P., & Gunz, P. (2009). Advances in geometric morphometrics. *Evolutionary Biology*, 36(2), 235–247.
-- Ripley, B. D. (1996). *Pattern Recognition and Neural Networks*. Cambridge University Press.
-- Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer.
-- Zelditch, M. L., Swiderski, D. L., & Sheets, H. D. (2012). *Geometric Morphometrics for Biologists* (2nd ed.). Academic Press.

@@ -202,6 +202,51 @@ run_cliff_iteration <- function(sample_data, x_axis, measure_col) {
 }
 
 
+#' Classify RM comparison as paired, unpaired, or skip
+#'
+#' Determines the type of comparison between two groups in a repeated measures
+#' design by examining which factors differ between them.
+#'
+#' Classification logic:
+#' - "paired": Between-subject factors match, within-subject factor differs
+#'   (same subjects measured at different time points/conditions)
+#' - "unpaired": Between-subject factors differ, within-subject factor matches
+#'   (different subjects at the same time point/condition)
+#' - "skip": Both or neither factor types differ (not a valid simple comparison)
+#'
+#' @param g1_label First group label (e.g., "A.T1")
+#' @param g2_label Second group label (e.g., "A.T2")
+#' @param x_axis Character vector of factor names in order
+#' @param within_col Character, the within-subject factor name
+#' @return Character: "paired", "unpaired", or "skip"
+#' @export
+classify_rm_comparison <- function(g1_label, g2_label, x_axis, within_col) {
+  g1_parts <- strsplit(as.character(g1_label), ".", fixed = TRUE)[[1]]
+  g2_parts <- strsplit(as.character(g2_label), ".", fixed = TRUE)[[1]]
+
+  within_idx <- which(x_axis == within_col)
+  between_idx <- which(x_axis != within_col)
+
+  # Check if between-subject factors all match
+  between_match <- if (length(between_idx) > 0) {
+    all(g1_parts[between_idx] == g2_parts[between_idx])
+  } else {
+    TRUE
+  }
+
+  # Check if within-subject factor matches
+  within_match <- (g1_parts[within_idx] == g2_parts[within_idx])
+
+  if (between_match && !within_match) {
+    "paired"
+  } else if (!between_match && within_match) {
+    "unpaired"
+  } else {
+    "skip"
+  }
+}
+
+
 #' Format multi-way robust ANOVA results
 #'
 #' Generic formatter for t2way and t3way results. Builds effect labels

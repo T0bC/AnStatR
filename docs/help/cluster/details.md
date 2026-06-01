@@ -34,8 +34,6 @@ $$\underset{C}{\arg\min} \sum_{k=1}^{K} \sum_{\mathbf{x}_i \in C_k} \|\mathbf{x}
 
 where $\boldsymbol{\mu}_k$ is the centroid of cluster $k$. The `nstart = 25` setting runs 25 random initialisations and keeps the best solution, substantially reducing sensitivity to initialisation. K-Means uses Euclidean distance exclusively and assumes clusters are roughly **convex and of similar size**. It is the fastest algorithm and works well for moderately sized datasets with compact, isotropic clusters.
 
-**References**: MacQueen (1967); Hartigan & Wong (1979).
-
 </details>
 
 <details>
@@ -48,8 +46,6 @@ $$\sum_{k=1}^{K} \sum_{\mathbf{x}_i \in C_k} d(\mathbf{x}_i, \mathbf{m}_k)$$
 where $d$ is Manhattan distance and $\mathbf{m}_k$ is the medoid of cluster $k$.
 
 PAM is more **robust to outliers** than K-Means because a single extreme point cannot shift the cluster centre — only a genuine majority of the cluster members can. The medoids table in the **Cluster Results** panel identifies the representative specimens.
-
-**References**: Kaufman & Rousseeuw (1990).
 
 </details>
 
@@ -70,11 +66,9 @@ The linkage method controls how "distance between clusters" is defined when clus
 | **Median (WPGMC)** | Median of sub-cluster centroids | Can produce inversions (non-monotone height sequence) |
 | **Centroid (UPGMC)** | Unweighted centroid distance | Also susceptible to inversions |
 
-**Ward's D2** is strongly recommended for morphometric and texture analysis data. It minimises the within-cluster variance increase at each merge step and tends to produce visually clean, interpretable cluster structures (Murtagh & Legendre, 2014).
+**Ward's D2** is strongly recommended for morphometric and texture analysis data. It minimises the within-cluster variance increase at each merge step and tends to produce visually clean, interpretable cluster structures.
 
 The **Height Range** in the Cluster Results panel shows the min/max dendrogram heights. Large jumps in height suggest natural cluster boundaries — look for the largest height gap when choosing k.
-
-**References**: Ward (1963); Murtagh & Legendre (2014).
 
 </details>
 
@@ -98,8 +92,6 @@ DBSCAN is appropriate when:
 - The number of clusters is unknown a priori
 
 It is **not appropriate** when data density is relatively uniform across the dataset or when all observations should be assigned to a cluster (consider K-Means or Hierarchical instead).
-
-**References**: Ester et al. (1996); Hahsler, Piekenbrock & Doran (2019).
 
 </details>
 
@@ -136,8 +128,6 @@ where $u_i$ are distances from random points to their nearest data point and $w_
 
 The sample fraction m used is 10% of n when n > 100, else 5% (minimum 1). The Hopkins statistic is most reliable with n > 100 and fewer than 10 dimensions. Interpret with caution for small datasets or high-dimensional data (warnings are shown automatically).
 
-**References**: Hopkins & Skellam (1954); Lawson & Jurs (1990).
-
 </details>
 
 <details>
@@ -152,11 +142,9 @@ Plots total WCSS against k. The optimal k is identified at the "elbow" — the p
 For each k, computes the average silhouette width across all observations (see below). The k with the **maximum average silhouette** is recommended. Values near 1 indicate tight, well-separated clusters; near 0 indicate overlapping boundaries; negative values indicate possible misassignment.
 
 **3. Gap Statistic**
-Compares observed WCSS to expected WCSS under a reference uniform distribution (bootstrapped with B = 50 resamples via `cluster::clusGap()`). The optimal k is identified using the *firstSEmax* rule (Tibshirani, Walther & Hastie, 2001): the smallest k such that Gap(k) ≥ Gap(k+1) − SE(k+1).
+Compares observed WCSS to expected WCSS under a reference uniform distribution (bootstrapped with B = 50 resamples via `cluster::clusGap()`). The optimal k is identified using the *firstSEmax* rule: the smallest k such that Gap(k) ≥ Gap(k+1) − SE(k+1).
 
 The optimal clusters plot shows all three methods as interactive faceted panels; the recommended k for each method is marked in red. The median k is automatically applied to the **Number of clusters** input.
-
-**References**: Tibshirani, Walther & Hastie (2001); Rousseeuw (1987); Thorndike (1953).
 
 </details>
 
@@ -177,8 +165,6 @@ where $a(i)$ is the mean distance from i to all other members of its cluster and
 | **0.51 – 0.70** | **Reasonable** — cluster structure exists with some overlap |
 | **0.26 – 0.50** | **Weak** — cluster structure exists but with substantial overlap; interpret cautiously |
 | **< 0.26** | **No structure** — data may not cluster meaningfully; verify Hopkins statistic |
-
-**References**: Rousseeuw (1987).
 
 </details>
 
@@ -232,7 +218,7 @@ When using **PCA scores** or **LDA scores** as input, scaling is automatically s
 <details>
 <summary><strong>Data Normalisation (Skewness Correction)</strong></summary>
 
-The **Normalize skewed variables** option uses the `bestNormalize` package (Peterson & Cavanaugh, 2020) to transform variables with |skewness| > 2 before clustering. Candidate transformations (Box-Cox, Yeo-Johnson, log, square-root, ordered quantile normalisation) are evaluated automatically; the best one is selected by minimising the Pearson P/df statistic.
+The **Normalize skewed variables** option uses the `bestNormalize` package to transform variables with |skewness| > 2 before clustering. Candidate transformations (Box-Cox, Yeo-Johnson, log, square-root, ordered quantile normalisation) are evaluated automatically; the best one is selected by minimising the Pearson P/df statistic.
 
 Clustering algorithms using Euclidean or Manhattan distances implicitly treat the data as if it were drawn from a symmetric distribution. Heavily right-skewed variables produce extreme distance values for outliers, pulling cluster centroids towards them and distorting the partition. Normalisation mitigates this but:
 

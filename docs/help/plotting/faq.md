@@ -295,3 +295,17 @@ The median line spans horizontally with thickness controlled by **Median Width**
 
 When **Trimming** is active, trimmed points are also excluded from these calculations. When **Outlier Detection** is enabled, flagged outliers don't contribute to the statistics.
 </details>
+
+<details>
+<summary>Which R packages power the Plotting module?</summary>
+
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **dbscan** | LOF outlier detection | Hahsler, M., & Piekenbrock, M. (2025). *dbscan: Density-Based Spatial Clustering of Applications with Noise (DBSCAN) and Related Algorithms*. <https://doi.org/10.32614/CRAN.package.dbscan> |
+| **ggiraph** | Interactive SVG plots | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
+| **ggplot2** | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
+| **isotree** | Isolation Forest outlier detection | Cortes, D. (2026). *isotree: Isolation-Based Outlier Detection*. <https://doi.org/10.32614/CRAN.package.isotree> |
+| **legendry** | Extended legends and axes | van den Brand, T. (2026). *legendry: Extended Legends and Axes for 'ggplot2'*. <https://doi.org/10.32614/CRAN.package.legendry> |
+| **robustbase** | Adjusted boxplot outlier detection | Maechler, M., Rousseeuw, P., Croux, C., Todorov, V., Ruckstuhl, A., Salibian-Barrera, M., Verbeke, T., Koller, M., Conceicao, E. L. T., & di Palma, M. A. (2026). *robustbase: Basic Robust Statistics*. <http://robustbase.r-forge.r-project.org/> |
+
+</details>

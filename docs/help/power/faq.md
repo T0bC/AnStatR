@@ -33,7 +33,7 @@ The tool uses *f* because it generalizes naturally to factorial designs with mul
 <details>
 <summary>Why is 80% power the conventional target? Should I use 90% instead?</summary>
 
-**80% power** (β = 0.20) became standard through historical convention (Cohen, 1988). It represents a 4:1 ratio of Type II to Type I error rates, balancing the cost of false negatives against false positives.
+**80% power** (β = 0.20) became standard through historical convention. It represents a 4:1 ratio of Type II to Type I error rates, balancing the cost of false negatives against false positives.
 
 **Consider 90% power when:**
 - Study costs are high and cannot be repeated (underpowered studies waste resources)
@@ -74,7 +74,7 @@ A non-significant p-value (*p* > 0.05) is uninformative without knowing what eff
 
 **Example:** You find no significant treatment effect. The MDE is *f* = 0.45 (large). Since you would have cared about *f* = 0.25 (medium), you cannot conclude the treatment is ineffective — only that you could not detect medium effects.
 
-Always report MDE alongside non-significant results (Lakens, 2021).
+Always report MDE alongside non-significant results.
 
 </details>
 
@@ -160,7 +160,7 @@ These concepts are often confused:
 | Power | 1 − β | Probability of true positive when alternative is true | Effect size, sample size, α |
 | False discovery rate | FDR | Proportion of positives that are false | Depends on α, power, and proportion of true nulls |
 
-**Key insight:** α controls false positives only when the null hypothesis is true. In fields where most tested effects are real, the actual false discovery rate may be lower than α. Conversely, in fields where most effects are null, FDR can exceed α (Ioannidis, 2005).
+**Key insight:** α controls false positives only when the null hypothesis is true. In fields where most tested effects are real, the actual false discovery rate may be lower than α. Conversely, in fields where most effects are null, FDR can exceed α.
 
 Pre-registration and replication are stronger safeguards than adjusting α alone.
 
@@ -305,51 +305,11 @@ The tool uses a statistical test-based approach to detect distribution shape:
 
 </details>
 
----
-
-#### References
-
 <details>
-<summary><strong>Click to expand full reference list</strong></summary>
+<summary>Which R packages power the Power Analysis module?</summary>
 
-**Core Power Analysis Literature**
-
-- Cohen, J. (1988). *Statistical Power Analysis for the Behavioral Sciences* (2nd ed.). Lawrence Erlbaum Associates. The foundational text for statistical power analysis; defines Cohen's *f* and conventional effect size benchmarks.
-
-- Cohen, J. (1992). A power primer. *Psychological Bulletin, 112*(1), 155–159. Quick-reference guide for power calculations with tabulated sample sizes for common designs.
-
-- Lakens, D. (2021). Sample size justification. *Collabra: Psychology, 7*(1), 12067. <https://doi.org/10.1525/collabra.12067>. Comprehensive guidance on justifying sample sizes in research proposals, including sensitivity analysis and sequential analysis.
-
-**Effect Size Interpretation and Reporting**
-
-- Cumming, G. (2014). The new statistics: Why and how. *Psychological Science, 25*(1), 7–29. <https://doi.org/10.1177/0956797613504966>. Argues for replacing p-values with estimation (effect sizes and confidence intervals).
-
-- Lakens, D. (2013). Calculating and reporting effect sizes to facilitate cumulative science: A practical primer for t-tests and ANOVAs. *Frontiers in Psychology, 4*, 863. <https://doi.org/10.3389/fpsyg.2013.00863>. Practical formulas for converting between effect size metrics.
-
-- Richardson, J. T. E. (2011). Eta squared and partial eta squared as measures of effect size in educational research. *International Education Studies, 7*(2), 1–15. Guidance on converting η² to Cohen's *f* for power analysis.
-
-**Robust and Non-Parametric Methods**
-
-- Wilcox, R. R., & Tian, T. (2011). Measuring effect size: A robust heteroscedastic approach for two or more groups. *Journal of Applied Statistics, 38*(7), 1359–1368. Robust effect size estimation and power considerations.
-
-- Mair, P., & Wilcox, R. (2020). Robust statistical methods in R using the WRS2 package. *Behavior Research Methods*. <https://doi.org/10.3758/s13428-019-01246-w>. Documentation of robust ANOVA methods used in simulation-based power analysis.
-
-- Wilcox, R. R. (2012). *Introduction to Robust Estimation and Hypothesis Testing* (3rd ed.). Academic Press. Comprehensive technical reference for trimmed-means and rank-based methods.
-
-**Methodological and Statistical Reform**
-
-- Ioannidis, J. P. A. (2005). Why most published research findings are false. *PLoS Medicine, 2*(8), e124. <https://doi.org/10.1371/journal.pmed.0020124>. Discusses how low power inflates false discovery rates in literatures with many tested hypotheses.
-
-- Button, K. S., Ioannidis, J. P. A., Mokrysz, C., Nosek, B. A., Flint, J., Robinson, E. S. J., & Munafò, M. R. (2013). Power failure: Why small sample size undermines the reliability of neuroscience. *Nature Reviews Neuroscience, 14*, 365–376. <https://doi.org/10.1038/nrn3475>. Reviews how underpowered studies lead to overestimated effect sizes and irreproducible results.
-
-- Gelman, A., & Carlin, J. (2014). Beyond power calculations: Assessing Type S (sign) and Type M (magnitude) errors. *Perspectives on Psychological Science, 9*(6), 641–651. <https://doi.org/10.1177/1745691614551642>. Critique of traditional power analysis; advocates for design analysis considering sign and magnitude errors.
-
-**Practical Applications**
-
-- Perugini, M., Gallucci, M., & Costantini, G. (2018). A practical primer to power analysis for simple experimental designs. *International Review of Social Psychology, 31*(1), 20. <https://doi.org/10.5334/irsp.181>. Step-by-step guide for conducting power analyses in experimental research.
-
-- Brysbaert, M. (2019). How many participants do we have to include in properly powered experiments? A tutorial. *Journal of Cognition, 2*(1), 16. <https://doi.org/10.5334/joc.72>. Guidance for cognitive and behavioral research with practical examples.
-
-- Faul, F., Erdfelder, E., Lang, A.-G., & Buchner, A. (2007). G*Power 3: A flexible statistical power analysis program for the social, behavioral, and biomedical sciences. *Behavior Research Methods, 39*(2), 175–191. Documentation of widely-used power analysis software (G*Power).
+| Package | Purpose | Citation |
+|---------|---------|----------|
+| **pwr** | Power analysis calculations | Champely, S. (2020). *pwr: Basic Functions for Power Analysis*. <https://doi.org/10.32614/CRAN.package.pwr> |
 
 </details>

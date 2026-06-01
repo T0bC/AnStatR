@@ -32,7 +32,7 @@ server <- function(id) {
       rhino$log$debug("Settings modal opened")
       shiny$showModal(
         shiny$modalDialog(
-          title = "About TexAn",
+          title = "About AnStatR",
           size = "m",
           easyClose = TRUE,
           shiny$actionButton(
@@ -42,7 +42,7 @@ server <- function(id) {
             class = "btn-outline-secondary btn-sm"
           ),
           shiny$tags$a(
-            href = "https://github.com/T0bC/TexAn2.0/issues/new/choose",
+            href = "https://github.com/T0bC/AnStatR/issues/new/choose",
             target = "_blank",
             rel = "noopener noreferrer",
             class = "btn btn-outline-danger btn-sm",

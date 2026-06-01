@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or unexpected behavior in TexAn
+description: Report a bug or unexpected behavior in AnStatR
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -48,8 +48,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: TexAn Version
-      description: Which version of TexAn are you using? (shown in Settings)
+      label: AnStatR Version
+      description: Which version of AnStatR are you using? (shown in Settings)
       placeholder: e.g. 2026.7
     validations:
       required: true
