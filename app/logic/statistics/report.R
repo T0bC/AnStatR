@@ -270,23 +270,22 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
       # Make the table titles honest about the mixed regimes (the column
       # headers themselves stay identical to the unpaired output).
       left_label <- "Location (lincon / paired Yuen)"
-      right_label <- "Effect size (Cliff's \u03b4 / paired AKP)"
+      right_label <- "Effect size: P(X<Y) (independent / paired)"
       rm_note_html <- paste0(
         '<p class="rm-note"><strong>Repeated measures \u2014 mixed test ',
         "regimes in these tables:</strong> rows where the between-subject ",
         "factor(s) are identical and only ", htmltools$htmlEscape(wn),
         " differs (e.g. A.T1 vs. A.T2) are <em>paired</em>; all other rows ",
-        "are <em>independent</em>. ",
+        "are <em>independent</em>. The effect-size column reports the ",
+        "<strong>probability of superiority P(X&lt;Y)</strong> (0\u20131, ",
+        "null 0.5) for both regimes. ",
         "<br><strong>Independent rows:</strong> location via ",
         "<strong>linear contrasts on trimmed means</strong> (WRS2::lincon), ",
-        "effect size <strong>Cliff's Delta</strong>. ",
+        "P(X&lt;Y) via <strong>Cliff's method</strong>. ",
         "<br><strong>Paired rows:</strong> location via ",
         "<strong>Yuen's dependent-samples trimmed-mean t-test</strong> ",
-        "(WRS2::yuend), effect size <strong>AKP</strong> (robust analog of ",
-        "Cohen's d, WRS2::dep.effect) with bootstrap CI. ",
-        "AKP has no p-value, so the effect-size p columns are blank for ",
-        "paired rows \u2014 significance there is given by the paired test ",
-        "(lincon/Yuen p column). ",
+        "(WRS2::yuend), P(X&lt;Y) via a <strong>sign test</strong> on the ",
+        "matched pairs (exact binomial CI and p-value vs 0.5). ",
         "Column headers are identical for both regimes.</p>\n"
       )
     }
