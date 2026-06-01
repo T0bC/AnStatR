@@ -267,19 +267,27 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
         "Column headers are identical for both test regimes.</p>\n"
       )
     } else if (identical(params$test_approach, "robust") && has_lincon) {
+      # Make the table titles honest about the mixed regimes (the column
+      # headers themselves stay identical to the unpaired output).
+      left_label <- "Location (lincon / paired Yuen)"
+      right_label <- "Effect size (Cliff's \u03b4 / paired AKP)"
       rm_note_html <- paste0(
-        '<p class="rm-note"><strong>Repeated measures:</strong> ',
-        "comparisons where the between-subject factor(s) are ",
-        "identical and only ", htmltools$htmlEscape(wn),
-        " differs (e.g. A.T1 vs. A.T2) were computed with ",
+        '<p class="rm-note"><strong>Repeated measures \u2014 mixed test ',
+        "regimes in these tables:</strong> rows where the between-subject ",
+        "factor(s) are identical and only ", htmltools$htmlEscape(wn),
+        " differs (e.g. A.T1 vs. A.T2) are <em>paired</em>; all other rows ",
+        "are <em>independent</em>. ",
+        "<br><strong>Independent rows:</strong> location via ",
+        "<strong>linear contrasts on trimmed means</strong> (WRS2::lincon), ",
+        "effect size <strong>Cliff's Delta</strong>. ",
+        "<br><strong>Paired rows:</strong> location via ",
         "<strong>Yuen's dependent-samples trimmed-mean t-test</strong> ",
-        "(WRS2::yuend); the Cliff column reports yuend's ",
-        "<strong>explanatory measure of effect size</strong> for those ",
-        "rows (no CI / no separate p-value \u2014 significance is given ",
-        "by the paired test). All remaining comparisons use ",
-        "<strong>linear contrasts on trimmed means</strong> (lincon) and ",
-        "<strong>Cliff's Delta</strong> (independent samples). ",
-        "Column headers are identical for both test regimes.</p>\n"
+        "(WRS2::yuend), effect size <strong>AKP</strong> (robust analog of ",
+        "Cohen's d, WRS2::dep.effect) with bootstrap CI. ",
+        "AKP has no p-value, so the effect-size p columns are blank for ",
+        "paired rows \u2014 significance there is given by the paired test ",
+        "(lincon/Yuen p column). ",
+        "Column headers are identical for both regimes.</p>\n"
       )
     }
   }
