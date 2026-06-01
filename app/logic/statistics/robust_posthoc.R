@@ -768,53 +768,51 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
 # Repeated Measures Robust Post-Hoc
 # =============================================================================
 
-# Fixed seed for the dep.effect bootstrap so paired effect-size CIs are
-# reproducible across runs/reports. The caller's RNG state is restored.
-.RM_EFFECT_SEED <- 20240501L
-.RM_EFFECT_NBOOT <- 1000L
-
-#' Compute robust dependent-samples effect size (AKP) with bootstrap CI
+#' Compute paired probability of superiority P(X<Y) via a sign test
 #'
-#' Wraps WRS2::dep.effect and extracts the AKP measure (robust analog of
-#' Cohen's d). Uses a fixed local seed for reproducible bootstrap CIs and
-#' restores the caller's RNG state afterwards.
+#' Matches the unpaired posthoc effect-size column, which reports
+#' p.hat = P(X<Y) (probability of superiority, 0-1, null 0.5) - NOT Cliff's
+#' d. For paired data the natural analog is the sign test on the matched
+#' pairs: among non-tied pairs, the proportion with x < y, with an exact
+#' binomial CI and a binomial p-value against 0.5. Deterministic (no
+#' bootstrap) and on the same 0-1 scale as the unpaired column.
 #'
-#' @return Named numeric vector (est, ci.lower, ci.upper), or all-NA on failure
+#' @param vals1 Numeric vector for group X (matched order with vals2)
+#' @param vals2 Numeric vector for group Y (matched order with vals1)
+#' @return Named numeric vector (est, ci.lower, ci.upper, p.value), or
+#'   all-NA when there are no non-tied pairs
 #' @keywords internal
-compute_paired_akp <- function(vals1, vals2, tr_value) {
-  na_out <- c(est = NA_real_, ci.lower = NA_real_, ci.upper = NA_real_)
+compute_paired_pxy <- function(vals1, vals2) {
+  na_out <- c(
+    est = NA_real_, ci.lower = NA_real_,
+    ci.upper = NA_real_, p.value = NA_real_
+  )
 
-  # Preserve and restore the caller's RNG state around the bootstrap.
-  has_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
-  old_seed <- if (has_seed) get(".Random.seed", envir = globalenv()) else NULL
-  on.exit({
-    if (!is.null(old_seed)) {
-      assign(".Random.seed", old_seed, envir = globalenv())
-    }
-  }, add = TRUE)
+  n_lt <- sum(vals1 < vals2)
+  n_gt <- sum(vals1 > vals2)
+  n_eff <- n_lt + n_gt
+  if (n_eff < 1) return(na_out)
 
-  set.seed(.RM_EFFECT_SEED)
-  de <- tryCatch(
-    WRS2$dep.effect(vals1, vals2, tr = tr_value, nboot = .RM_EFFECT_NBOOT),
+  bt <- tryCatch(
+    stats$binom.test(n_lt, n_eff, p = 0.5),
     error = function(e) NULL
   )
-  if (is.null(de) || !("AKP" %in% rownames(de))) return(na_out)
+  if (is.null(bt)) return(na_out)
 
   c(
-    est = unname(de["AKP", "Est"]),
-    ci.lower = unname(de["AKP", "ci.low"]),
-    ci.upper = unname(de["AKP", "ci.up"])
+    est = unname(bt$estimate),
+    ci.lower = unname(bt$conf.int[1]),
+    ci.upper = unname(bt$conf.int[2]),
+    p.value = unname(bt$p.value)
   )
 }
 
-#' Compute paired Yuen statistics (trimmed means)
+#' Compute paired statistics (trimmed-mean location + P(X<Y) effect size)
 #'
 #' Location: WRS2::yuend (Yuen's dependent-samples trimmed-mean t-test) ->
-#' Lincon.* columns. Effect size: WRS2::dep.effect AKP (robust analog of
-#' Cohen's d) with bootstrap CI -> Cliff.* columns, so the row structure
-#' matches the unpaired output (no extra columns). AKP has no p-value, so
-#' Cliff.p.value is NA; significance for paired rows is given by the paired
-#' Yuen test in Lincon.p.value.
+#' Lincon.* columns. Effect size: P(X<Y) via a sign test on the matched
+#' pairs -> Cliff.* columns (estimate + exact binomial CI + p-value vs 0.5),
+#' matching the unpaired column's scale/meaning exactly (no extra columns).
 #'
 #' @param df Data frame with interaction_group column
 #' @param g1_label First group label
@@ -822,7 +820,7 @@ compute_paired_akp <- function(vals1, vals2, tr_value) {
 #' @param id_col Subject ID column
 #' @param measure_col Measurement column
 #' @param tr_value Trim proportion
-#' @return Data frame row with paired Yuen stats, or NULL if insufficient data
+#' @return Data frame row with paired stats, or NULL if insufficient data
 #' @keywords internal
 compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_col, tr_value) {
   g1_data <- df[df$interaction_group == g1_label, c(id_col, measure_col), drop = FALSE]
@@ -837,8 +835,8 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
   # Yuen's paired test for trimmed means (location + p-value)
   yuen_res <- WRS2$yuend(x = vals1, y = vals2, tr = tr_value)
 
-  # Robust dependent-samples effect size (AKP) with bootstrap CI
-  akp <- compute_paired_akp(vals1, vals2, tr_value)
+  # Paired effect size: P(X<Y) via sign test (matches unpaired p.hat scale)
+  pxy <- compute_paired_pxy(vals1, vals2)
 
   data.frame(
     Interaction = paste(g1_label, "vs.", g2_label),
@@ -846,10 +844,10 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
     Lincon.ci.lower = yuen_res$conf.int[1],
     Lincon.ci.upper = yuen_res$conf.int[2],
     Lincon.p.value = yuen_res$p.value,
-    Cliff.psihat = akp[["est"]],
-    Cliff.ci.lower = akp[["ci.lower"]],
-    Cliff.ci.upper = akp[["ci.upper"]],
-    Cliff.p.value = NA_real_,
+    Cliff.psihat = pxy[["est"]],
+    Cliff.ci.lower = pxy[["ci.lower"]],
+    Cliff.ci.upper = pxy[["ci.upper"]],
+    Cliff.p.value = pxy[["p.value"]],
     stringsAsFactors = FALSE
   )
 }
@@ -869,11 +867,11 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
 #' Strategy:
 #' 1. Run standard unpaired posthoc (lincon + Cliff's Delta) with filter_valid=TRUE
 #' 2. Identify which comparisons are "within-subject" (paired)
-#' 3. Compute paired Yuen test for those rows (location + effect size)
+#' 3. Compute paired stats for those rows (Yuen location + P(X<Y) sign test)
 #' 4. Replace unpaired values with paired values for within-subject rows
-#'    (Lincon.* = Yuen paired location/p-value; Cliff.* = AKP robust
-#'    dependent-samples effect size + bootstrap CI; Cliff p-value is NA
-#'    since AKP has no p-value, significance comes from the Yuen test)
+#'    (Lincon.* = Yuen paired location/p-value; Cliff.* = paired P(X<Y) from
+#'    a sign test: estimate + exact binomial CI + p-value vs 0.5, same 0-1
+#'    scale as the unpaired effect-size column)
 #' 5. Apply p-value correction on final combined raw p-values
 #'
 #' Supported designs (intentional asymmetry with the omnibus): this works
@@ -987,8 +985,8 @@ perform_rm_robust_posthoc <- function(
           if (length(match_idx) == 1) {
             paired_row <- paired_norm[paired_norm$InteractionKey == pk, ]
             # Replace Lincon location values AND the effect size: paired rows
-            # use the AKP robust dependent-samples effect size + bootstrap CI
-            # (in Cliff.psihat/ci.*); Cliff.p.value stays NA (AKP has no p).
+            # use the paired P(X<Y) sign test (estimate + binomial CI + p in
+            # Cliff.psihat/ci.*/p.value), matching the unpaired column scale.
             cols_to_replace <- c(
               "Lincon.psihat", "Lincon.ci.lower", "Lincon.ci.upper", "Lincon.p.value",
               "Cliff.psihat", "Cliff.ci.lower", "Cliff.ci.upper", "Cliff.p.value"
