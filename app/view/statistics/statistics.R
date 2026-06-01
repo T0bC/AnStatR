@@ -463,6 +463,33 @@ render_posthoc_result <- function(result, x_axis, params) {
           "for both test regimes."
         )
       }
+    } else if (isTRUE(params$is_repeated_measures) &&
+               identical(params$test_approach, "robust")) {
+      wn <- params$rm_within_col %||% "the within-subject factor"
+      # Mirror the harmonized labels used in the downloadable report.
+      left_label <- "Location (lincon / paired Yuen)"
+      right_label <- "Effect size: P(X<Y) (independent / paired)"
+      shiny$tags$p(
+        class = "text-muted small mb-2",
+        shiny$tags$strong(
+          "Repeated measures \u2014 mixed test regimes: "
+        ),
+        "rows where the between-subject factor(s) are identical and ",
+        "only ", shiny$tags$em(wn),
+        " differs (e.g. A.T1 vs. A.T2) are paired; all other rows are ",
+        "independent. The effect-size column reports the probability of ",
+        "superiority P(X<Y) (0\u20131, null 0.5) for both regimes. ",
+        shiny$tags$strong("Independent rows: "),
+        "location via ", shiny$tags$strong("lincon"),
+        " (linear contrasts on trimmed means), P(X<Y) via ",
+        shiny$tags$strong("Cliff's method"), ". ",
+        shiny$tags$strong("Paired rows: "),
+        "location via ",
+        shiny$tags$strong("Yuen's dependent-samples trimmed-mean t-test"),
+        " (yuend), P(X<Y) via a ", shiny$tags$strong("sign test"),
+        " on the matched pairs (exact binomial CI and p-value vs 0.5). ",
+        "Column headers are identical for both regimes."
+      )
     } else {
       NULL
     }
