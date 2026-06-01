@@ -1,5 +1,5 @@
 # ---------- Base image: matches your renv.lock R version ----------
-FROM rocker/r-ver:4.5.2
+FROM rocker/r-ver:4.6.0
 
 # ---------- System dependencies ----------
 # Core build tools (C, C++, Fortran compilers + make)
