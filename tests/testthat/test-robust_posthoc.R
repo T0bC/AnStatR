@@ -730,19 +730,19 @@ describe("perform_rm_robust_posthoc paired effect size", {
       unpaired_row <- unpaired[unpaired$Interaction == int, ]
       rm_row <- rm_result[rm_result$Interaction == int, ]
       if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
-        # Effect size for paired rows should be replaced with the robust
-        # dependent-samples AKP (not the independent-samples Cliff's Delta)
+        # Effect size for paired rows uses the paired P(X<Y) sign test,
+        # not the independent-samples Cliff's method
         expect_false(
           isTRUE(all.equal(
             unpaired_row$Cliff.psihat, rm_row$Cliff.psihat
           )),
           info = paste("Paired effect size", int, "should differ")
         )
-        # AKP carries a bootstrap CI but no p-value; significance comes
-        # from the paired Yuen test (Lincon.p.value)
+        # P(X<Y) is a probability with a binomial CI and a sign-test p-value
+        expect_true(rm_row$Cliff.psihat >= 0 && rm_row$Cliff.psihat <= 1)
         expect_false(is.na(rm_row$Cliff.ci.lower))
         expect_false(is.na(rm_row$Cliff.ci.upper))
-        expect_true(is.na(rm_row$Cliff.p.value))
+        expect_false(is.na(rm_row$Cliff.p.value))
       }
     }
   })
