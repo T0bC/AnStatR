@@ -36,6 +36,7 @@ ui <- function(id) {
       alt = "AnStatR",
       style = "vertical-align: middle;"
     ),
+    window_title = "AnStatR",
     theme = settings$get_default_theme(),
     fillable = FALSE,
     header = shiny$tagList(
