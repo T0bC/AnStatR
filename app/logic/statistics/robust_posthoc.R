@@ -788,6 +788,12 @@ compute_paired_pxy <- function(vals1, vals2) {
     ci.upper = NA_real_, p.value = NA_real_
   )
 
+  # Drop incomplete pairs (NA in either value) so comparisons are valid
+  complete <- !is.na(vals1) & !is.na(vals2)
+  vals1 <- vals1[complete]
+  vals2 <- vals2[complete]
+  if (length(vals1) < 1) return(na_out)
+
   n_lt <- sum(vals1 < vals2)
   n_gt <- sum(vals1 > vals2)
   n_eff <- n_lt + n_gt
@@ -827,10 +833,15 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
   g2_data <- df[df$interaction_group == g2_label, c(id_col, measure_col), drop = FALSE]
 
   paired <- merge(g1_data, g2_data, by = id_col, suffixes = c(".1", ".2"))
-  if (nrow(paired) < 2) return(NULL)
 
   vals1 <- paired[[paste0(measure_col, ".1")]]
   vals2 <- paired[[paste0(measure_col, ".2")]]
+
+  # Listwise deletion: keep only subjects with complete data in both groups
+  complete <- !is.na(vals1) & !is.na(vals2)
+  vals1 <- vals1[complete]
+  vals2 <- vals2[complete]
+  if (length(vals1) < 2) return(NULL)
 
   # Yuen's paired test for trimmed means (location + p-value)
   yuen_res <- WRS2$yuend(x = vals1, y = vals2, tr = tr_value)
