@@ -689,10 +689,98 @@ describe("DEBUG: Robust column structure inspection", {
     cat("Both should have 4 rows (valid comparisons only)\n")
     cat("Paired rows (A.T1 vs A.T2, B.T1 vs B.T2) Lincon p-values should differ\n")
     cat("Unpaired rows (A.T1 vs B.T1, A.T2 vs B.T2) should match\n")
-    cat("Cliff.psihat should be identical (not replaced)\n")
+    cat("Paired-row Cliff.psihat is yuend's effect size (replaced)\n")
     cat("=================================\n\n")
 
     expect_equal(nrow(unpaired_result), nrow(rm_result))
     expect_true(is.data.frame(rm_result))
+  })
+})
+
+# =============================================================================
+# perform_rm_robust_posthoc — paired effect size correctness
+# =============================================================================
+
+describe("perform_rm_robust_posthoc paired effect size", {
+  it("uses yuend effect size for paired rows (differs from unpaired Cliff)", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    paired_interactions <- c("A.T1 vs. A.T2", "B.T1 vs. B.T2")
+    for (int in paired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        # Effect size for paired rows should be replaced (not the
+        # independent-samples Cliff's Delta)
+        expect_false(
+          isTRUE(all.equal(
+            unpaired_row$Cliff.psihat, rm_row$Cliff.psihat
+          )),
+          info = paste("Paired effect size", int, "should differ")
+        )
+        # yuend provides no CI / no separate p-value for the effect size
+        expect_true(is.na(rm_row$Cliff.ci.lower))
+        expect_true(is.na(rm_row$Cliff.ci.upper))
+        expect_true(is.na(rm_row$Cliff.p.value))
+      }
+    }
+  })
+
+  it("keeps unpaired Cliff effect size for between-subject rows", {
+    df <- make_rm_twoway_data(n_subjects = 10)
+
+    unpaired <- robust_posthoc$perform_combined_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      tr_value = 0.2,
+      p_adjust_method = "none",
+      filter_valid = TRUE,
+      is_rm = FALSE
+    )
+
+    rm_result <- robust_posthoc$perform_rm_robust_posthoc(
+      df = df,
+      x_axis = c("COMPOSITE", "TIME"),
+      measure_col = "measure",
+      id_col = "ID",
+      within_col = "TIME",
+      tr_value = 0.2,
+      p_adjust_method = "none"
+    )
+
+    unpaired_interactions <- c("A.T1 vs. B.T1", "A.T2 vs. B.T2")
+    for (int in unpaired_interactions) {
+      unpaired_row <- unpaired[unpaired$Interaction == int, ]
+      rm_row <- rm_result[rm_result$Interaction == int, ]
+      if (nrow(unpaired_row) == 1 && nrow(rm_row) == 1) {
+        expect_equal(
+          unpaired_row$Cliff.psihat, rm_row$Cliff.psihat,
+          tolerance = 1e-6,
+          info = paste("Between-subject effect size", int, "should match")
+        )
+        expect_false(is.na(rm_row$Cliff.ci.lower))
+      }
+    }
   })
 })
