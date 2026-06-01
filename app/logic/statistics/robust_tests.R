@@ -447,13 +447,21 @@ perform_rm_robust <- function(df, x_axis, measure_col,
 
   test_result <- error_handling$safe_execute(
     expr = {
-      # Check for unsupported 3-way RM designs
+      # Check for unsupported 3-way RM designs.
+      # NOTE (intentional asymmetry): WRS2 provides no robust omnibus test
+      # for 3-way RM (bwtrim only handles 1 between x 1 within), so the
+      # omnibus is blocked here. The robust RM *post-hoc* path
+      # (perform_rm_robust_posthoc) DOES support 3-way, because it works
+      # pairwise via Yuen's dependent-samples test and does not need a
+      # 3-way omnibus model. Users wanting a 3-way RM omnibus should use
+      # the nonparametric (ARTool) approach.
       if (n_ways >= 3) {
         stop(paste0(
-          "3-way repeated measures designs are not supported for ",
-          "robust tests (WRS2::bwtrim only supports 1 between x 1 within). ",
-          "Please use the nonparametric approach instead, which supports ",
-          "3-way RM designs via ARTool."
+          "3-way repeated measures designs are not supported for the ",
+          "robust omnibus test (WRS2::bwtrim only supports 1 between x ",
+          "1 within). The robust pairwise post-hoc comparisons below are ",
+          "still computed with the correct paired tests. For a 3-way RM ",
+          "omnibus, use the nonparametric approach (ARTool)."
         ))
       }
 
