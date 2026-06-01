@@ -123,9 +123,16 @@ build_omnibus_html <- function(omnibus_result,
     n_ways <- length(x_axis)
     rm_prefix <- if (isTRUE(is_rm)) "RM " else ""
     header_label <- if (approach == "robust") {
+      # RM robust uses rmanova (1-way within) or bwtrim (1B x 1W),
+      # NOT t1way/t2way; label the actual WRS2 routine for the paper.
+      robust_fn <- if (isTRUE(is_rm)) {
+        if (n_ways == 1) "rmanova" else "bwtrim"
+      } else {
+        paste0("t", n_ways, "way")
+      }
       paste0(
         rm_prefix, "Robust ", n_ways, "-Way ANOVA",
-        " \u2014 Trimmed Means (t", n_ways, "way)"
+        " \u2014 Trimmed Means (", robust_fn, ")"
       )
     } else if (approach == "nonparametric") {
       paste0(
@@ -158,6 +165,7 @@ build_omnibus_html <- function(omnibus_result,
 #' @param params Optional list with test_approach / RM settings,
 #'   used to annotate which tests were applied to paired rows
 #' @return Character string with HTML
+#' @export
 build_posthoc_html <- function(posthoc_result, params = NULL) {
   if (is.null(posthoc_result)) return("")
 
@@ -244,21 +252,36 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
   # unpaired output, so describe which rows used paired tests.
   rm_note_html <- ""
   if (!is.null(params) &&
-      isTRUE(params$is_repeated_measures) &&
-      identical(params$test_approach, "parametric") &&
-      has_tukey) {
+      isTRUE(params$is_repeated_measures)) {
     wn <- params$rm_within_col %||% "the within-subject factor"
-    rm_note_html <- paste0(
-      '<p class="rm-note"><strong>Repeated measures:</strong> ',
-      "comparisons where the between-subject factor(s) are ",
-      "identical and only ", htmltools$htmlEscape(wn),
-      " differs (e.g. A.T1 vs. A.T2) were computed with ",
-      "<strong>paired t-tests</strong> and ",
-      "<strong>Cohen's dz</strong>. All remaining comparisons ",
-      "use <strong>Tukey HSD</strong> and ",
-      "<strong>Cohen's d</strong> (independent samples). ",
-      "Column headers are identical for both test regimes.</p>\n"
-    )
+    if (identical(params$test_approach, "parametric") && has_tukey) {
+      rm_note_html <- paste0(
+        '<p class="rm-note"><strong>Repeated measures:</strong> ',
+        "comparisons where the between-subject factor(s) are ",
+        "identical and only ", htmltools$htmlEscape(wn),
+        " differs (e.g. A.T1 vs. A.T2) were computed with ",
+        "<strong>paired t-tests</strong> and ",
+        "<strong>Cohen's dz</strong>. All remaining comparisons ",
+        "use <strong>Tukey HSD</strong> and ",
+        "<strong>Cohen's d</strong> (independent samples). ",
+        "Column headers are identical for both test regimes.</p>\n"
+      )
+    } else if (identical(params$test_approach, "robust") && has_lincon) {
+      rm_note_html <- paste0(
+        '<p class="rm-note"><strong>Repeated measures:</strong> ',
+        "comparisons where the between-subject factor(s) are ",
+        "identical and only ", htmltools$htmlEscape(wn),
+        " differs (e.g. A.T1 vs. A.T2) were computed with ",
+        "<strong>Yuen's dependent-samples trimmed-mean t-test</strong> ",
+        "(WRS2::yuend); the Cliff column reports yuend's ",
+        "<strong>explanatory measure of effect size</strong> for those ",
+        "rows (no CI / no separate p-value \u2014 significance is given ",
+        "by the paired test). All remaining comparisons use ",
+        "<strong>linear contrasts on trimmed means</strong> (lincon) and ",
+        "<strong>Cliff's Delta</strong> (independent samples). ",
+        "Column headers are identical for both test regimes.</p>\n"
+      )
+    }
   }
 
   # Handle single-table RM formats (no right panel)
