@@ -770,6 +770,12 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
 
 #' Compute paired Yuen statistics (trimmed means)
 #'
+#' Uses WRS2::yuend (Yuen's dependent-samples trimmed-mean t-test) for the
+#' location comparison and its accompanying explanatory measure of effect
+#' size ($effsize) as the paired effect size. The effect size fills the
+#' Cliff.psihat slot so the row structure matches the unpaired output;
+#' yuend provides no CI for the effect size, so the Cliff CI columns are NA.
+#'
 #' @param df Data frame with interaction_group column
 #' @param g1_label First group label
 #' @param g2_label Second group label
@@ -788,7 +794,7 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
   vals1 <- paired[[paste0(measure_col, ".1")]]
   vals2 <- paired[[paste0(measure_col, ".2")]]
 
-  # Yuen's paired test for trimmed means
+  # Yuen's paired test for trimmed means (location + explanatory effect size)
   yuen_res <- WRS2$yuend(x = vals1, y = vals2, tr = tr_value)
 
   data.frame(
@@ -797,6 +803,10 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
     Lincon.ci.lower = yuen_res$conf.int[1],
     Lincon.ci.upper = yuen_res$conf.int[2],
     Lincon.p.value = yuen_res$p.value,
+    Cliff.psihat = yuen_res$effsize,
+    Cliff.ci.lower = NA_real_,
+    Cliff.ci.upper = NA_real_,
+    Cliff.p.value = NA_real_,
     stringsAsFactors = FALSE
   )
 }
@@ -816,9 +826,17 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
 #' Strategy:
 #' 1. Run standard unpaired posthoc (lincon + Cliff's Delta) with filter_valid=TRUE
 #' 2. Identify which comparisons are "within-subject" (paired)
-#' 3. Compute paired Yuen test for those rows
+#' 3. Compute paired Yuen test for those rows (location + effect size)
 #' 4. Replace unpaired values with paired values for within-subject rows
+#'    (Lincon.* location AND the Cliff.* effect size; paired rows carry
+#'    yuend's explanatory effect size with NA CI / NA Cliff p-value)
 #' 5. Apply p-value correction on final combined raw p-values
+#'
+#' Supported designs (intentional asymmetry with the omnibus): this works
+#' pairwise via Yuen's dependent-samples test, so it supports 1-way, 2-way
+#' AND 3-way RM, even though the robust omnibus (perform_rm_robust) only
+#' supports up to 2-way mixed. For 3-way RM the omnibus is unavailable but
+#' these paired post-hoc comparisons are still valid.
 #'
 #' @param df Data frame (long format)
 #' @param x_axis Character vector of grouping columns
@@ -924,9 +942,12 @@ perform_rm_robust_posthoc <- function(
           match_idx <- which(unpaired_norm$InteractionKey == pk)
           if (length(match_idx) == 1) {
             paired_row <- paired_norm[paired_norm$InteractionKey == pk, ]
-            # Replace Lincon values (Cliff's Delta remains from unpaired)
+            # Replace Lincon location values AND the effect size: paired rows
+            # use yuend's explanatory measure of effect size (in Cliff.psihat),
+            # with NA CIs since yuend reports no CI for the effect size.
             cols_to_replace <- c(
-              "Lincon.psihat", "Lincon.ci.lower", "Lincon.ci.upper", "Lincon.p.value"
+              "Lincon.psihat", "Lincon.ci.lower", "Lincon.ci.upper", "Lincon.p.value",
+              "Cliff.psihat", "Cliff.ci.lower", "Cliff.ci.upper", "Cliff.p.value"
             )
             for (col in cols_to_replace) {
               if (col %in% names(unpaired_base) && col %in% names(paired_row)) {
