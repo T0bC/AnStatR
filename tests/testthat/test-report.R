@@ -44,7 +44,8 @@ describe("build_posthoc_html robust RM note", {
     )
     expect_true(grepl("Repeated measures", html, fixed = TRUE))
     expect_true(grepl("yuend", html, fixed = TRUE))
-    expect_true(grepl("AKP", html, fixed = TRUE))
+    expect_true(grepl("sign test", html, fixed = TRUE))
+    expect_true(grepl("P(X&lt;Y)", html, fixed = TRUE))
     expect_true(grepl("TIME", html, fixed = TRUE))
   })
 
