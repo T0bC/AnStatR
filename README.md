@@ -29,6 +29,8 @@ AnStatR is an R/Shiny application for statistical analysis of measurement data. 
 
 Upload CSV or XLSX files with configurable parsing options (delimiter, quote character, header handling), or use built-in example datasets for testing. After loading, interactive data preview, missing values visualization, and data summary panels help assess data quality before proceeding to analysis.
 
+![Load Data module](docs/screenshots/01_LoadData.png)
+
 ### Median
 
 Calculate median values for measurement columns with optional quality filtering and grouping. Select descriptive columns to aggregate data by sample structure, filter out low-quality measurements before calculation, and apply Excel-style column filters to subset data for downstream modules.
@@ -36,6 +38,8 @@ Calculate median values for measurement columns with optional quality filtering 
 ### Plotting
 
 Visualize data with customizable scatter plots. Select descriptive and measurement columns to generate plots per measurement variable, with configurable X-axis groupings, data filtering, outlier detection, normalization, and styling options including custom colors, point aesthetics, and median/SD lines.
+
+![Plotting module](docs/screenshots/02_Plotting.png)
 
 ### Summary
 
@@ -45,9 +49,13 @@ Compute descriptive statistics (mean, median, variance, standard deviation, stan
 
 Run omnibus tests and pairwise post-hoc comparisons for 1-way, 2-way, or 3-way factorial designs. Choose between robust trimmed-means ANOVA, classical parametric ANOVA, or non-parametric approaches. Configure p-value adjustment methods, bootstrap options, and export HTML reports.
 
+![Statistics module](docs/screenshots/03_Statsistics.png)
+
 ### PCA
 
 Perform Principal Component Analysis to reduce data dimensionality. Supports data scaling options and normalization for skewed variables. Provides KMO suitability measure, optimal component recommendations, eigenvalue tables, and biplots with metadata grouping.
+
+![PCA module](docs/screenshots/04_PCA.png)
 
 ### LDA
 
