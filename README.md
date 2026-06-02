@@ -70,7 +70,7 @@ Plan study sample sizes and estimate statistical power for 1-way, 2-way, and 3-w
 Clone the repository and run locally with R:
 
 ```bash
-git clone https://github.com/yourusername/AnStatR.git
+git clone https://github.com/T0bC/AnStatR.git
 cd AnStatR
 ```
 
@@ -82,7 +82,7 @@ renv::restore()  # Install dependencies
 shiny::runApp()  # Start the application
 ```
 
-Requires R >= 4.1. Dependencies are managed via renv.
+Requires R >= 4.6. Dependencies are managed via renv.
 
 ## License
 
