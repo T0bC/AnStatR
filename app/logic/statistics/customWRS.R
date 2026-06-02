@@ -715,6 +715,10 @@ mcp2atm<-function (formula, data, tr = 0.2, ...)
   result
 }
 
+# MODIFIED: Derived from mcp2atm. Uses actual factor level names
+# (levels(mf[, 2]) and levels(mf[, 3])) for contrast column labels instead of
+# generic numbered labels, so output shows meaningful group names rather than
+# ambiguous identifiers like "A1 vs. A2".
 mcp2atm_TM <- function (formula, data, tr = 0.2, ...) 
 {
   if (missing(data)) {
@@ -854,6 +858,9 @@ con3way <- function(J, K, L) {
   )
 }
 
+# MODIFIED: Derived from mcp3atm. Uses actual factor level names for contrast
+# column labels instead of generic numbered labels, so output shows meaningful
+# group names rather than ambiguous identifiers.
 mcp3atm_TM <- function(formula, data, tr = 0.2, ...) {
   if (missing(data)) {
     mf <- model.frame(formula)
