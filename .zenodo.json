@@ -1,0 +1,38 @@
+{
+  "title": "AnStatR: An Interactive R/Shiny Application for Multivariate Statistical Analysis of Measurement Data",
+  "creators": [
+    {
+      "name": "Meißner, Tobias",
+      "affiliation": "Leipzig University, Department of Cariology, Endodontology and Periodontology, Liebigstraße 12, building 1, 04103 Leipzig, Germany",
+      "orcid": "0009-0007-4050-8182"
+    },
+    {
+      "name": "Schulz-Kornas, Ellen",
+      "affiliation": "Leipzig University, Department of Cariology, Endodontology and Periodontology, Liebigstraße 12, building 1, 04103 Leipzig, Germany",
+      "orcid": "0000-0003-1657-8256"
+    }
+  ],
+  "description": "AnStatR is an open-source, browser-based application built with programming language R and the Shiny package that provides an interactive, modular workflow for the statistical analysis of tabular measurement data. It was developed to replace a suite of sequentially executed, project-specific R scripts that had been in use for microwear analysis (e.g. Scale-Sensitive Fractal Analysis, SSFA; 3D-Surface Texture Analysis, 3DST) in anthropology, archaeology, biology, palaeontology, engineering and human dentistry. AnStatR combines data preparation (e.g. import, quality assessment, aggregation, and preprocessing), descriptive statistics (e.g. distribution, summary and visualization) as well as interferential statistics (e.g. omnibus, pairwise post-hoc comparisons, dimensionality reduction, clustering and power analysis) into an easily accessible graphical interface that requires no R programming knowledge. The application is intended primarily for use in university teaching contexts to support researchers at early qualification levels who want to start working with multivariate quantitative data but lack advanced programming experience.\n\nGenerative AI tools were used to assist with code generation, debugging, and documentation drafting during the development of this software. The authors reviewed all AI-generated content for correctness, functionality, and scientific accuracy and take full responsibility for the final published work. The following model(s) or application(s) were used: Claude Sonnet 4.6, Claude Opus 4.5, Kimi 2.5.",
+  "version": "2026.11",
+  "access_right": "open",
+  "license": "gpl-3.0-or-later",
+  "upload_type": "software",
+  "language": "eng",
+  "keywords": [
+    "R",
+    "Shiny",
+    "statistics",
+    "multivariate analysis",
+    "data visualization",
+    "microwear analysis",
+    "SSFA",
+    "3DST"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/T0bC/AnStatR",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}
