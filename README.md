@@ -21,13 +21,13 @@
 
 ## Overview
 
-AnStatR is an R/Shiny application for statistical analysis of measurement data. The application provides a modular workflow from data import through exploratory visualization to advanced multivariate analysis and statistical testing.
+`AnStatR` is an open-source, browser-based application built with programming language `R` and the `Shiny` package that provides an interactive, modular workflow for the statistical analysis of tabular measurement data. It was developed to replace a suite of sequentially executed, project-specific `R` scripts that had been in use for microwear analysis (e.g. `Scale-Sensitive Fractal Analysis`, `SSFA`; `3D-Surface Texture Analysis`, `3DST`) in anthropology, archaeology, biology, palaeontology, engineering and human dentistry. `AnStatR` combines data preparation (e.g. import, quality assessment, aggregation, and preprocessing), descriptive statistics (e.g. distribution, summary and visualization) as well as interferential statistics (e.g. omnibus, pairwise post-hoc comparisons, dimensionality reduction, clustering and power analysis) into an easily accessible graphical interface that requires no `R` programming knowledge. The application is intended primarily for use in university teaching contexts to support researchers at early qualification levels who want to start working with multivariate quantitative data but lack advanced programming experience.
 
 ## Modules
 
 ### Load Data
 
-Upload CSV or XLSX files with configurable parsing options (delimiter, quote character, header handling), or use built-in example datasets for testing. After loading, interactive data preview, missing values visualization, and data summary panels help assess data quality before proceeding to analysis.
+Upload `CSV` or `XLSX` files with configurable parsing options (delimiter, quote character, header handling), or use built-in example datasets for testing. After loading, interactive data preview, missing values visualization, and data summary panels help assess data quality before proceeding to analysis.
 
 ![Load Data module](docs/screenshots/01_LoadData.png)
 
