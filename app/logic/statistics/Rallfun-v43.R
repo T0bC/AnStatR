@@ -37163,6 +37163,9 @@ test[jcom,5]<-temp$p.ci[2]
 list(n=n,test=test,summary.dvals=c.sum)
 }
 
+# MODIFIED: New function derived from cidmulv2. Added gcode/glab/dp parameters
+# so output preserves actual group labels instead of numeric group indices,
+# making it clear which groups were compared.
 cidmulv2_labelled <- function(
   #
   #  Perform Cliff's method for all pairs of J independent groups.

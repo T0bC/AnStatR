@@ -306,6 +306,9 @@ list(
 #' @param CI.FWE Logical, use FWE-adjusted CIs (default FALSE)
 #' @return List with n (group sizes), test (results), summary.dvals
 #' @export
+# MODIFIED: Derived from cidmulv2. Added gcode/glab/dp parameters so output
+# preserves actual group labels instead of numeric group indices, making it
+# clear which groups were compared.
 cidmulv2_labelled <- function(data, alpha = .05, gcode, glab, dp,
                                CI.FWE = FALSE) {
 codes <- data[[gcode]]
