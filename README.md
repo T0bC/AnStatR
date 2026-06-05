@@ -1,6 +1,6 @@
 # AnStatR
 
-[![DOI](https://zenodo.org/badge/1084840735.svg)](https://doi.org/10.5281/zenodo.20540533)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20540534.svg)](https://doi.org/10.5281/zenodo.20540534) 
 
 ## Table of Contents
 
