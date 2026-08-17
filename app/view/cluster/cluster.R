@@ -59,7 +59,8 @@ ui <- function(id) {
 #' @export
 server <- function(id, input_data, data_version,
                    pca_result = NULL,
-                   lda_result = NULL) {
+                   lda_result = NULL,
+                   recommended_parameters = NULL) {
   shiny$moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -171,7 +172,8 @@ server <- function(id, input_data, data_version,
       data_version = data_version,
       pca_scores_data = pca_scores_data,
       lda_scores_data = lda_scores_data,
-      pca_result = pca_result
+      pca_result = pca_result,
+      recommended_parameters = recommended_parameters
     )
 
     clustering_settings$tab_server(
