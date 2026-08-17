@@ -68,3 +68,32 @@ describe("build_posthoc_html robust RM note", {
     expect_false(grepl("Repeated measures", html, fixed = TRUE))
   })
 })
+
+# =============================================================================
+# generate_html_report — NULL plot_object (screening / no-plots mode)
+# =============================================================================
+
+describe("generate_html_report with plot_object = NULL", {
+  it("omits the Plot section and does not error", {
+    df <- make_lincon_cliff_df()
+    html <- report$generate_html_report(
+      measure = "Asfc",
+      plot_object = NULL,
+      omnibus_result = data.frame(
+        Df = 3, SS = 1, MS = 1, F_statistic = 1, p_value = 0.05
+      ),
+      posthoc_result = df,
+      params = list(
+        test_approach = "robust",
+        use_bootstrap = FALSE,
+        p_val_cor_method = "bonferroni",
+        is_repeated_measures = FALSE
+      ),
+      x_axis = c("FOOD_TYPE"),
+      timestamp = Sys.time()
+    )
+    expect_false(grepl("<h2>Plot</h2>", html, fixed = TRUE))
+    expect_false(grepl("data:image/png", html, fixed = TRUE))
+    expect_true(grepl("Pairwise Comparisons", html, fixed = TRUE))
+  })
+})
