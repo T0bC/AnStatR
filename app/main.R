@@ -202,7 +202,7 @@ server <- function(id) {
       plotting_normalize_enabled = plotting_result$normalize_enabled,
       plotting_transform_info = plotting_result$transform_info
     )
-    statistics$server(
+    statistics_result <- statistics$server(
       "statistics",
       input_data = processed_plotting_data,
       data_version = shiny$reactive(processed_data_version()),
@@ -211,7 +211,8 @@ server <- function(id) {
       plotting_trim_percent = plotting_result$trim_percent,
       plotting_plot_objects = plotting_result$plot_objects,
       plotting_normalize_enabled = plotting_result$normalize_enabled,
-      plotting_transform_info = plotting_result$transform_info
+      plotting_transform_info = plotting_result$transform_info,
+      plots_available = plotting_result$plots_available
     )
 
     # --- Analysis modules (PCA/LDA/Cluster) ---
@@ -220,13 +221,15 @@ server <- function(id) {
     pca_result <- pca$server(
       "pca",
       input_data = analysis_data,
-      data_version = shiny$reactive(analysis_data_version())
+      data_version = shiny$reactive(analysis_data_version()),
+      recommended_parameters = statistics_result$recommended_parameters
     )
     lda_result <- lda$server(
       "lda",
       input_data = analysis_data,
       data_version = shiny$reactive(analysis_data_version()),
-      pca_result = pca_result
+      pca_result = pca_result,
+      recommended_parameters = statistics_result$recommended_parameters
     )
     cluster$server(
       "cluster",
