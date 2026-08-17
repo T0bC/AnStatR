@@ -6,6 +6,7 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
+  app/logic/statistics/posthoc_columns,
 )
 
 # =============================================================================
@@ -187,17 +188,20 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
   }
 
   # Detect prefix set
-  has_lincon <- any(grepl("^Lincon\\.", names(posthoc_result)))
-  has_rm_lincon <- any(grepl("^RM\\.Lincon\\.", names(posthoc_result)))
-  has_tukey <- any(grepl("^Tukey\\.", names(posthoc_result)))
-  has_paired_t <- any(grepl("^Paired\\.t\\.", names(posthoc_result)))
+  schema <- posthoc_columns$detect_posthoc_schema(posthoc_result)
+  has_lincon <- identical(schema$approach, "robust")
+  has_rm_lincon <- identical(schema$approach, "rm_robust")
+  has_tukey <- identical(schema$approach, "parametric")
+  has_paired_t <- identical(schema$approach, "rm_parametric")
   has_paired_d <- any(grepl("^Paired\\.d", names(posthoc_result)))
-  has_paired_wilcox <- any(grepl(
-    "^Paired\\.Wilcox\\.", names(posthoc_result)
-  ))
-  has_dunn <- any(grepl("^Dunn\\.", names(posthoc_result)))
-  has_wilcox <- any(grepl("^Wilcox\\.", names(posthoc_result)))
-  has_art <- any(grepl("^ART\\.", names(posthoc_result)))
+  has_paired_wilcox <- identical(schema$approach, "rm_nonparametric")
+  # schema$approach == "nonparametric_1way" covers both Dunn and
+  # Wilcox; disambiguate directly via the resolved column names.
+  has_dunn <- identical(schema$approach, "nonparametric_1way") &&
+    identical(schema$left_prefix, "Dunn")
+  has_wilcox <- identical(schema$approach, "nonparametric_1way") &&
+    identical(schema$left_prefix, "Wilcox")
+  has_art <- identical(schema$approach, "nonparametric_multiway")
 
   if (has_paired_t && has_paired_d) {
     left_prefix <- "Paired.t"
