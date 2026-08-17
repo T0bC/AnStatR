@@ -37,6 +37,8 @@ tab_ui <- function(ns) {
       value = FALSE
     ),
     shiny$tags$hr(),
+    # Screening mode hint (shown only when plots are disabled)
+    shiny$uiOutput(ns("screening_mode_hint")),
     # Statistical approach selection
     shiny$radioButtons(
       inputId = ns("test_approach"),
@@ -111,10 +113,40 @@ tab_ui <- function(ns) {
 #' @param plotting_x_axis Reactive returning X-axis columns from Plotting
 #' @param plotting_trim_percent Reactive returning trim % from Plotting
 #' @param input_data Reactive returning the current data frame
+#' @param plots_available Reactive returning whether Plotting has plots
+#'   enabled (FALSE in parameter screening mode), or NULL
 #' @export
 tab_server <- function(input, output, session,
                        plotting_x_axis, plotting_trim_percent,
-                       input_data = NULL) {
+                       input_data = NULL, plots_available = NULL) {
+  # --- Screening mode: pre-set (not lock) the approach to parametric ---
+  plots_available_safe <- shiny$reactive({
+    if (is.null(plots_available)) TRUE else isTRUE(plots_available())
+  })
+
+  shiny$observeEvent(plots_available_safe(), {
+    if (!plots_available_safe()) {
+      shiny$updateRadioButtons(
+        session, "test_approach", selected = "parametric"
+      )
+    }
+  }, ignoreInit = TRUE)
+
+  output$screening_mode_hint <- shiny$renderUI({
+    if (plots_available_safe()) {
+      return(NULL)
+    }
+    shiny$tags$div(
+      class = "alert alert-info py-1 px-2 small mb-2",
+      bsicons$bs_icon("lightbulb", class = "me-1"),
+      shiny$tags$strong("Screening mode: "),
+      "plots are disabled and auto-normalization is applied, so the ",
+      "transformed parameters justify classical ANOVA. The approach ",
+      "below has been set to Parametric, but you can still switch it ",
+      "to cross-check against robust or non-parametric tests."
+    )
+  })
+
   # --- Trim value display (read-only from Plotting) ---
   output$trim_value_display <- shiny$renderUI({
     tr <- if (!is.null(plotting_trim_percent)) {
