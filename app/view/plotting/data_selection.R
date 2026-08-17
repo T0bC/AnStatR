@@ -41,11 +41,60 @@ tab_ui <- function(ns) {
         placeholder = "Select descriptive columns..."
       )
     ),
-    # Step 2: Measurement columns (shown after metaData)
+    shiny$checkboxInput(
+      inputId = ns("disablePlots"),
+      label = shiny$tags$span(
+        "Disable plots (parameter screening mode) ",
+        bslib$tooltip(
+          bsicons$bs_icon("info-circle", class = "text-muted"),
+          paste(
+            "Skip plot and diagnostics generation.",
+            "Select only X-Axis and measurement",
+            "columns; selections pass straight to",
+            "the Statistics tab. Recommended when",
+            "screening 40+ measurement parameters.",
+            "Auto-normalization is turned on."
+          )
+        )
+      ),
+      value = FALSE
+    ),
+    shiny$conditionalPanel(
+      condition = paste0("input['", ns("disablePlots"), "'] == true"),
+      shiny$tags$div(
+        class = "alert alert-info py-1 px-2 small mb-2",
+        bsicons$bs_icon("info-circle", class = "me-1"),
+        "Plots are disabled. Auto-normalization is on and the ",
+        "Statistics tab will default to parametric ANOVA. Go to ",
+        "Statistics and click Compute."
+      )
+    ),
+    # Step 2: X-Axis and measurement columns (shown after metaData)
     shiny$conditionalPanel(
       condition = paste0(
         "input['", ns("metaData"), "'] && ",
         "input['", ns("metaData"), "'].length > 0"
+      ),
+      shiny$selectizeInput(
+        inputId = ns("xAxis"),
+        label = shiny$tags$span(
+          "X-Axis ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Select up to 3 columns for the",
+              "X-Axis. Also used in statistics."
+            )
+          )
+        ),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select...",
+          maxItems = 3
+        )
       ),
       shiny$selectizeInput(
         inputId = ns("measureVar"),
@@ -74,59 +123,31 @@ tab_ui <- function(ns) {
           closeAfterSelect = FALSE
         )
       ),
-      # Step 3: X-Axis and Tooltip (shown after measureVar)
+      # Step 3: Tooltip and plot type (hidden in screening mode)
       shiny$conditionalPanel(
         condition = paste0(
           "input['", ns("measureVar"), "'] && ",
-          "input['", ns("measureVar"), "'].length > 0"
+          "input['", ns("measureVar"), "'].length > 0 && ",
+          "input['", ns("disablePlots"), "'] != true"
         ),
         shiny$tags$hr(),
-        shiny$fluidRow(
-          shiny$column(
-            6,
-            shiny$selectizeInput(
-              inputId = ns("xAxis"),
-              label = shiny$tags$span(
-                "X-Axis ",
-                bslib$tooltip(
-                  bsicons$bs_icon(
-                    "info-circle", class = "text-muted"
-                  ),
-                  paste(
-                    "Select up to 3 columns for the",
-                    "X-Axis. Also used in statistics."
-                  )
-                )
+        shiny$selectizeInput(
+          inputId = ns("tooltip"),
+          label = shiny$tags$span(
+            "Tooltip ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle", class = "text-muted"
               ),
-              choices = NULL,
-              multiple = TRUE,
-              options = list(
-                placeholder = "Select...",
-                maxItems = 3
+              paste(
+                "Select columns to display when",
+                "hovering over plot points."
               )
             )
           ),
-          shiny$column(
-            6,
-            shiny$selectizeInput(
-              inputId = ns("tooltip"),
-              label = shiny$tags$span(
-                "Tooltip ",
-                bslib$tooltip(
-                  bsicons$bs_icon(
-                    "info-circle", class = "text-muted"
-                  ),
-                  paste(
-                    "Select columns to display when",
-                    "hovering over plot points."
-                  )
-                )
-              ),
-              choices = NULL,
-              multiple = TRUE,
-              options = list(placeholder = "Select...")
-            )
-          )
+          choices = NULL,
+          multiple = TRUE,
+          options = list(placeholder = "Select...")
         ),
         # Plot type selector (shown after X-Axis)
         shiny$conditionalPanel(
@@ -172,6 +193,11 @@ tab_ui <- function(ns) {
 #' @export
 tab_server <- function(input, output, session, input_data,
                        data_version) {
+  # Reset screening mode on new data (mirrors processing.R resets)
+  shiny$observeEvent(data_version(), {
+    shiny$updateCheckboxInput(session, "disablePlots", value = FALSE)
+  }, ignoreInit = TRUE)
+
   # Smart retention on new data: keep selections that still exist
   shiny$observeEvent(data_version(), {
     data <- input_data()
