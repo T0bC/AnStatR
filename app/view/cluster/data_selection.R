@@ -8,6 +8,7 @@ box::use(
 box::use(
   app/logic/shared/column_utils,
   app/view/components/sidebar_tabs,
+  app/view/shared/recommendation_banner,
 )
 
 #' @export
@@ -76,6 +77,7 @@ tab_ui <- function(ns) {
         closeAfterSelect = FALSE
       )
     ),
+    shiny$uiOutput(ns("recommended_hint")),
     # Measurement columns selection
     shiny$selectizeInput(
       inputId = ns("measureVar"),
@@ -230,12 +232,16 @@ tab_ui <- function(ns) {
 #'   frame (metadata + LD1, LD2, …) or NULL
 #' @param pca_result Reactive returning the full PCA result
 #'   (with $eig table for variance recommendation) or NULL
+#' @param recommended_parameters Reactive returning a character vector of
+#'   parameter names recommended by the Statistics screening ranking, or
+#'   NULL. Recommendations apply to raw measurement data only.
 #' @export
 tab_server <- function(input, output, session,
                        input_data, data_version,
                        pca_scores_data = NULL,
                        lda_scores_data = NULL,
-                       pca_result = NULL) {
+                       pca_result = NULL,
+                       recommended_parameters = NULL) {
   # Helper: get the active data frame for column detection
   active_data <- shiny$reactive({
     src <- input$data_source
@@ -254,6 +260,45 @@ tab_server <- function(input, output, session,
     } else {
       input_data()
     }
+  })
+
+  # --- Recommended-parameters hint + apply button (raw data only) ---
+  output$recommended_hint <- shiny$renderUI({
+    if (is.null(recommended_parameters)) return(NULL)
+    src <- input$data_source
+    if (!is.null(src) && src != "raw") return(NULL)
+    rec <- recommended_parameters()
+    if (length(rec) == 0) return(NULL)
+    recommendation_banner$render_recommendation_banner(
+      rec, session$ns, "apply_recommended"
+    )
+  })
+
+  shiny$observeEvent(input$apply_recommended, {
+    data <- active_data()
+    if (is.null(data) || is.null(recommended_parameters)) return()
+    rec <- recommended_parameters()
+    cols <- column_utils$get_measurement_cols(data)
+    sel <- intersect(rec, cols)
+    shiny$updateSelectizeInput(
+      session, "measureVar",
+      choices = cols, selected = sel
+    )
+    if (length(sel) < length(rec)) {
+      dropped <- setdiff(rec, cols)
+      shiny$showNotification(
+        paste0(
+          length(dropped), " recommended parameter(s) not found in ",
+          "the current data and were skipped: ",
+          paste(dropped, collapse = ", ")
+        ),
+        type = "warning"
+      )
+    }
+    rhino$log$info(
+      "Cluster data_selection: applied {length(sel)}/{length(rec)} ",
+      "recommended parameter(s)"
+    )
   })
 
   # Show hint when PCA/LDA Scores is selected
