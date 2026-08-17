@@ -8,6 +8,7 @@ box::use(
 box::use(
   app/logic/shared/column_utils,
   app/view/components/sidebar_tabs,
+  app/view/shared/recommendation_banner,
 )
 
 #' @export
@@ -48,6 +49,7 @@ tab_ui <- function(ns) {
         closeAfterSelect = FALSE
       )
     ),
+    shiny$uiOutput(ns("recommended_hint")),
     # Measurement columns selection
     shiny$selectizeInput(
       inputId = ns("measureVar"),
@@ -181,9 +183,50 @@ tab_ui <- function(ns) {
 #' @param session Shiny session object from parent module
 #' @param input_data Reactive returning the current data frame
 #' @param data_version Reactive returning the data version counter
+#' @param recommended_parameters Reactive returning a character vector of
+#'   parameter names recommended by the Statistics screening ranking, or
+#'   NULL
 #' @export
 tab_server <- function(input, output, session,
-                       input_data, data_version) {
+                       input_data, data_version,
+                       recommended_parameters = NULL) {
+  # --- Recommended-parameters hint + apply button ---
+  output$recommended_hint <- shiny$renderUI({
+    if (is.null(recommended_parameters)) return(NULL)
+    rec <- recommended_parameters()
+    if (length(rec) == 0) return(NULL)
+    recommendation_banner$render_recommendation_banner(
+      rec, session$ns, "apply_recommended"
+    )
+  })
+
+  shiny$observeEvent(input$apply_recommended, {
+    data <- input_data()
+    if (is.null(data) || is.null(recommended_parameters)) return()
+    rec <- recommended_parameters()
+    cols <- column_utils$get_measurement_cols(data)
+    sel <- intersect(rec, cols)
+    shiny$updateSelectizeInput(
+      session, "measureVar",
+      choices = cols, selected = sel
+    )
+    if (length(sel) < length(rec)) {
+      dropped <- setdiff(rec, cols)
+      shiny$showNotification(
+        paste0(
+          length(dropped), " recommended parameter(s) not found in ",
+          "the current data and were skipped: ",
+          paste(dropped, collapse = ", ")
+        ),
+        type = "warning"
+      )
+    }
+    rhino$log$info(
+      "PCA data_selection: applied {length(sel)}/{length(rec)} ",
+      "recommended parameter(s)"
+    )
+  })
+
   # Smart retention on new data: keep selections that
   # still exist in the new dataset
   shiny$observeEvent(data_version(), {
