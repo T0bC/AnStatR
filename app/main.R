@@ -236,7 +236,8 @@ server <- function(id) {
       input_data = analysis_data,
       data_version = shiny$reactive(analysis_data_version()),
       pca_result = pca_result,
-      lda_result = lda_result
+      lda_result = lda_result,
+      recommended_parameters = statistics_result$recommended_parameters
     )
     prediction$server("prediction")
     power$server("power", input_data = load_data_result$data)
