@@ -8,11 +8,13 @@ box::use(
 )
 
 box::use(
+  app/logic/shared/column_utils,
   app/logic/shared/error_handling,
   app/logic/statistics/nonparametric_posthoc,
   app/logic/statistics/nonparametric_tests,
   app/logic/statistics/parametric_posthoc,
   app/logic/statistics/parametric_tests,
+  app/logic/statistics/posthoc_columns,
   app/logic/statistics/report,
   app/logic/statistics/robust_posthoc,
   app/logic/statistics/robust_tests,
@@ -145,13 +147,13 @@ build_posthoc_table <- function(df) {
 # Plots are keyed by raw column name; when normalization is
 # active the measure name has a _normalized suffix.
 resolve_plot_key <- function(measure) {
-  sub("_normalized$", "", measure)
+  column_utils$strip_normalized_suffix(measure)
 }
 
 # --- Private helper: exclude outlier/trimmed rows for a measure ---
 filter_excluded_rows <- function(df, measure_col) {
   # Strip _normalized suffix for flag column lookup
-  base_col <- sub("_normalized$", "", measure_col)
+  base_col <- column_utils$strip_normalized_suffix(measure_col)
   outlier_col <- paste0(base_col, "_outlier")
   trimmed_col <- paste0(base_col, "_trimmed")
 
@@ -226,44 +228,25 @@ render_posthoc_result <- function(result, x_axis, params) {
     }
 
     # Detect which prefix set is present
-    has_lincon <- any(grepl("^Lincon\\.", names(display_df)))
-    has_rm_lincon <- any(grepl(
-      "^RM\\.Lincon\\.", names(display_df)
-    ))
-    has_tukey <- any(grepl("^Tukey\\.", names(display_df)))
-    has_paired_t <- any(grepl(
-      "^Paired\\.t\\.", names(display_df)
-    ))
+    schema <- posthoc_columns$detect_posthoc_schema(display_df)
+    has_lincon <- identical(schema$approach, "robust")
+    has_rm_lincon <- identical(schema$approach, "rm_robust")
+    has_tukey <- identical(schema$approach, "parametric")
+    has_paired_t <- identical(schema$approach, "rm_parametric")
     has_paired_d <- any(grepl(
       "^Paired\\.d", names(display_df)
     ))
-    has_paired_wilcox <- any(grepl(
-      "^Paired\\.Wilcox\\.", names(display_df)
-    ))
-    has_dunn <- any(grepl("^Dunn\\.", names(display_df)))
-    has_wilcox <- any(grepl("^Wilcox\\.", names(display_df)))
-    has_art <- any(grepl("^ART\\.", names(display_df)))
+    has_paired_wilcox <- identical(schema$approach, "rm_nonparametric")
+    # schema$approach == "nonparametric_1way" covers both Dunn and
+    # Wilcox; disambiguate directly via the resolved column names.
+    has_dunn <- identical(schema$approach, "nonparametric_1way") &&
+      identical(schema$left_prefix, "Dunn")
+    has_wilcox <- identical(schema$approach, "nonparametric_1way") &&
+      identical(schema$left_prefix, "Wilcox")
+    has_art <- identical(schema$approach, "nonparametric_multiway")
 
     # Determine the p-adjusted column for filtering
-    p_adj_col <- if (has_paired_t) {
-      "Paired.t.p.adjusted"
-    } else if (has_rm_lincon) {
-      "RM.Lincon.p.adjusted"
-    } else if (has_paired_wilcox) {
-      "Paired.Wilcox.p.adjusted"
-    } else if (has_lincon) {
-      "Lincon.p.adjusted"
-    } else if (has_tukey) {
-      "Tukey.p.adjusted"
-    } else if (has_dunn) {
-      "Dunn.p.adjusted"
-    } else if (has_wilcox) {
-      "Wilcox.p.adjusted"
-    } else if (has_art) {
-      "ART.p.adjusted"
-    } else {
-      NULL
-    }
+    p_adj_col <- if (is.na(schema$p_adj_col)) NULL else schema$p_adj_col
 
     if (isTRUE(params$filter_p_values) &&
         !is.null(p_adj_col) &&
