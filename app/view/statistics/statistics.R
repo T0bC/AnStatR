@@ -1531,10 +1531,14 @@ server <- function(id, input_data, data_version,
                     "Yes", "No"
                   ),
                   ", P-adjustment: ",
-                  results$params$p_val_cor_method
+                  results$params$p_val_cor_method,
+                  if (isTRUE(results$no_plots_mode)) ", Screening mode" else ""
                 )
               )
             ),
+            if (isTRUE(results$no_plots_mode) && !is.null(results$ranking)) {
+              ranking_table$render_ranking_section(results$ranking, ns)
+            },
             measurement_cards
           )
         )
@@ -1542,6 +1546,13 @@ server <- function(id, input_data, data_version,
     })
 
     # Return for downstream modules
-    invisible(NULL)
+    list(
+      recommended_parameters = shiny$reactive({
+        res <- computation_results()
+        if (is.null(res) || is.null(res$ranking)) return(character(0))
+        if (error_handling$is_app_error(res$ranking)) return(character(0))
+        res$ranking$recommended
+      })
+    )
   })
 }
