@@ -117,6 +117,23 @@ server <- function(id, input_data, data_version) {
       cached_filtered_data(NULL)
     }, ignoreInit = TRUE)
 
+    # Screening mode: disabling plots clears the plot cache so
+    # re-enabling doesn't serve plots built under a stale fingerprint,
+    # and auto-enables normalization (non-normal 3D-ST parameters need
+    # it to justify classical ANOVA in the Statistics tab).
+    shiny$observeEvent(input$disablePlots, {
+      if (isTRUE(input$disablePlots)) {
+        plot_cache(list())
+        shiny$updateCheckboxInput(
+          session, "enableNormalize", value = TRUE
+        )
+        rhino$log$info(
+          "Plotting: screening mode enabled, ",
+          "auto-normalization turned on"
+        )
+      }
+    }, ignoreInit = TRUE)
+
     # Delegate to sub-module servers
     data_selection$tab_server(
       input, output, session, input_data, data_version
@@ -347,7 +364,13 @@ server <- function(id, input_data, data_version) {
     # --- Build plots (one per measurement column) ---
     # All sidebar inputs are locked client-side via shiny:busy/idle
     # JS events (see UI) to prevent mid-flight input changes.
+    # Screening mode (disablePlots) skips this reactive entirely: it does
+    # NOT gate plot_params_raw/processed_data (those must keep resolving
+    # so Statistics still gets processed data), only the actual plot
+    # rendering, which is the expensive part with 40+ measure columns.
     plots <- shiny$reactive({
+      if (isTRUE(input$disablePlots)) return(NULL)
+
       params <- plot_params()
       show_transformed <- isTRUE(params$processing$show_transformed) &&
         isTRUE(params$processing$normalize_enabled) &&
@@ -442,6 +465,8 @@ server <- function(id, input_data, data_version) {
 
     # --- Assumption diagnostics (per measurement column) ---
     diagnostics <- shiny$reactive({
+      if (isTRUE(input$disablePlots)) return(NULL)
+
       pd <- processed_data()
       shiny$req(pd)
       params <- plot_params()
@@ -542,6 +567,26 @@ server <- function(id, input_data, data_version) {
       if (error_handling$is_app_error(err)) {
         return(error_display$error_alert_structured(
           err, type = "danger"
+        ))
+      }
+
+      # Screening mode: no plots are built at all
+      if (isTRUE(input$disablePlots)) {
+        return(shiny$tags$div(
+          class = paste(
+            "d-flex align-items-center",
+            "justify-content-center"
+          ),
+          style = "min-height: 400px;",
+          shiny$tags$div(
+            class = "text-center text-muted",
+            shiny$tags$h4("Parameter Screening Mode"),
+            shiny$tags$p(
+              "Plots are disabled. Select X-Axis and",
+              " measurement columns, then go to the",
+              " Statistics tab and click Compute."
+            )
+          )
         ))
       }
 
@@ -854,6 +899,9 @@ server <- function(id, input_data, data_version) {
           }
         }
         if (length(result) == 0) NULL else result
+      }),
+      plots_available = shiny$reactive({
+        !isTRUE(input$disablePlots)
       })
     )
   })
