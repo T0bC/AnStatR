@@ -59,7 +59,8 @@ ui <- function(id) {
 }
 
 #' @export
-server <- function(id, input_data, data_version) {
+server <- function(id, input_data, data_version,
+                   recommended_parameters = NULL) {
   shiny$moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -93,7 +94,8 @@ server <- function(id, input_data, data_version) {
     data_selection$tab_server(
       input, output, session,
       input_data = input_data,
-      data_version = data_version
+      data_version = data_version,
+      recommended_parameters = recommended_parameters
     )
 
     # Delegate correlation plot rendering

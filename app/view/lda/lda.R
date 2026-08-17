@@ -60,7 +60,8 @@ ui <- function(id) {
 
 #' @export
 server <- function(id, input_data, data_version,
-                   pca_result = NULL) {
+                   pca_result = NULL,
+                   recommended_parameters = NULL) {
   shiny$moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -114,7 +115,8 @@ server <- function(id, input_data, data_version,
       input_data = input_data,
       data_version = data_version,
       pca_scores_data = pca_scores_data,
-      pca_result = pca_result
+      pca_result = pca_result,
+      recommended_parameters = recommended_parameters
     )
     analysis_settings$tab_server(
       input, output, session,
