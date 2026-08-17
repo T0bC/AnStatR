@@ -41,6 +41,15 @@ get_descriptive_cols <- function(data) {
   )]
 }
 
+#' Strip a trailing "_normalized" suffix from column names
+#'
+#' @param cols Character vector of column names
+#' @return Character vector with any trailing "_normalized" removed
+#' @export
+strip_normalized_suffix <- function(cols) {
+  sub("_normalized$", "", cols)
+}
+
 #' Validate column naming conventions
 #'
 #' Classifies all columns and identifies ambiguous ones
