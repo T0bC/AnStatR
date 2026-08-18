@@ -19,6 +19,10 @@ Where p = number of measurement variables, G = number of groups.
 - **Descriptive (metadata) columns** are carried through the analysis purely for labelling. They appear in the scores plot tooltips, in the exported results tables, and on the axes of the LD Scores Plot. They do not influence the discriminant function in any way
 - **Grouping column** must be a categorical variable selected from the metadata columns. It defines the class labels fed to MASS::lda() / MASS::qda() / mda::mda(). Rows with missing values in the grouping column are dropped
 
+**Recommended parameters (parameter screening mode)**
+
+When the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's **Disable plots (parameter screening mode)**), an **Apply recommended parameters** banner appears above the measurement-column selector. It applies the union of parameters that ranked among the top group separators across all pairwise comparisons. This is purely a selection shortcut — clicking it calls the same column-selection mechanism as manual selection, so recommended and manually chosen columns are treated identically by the LDA/QDA/MDA computation and by the saved `.rds` bundle (see the **Prediction** module for how the bundle's `numeric_cols` are used to align new data). See the **Statistics** module's Details tab for how the ranking is computed.
+
 ##### Technical Specifications
 
 <details>

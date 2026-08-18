@@ -10,6 +10,8 @@ Configure columns in the **Data Selection** sidebar tab:
 - **Grouping column** *(required)* — The single categorical column that defines the groups to be discriminated (e.g., `SPECIES`, `PERIOD`, `TAXON`). LDA/QDA maximizes separation *between* these groups. Must contain at least 2 distinct, non-missing levels
 - **Measurement columns** — Numeric variables included in the analysis. Click **Select all** to include all measurement columns
 
+If the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's parameter screening mode), an **Apply recommended parameters** banner appears above the measurement-column selector. Clicking it replaces the current selection with the parameters the Statistics tab identified as good group separators — you can still add or remove columns manually afterward.
+
 ##### Analysis Type
 
 Choose between three methods in the **Analysis Settings** tab:

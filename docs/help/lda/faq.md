@@ -1,6 +1,15 @@
 #### Frequently Asked Questions
 
 <details>
+<summary>What does the "Apply recommended parameters" banner do?</summary>
+
+It appears when the **Statistics** tab has computed a parameter screening ranking (enabled via the Plotting tab's **Disable plots (parameter screening mode)** checkbox, followed by **Compute Statistics**). Clicking it replaces the current measurement-column selection with the parameters that ranked among the top group separators. You can still add or remove columns manually afterward — the applied selection is not locked.
+
+There is no functional difference between recommended and manually selected parameters: both flow through the same measurement-column selection used by the LDA/QDA/MDA computation and by the saved bundle. If the banner does not appear, either screening mode has not been used yet, or no parameters were ranked (e.g., the Statistics results have not been computed).
+
+</details>
+
+<details>
 <summary>What is the difference between LDA, QDA, and MDA — which should I use?</summary>
 
 All three methods assign specimens to groups by maximising separation, but they differ in how they model group shapes:
