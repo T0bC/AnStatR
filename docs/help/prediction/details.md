@@ -4,21 +4,23 @@
 
 **Model Bundle**
 
-The bundle file must be an `.rds` object exported directly from the PCA, LDA, QDA, or MDA tab of this application. It must contain all of the following fields:
+The bundle file must be an `.rds` object exported directly from the PCA, LDA, QDA, MDA, or Cluster tab of this application. It must contain all of the following fields:
 
 | Field | Content |
 |-------|---------|
-| `analysis_type` | One of `pca`, `lda`, `qda`, `mda` |
-| `model` | The fitted model object (`prcomp`, `lda`, `qda`, or `mda`) |
+| `analysis_type` | One of `pca`, `lda`, `qda`, `mda`, `cluster` |
+| `model` | The fitted model object (`prcomp`, `lda`, `qda`, `mda`, `kmeans`, or `pam`) |
 | `numeric_cols` | Character vector of measurement column names used during training |
 | `raw_data` | Training data before preprocessing (used for range validation) |
 | `used_data` | Training data after preprocessing (used for overlay plots) |
-| `scale_params` | Center and scale vectors (LDA/MDA/QDA) or NULL (PCA) |
+| `scale_params` | Center and scale vectors (LDA/MDA/QDA/Cluster) or NULL (PCA) |
 | `transform_params` | Stored skewness transformation parameters or empty list |
 | `app_version` | Version of AnStatR that created the bundle |
 | `created` | Timestamp of bundle creation |
 
-Bundles exported from external R sessions or other tools will not be accepted unless they conform to this structure. Bundles exported in cross-validation (CV) mode do not include a fitted model object and cannot be used for prediction.
+Cluster bundles additionally store `variant` (`kmeans` or `pam`), `cluster_metric` (`euclidean` or `manhattan`), `n_clusters`, and `cluster_labels` (the training-set cluster assignments, needed to redraw the training biplot since clustering has no `predict()` to recompute them from).
+
+Bundles exported from external R sessions or other tools will not be accepted unless they conform to this structure. Bundles exported in cross-validation (CV) mode do not include a fitted model object and cannot be used for prediction. Cluster bundles are only exportable for **K-Means or PAM fit on raw measurement data** — see the Cluster module's Details tab for why Hierarchical, DBSCAN, and score-sourced clusters are excluded.
 
 **Unknown Data**
 
@@ -42,7 +44,7 @@ Before prediction, the unknown data is transformed using parameters stored in th
 
 If skewness normalization was enabled during model training, `bestNormalize` transformation objects are stored in the bundle. The same transformations (Box-Cox, Yeo-Johnson, log, square-root — whichever was selected per column) are applied to the corresponding unknown data columns using `predict()` on the stored transformer objects.
 
-**Step 2 — Scaling** (LDA / MDA / QDA only)
+**Step 2 — Scaling** (LDA / MDA / QDA / Cluster only)
 
 The stored `center` and `scale` vectors are applied to the transformed unknown data:
 
@@ -87,6 +89,14 @@ where $f_k(\mathbf{x})$ is the multivariate Gaussian density under the pooled wi
 **QDA**
 
 `predict.qda(model, newdata)` returns `$class` and `$posterior` using per-group quadratic discriminant functions. Because QDA does not produce linear discriminant axes, LD scores for visualization are obtained by projecting the preprocessed unknown data through a **companion LDA** model stored in the bundle (`bundle$lda_model`). This companion LDA is fitted on the same training data for visualization purposes only and does not influence classification.
+
+**Cluster (K-Means / PAM)**
+
+Clustering algorithms have no `predict()` generic. Instead, each unknown observation is assigned to the **nearest reference point** using the same distance metric the algorithm used during training:
+
+$$\hat{k} = \underset{k}{\arg\min}\; d(\mathbf{x}, \mathbf{c}_k)$$
+
+where $\mathbf{c}_k$ is the centroid (K-Means, `model$centers`) or medoid (PAM, `model$medoids`) of cluster $k$, and $d$ is Euclidean distance for K-Means or Manhattan distance for PAM — matching `bundle$cluster_metric`. This is the same nearest-centroid/medoid rule the algorithms use internally to assign training points, applied out-of-sample. There is no posterior probability; the assignment is a hard, deterministic label (`Cluster 1`, `Cluster 2`, …).
 
 </details>
 
@@ -182,6 +192,12 @@ Controls are in the **Plot Settings** sidebar tab and adapt based on analysis ty
 | **Group training data** | Groups training specimens by one or more metadata columns from the bundle |
 | **Use Convex Hull** | Replaces 95% confidence ellipses with convex hulls |
 | **Point Alpha / Point Size** | Fixed value or contribution-scaled opacity/size for training points |
+
+**Cluster controls**:
+
+| Control | Effect |
+|---------|--------|
+| **X Axis / Y Axis** | Selects which raw measurement columns to display (cluster overlays always plot in raw measurement space, not a reduced projection) |
 
 </details>
 

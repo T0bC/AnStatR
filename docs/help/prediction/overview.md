@@ -1,12 +1,12 @@
 #### Prediction
 
-Apply a previously trained PCA, LDA, QDA, or MDA model to new (unknown) specimens. The model bundle encodes all training decisions — the unknown data is preprocessed identically to the training data before prediction.
+Apply a previously trained PCA, LDA, QDA, MDA, or Cluster (K-Means/PAM) model to new (unknown) specimens. The model bundle encodes all training decisions — the unknown data is preprocessed identically to the training data before prediction.
 
 ##### Required Inputs
 
 Two files are required before running a prediction:
 
-- **Model bundle (.rds)** — exported from the PCA, LDA, QDA, or MDA tab. Upload via the **Upload** sidebar tab. The bundle summary card confirms the analysis type, number of training observations, and creation date after loading
+- **Model bundle (.rds)** — exported from the PCA, LDA, QDA, MDA, or Cluster tab. Upload via the **Upload** sidebar tab. The bundle summary card confirms the analysis type, number of training observations, and creation date after loading
 - **Unknown data (CSV or XLSX)** — the specimens you want to classify or project. Must contain **the same measurement columns** used during model training. Upload formats: CSV or Excel (`.xlsx`, first sheet)
 
 This applies identically whether the training model used a manually selected parameter set or the subset applied via the Statistics tab's **Apply recommended parameters** banner (see the Plotting module's parameter screening mode) — the bundle records whichever columns were selected at export time, and prediction aligns to those.
@@ -28,6 +28,7 @@ This applies identically whether the training model used a manually selected par
 | **LDA** | Predicted class + posterior probabilities + LD scores | Unknown triangles overlaid on LD Scores plot |
 | **MDA** | Predicted class + posterior probabilities + discriminant variates | Unknown triangles overlaid on LD Scores plot |
 | **QDA** | Predicted class + posterior probabilities + LD scores (companion LDA) | Unknown triangles overlaid on QDA decision boundary plot |
+| **Cluster (K-Means/PAM)** | Nearest cluster assignment (no posterior) | Unknown triangles overlaid on raw-space cluster biplot |
 
 Unknown samples are rendered as **filled triangles** (opaque); training samples remain as **circles** (semi-transparent). Hover over any unknown triangle to see its predicted class and axis coordinates.
 
