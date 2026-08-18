@@ -408,11 +408,15 @@ server <- function(id) {
 
       analysis_type <- bdl$analysis_type
       is_pca <- analysis_type == "pca"
+      is_cluster <- analysis_type == "cluster"
 
       # Dimension inputs differ by analysis type
       if (is_pca) {
         dim_x <- input$dim_x
         dim_y <- input$dim_y
+      } else if (is_cluster) {
+        dim_x <- input$clusterDimX
+        dim_y <- input$clusterDimY
       } else {
         dim_x <- input$ldDimX
         dim_y <- input$ldDimY
@@ -611,10 +615,11 @@ render_placeholder <- function(ns) {
           class = "small text-muted mt-2",
           paste(
             "Supports PCA projection, LDA, MDA,",
-            "and QDA classification. The model",
-            "bundle contains the trained model and",
-            "all preprocessing parameters needed",
-            "to predict on new data."
+            "QDA classification, and K-Means/PAM",
+            "cluster assignment. The model bundle",
+            "contains the trained model and all",
+            "preprocessing parameters needed to",
+            "predict on new data."
           )
         )
       )
