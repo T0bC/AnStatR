@@ -37,8 +37,8 @@ abstract: >-
   teaching contexts to support researchers at early qualification levels
   who want to start working with multivariate quantitative data but lack
   advanced programming experience.
-version: 2026.11
-date-released: 2026-05-29
+version: 2026.12
+date-released: 2026-08-18
 repository-code: "https://github.com/T0bC/AnStatR.git"
 license: GPL-3.0-or-later
 keywords:
