@@ -96,14 +96,21 @@ render_classification_results <- function(
     ))
   }
 
-  type_label <- toupper(
-    pred_result$analysis_type
-  )
+  header_label <- if (
+    pred_result$analysis_type == "cluster"
+  ) {
+    "Cluster Assignment Results"
+  } else {
+    paste0(
+      toupper(pred_result$analysis_type),
+      " Classification Results"
+    )
+  }
 
   shiny$tagList(
     shiny$tags$h6(
       bsicons$bs_icon("table", class = "me-1"),
-      paste0(type_label, " Classification Results")
+      header_label
     ),
     DT$DTOutput(ns("prediction_table")),
     shiny$tags$div(
