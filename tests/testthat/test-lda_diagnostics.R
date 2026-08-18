@@ -204,6 +204,45 @@ make_lda_result_2group <- function(seed = 42) {
   res$result
 }
 
+make_plsda_result <- function(seed = 123) {
+  set.seed(seed)
+  data <- data.frame(
+    species = rep(c("A", "B", "C"), each = 15),
+    site = rep(c("X", "Y", "Z"), 15),
+    m1 = c(
+      rnorm(15, mean = 0), rnorm(15, mean = 3),
+      rnorm(15, mean = 6)
+    ),
+    m2 = c(
+      rnorm(15, mean = 0), rnorm(15, mean = 2),
+      rnorm(15, mean = 4)
+    ),
+    m3 = rnorm(45),
+    stringsAsFactors = FALSE
+  )
+  res <- lda$run_plsda(
+    data, c("m1", "m2", "m3"), "species",
+    ncomp = 2, meta_cols = c("species", "site")
+  )
+  res$result
+}
+
+make_plsda_result_2group <- function(seed = 42) {
+  set.seed(seed)
+  data <- data.frame(
+    species = rep(c("A", "B"), each = 20),
+    site = rep(c("X", "Y"), 20),
+    m1 = c(rnorm(20, mean = 0), rnorm(20, mean = 4)),
+    m2 = c(rnorm(20, mean = 0), rnorm(20, mean = 2)),
+    stringsAsFactors = FALSE
+  )
+  res <- lda$run_plsda(
+    data, c("m1", "m2"), "species",
+    ncomp = 1, meta_cols = c("species", "site")
+  )
+  res$result
+}
+
 # =============================================================================
 # add_boundaries_overlay (2D)
 # =============================================================================
@@ -252,6 +291,56 @@ describe("add_boundaries_overlay", {
     expect_true(grepl("decision regions", sub))
     expect_true(grepl("per-group VC", sub))
   })
+
+  it("adds tile and contour layers for PLS-DA (k-NN grid)", {
+    plsda_res <- make_plsda_result()
+    base_res <- create_ld_plot(
+      plsda_res, dim_x = "Comp1", dim_y = "Comp2",
+      show_boundaries = FALSE
+    )
+    base_plot <- base_res$result
+    n_layers_before <- length(base_plot$layers)
+
+    p <- lda_diagnostics$add_boundaries_overlay(
+      base_plot, plsda_res, "Comp1", "Comp2",
+      grid_n = 20
+    )
+    expect_true(inherits(p, "gg"))
+    expect_true(length(p$layers) > n_layers_before)
+  })
+
+  it("works via create_ld_plot show_boundaries flag for sPLS-DA", {
+    set.seed(123)
+    data <- data.frame(
+      species = rep(c("A", "B", "C"), each = 15),
+      m1 = c(
+        rnorm(15, mean = 0), rnorm(15, mean = 3),
+        rnorm(15, mean = 6)
+      ),
+      m2 = c(
+        rnorm(15, mean = 0), rnorm(15, mean = 2),
+        rnorm(15, mean = 4)
+      ),
+      m3 = rnorm(45),
+      stringsAsFactors = FALSE
+    )
+    res <- lda$run_plsda(
+      data, c("m1", "m2", "m3"), "species",
+      ncomp = 2, sparse = TRUE, keep_x = c(2, 2)
+    )
+    splsda_res <- res$result
+
+    plot_res <- create_ld_plot(
+      splsda_res, dim_x = "Comp1", dim_y = "Comp2",
+      show_boundaries = TRUE
+    )
+    expect_true(plot_res$success)
+    expect_true(inherits(plot_res$result, "gg"))
+    expect_true(grepl(
+      "decision regions",
+      plot_res$result$labels$subtitle
+    ))
+  })
 })
 
 # =============================================================================
@@ -287,6 +376,29 @@ describe("compute_1d_boundary", {
     lda_res <- make_lda_result_2group()
     plot_res <- create_ld_plot(
       lda_res,
+      show_boundaries = TRUE
+    )
+    expect_true(plot_res$success)
+    expect_true(grepl(
+      "decision boundary",
+      plot_res$result$labels$subtitle
+    ))
+  })
+
+  it("returns a finite numeric scalar for a 2-group PLS-DA (k-NN)", {
+    plsda_res <- make_plsda_result_2group()
+    boundary <- lda_diagnostics$compute_1d_boundary(
+      plsda_res
+    )
+    expect_true(is.numeric(boundary))
+    expect_equal(length(boundary), 1)
+    expect_true(is.finite(boundary))
+  })
+
+  it("1D PLS-DA plot shows boundary via show_boundaries", {
+    plsda_res <- make_plsda_result_2group()
+    plot_res <- create_ld_plot(
+      plsda_res,
       show_boundaries = TRUE
     )
     expect_true(plot_res$success)
