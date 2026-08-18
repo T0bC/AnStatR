@@ -9,6 +9,8 @@ Configure your analysis in the **Data Selection** sidebar tab:
 - **Descriptive (metadata) columns** — Select columns like `SAMPLE_ID`, `SPECIES`, `SITE`, or `PERIOD` that describe your samples. These are not used in the PCA computation but enable the **Dimension-Metadata Correlation** plot and colorize biplots by group
 - **Measurement columns** — Select numeric variables to include in the PCA (minimum 2 required). Click **Select all** to quickly select all measurement columns
 
+If the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's parameter screening mode), an **Apply recommended parameters** banner appears above the measurement-column selector. Clicking it replaces the current selection with the parameters the Statistics tab identified as good group separators — you can still add or remove columns manually afterward.
+
 ##### Scaling and Preprocessing
 
 Choose a **Data Scaling** method to ensure fair contribution from all variables:

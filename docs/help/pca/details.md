@@ -20,6 +20,10 @@ Descriptive columns (e.g., `SAMPLE_ID`, `SPECIES`, `SITE`, `PERIOD`) serve two p
 
 The PCA computation itself ignores metadata; it operates purely on measurement columns.
 
+**Recommended parameters (parameter screening mode)**
+
+When the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's **Disable plots (parameter screening mode)**), an **Apply recommended parameters** banner appears above the measurement-column selector. It applies the union of parameters that ranked among the top group separators across all pairwise comparisons. This is purely a selection shortcut — clicking it calls the same column-selection mechanism as manual selection, so recommended and manually chosen columns are treated identically by the PCA computation and by the saved `.rds` bundle (see the **Prediction** module for how the bundle's `numeric_cols` are used to align new data). See the **Statistics** module's Details tab for how the ranking is computed.
+
 ##### Technical Specifications
 
 <details>
