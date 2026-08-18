@@ -20,7 +20,8 @@ box::use(
 #' @return Shiny tagList with formatted cluster display
 #' @export
 render_cluster_results <- function(cluster_result, ns,
-                                   cluster_summary = NULL) {
+                                   cluster_summary = NULL,
+                                   can_export_bundle = FALSE) {
   if (is.null(cluster_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
@@ -40,7 +41,7 @@ render_cluster_results <- function(cluster_result, ns,
     ),
     render_cluster_profile(cluster_summary),
     render_membership_placeholder(ns),
-    render_download_section(ns)
+    render_download_section(ns, can_export_bundle)
   )
 }
 
@@ -714,7 +715,35 @@ render_membership_dt <- function(md) {
   )
 }
 
-render_download_section <- function(ns) {
+render_download_section <- function(ns,
+                                    can_export_bundle = FALSE) {
+  rds_button <- if (can_export_bundle) {
+    shiny$tagList(
+      shiny$tags$a(
+        id = ns("download_cluster_rds"),
+        class = paste(
+          "btn btn-outline-secondary btn-sm",
+          "shiny-download-link"
+        ),
+        href = "",
+        target = "_blank",
+        download = NA,
+        bsicons$bs_icon(
+          "file-earmark-code", class = "me-1"
+        ),
+        "Download RDS (for Prediction)"
+      ),
+      shiny$tags$small(
+        class = "text-muted mt-1 d-block",
+        paste(
+          "RDS bundle for use in the Prediction tab",
+          "to classify new samples against these",
+          "clusters (nearest centroid/medoid)."
+        )
+      )
+    )
+  }
+
   shiny$tags$div(
     class = "mt-3",
     shiny$tags$h6(
@@ -722,23 +751,27 @@ render_download_section <- function(ns) {
       bsicons$bs_icon("download", class = "me-1"),
       "Download Results"
     ),
-    shiny$downloadButton(
-      ns("cluster_dl_excel"),
-      label = shiny$tags$span(
-        bsicons$bs_icon(
-          "file-earmark-excel", class = "me-1"
+    shiny$tags$div(
+      class = "d-flex flex-column gap-2 align-items-start",
+      shiny$downloadButton(
+        ns("cluster_dl_excel"),
+        label = shiny$tags$span(
+          bsicons$bs_icon(
+            "file-earmark-excel", class = "me-1"
+          ),
+          "Download Excel"
         ),
-        "Download Excel"
+        class = "btn btn-outline-primary btn-sm"
       ),
-      class = "btn btn-outline-primary btn-sm"
-    ),
-    shiny$tags$small(
-      class = "text-muted mt-1 d-block",
-      paste(
-        "Excel file with two sheets:",
-        "Membership (raw data + cluster assignments)",
-        "and Cluster Profile (per-cluster variable means)."
-      )
+      shiny$tags$small(
+        class = "text-muted d-block",
+        paste(
+          "Excel file with two sheets:",
+          "Membership (raw data + cluster assignments)",
+          "and Cluster Profile (per-cluster variable means)."
+        )
+      ),
+      rds_button
     )
   )
 }
