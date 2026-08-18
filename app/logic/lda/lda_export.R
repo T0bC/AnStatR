@@ -24,10 +24,15 @@ box::use(
 #' @param file Path to save the Excel file
 #' @param test_result Optional prediction result from
 #'   run_predict() for train/test split mode
+#' @param perf_result Optional list from run_plsda_perf()
+#'   (with $errors and $stability) — when present and
+#'   $stability is non-NULL, adds a Selected Variable
+#'   Stability sheet (sPLS-DA only)
 #' @return NULL (side effect: writes file)
 #' @export
 create_lda_excel <- function(lda_result, file,
-                             test_result = NULL) {
+                             test_result = NULL,
+                             perf_result = NULL) {
   wb <- openxlsx$createWorkbook()
   is_lda <- lda_result$analysis_type %in%
     c("lda", "mda", "plsda", "splsda")
@@ -96,6 +101,22 @@ create_lda_excel <- function(lda_result, file,
   }
 
   # ---------------------------------------------------------------
+  # Sheet 4a2: VIP Scores (PLS-DA/sPLS-DA only)
+  # ---------------------------------------------------------------
+  if (
+    lda_result$analysis_type %in% c("plsda", "splsda") &&
+    !is.null(lda_result$vip)
+  ) {
+    vip_df <- cbind(
+      Variable = rownames(lda_result$vip),
+      as.data.frame(round(lda_result$vip, 6))
+    )
+    rownames(vip_df) <- NULL
+    add_sheet(wb, "VIP Scores", vip_df)
+    sheet_count <- sheet_count + 1
+  }
+
+  # ---------------------------------------------------------------
   # Sheet 4b: Selected Variables (sPLS-DA only)
   # ---------------------------------------------------------------
   if (is_sparse && !is.null(lda_result$selected_variables)) {
@@ -114,6 +135,18 @@ create_lda_excel <- function(lda_result, file,
       add_sheet(wb, "Selected Variables", sel_df)
       sheet_count <- sheet_count + 1
     }
+  }
+
+  # ---------------------------------------------------------------
+  # Sheet 4c: Selected Variable Stability (sPLS-DA, if perf() run)
+  # ---------------------------------------------------------------
+  if (
+    is_sparse &&
+    !is.null(perf_result) &&
+    !is.null(perf_result$stability)
+  ) {
+    add_sheet(wb, "Selected Variable Stability", perf_result$stability)
+    sheet_count <- sheet_count + 1
   }
 
   # ---------------------------------------------------------------
