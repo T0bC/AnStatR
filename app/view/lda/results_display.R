@@ -149,6 +149,24 @@ render_lda_results <- function(lda_result, ns,
       )
   }
 
+  # 4b2. VIP Scores (PLS-DA/sPLS-DA only)
+  if (
+    lda_result$analysis_type %in% c("plsda", "splsda") &&
+    !is.null(lda_result$vip)
+  ) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "sort-numeric-down", class = "me-2"
+          ),
+          "VIP Scores"
+        ),
+        value = "vip_sub",
+        render_vip_table(lda_result$vip)
+      )
+  }
+
   # 4c. Selected Variables (sPLS-DA only)
   if (
     lda_result$analysis_type == "splsda" &&
@@ -509,6 +527,58 @@ render_scaling_table <- function(scaling) {
   )
   rownames(df) <- NULL
   make_dt(df, page_length = 10)
+}
+
+
+render_vip_table <- function(vip_df) {
+  df <- cbind(
+    Variable = rownames(vip_df),
+    as.data.frame(round(vip_df, 4))
+  )
+  rownames(df) <- NULL
+
+  # Sort by first component's VIP, descending
+  if (ncol(df) >= 2) {
+    df <- df[order(-df[[2]]), ]
+    rownames(df) <- NULL
+  }
+
+  dt <- make_dt(df, page_length = 10)
+  if (ncol(vip_df) >= 1) {
+    dt <- dt |>
+      DT$formatStyle(
+        colnames(vip_df)[1],
+        backgroundColor = DT$styleInterval(
+          c(1),
+          c("#6c757d40", "#19875440")
+        ),
+        fontWeight = "bold"
+      )
+  }
+
+  shiny$tagList(
+    dt,
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "Variable Importance in Projection (VIP): aggregates",
+        "each variable's contribution across all components,",
+        "weighted by the variance each component explains.",
+        "Unlike per-component loadings, VIP gives one",
+        "importance score per variable across the whole model.",
+        "Variables with VIP > 1 (highlighted) are considered",
+        "above-average contributors to the model's overall",
+        "group separation — the conventional threshold used",
+        "in the PLS-DA/sPLS-DA literature. For sPLS-DA, VIP",
+        "is computed on the same fitted model as the Selected",
+        "Variables list, so a variable with zero loading on",
+        "every component (never selected) will always show",
+        "VIP = 0 here; a high-VIP variable that is missing from",
+        "the Selected Variables list on a specific component",
+        "simply means it was selected on a different component."
+      )
+    )
+  )
 }
 
 
