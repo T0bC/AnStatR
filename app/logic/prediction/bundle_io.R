@@ -19,7 +19,9 @@ REQUIRED_FIELDS <- c(
 )
 
 #' Valid analysis types
-VALID_TYPES <- c("pca", "lda", "mda", "qda", "cluster")
+VALID_TYPES <- c(
+  "pca", "lda", "mda", "qda", "cluster", "plsda", "splsda"
+)
 
 #' Load and validate an RDS bundle
 #'
