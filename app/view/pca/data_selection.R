@@ -296,6 +296,9 @@ tab_server <- function(input, output, session,
   })
 
   # Update GroupBiplot choices from selected metaData (debounced)
+  # When metadata columns are selected and GroupBiplot has no
+  # selection yet, auto-select them so the biplot is colored and
+  # ellipses are drawn by default.
   debounced_meta <- shiny$reactive({
     m <- input$metaData
     if (is.null(m)) character(0) else m
@@ -304,10 +307,18 @@ tab_server <- function(input, output, session,
   shiny$observe({
     selected_meta <- debounced_meta()
     cur_grp <- shiny$isolate(input$GroupBiplot)
+    retained_grp <- cur_grp[cur_grp %in% selected_meta]
+    new_grp <- if (
+      length(retained_grp) == 0 && length(selected_meta) > 0
+    ) {
+      selected_meta
+    } else {
+      retained_grp
+    }
     shiny$updateSelectizeInput(
       session, "GroupBiplot",
       choices = selected_meta,
-      selected = cur_grp[cur_grp %in% selected_meta]
+      selected = new_grp
     )
   })
 }
