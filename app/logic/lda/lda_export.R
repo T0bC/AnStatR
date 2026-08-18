@@ -29,7 +29,9 @@ box::use(
 create_lda_excel <- function(lda_result, file,
                              test_result = NULL) {
   wb <- openxlsx$createWorkbook()
-  is_lda <- lda_result$analysis_type %in% c("lda", "mda")
+  is_lda <- lda_result$analysis_type %in%
+    c("lda", "mda", "plsda", "splsda")
+  is_sparse <- lda_result$analysis_type == "splsda"
   is_cv <- !is.null(lda_result$cv)
   sheet_count <- 0
 
@@ -81,7 +83,7 @@ create_lda_excel <- function(lda_result, file,
   }
 
   # ---------------------------------------------------------------
-  # Sheet 4: LD Coefficients (LDA and MDA)
+  # Sheet 4: LD Coefficients (LDA, MDA, PLS-DA/sPLS-DA loadings)
   # ---------------------------------------------------------------
   if (is_lda && !is.null(lda_result$scaling)) {
     scaling_df <- cbind(
@@ -91,6 +93,27 @@ create_lda_excel <- function(lda_result, file,
     rownames(scaling_df) <- NULL
     add_sheet(wb, "LD Coefficients", scaling_df)
     sheet_count <- sheet_count + 1
+  }
+
+  # ---------------------------------------------------------------
+  # Sheet 4b: Selected Variables (sPLS-DA only)
+  # ---------------------------------------------------------------
+  if (is_sparse && !is.null(lda_result$selected_variables)) {
+    sel <- lda_result$selected_variables
+    rows <- lapply(names(sel), function(comp) {
+      vars <- sel[[comp]]
+      if (length(vars) == 0) return(NULL)
+      data.frame(
+        Component = comp, Variable = vars,
+        stringsAsFactors = FALSE
+      )
+    })
+    sel_df <- do.call(rbind, rows)
+    if (!is.null(sel_df)) {
+      rownames(sel_df) <- NULL
+      add_sheet(wb, "Selected Variables", sel_df)
+      sheet_count <- sheet_count + 1
+    }
   }
 
   # ---------------------------------------------------------------
@@ -343,6 +366,12 @@ create_lda_bundle <- function(lda_result, raw_data,
     bundle$lda_scores <- lda_result$lda_scores
     bundle$lda_proportion_of_trace <-
       lda_result$lda_proportion_of_trace
+  }
+
+  # For sPLS-DA: include keepX and selected variables
+  if (analysis_type == "splsda") {
+    bundle$keep_x <- lda_result$keep_x
+    bundle$selected_variables <- lda_result$selected_variables
   }
 
   rhino$log$info(
