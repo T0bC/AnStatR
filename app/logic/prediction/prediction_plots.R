@@ -13,6 +13,7 @@ box::use(
   ],
   app/logic/pca/biplot[create_biplot],
   app/logic/pca/pca[build_pca_result, build_ind_meta],
+  app/logic/cluster/cluster_biplot[create_cluster_biplot],
 )
 
 # =============================================================================
@@ -91,6 +92,10 @@ create_prediction_overlay_plot <- function(
           bundle, prediction_result,
           unknown_data, dim_x, dim_y, meta_col,
           show_boundaries = show_boundaries
+        ),
+        cluster = build_cluster_overlay(
+          bundle, prediction_result,
+          unknown_data, dim_x, dim_y, meta_col
         ),
         stop(paste0(
           "Unsupported analysis type: '",
@@ -423,6 +428,95 @@ build_qda_overlay <- function(bundle, pred_result,
   p
 }
 
+
+#' Build Cluster overlay: delegate to create_cluster_biplot
+#' (raw mode) for the training base layer, then overlay
+#' unknowns as nearest-centroid/medoid assignments.
+build_cluster_overlay <- function(bundle, pred_result,
+                                  unknown_data, dim_x,
+                                  dim_y, meta_col) {
+  biplot_res <- create_cluster_biplot(
+    data = bundle$used_data,
+    measure_cols = bundle$numeric_cols,
+    clusters = bundle$cluster_labels,
+    meta_cols = bundle$meta_cols %||% character(0),
+    dim_x = dim_x,
+    dim_y = dim_y,
+    reduction_method = "raw",
+    show_title = FALSE
+  )
+
+  if (!biplot_res$success) {
+    stop(
+      biplot_res$error$message %||%
+      "Cluster biplot failed"
+    )
+  }
+
+  p <- biplot_res$result$plot
+
+  # Build unknown overlay data frame
+  unknown_scores <- pred_result$scores
+  unknown_df <- build_unknown_overlay_df(
+    unknown_scores, pred_result, unknown_data,
+    dim_x, dim_y, meta_col
+  )
+
+  # Layer unknown points (triangles) on top
+  p <- p +
+    ggiraph$geom_point_interactive(
+      data = unknown_df,
+      ggplot2$aes(
+        x = x, y = y,
+        tooltip = tooltip,
+        data_id = data_id
+      ),
+      shape = 24,
+      fill = "red",
+      color = "black",
+      stroke = 0.8,
+      size = 4,
+      alpha = 0.95
+    )
+
+  # Add unknown labels
+  train_y <- bundle$used_data[[dim_y]]
+  y_range <- diff(range(
+    c(unknown_df$y, train_y), na.rm = TRUE
+  ))
+  p <- p +
+    ggplot2$geom_text(
+      data = unknown_df,
+      ggplot2$aes(
+        x = x, y = y, label = label
+      ),
+      nudge_y = -y_range * 0.03,
+      size = 2.8,
+      color = "grey30",
+      fontface = "italic"
+    )
+
+  # Add title and subtitle
+  n_train <- nrow(bundle$used_data)
+  n_unknown <- nrow(unknown_df)
+  variant_label <- if (bundle$variant == "pam") {
+    "PAM"
+  } else {
+    "K-Means"
+  }
+  p <- p + ggplot2$ggtitle(
+    label = paste0(
+      variant_label, " Prediction — ",
+      dim_x, " vs ", dim_y
+    ),
+    subtitle = paste0(
+      n_train, " training + ",
+      n_unknown, " unknown samples"
+    )
+  )
+
+  p
+}
 
 #' Reconstruct a pca_result structure from a bundle
 #'
