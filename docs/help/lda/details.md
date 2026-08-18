@@ -110,6 +110,8 @@ Both are computed using the `max.dist` classification rule (assign to the class 
 
 **Note**: PLS-DA/sPLS-DA does not support Leave-one-out CV as a Validation option (unlike LDA/QDA/MDA) because a full model refit per left-out observation would be prohibitively slow at typical component/keepX settings; the perf() panel's repeated k-fold CV is the standard validation approach for this method family in the literature.
 
+**Selected Variable Stability (sPLS-DA only)**: below the error-rate table, a second table reports how often each selected variable was chosen across the CV folds/repeats (`mixOmics::perf()`'s `$features$stable` output). A variable selected in nearly every fold (frequency close to 1.0) is a robust, reproducible finding; a variable selected in only a few folds was likely chosen due to that fold's specific data split rather than a genuine, stable association with the groups. This is the direct empirical check for the caveat raised in the Selected Variables panel and the FAQ about selection instability at the margins — run this diagnostic before treating a borderline selected variable as a confident scientific conclusion.
+
 </details>
 
 <details>
@@ -275,6 +277,27 @@ For MDA, the coefficients describe the shared pooled discriminant space across a
 </details>
 
 <details>
+<summary><strong>VIP Scores (PLS-DA/sPLS-DA only)</strong></summary>
+
+*Shown for both PLS-DA and sPLS-DA model fits — the standard companion to Component Loadings for answering "which variables discriminate the groups?"*
+
+Variable Importance in Projection (VIP), computed via `mixOmics::vip()`, aggregates each variable's contribution **across all fitted components at once**, weighted by how much of the variance in group membership each component explains. This differs from the Component Loadings table, which reports one coefficient per variable *per component* — VIP instead gives a single importance ranking for the whole model.
+
+| VIP value | Interpretation |
+|-----------|---------------|
+| > 1 (highlighted green) | Above-average contributor to the model's overall group separation — the conventional threshold used in the PLS-DA/sPLS-DA literature |
+| ≈ 1 | Average importance |
+| < 1 | Below-average contributor |
+
+**Why VIP matters for plain PLS-DA specifically**: unlike sPLS-DA, plain PLS-DA never sets any loading to exactly zero — every variable contributes at least a little to every component, so the Component Loadings table alone cannot tell you which variables are negligible. VIP > 1 filtering is the standard way researchers narrow down a PLS-DA loadings table to a shortlist of variables worth reporting.
+
+**For sPLS-DA**: VIP is computed on the already-sparse fitted model, so a variable with zero loading on every component (never selected — see Selected Variables) will show VIP = 0. VIP still adds value here by aggregating a variable's importance across multiple components into one number, which the per-component Selected Variables list does not do.
+
+**Reading this table alongside Component Loadings and Selected Variables**: VIP tells you *how important* a variable is overall; Component Loadings tell you *which component(s)* and *in which direction* (sign); Selected Variables (sPLS-DA only) tells you *whether* sparse selection kept it at all. Use all three together rather than any single one in isolation.
+
+</details>
+
+<details>
 <summary><strong>Selected Variables (sPLS-DA only)</strong></summary>
 
 *Shown only for sPLS-DA model fits.*
@@ -428,7 +451,7 @@ Configure the **LD Scores Plot** (titled **Component Scores Plot** for PLS-DA/sP
 | **Dim.X / Dim.Y** | LD1, LD2, … (LDA/MDA), Comp1, Comp2, … (PLS-DA/sPLS-DA), or original variables (QDA) | Select which discriminant axes/components map to the plot axes |
 | **Dim.Z** | Same choices as X/Y | Reserved for future 3D discriminant plot |
 | **Show Assumption Diagnostics** | On/Off — hidden for PLS-DA/sPLS-DA | Overlays per-group (solid) and pooled within-group (dashed) covariance ellipses; if they match, the equal-covariance assumption holds. Not applicable to PLS-DA/sPLS-DA, which make no Gaussian equal-covariance assumption |
-| **Show Decision Boundaries** | On/Off (default On) | Shades the plotted space by predicted class region and draws boundary lines. For LDA, computed exactly from the fitted model; for MDA and PLS-DA/sPLS-DA, approximated via nearest-neighbour classification on the training scores in the selected 2D projection (mixOmics' own classification integrates information from all components in original-variable space, which cannot be reduced to a closed-form boundary in just two of them) |
+| **Show Decision Boundaries** | On/Off (default On) | Shades the plotted space by predicted class region and draws boundary lines. Computed exactly for LDA and QDA. For PLS-DA/sPLS-DA, computed exactly when plotting Comp1 vs Comp2 — the same `max.dist` classification rule mixOmics uses internally (`predict()`/`background.predict()`), evaluated directly in component space; for any other component pair, or for MDA, approximated via nearest-neighbour classification on the training scores (mixOmics' own classification integrates information from all components in original-variable space, which cannot be reduced to a closed-form boundary outside the fitted Comp1/Comp2 pair) |
 | **Width / Height (cm)** | Numeric | Export dimensions for SVG and PNG downloads |
 
 The **Variable Contributions** jitter plot (visible when discriminant coefficients or component loadings are available) displays the absolute coefficient/loading for each variable across all axes. Variables with consistently large values are the primary drivers of group separation.
