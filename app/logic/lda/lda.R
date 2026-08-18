@@ -1,4 +1,5 @@
 box::use(
+  mixOmics,
   rhino,
 )
 
@@ -187,22 +188,26 @@ validate_inputs <- function(columns, data, grouping_col,
     }
   }
 
-  # Warn if any group has fewer observations than variables (LDA/MDA)
-  small_groups <- names(group_counts)[group_counts < p]
-  if (length(small_groups) > 0) {
-    warn_msg <- paste0(
-      "Some groups have fewer observations than ",
-      "variables (n < p = ", p, "): ",
-      paste(
-        small_groups,
-        paste0("(n=", group_counts[small_groups], ")"),
-        collapse = ", "
-      ),
-      ". LDA may fail or overfit. Consider using ",
-      "PCA scores as input to reduce dimensionality."
-    )
-    rhino$log$warn("LDA: {warn_msg}")
-    warnings <- c(warnings, warn_msg)
+  # Warn if any group has fewer observations than variables (LDA/MDA).
+  # PLS-DA/sPLS-DA are designed for n < p and skip this warning.
+  if (!analysis_type %in% c("plsda", "splsda")) {
+    small_groups <- names(group_counts)[group_counts < p]
+    if (length(small_groups) > 0) {
+      warn_msg <- paste0(
+        "Some groups have fewer observations than ",
+        "variables (n < p = ", p, "): ",
+        paste(
+          small_groups,
+          paste0("(n=", group_counts[small_groups], ")"),
+          collapse = ", "
+        ),
+        ". LDA may fail or overfit. Consider using ",
+        "PCA scores as input, or switch to PLS-DA/sPLS-DA ",
+        "which are designed for n < p data."
+      )
+      rhino$log$warn("LDA: {warn_msg}")
+      warnings <- c(warnings, warn_msg)
+    }
   }
 
   rhino$log$info(
@@ -394,6 +399,181 @@ run_mda <- function(data, columns, grouping_col,
 }
 
 
+#' Run PLS-DA or sparse PLS-DA
+#'
+#' Calls mixOmics::plsda() or mixOmics::splsda() on the
+#' supplied data. Designed for n < p (more variables than
+#' specimens) and collinear predictors, unlike LDA/QDA/MDA.
+#' Does not support cross-validated (CV=TRUE) fitting mode;
+#' use run_plsda_perf() separately for component/keepX
+#' diagnostics via repeated k-fold CV.
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#' @param ncomp Integer, number of components to compute
+#' @param sparse Logical, TRUE for sPLS-DA (variable selection),
+#'   FALSE for standard PLS-DA
+#' @param keep_x Integer vector of length ncomp, number of
+#'   variables to keep per component (sPLS-DA only)
+#' @param scale Logical, scale variables to unit variance
+#'   before fitting (mixOmics internal scaling)
+#' @param meta_cols Character vector of metadata column names
+#' @return List with $success, $result or $error
+#' @export
+run_plsda <- function(data, columns, grouping_col,
+                      ncomp, sparse = FALSE,
+                      keep_x = NULL, scale = TRUE,
+                      meta_cols = character(0)) {
+  error_handling$safe_execute(
+    {
+      grouping <- droplevels(as.factor(data[[grouping_col]]))
+      x_mat <- as.matrix(data[, columns, drop = FALSE])
+
+      rhino$log$info(
+        "PLS-DA: running mixOmics::",
+        "{if (sparse) 'splsda' else 'plsda'}() — ",
+        "{length(columns)} vars, {nlevels(grouping)}",
+        " groups, ncomp={ncomp}, sparse={sparse}"
+      )
+
+      model <- if (sparse) {
+        mixOmics$splsda(
+          X = x_mat, Y = grouping, ncomp = ncomp,
+          keepX = keep_x, scale = scale
+        )
+      } else {
+        mixOmics$plsda(
+          X = x_mat, Y = grouping, ncomp = ncomp,
+          scale = scale
+        )
+      }
+
+      build_plsda_result(
+        model, data, columns, grouping_col,
+        meta_cols, sparse, keep_x
+      )
+    },
+    operation_name = if (sparse) "sPLS-DA" else "PLS-DA",
+    error_parser = lda_error_parser
+  )
+}
+
+
+#' Diagnose PLS-DA/sPLS-DA component count via repeated CV
+#'
+#' Wraps mixOmics::perf() to estimate classification error
+#' rate (overall + balanced error rate, BER) per component
+#' via repeated k-fold cross-validation. Used to justify the
+#' chosen number of components, independent from the main
+#' fit's validation setting.
+#'
+#' @param plsda_result The $result from run_plsda() (must
+#'   contain a fitted $model, i.e. not already CV-only)
+#' @param folds Integer, number of CV folds
+#' @param repeats Integer, number of repeats of the CV scheme
+#' @return List with $success, $result (data.frame with
+#'   Component, Overall Error, BER, using max.dist) or $error
+#' @export
+run_plsda_perf <- function(plsda_result, folds = 5,
+                           repeats = 10) {
+  error_handling$safe_execute(
+    {
+      model <- plsda_result$model
+      if (is.null(model)) {
+        stop("No fitted model available for CV diagnostics.")
+      }
+
+      rhino$log$info(
+        "PLS-DA: running perf() — folds={folds},",
+        " repeats={repeats}"
+      )
+
+      perf_res <- mixOmics$perf(
+        model, validation = "Mfold", folds = folds,
+        nrepeat = repeats, progressBar = FALSE
+      )
+
+      overall <- perf_res$error.rate$overall
+      ber <- perf_res$error.rate$BER
+      n_comp <- nrow(overall)
+
+      df <- data.frame(
+        Component = paste0("Comp", seq_len(n_comp)),
+        `Overall Error` = round(overall[, "max.dist"], 4),
+        BER = round(ber[, "max.dist"], 4),
+        check.names = FALSE
+      )
+      rownames(df) <- NULL
+      df
+    },
+    operation_name = "PLS-DA Component Diagnostics",
+    error_parser = lda_error_parser
+  )
+}
+
+
+#' Auto-tune sPLS-DA keepX per component via CV grid search
+#'
+#' Wraps mixOmics::tune.splsda() over a candidate grid of
+#' keepX values, selecting the value per component that
+#' minimises cross-validated balanced error rate (BER).
+#' This is the slow, opt-in counterpart to manually setting
+#' keepX in the UI.
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param grouping_col Character, name of the grouping column
+#' @param ncomp Integer, number of components
+#' @param test_keep_x Integer vector, candidate keepX values
+#'   to test (default a modest grid capped by column count)
+#' @param folds Integer, number of CV folds
+#' @param repeats Integer, number of CV repeats
+#' @return List with $success, $result (named integer vector,
+#'   one keepX per component) or $error
+#' @export
+run_plsda_tune_keepx <- function(data, columns, grouping_col,
+                                 ncomp, test_keep_x = NULL,
+                                 folds = 5, repeats = 10) {
+  error_handling$safe_execute(
+    {
+      grouping <- droplevels(as.factor(data[[grouping_col]]))
+      x_mat <- as.matrix(data[, columns, drop = FALSE])
+      p <- length(columns)
+
+      candidates <- test_keep_x %||% unique(pmin(
+        p, c(5, 10, 15, 20, 30)
+      ))
+
+      rhino$log$info(
+        "sPLS-DA: tuning keepX — ncomp={ncomp},",
+        " candidates=[{paste(candidates, collapse=',')}],",
+        " folds={folds}, repeats={repeats}"
+      )
+
+      tune_res <- mixOmics$tune.splsda(
+        X = x_mat, Y = grouping, ncomp = ncomp,
+        test.keepX = candidates,
+        validation = "Mfold", folds = folds,
+        nrepeat = repeats, progressBar = FALSE
+      )
+
+      keep_x <- as.integer(tune_res$choice.keepX[seq_len(ncomp)])
+      names(keep_x) <- paste0("Comp", seq_len(ncomp))
+
+      rhino$log$info(
+        "sPLS-DA: tuning complete — ",
+        "keepX=[{paste(keep_x, collapse=',')}]"
+      )
+
+      keep_x
+    },
+    operation_name = "sPLS-DA keepX Tuning",
+    error_parser = lda_error_parser
+  )
+}
+
+
 #' Predict on new data using a fitted LDA/QDA model
 #'
 #' Takes the result from run_lda()/run_qda() (with cv=FALSE)
@@ -434,8 +614,20 @@ run_predict <- function(lda_result, test_data, columns,
       )
 
       is_mda <- lda_result$analysis_type == "mda"
+      is_plsda <- lda_result$analysis_type %in%
+        c("plsda", "splsda")
 
-      if (is_mda) {
+      if (is_plsda) {
+        pred <- stats::predict(
+          model, as.matrix(numeric_test)
+        )
+        n_comp <- ncol(pred$variates)
+        pred_class <- pred$class$max.dist[, n_comp]
+        pred_post <- as.data.frame(
+          pred$predict[, , n_comp]
+        )
+        pred_scores <- pred$variates
+      } else if (is_mda) {
         # MDA: predict returns factor directly
         pred_class <- stats::predict(
           model, numeric_test
@@ -469,12 +661,17 @@ run_predict <- function(lda_result, test_data, columns,
         meta = meta
       )
 
-      # LD scores (LDA and MDA, not QDA)
+      # LD/Component scores (LDA, MDA, PLS-DA/sPLS-DA; not QDA)
       if (!is.null(pred_scores)) {
         scores_df <- as.data.frame(pred_scores)
         if (is_mda && ncol(scores_df) > 0) {
           colnames(scores_df) <- paste0(
             "LD", seq_len(ncol(scores_df))
+          )
+        }
+        if (is_plsda && ncol(scores_df) > 0) {
+          colnames(scores_df) <- paste0(
+            "Comp", seq_len(ncol(scores_df))
           )
         }
         result$scores <- scores_df
@@ -680,6 +877,99 @@ build_lda_result <- function(obj, data, columns,
       "{round(result$confusion$accuracy * 100, 1)}%"
     )
   }
+
+  result
+}
+
+
+build_plsda_result <- function(model, data, columns,
+                               grouping_col, meta_cols,
+                               sparse, keep_x) {
+  grouping <- as.factor(data[[grouping_col]])
+  n <- nrow(data)
+  p <- length(columns)
+  n_groups <- nlevels(grouping)
+  ncomp <- model$ncomp
+  comp_names <- paste0("Comp", seq_len(ncomp))
+
+  meta <- if (length(meta_cols) > 0) {
+    data[, meta_cols, drop = FALSE]
+  } else {
+    data.frame(Row = seq_len(n))
+  }
+
+  # Group means (parity with LDA's Group Means table)
+  numeric_data <- data[, columns, drop = FALSE]
+  means <- as.data.frame(
+    do.call(rbind, lapply(split(numeric_data, grouping), colMeans))
+  )
+
+  # Component scores
+  scores <- as.data.frame(model$variates$X)
+  colnames(scores) <- comp_names
+
+  # Component loadings (used by lda_var_contrib.R adapter,
+  # analogous to LDA's $scaling)
+  scaling <- as.data.frame(model$loadings$X)
+  colnames(scaling) <- comp_names
+
+  # Explained variance per component -> same LD/Proportion/
+  # Cumulative shape ld_plot.R's axis_label() expects
+  prop_var <- as.numeric(model$prop_expl_var$X)
+  proportion_of_trace <- data.frame(
+    LD = comp_names,
+    Proportion = round(prop_var, 4),
+    Cumulative = round(cumsum(prop_var), 4),
+    check.names = FALSE
+  )
+
+  # Resubstitution prediction (training data through its own model)
+  pred_all <- stats::predict(model, as.matrix(numeric_data))
+  pred_class <- pred_all$class$max.dist[, ncomp]
+  pred_post <- as.data.frame(pred_all$predict[, , ncomp])
+
+  result <- list(
+    analysis_type = if (sparse) "splsda" else "plsda",
+    grouping_col = grouping_col,
+    columns = columns,
+    n = n,
+    p = p,
+    n_groups = n_groups,
+    group_levels = levels(grouping),
+    prior = NULL,
+    means = means,
+    meta = meta,
+    model = model,
+    ncomp = ncomp,
+    sparse = sparse,
+    scores = scores,
+    scaling = scaling,
+    proportion_of_trace = proportion_of_trace,
+    predicted_class = factor(pred_class, levels = levels(grouping)),
+    posterior = pred_post
+  )
+
+  result$confusion <- build_confusion_stats(
+    grouping, result$predicted_class
+  )
+
+  if (sparse) {
+    result$keep_x <- keep_x
+    result$selected_variables <- lapply(
+      seq_len(ncomp),
+      function(i) {
+        loadings_i <- scaling[[i]]
+        rownames(scaling)[loadings_i != 0]
+      }
+    )
+    names(result$selected_variables) <- comp_names
+  }
+
+  rhino$log$info(
+    "{if (sparse) 'sPLS-DA' else 'PLS-DA'}: model fit ",
+    "complete — resubstitution accuracy ",
+    "{round(result$confusion$accuracy * 100, 1)}%"
+  )
 
   result
 }
@@ -992,6 +1282,17 @@ build_confusion_stats <- function(true_labels,
 lda_error_parser <- function(error_msg,
                              operation_name = "LDA") {
   if (grepl(
+    "keepX",
+    error_msg, ignore.case = FALSE
+  )) {
+    paste0(
+      operation_name,
+      ": Invalid 'keep variables' setting.",
+      " Each component's keepX value must be between 1",
+      " and the number of measurement columns.",
+      " Reduce keepX or select more measurement columns."
+    )
+  } else if (grepl(
     "singular|rank deficien",
     error_msg, ignore.case = TRUE
   )) {
