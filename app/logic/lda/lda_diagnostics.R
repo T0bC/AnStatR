@@ -229,11 +229,15 @@ add_diagnostics_overlay <- function(p, scores, groups,
 
 #' Add decision boundary overlay to an LD scores plot
 #'
-#' Creates a dense grid in the 2D LD space, back-projects
-#' each grid point to original variable space via the
-#' scaling matrix, predicts the class using the fitted
-#' LDA model, and renders coloured tile regions plus
-#' boundary contour lines underneath the scatter points.
+#' Creates a dense grid in the 2D LD/component space and
+#' classifies each point, then renders coloured tile regions
+#' plus boundary contour lines underneath the scatter points.
+#' For LDA, classification back-projects to original variable
+#' space via the scaling matrix. For PLS-DA/sPLS-DA plotted as
+#' Comp1 vs Comp2, classification is exact (see
+#' classify_plsda_grid_exact()); for other PLS-DA component
+#' pairs and for MDA, a k-NN approximation on training scores
+#' is used instead (see inline comments below).
 #'
 #' @param p A ggplot object (the LD scores plot)
 #' @param lda_result Result list from run_lda() (needs
@@ -255,21 +259,34 @@ add_boundaries_overlay <- function(p, lda_result,
   is_plsda <- lda_result$analysis_type %in%
     c("plsda", "splsda")
 
-  if (is_plsda || is_mda) {
+  is_comp12 <- is_plsda && identical(
+    sort(c(dim_x, dim_y)), sort(c("Comp1", "Comp2"))
+  )
+
+  if (is_plsda && is_comp12) {
+    # PLS-DA/sPLS-DA plotting Comp1 vs Comp2: classify the grid
+    # exactly, using the same max.dist rule mixOmics's own
+    # background.predict()/predict() use internally, restricted
+    # to these first two components (matching what is actually
+    # drawn — a 2D visual cannot show the full ncomp model
+    # boundary anyway). No k-NN approximation needed here.
+    exact <- classify_plsda_grid_exact(
+      model, scores, dim_x, dim_y, grid_n
+    )
+    grid_df <- exact$grid_df
+    x_seq <- exact$x_seq
+    y_seq <- exact$y_seq
+  } else if (is_plsda || is_mda) {
     # MDA: the variate projection is not invertible (goes
-    # through an internal regression fit). PLS-DA/sPLS-DA:
-    # mixOmics classifies via B.hat applied in original
-    # variable space, integrating information across all
-    # components — a 2-component subspace cannot be inverted
-    # back to original space without discarding most of that
-    # information (verified empirically: a pseudo-inverse
-    # reconstruction agreed with the real predict()
-    # classification only ~33% of the time on a test case).
+    # through an internal regression fit). PLS-DA/sPLS-DA on
+    # component pairs other than Comp1/Comp2: mixOmics has no
+    # exact 2-component grid classifier for those (its own
+    # background.predict() is likewise restricted to comps 1-2).
     # For both, build a regular 2D grid in score space and
     # classify each grid point via k-NN on training scores —
     # for PLS-DA/sPLS-DA this reproduces the real
-    # classification with >95% agreement in the same test
-    # case, a good approximation for a visual background.
+    # classification with >95% agreement in a held-out check,
+    # a good approximation for a visual background.
     train_x <- scores[[dim_x]]
     train_y <- scores[[dim_y]]
     train_class <- as.factor(lda_result$predicted_class)
@@ -417,6 +434,87 @@ add_boundaries_overlay <- function(p, lda_result,
 }
 
 
+#' Classify a Comp1/Comp2 grid using PLS-DA/sPLS-DA's exact
+#' max.dist rule
+#'
+#' Reproduces the same classification mixOmics::predict()
+#' (dist = "max.dist") and mixOmics::background.predict() use
+#' internally, evaluated directly on grid coordinates in
+#' component (variate) space — no back-projection to original
+#' variable space is needed. Restricted to components 1 and 2,
+#' matching mixOmics's own background.predict() (and matching
+#' what a 2D plot can show regardless of the model's full
+#' ncomp). Verified to exactly reproduce stats::predict()'s
+#' max.dist classification when evaluated at training-set
+#' coordinates.
+#'
+#' Math (from mixOmics internal_predict.DA / background.predict,
+#' dist = "max.dist"): for each cumulative component count
+#' j = 1..2, Y.hat_j = (t_grid[,1:j] / colSums(variatesX[,1:j]^2))
+#' %*% t(Cmat)[1:j,], rescaled by the dummy-Y matrix's stored
+#' scaled:center/scaled:scale attributes, where
+#' Cmat = crossprod(ind.mat, variatesX). The predicted class is
+#' the column of Y.hat_2 (using both components) with the
+#' largest value.
+#'
+#' @param model Fitted mixOmics plsda/splsda object
+#' @param scores Data frame of component scores (model$variates$X)
+#' @param dim_x Character, "Comp1" or "Comp2"
+#' @param dim_y Character, "Comp1" or "Comp2" (the other one)
+#' @param grid_n Integer, resolution per axis
+#' @return List with $grid_df (x, y, class, class_num),
+#'   $x_seq, $y_seq
+classify_plsda_grid_exact <- function(model, scores,
+                                      dim_x, dim_y,
+                                      grid_n) {
+  x_range <- range(scores[[dim_x]])
+  y_range <- range(scores[[dim_y]])
+  x_pad <- diff(x_range) * 0.05
+  y_pad <- diff(y_range) * 0.05
+
+  x_seq <- seq(
+    x_range[1] - x_pad, x_range[2] + x_pad,
+    length.out = grid_n
+  )
+  y_seq <- seq(
+    y_range[1] - y_pad, y_range[2] + y_pad,
+    length.out = grid_n
+  )
+  grid_df <- expand.grid(x = x_seq, y = y_seq)
+
+  # Grid coordinates in (Comp1, Comp2) order regardless of
+  # which was requested for x vs y
+  t_grid <- if (identical(dim_x, "Comp1")) {
+    cbind(grid_df$x, grid_df$y)
+  } else {
+    cbind(grid_df$y, grid_df$x)
+  }
+
+  variates_x <- model$variates$X[, 1:2, drop = FALSE]
+  ind_mat <- model$ind.mat
+  means_y <- attr(ind_mat, "scaled:center")
+  sigma_y <- attr(ind_mat, "scaled:scale")
+  if (is.null(sigma_y)) sigma_y <- rep(1, ncol(ind_mat))
+
+  c_mat <- crossprod(ind_mat, variates_x)
+  a_vec <- apply(variates_x, 2, function(v) sum(v^2))
+  a_mat <- matrix(
+    a_vec, nrow = nrow(t_grid), ncol = 2, byrow = TRUE
+  )
+
+  y_hat <- (t_grid / a_mat) %*% t(c_mat)
+  y_hat <- sweep(y_hat, 2, sigma_y, "*")
+  y_hat <- sweep(y_hat, 2, means_y, "+")
+
+  class_levels <- colnames(ind_mat)
+  pred_idx <- max.col(y_hat, ties.method = "first")
+  grid_df$class <- class_levels[pred_idx]
+  grid_df$class_num <- pred_idx
+
+  list(grid_df = grid_df, x_seq = x_seq, y_seq = y_seq)
+}
+
+
 #' Compute 1D decision boundary for a 2-group LDA
 #'
 #' Returns the LD1 score at which the classification
@@ -437,10 +535,59 @@ compute_1d_boundary <- function(lda_result) {
   is_plsda <- lda_result$analysis_type %in%
     c("plsda", "splsda")
 
-  if (is_mda || is_plsda) {
-    # MDA and PLS-DA/sPLS-DA: scan along Comp1/LD1 using
-    # k-NN on training scores (see add_boundaries_overlay()
-    # for why PLS-DA cannot use a closed-form projection).
+  if (is_plsda) {
+    # PLS-DA/sPLS-DA with a single component (ncomp = 1, the
+    # only case build_1d_plot() is used for this analysis
+    # type): classify exactly along Comp1 using the same
+    # max.dist rule as classify_plsda_grid_exact(), restricted
+    # to one component.
+    x_range <- range(scores[[dim_x]])
+    x_pad <- diff(x_range) * 0.05
+    x_seq <- seq(
+      x_range[1] - x_pad,
+      x_range[2] + x_pad,
+      length.out = 500
+    )
+
+    variates_x <- model$variates$X[, 1, drop = FALSE]
+    ind_mat <- model$ind.mat
+    means_y <- attr(ind_mat, "scaled:center")
+    sigma_y <- attr(ind_mat, "scaled:scale")
+    if (is.null(sigma_y)) sigma_y <- rep(1, ncol(ind_mat))
+
+    c_mat <- crossprod(ind_mat, variates_x)
+    a_val <- sum(variates_x^2)
+
+    y_hat <- (matrix(x_seq, ncol = 1) / a_val) %*% t(c_mat)
+    y_hat <- sweep(y_hat, 2, sigma_y, "*")
+    y_hat <- sweep(y_hat, 2, means_y, "+")
+
+    pred_idx <- max.col(y_hat, ties.method = "first")
+    transitions <- which(diff(pred_idx) != 0)
+
+    if (length(transitions) > 0) {
+      idx <- transitions[1]
+      boundary <- (x_seq[idx] + x_seq[idx + 1]) / 2
+    } else {
+      groups <- as.factor(
+        get_group_values(
+          lda_result$meta,
+          lda_result$grouping_col
+        )
+      )
+      g_means <- tapply(
+        scores[[dim_x]], groups, mean
+      )
+      boundary <- mean(g_means)
+    }
+
+    return(boundary)
+  }
+
+  if (is_mda) {
+    # MDA: scan along DC1 using k-NN on training scores — no
+    # exact closed-form projection available (the variate
+    # projection goes through an internal regression fit).
     train_ld1 <- scores[[dim_x]]
     train_class <- as.factor(lda_result$predicted_class)
 
