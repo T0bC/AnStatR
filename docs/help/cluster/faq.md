@@ -1,6 +1,22 @@
 #### Frequently Asked Questions
 
 <details>
+<summary>What does the "Apply recommended parameters" banner do, and why don't I see it?</summary>
+
+It appears when the **Statistics** tab has computed a parameter screening ranking (enabled via the Plotting tab's **Disable plots (parameter screening mode)** checkbox, followed by **Compute Statistics**) **and** the cluster data source is set to **raw measurements**. Clicking it replaces the current measurement-column selection with the parameters that ranked among the top group separators. You can still add or remove columns manually afterward.
+
+The banner does not appear when clustering on **PCA Scores** or **LDA Scores** — recommended parameters are raw measurement column names (e.g., `Asfc`, `epLsar`) and do not correspond to score dimensions (`Dim.1`, `LD1`, …). Switch the data source to raw measurements to use the recommendation.
+
+</details>
+
+<details>
+<summary>Can I export a Cluster analysis for use in the Prediction module, the way I can with PCA or LDA?</summary>
+
+Not currently. The Cluster module has no `.rds`/`.rda` export — this is independent of whether the measurement columns were selected manually or via the recommended-parameters shortcut. The **Prediction** module only accepts model bundles exported from **PCA**, **LDA**, **QDA**, or **MDA**. If you need to project unknown specimens using a cluster-like grouping, run PCA or LDA on the same parameter set (recommended or manual) and export that bundle instead.
+
+</details>
+
+<details>
 <summary>Which clustering algorithm should I use for my data?</summary>
 
 The right choice depends on the expected shape and size of your clusters:

@@ -9,6 +9,8 @@ Configure columns in the **Data Selection** sidebar tab:
 - **Descriptive (metadata) columns** — Select columns such as `SAMPLE_ID`, `SPECIES`, `SITE`, or `TOOTH_TYPE` that identify your specimens. These columns are **not** used in the clustering computation but are preserved in the membership table, carried into the heatmap row annotations, and included in the Excel download. Selecting the right metadata columns is essential for interpreting which specimens ended up in which cluster.
 - **Measurement columns** — Numeric variables included in the clustering. Click **Select all** to include all detected measurement columns. Rows with missing values in any selected measurement column are automatically excluded. Do **not** include categorical or text columns in the measurement selection — only pure numeric measurements belong there.
 
+If the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's parameter screening mode) and the data source is **raw measurements**, an **Apply recommended parameters** banner appears above the measurement-column selector. Clicking it replaces the current selection with the parameters the Statistics tab identified as good group separators. The banner is not shown when clustering on PCA or LDA scores, since recommendations are raw measurement column names and do not map onto score dimensions.
+
 **Data source alternatives** — Instead of raw measurements, you can cluster on:
 
 - **PCA Scores** — the individual coordinate scores from a prior PCA run (`Dim.1`, `Dim.2`, …). Select enough dimensions to cover ≥ 90% cumulative variance. Scaling is skipped automatically (PCA scores are already mean-centred)

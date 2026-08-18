@@ -23,6 +23,12 @@ Metadata columns are passed through untouched — they do not influence distance
 
 Select all columns that carry specimen identity, provenance, or group information (e.g., `SAMPLE_ID`, `SPECIES`, `SITE`, `PERIOD`). Omitting them does not affect cluster computation but makes results harder to interpret and export.
 
+**Recommended parameters (parameter screening mode)**
+
+When the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's **Disable plots (parameter screening mode)**) and the cluster data source is set to **raw measurements**, an **Apply recommended parameters** banner appears above the measurement-column selector. It applies the union of parameters that ranked among the top group separators across all pairwise comparisons in Statistics. The banner is hidden when the data source is PCA scores or LDA scores, since recommended parameters are raw measurement column names and have no meaning as score dimensions. See the **Statistics** module's Details tab for how the ranking is computed.
+
+Note: unlike PCA and LDA, the Cluster module has no `.rds`/`.rda` export. Cluster results — whether computed on manually selected or recommended parameters — cannot currently be loaded into the **Prediction** module; only PCA, LDA, QDA, and MDA model bundles are supported there.
+
 ##### Technical Specifications
 
 <details>
