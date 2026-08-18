@@ -120,6 +120,8 @@ predict_unknown <- function(bundle, preprocessed_data) {
         cluster = predict_cluster(
           bundle, numeric_data
         ),
+        plsda = predict_plsda(model, numeric_data),
+        splsda = predict_plsda(model, numeric_data),
         stop(paste0(
           "Unsupported analysis type: '",
           analysis_type, "'"
@@ -228,6 +230,24 @@ predict_qda <- function(model, numeric_data, bundle) {
   }
 
   result
+}
+
+predict_plsda <- function(model, numeric_data) {
+  pred <- stats$predict(model, as.matrix(numeric_data))
+  n_comp <- ncol(pred$variates)
+
+  scores_df <- as.data.frame(pred$variates)
+  if (ncol(scores_df) > 0) {
+    colnames(scores_df) <- paste0(
+      "Comp", seq_len(ncol(scores_df))
+    )
+  }
+
+  list(
+    predicted_class = pred$class$max.dist[, n_comp],
+    posterior = as.data.frame(pred$predict[, , n_comp]),
+    scores = scores_df
+  )
 }
 
 predict_cluster <- function(bundle, numeric_data) {
