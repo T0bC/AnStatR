@@ -43,6 +43,13 @@ tab_ui <- function(ns) {
       ),
       build_pca_controls_ui(ns)
     ),
+    # Cluster controls panel
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("plot_mode"), "'] === 'cluster'"
+      ),
+      build_cluster_controls_ui(ns)
+    ),
     # Label column selector (shared across all types)
     shiny$uiOutput(ns("label_selector")),
     shiny$tags$hr(),
@@ -137,6 +144,11 @@ tab_server <- function(input, output, session,
         session, "plot_mode", value = "lda"
       )
       update_lda_choices(session, bundle)
+    } else if (analysis_type == "cluster") {
+      shiny$updateTextInput(
+        session, "plot_mode", value = "cluster"
+      )
+      update_cluster_choices(session, bundle)
     }
   }, ignoreNULL = TRUE)
 
@@ -404,6 +416,58 @@ build_pca_controls_ui <- function(ns) {
   )
 }
 
+#' Build the Cluster controls panel (static)
+build_cluster_controls_ui <- function(ns) {
+  shiny$tagList(
+    shiny$h6(
+      class = "text-muted mb-2",
+      "Cluster Plotting Controls"
+    ),
+    # Dimension selection (raw measurement columns)
+    shiny$fluidRow(
+      shiny$column(
+        6,
+        shiny$selectizeInput(
+          inputId = ns("clusterDimX"),
+          label = shiny$tags$span(
+            "X Axis ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle", class = "text-muted"
+              ),
+              paste(
+                "Select the measurement column",
+                "for the x-axis."
+              )
+            )
+          ),
+          choices = NULL
+        )
+      ),
+      shiny$column(
+        6,
+        shiny$selectizeInput(
+          inputId = ns("clusterDimY"),
+          label = shiny$tags$span(
+            "Y Axis ",
+            bslib$tooltip(
+              bsicons$bs_icon(
+                "info-circle", class = "text-muted"
+              ),
+              paste(
+                "Select the measurement column",
+                "for the y-axis."
+              )
+            )
+          ),
+          choices = NULL
+        )
+      )
+    ),
+    shiny$tags$hr()
+  )
+}
+
 
 # =============================================================================
 # Server helpers for updating choices
@@ -515,6 +579,21 @@ update_pca_choices <- function(session, bundle) {
       choices = available
     )
   }
+}
+
+#' Update Cluster dimension choices
+update_cluster_choices <- function(session, bundle) {
+  dims <- bundle$numeric_cols
+  shiny$updateSelectizeInput(
+    session, "clusterDimX",
+    choices = dims,
+    selected = dims[1]
+  )
+  shiny$updateSelectizeInput(
+    session, "clusterDimY",
+    choices = dims,
+    selected = dims[min(2, length(dims))]
+  )
 }
 
 
