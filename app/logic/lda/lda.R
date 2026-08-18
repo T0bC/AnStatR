@@ -427,6 +427,13 @@ run_plsda <- function(data, columns, grouping_col,
                       meta_cols = character(0)) {
   error_handling$safe_execute(
     {
+      if (sparse && (is.null(keep_x) || anyNA(keep_x))) {
+        stop(
+          "keepX invalid or incomplete: a numeric value is ",
+          "required for every component in sPLS-DA."
+        )
+      }
+
       grouping <- droplevels(as.factor(data[[grouping_col]]))
       x_mat <- as.matrix(data[, columns, drop = FALSE])
 
