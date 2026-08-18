@@ -268,9 +268,19 @@ build_2d_plot <- function(scores, meta, grouping_col,
   # Build combined subtitle
   subtitle_parts <- character(0)
   if (isTRUE(show_boundaries) && has_model) {
-    subtitle_parts <- c(
-      subtitle_parts, "shaded: decision regions"
+    analysis_type <- lda_result$analysis_type
+    is_plsda <- analysis_type %in% c("plsda", "splsda")
+    is_comp12 <- is_plsda && identical(
+      sort(c(dim_x, dim_y)), sort(c("Comp1", "Comp2"))
     )
+    boundary_label <- if (is_plsda && !is_comp12) {
+      "shaded: decision regions (k-NN approximation on non-Comp1/2 pair)"
+    } else if (identical(analysis_type, "mda")) {
+      "shaded: decision regions (k-NN approximation)"
+    } else {
+      "shaded: decision regions"
+    }
+    subtitle_parts <- c(subtitle_parts, boundary_label)
   }
   if (isTRUE(show_diagnostics) && ncol(scores) >= 2) {
     subtitle_parts <- c(
