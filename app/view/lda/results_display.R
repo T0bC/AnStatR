@@ -30,6 +30,8 @@ render_lda_results <- function(lda_result, ns,
     lda = "LDA",
     qda = "QDA",
     mda = "MDA",
+    plsda = "PLS-DA",
+    splsda = "sPLS-DA",
     "LDA"
   )
   is_cv <- !is.null(lda_result$cv)
@@ -93,18 +95,20 @@ render_lda_results <- function(lda_result, ns,
       )
     )
 
-  # 2. Prior Probabilities
-  sub_panels[[length(sub_panels) + 1]] <-
-    bslib$accordion_panel(
-      title = shiny$tags$span(
-        bsicons$bs_icon(
-          "pie-chart", class = "me-2"
+  # 2. Prior Probabilities (not applicable to PLS-DA/sPLS-DA)
+  if (!is.null(lda_result$prior)) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "pie-chart", class = "me-2"
+          ),
+          "Prior Probabilities"
         ),
-        "Prior Probabilities"
-      ),
-      value = "prior_sub",
-      render_prior_table(lda_result$prior)
-    )
+        value = "prior_sub",
+        render_prior_table(lda_result$prior)
+      )
+  }
 
   # 3. Group Means
   sub_panels[[length(sub_panels) + 1]] <-
@@ -117,18 +121,20 @@ render_lda_results <- function(lda_result, ns,
       render_means_table(lda_result$means)
     )
 
-  # 4. LD Coefficients (LDA and MDA, model mode)
+  # 4. LD Coefficients / Component Loadings
+  # (LDA, MDA, PLS-DA/sPLS-DA, model mode)
   if (
-    lda_result$analysis_type %in% c("lda", "mda") &&
+    lda_result$analysis_type %in%
+      c("lda", "mda", "plsda", "splsda") &&
     !is.null(lda_result$scaling)
   ) {
-    coef_title <- if (
-      lda_result$analysis_type == "mda"
-    ) {
-      "Discriminant Coefficients"
-    } else {
+    coef_title <- switch(
+      lda_result$analysis_type,
+      mda = "Discriminant Coefficients",
+      plsda = "Component Loadings",
+      splsda = "Component Loadings",
       "Coefficients of Linear Discriminants"
-    }
+    )
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
@@ -140,6 +146,26 @@ render_lda_results <- function(lda_result, ns,
         ),
         value = "scaling_sub",
         render_scaling_table(lda_result$scaling)
+      )
+  }
+
+  # 4c. Selected Variables (sPLS-DA only)
+  if (
+    lda_result$analysis_type == "splsda" &&
+    !is.null(lda_result$selected_variables)
+  ) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon(
+            "check2-square", class = "me-2"
+          ),
+          "Selected Variables"
+        ),
+        value = "selected_vars_sub",
+        render_selected_variables(
+          lda_result$selected_variables
+        )
       )
   }
 
@@ -161,15 +187,22 @@ render_lda_results <- function(lda_result, ns,
       )
   }
 
-  # 5. Proportion of Trace (LDA only, model mode)
+  # 5. Proportion of Trace / Explained Variance (model mode)
   if (!is.null(lda_result$proportion_of_trace)) {
+    trace_title <- if (
+      lda_result$analysis_type %in% c("plsda", "splsda")
+    ) {
+      "Explained Variance"
+    } else {
+      "Proportion of Trace"
+    }
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
             "bar-chart-line", class = "me-2"
           ),
-          "Proportion of Trace"
+          trace_title
         ),
         value = "trace_sub",
         render_trace_table(
@@ -348,6 +381,8 @@ build_summary_badge <- function(lda_result, type_label,
 
   n_ld <- if (!is.null(lda_result$svd)) {
     length(lda_result$svd)
+  } else if (!is.null(lda_result$ncomp)) {
+    lda_result$ncomp
   } else {
     NULL
   }
@@ -474,6 +509,42 @@ render_scaling_table <- function(scaling) {
   )
   rownames(df) <- NULL
   make_dt(df, page_length = 10)
+}
+
+
+render_selected_variables <- function(selected_variables) {
+  rows <- lapply(names(selected_variables), function(comp) {
+    vars <- selected_variables[[comp]]
+    if (length(vars) == 0) return(NULL)
+    data.frame(
+      Component = comp, Variable = vars,
+      stringsAsFactors = FALSE
+    )
+  })
+  df <- do.call(rbind, rows)
+  if (is.null(df)) {
+    return(shiny$tags$p(
+      class = "text-muted small",
+      "No variables were selected for any component."
+    ))
+  }
+  rownames(df) <- NULL
+  shiny$tagList(
+    make_dt(df, page_length = 20),
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "These are the measurement columns with a",
+        "nonzero loading on each component after sparse",
+        "selection — the parameters most responsible",
+        "for group separation on that component.",
+        "Highly correlated variables may share selection",
+        "credit somewhat arbitrarily; inspect correlated",
+        "groups together rather than trusting a single",
+        "variable in isolation."
+      )
+    )
+  )
 }
 
 
