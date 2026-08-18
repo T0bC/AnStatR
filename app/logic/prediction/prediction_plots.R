@@ -97,6 +97,18 @@ create_prediction_overlay_plot <- function(
           bundle, prediction_result,
           unknown_data, dim_x, dim_y, meta_col
         ),
+        plsda = build_ld_overlay(
+          bundle, prediction_result,
+          unknown_data, dim_x, dim_y, meta_col,
+          show_diagnostics = FALSE,
+          show_boundaries = show_boundaries
+        ),
+        splsda = build_ld_overlay(
+          bundle, prediction_result,
+          unknown_data, dim_x, dim_y, meta_col,
+          show_diagnostics = FALSE,
+          show_boundaries = show_boundaries
+        ),
         stop(paste0(
           "Unsupported analysis type: '",
           analysis_type, "'"
@@ -314,12 +326,13 @@ build_ld_overlay <- function(bundle, pred_result,
   x_label <- axis_label(dim_x, prop_trace)
   y_label <- axis_label(dim_y, prop_trace)
 
-  is_mda <- bundle$analysis_type == "mda"
-  title_prefix <- if (is_mda) {
-    "MDA Prediction"
-  } else {
+  title_prefix <- switch(
+    bundle$analysis_type,
+    mda = "MDA Prediction",
+    plsda = "PLS-DA Prediction",
+    splsda = "sPLS-DA Prediction",
     "LDA Prediction"
-  }
+  )
 
   p <- p +
     ggplot2$labs(
@@ -550,13 +563,32 @@ reconstruct_lda_result <- function(bundle) {
   group_col <- bundle$group_col
   meta_cols <- bundle$meta_cols %||% character(0)
   is_mda <- bundle$analysis_type == "mda"
+  is_plsda <- bundle$analysis_type %in% c("plsda", "splsda")
 
   train_numeric <- used_data[
     , numeric_cols, drop = FALSE
   ]
 
-  # Compute training LD scores + predicted classes
-  if (is_mda) {
+  # Compute training LD/component scores + predicted classes
+  if (is_plsda) {
+    train_pred <- stats$predict(
+      model, as.matrix(train_numeric)
+    )
+    scores <- as.data.frame(model$variates$X)
+    if (ncol(scores) > 0) {
+      colnames(scores) <- paste0(
+        "Comp", seq_len(ncol(scores))
+      )
+    }
+    n_comp <- ncol(train_pred$variates)
+    predicted_class <- train_pred$class$max.dist[, n_comp]
+    scaling <- as.data.frame(model$loadings$X)
+    if (ncol(scaling) > 0) {
+      colnames(scaling) <- paste0(
+        "Comp", seq_len(ncol(scaling))
+      )
+    }
+  } else if (is_mda) {
     scores_raw <- stats$predict(
       model, train_numeric, type = "variates"
     )
@@ -595,8 +627,16 @@ reconstruct_lda_result <- function(bundle) {
     data.frame(Row = seq_len(nrow(used_data)))
   }
 
-  # Build proportion of trace
-  if (!is_mda) {
+  # Build proportion of trace / explained variance
+  if (is_plsda) {
+    prop_vals <- as.numeric(model$prop_expl_var$X)
+    proportion_of_trace <- data.frame(
+      LD = colnames(scores),
+      Proportion = round(prop_vals, 4),
+      Cumulative = round(cumsum(prop_vals), 4),
+      check.names = FALSE
+    )
+  } else if (!is_mda) {
     n_ld <- length(model$svd)
     prop_vals <- model$svd^2 / sum(model$svd^2)
     proportion_of_trace <- data.frame(
