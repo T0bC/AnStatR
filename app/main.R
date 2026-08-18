@@ -53,7 +53,14 @@ ui <- function(id) {
           src = "static/js/mathjax/tex-svg.js",
           defer = NA
         ),
-        shiny$tags$script(src = "static/js/mathjax_typeset.js")
+        # defer, not plain <script> — deferred scripts execute in
+        # document order after the DOM is parsed, so this is
+        # guaranteed to run after tex-svg.js above has finished
+        # loading and defining window.MathJax
+        shiny$tags$script(
+          src = "static/js/mathjax_typeset.js",
+          defer = NA
+        )
       ),
       help_modal$panel(ns("help"))
     ),
