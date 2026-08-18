@@ -138,7 +138,8 @@ tab_server <- function(input, output, session,
       )
       update_pca_choices(session, bundle)
     } else if (
-      analysis_type %in% c("lda", "mda", "qda")
+      analysis_type %in%
+        c("lda", "mda", "qda", "plsda", "splsda")
     ) {
       shiny$updateTextInput(
         session, "plot_mode", value = "lda"
@@ -477,7 +478,7 @@ build_cluster_controls_ui <- function(ns) {
 update_lda_choices <- function(session, bundle) {
   analysis_type <- bundle$analysis_type
 
-  if (analysis_type %in% c("lda", "mda")) {
+  if (analysis_type %in% c("lda", "mda", "plsda", "splsda")) {
     dims <- get_available_dims(bundle)
     n_ld <- length(dims)
 
@@ -544,6 +545,8 @@ update_lda_choices <- function(session, bundle) {
     analysis_type,
     qda = "QDA Plotting Controls",
     mda = "MDA Plotting Controls",
+    plsda = "PLS-DA Plotting Controls",
+    splsda = "sPLS-DA Plotting Controls",
     "LDA Plotting Controls"
   )
   session$output$lda_title <- shiny$renderUI({
@@ -609,6 +612,10 @@ get_available_dims <- function(bundle) {
     model <- bundle$model
     n_pc <- ncol(model$rotation)
     paste0("Dim.", seq_len(n_pc))
+  } else if (analysis_type %in% c("plsda", "splsda")) {
+    model <- bundle$model
+    n_comp <- model$ncomp %||% ncol(model$variates$X)
+    paste0("Comp", seq_len(max(n_comp, 1)))
   } else if (analysis_type %in% c("lda", "mda")) {
     model <- bundle$model
     if (analysis_type == "lda") {
