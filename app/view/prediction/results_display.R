@@ -96,15 +96,18 @@ render_classification_results <- function(
     ))
   }
 
+  type_label <- switch(
+    pred_result$analysis_type,
+    plsda = "PLS-DA",
+    splsda = "sPLS-DA",
+    toupper(pred_result$analysis_type)
+  )
   header_label <- if (
     pred_result$analysis_type == "cluster"
   ) {
     "Cluster Assignment Results"
   } else {
-    paste0(
-      toupper(pred_result$analysis_type),
-      " Classification Results"
-    )
+    paste0(type_label, " Classification Results")
   }
 
   shiny$tagList(
