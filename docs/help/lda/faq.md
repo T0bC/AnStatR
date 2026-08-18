@@ -20,7 +20,59 @@ All three methods assign specimens to groups by maximising separation, but they 
 | **QDA** | Each group has its own covariance matrix | Groups visibly differ in spread/orientation on the LD Scores Plot; sufficient data (≥ p+1 per group) |
 | **MDA** | Each group is a mixture of ellipsoidal sub-clusters | Non-elliptical or multi-modal group clouds; larger datasets |
 
-**Practical advice**: Start with LDA. If the assumption diagnostics overlay (toggle **Show Assumption Diagnostics**) reveals that per-group ellipses differ substantially from the pooled ellipse, switch to QDA. If group clouds in the LD Scores Plot appear clearly non-elliptical or bimodal, try MDA with 2–3 subclasses.
+**Practical advice**: Start with LDA. If the assumption diagnostics overlay (toggle **Show Assumption Diagnostics**) reveals that per-group ellipses differ substantially from the pooled ellipse, switch to QDA. If group clouds in the LD Scores Plot appear clearly non-elliptical or bimodal, try MDA with 2–3 subclasses. None of these three work well when you have more measurement variables than specimens per group, or when variables are highly collinear — for that situation see the next question.
+
+</details>
+
+<details>
+<summary>I have more measurement parameters than specimens (or highly correlated parameters) — what should I use?</summary>
+
+This is exactly the scenario PLS-DA and sPLS-DA are designed for. LDA/QDA/MDA all require inverting a within-group covariance matrix, which fails or becomes unstable when the number of variables p approaches or exceeds the number of specimens per group, and is disrupted by collinear variables (e.g., a 2D and 3D version of a similar surface metric measuring essentially the same underlying feature).
+
+**Switch Analysis Type to PLS-DA or sPLS-DA** in the Analysis Settings tab:
+- **PLS-DA** extracts latent components that maximise covariance between your measurement variables and group membership, without ever inverting a covariance matrix — it works regardless of how many variables you have relative to specimens, and collinear variables simply share loading weight rather than causing errors
+- **sPLS-DA** additionally applies sparse variable selection (the **keepX** setting), retaining only a chosen number of variables per component — this directly identifies which of your 40+ parameters actually drive the group differences, shown in the **Selected Variables** results panel
+
+Start with sPLS-DA if your goal is identifying which specific parameters matter (typical for "what drives group X vs. group Y" research questions). Use plain PLS-DA if you only need dimensionality reduction and classification without variable selection.
+
+</details>
+
+<details>
+<summary>What's the difference between PLS-DA and sPLS-DA?</summary>
+
+PLS-DA uses all selected measurement variables to build each component — every variable contributes some (possibly small) loading. sPLS-DA adds a sparsity constraint that forces all but a chosen number of variables (**keepX**) to have exactly zero loading on each component, effectively performing variable selection as part of the fit.
+
+Use PLS-DA when you want dimensionality reduction and group separation without necessarily identifying a minimal variable subset. Use sPLS-DA when the scientific question is "which specific parameters explain the group differences" — the Selected Variables panel is the direct answer. sPLS-DA models are also somewhat easier to interpret in the Component Loadings table, since only the selected variables show nonzero values.
+
+</details>
+
+<details>
+<summary>How do I choose keepX / how many variables should I keep for sPLS-DA?</summary>
+
+There is no universally correct value — it is a trade-off between interpretability (fewer variables, cleaner story) and completeness (more variables, less risk of excluding a genuine contributor). Two approaches:
+
+1. **Manual**: set keepX directly per component (default 10). Start with a value roughly 10-25% of your total variable count and inspect whether the Selected Variables make biological/scientific sense and whether resubstitution accuracy stays reasonable
+2. **Auto-tune**: click **Auto-tune keepX (slow)** to run a cross-validated grid search (`mixOmics::tune.splsda`) that selects the keepX minimising cross-validated balanced error rate per component. This can take from several seconds to a few minutes; the suggested values fill the manual boxes and can still be edited afterward
+
+A keepX that is too small may exclude real contributors; a keepX close to your total variable count behaves like plain PLS-DA and loses the interpretability benefit of sparsity. If several correlated variables measure similar features, expect the selection to favour one representative rather than all of them — see the multicollinearity question below.
+
+</details>
+
+<details>
+<summary>My variables are correlated (e.g., a 2D and 3D version of a similar surface metric) — does that break the variable selection?</summary>
+
+It does not break the fit — PLS-DA/sPLS-DA handle collinear variables natively, unlike LDA/QDA/MDA. However, it does affect how you should *interpret* sparse variable selection: when several variables essentially measure the same underlying surface feature, sparse selection tends to pick one representative and assign the others a zero loading, somewhat arbitrarily depending on which one has marginally higher loading magnitude in the specific cross-validation fold.
+
+This means an excluded variable is not necessarily scientifically unimportant — it may simply have been redundant given a correlated variable that was already selected. Before concluding a parameter "doesn't matter," check the PCA Correlation Matrix (or a correlation heatmap of your parameter set) to see whether it clusters tightly with a selected variable. Treat correlated clusters as a group when drawing scientific conclusions, using the selected member as a representative rather than assuming uniqueness.
+
+</details>
+
+<details>
+<summary>How many components should I use for PLS-DA/sPLS-DA?</summary>
+
+The **Number of components** setting defaults to (number of groups − 1), matching LDA's discriminant-axis count, but PLS-DA components do not have the same strict upper bound as LDA — you can use more or fewer depending on what the data supports.
+
+Use the **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Run Component Diagnostics**) to check this empirically: it reports cross-validated Overall Error and Balanced Error Rate (BER) per component count. Look for the point where error stops decreasing meaningfully — an "elbow." Adding components past that point usually adds noise rather than genuine group-separation signal. This diagnostic is independent of the main Compute button and can be re-run after adjusting the component count.
 
 </details>
 
@@ -178,12 +230,13 @@ Several data configurations produce warnings or errors:
 </details>
 
 <details>
-<summary>Which R packages power the LDA / QDA / MDA computation?</summary>
+<summary>Which R packages power the LDA / QDA / MDA / PLS-DA / sPLS-DA computation?</summary>
 
 | Package | Purpose | Citation |
 |---------|---------|----------|
 | **MASS** | LDA and QDA | Venables, W. N., & Ripley, B. D. (2002). *Modern Applied Statistics with S* (4th ed.). Springer. <https://www.stats.ox.ac.uk/pub/MASS4/> |
 | **mda** | Mixture Discriminant Analysis | Hastie, T., & Tibshirani, R. (2024). *mda: Mixture and Flexible Discriminant Analysis*. <https://doi.org/10.32614/CRAN.package.mda> |
+| **mixOmics** | PLS-DA and sPLS-DA | Rohart, F., Gautier, B., Singh, A., & Lê Cao, K.-A. (2017). *mixOmics: An R package for 'omics feature selection and multiple data integration*. *PLOS Computational Biology*, 13(11), e1005752. <https://doi.org/10.1371/journal.pcbi.1005752> |
 | **colorspace** | Colour palettes and manipulation | Zeileis, A., Fisher, J. C., Hornik, K., Ihaka, R., McWhite, C. D., Murrell, P., Stauffer, R., & Wilke, C. O. (2020). *colorspace: A Toolbox for Manipulating and Assessing Colors and Palettes*. *Journal of Statistical Software*, 96(1), 1–49. <https://doi.org/10.18637/jss.v096.i01> |
 | **ggiraph** | Interactive SVG plots | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
 | **ggplot2** | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |

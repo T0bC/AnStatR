@@ -1,18 +1,22 @@
-#### LDA / QDA / MDA — Technical Reference
+#### LDA / QDA / MDA / PLS-DA / sPLS-DA — Technical Reference
 
 ##### Requirements
 
 **Data Structure**
 
-| Requirement | LDA | QDA | MDA |
-|-------------|-----|-----|-----|
-| **Min. observations per group** | > p (warning if violated) | ≥ p + 1 (hard error) | ≥ max(subclasses, p + 1) |
-| **Min. groups** | 2 | 2 | 2 |
-| **Data type** | Numeric only | Numeric only | Numeric only |
-| **Missing values** | Rows with NAs excluded automatically | same | same |
-| **Max. discriminant axes** | min(p, G − 1) | none (classification only) | min(p, G − 1) |
+| Requirement | LDA | QDA | MDA | PLS-DA / sPLS-DA |
+|-------------|-----|-----|-----|-------------------|
+| **Min. observations per group** | > p (warning if violated) | ≥ p + 1 (hard error) | ≥ max(subclasses, p + 1) | none — designed for n < p |
+| **Min. groups** | 2 | 2 | 2 | 2 |
+| **Data type** | Numeric only | Numeric only | Numeric only | Numeric only |
+| **Missing values** | Rows with NAs excluded automatically | same | same | same |
+| **Max. discriminant axes / components** | min(p, G − 1) | none (classification only) | min(p, G − 1) | user-set (up to min(n − 1, p)) |
+| **Handles collinear variables** | No (may fail with singular matrix) | No | No | Yes — built into the algorithm |
+| **Built-in variable selection** | No | No | No | sPLS-DA only (via keepX) |
 
-Where p = number of measurement variables, G = number of groups.
+Where p = number of measurement variables, G = number of groups, n = number of observations.
+
+**When to reach for PLS-DA/sPLS-DA instead of LDA/QDA/MDA**: if you have more measurement variables than specimens (a common situation with 40+ computed 3D surface-texture parameters and a handful of specimens per group), or if your variables are highly collinear (e.g., a 2D and 3D version of a similar surface feature), LDA/QDA/MDA will warn or fail outright. PLS-DA handles both situations natively, and sPLS-DA additionally performs sparse variable selection — directly answering "which of my 40+ parameters actually drive the group differences?"
 
 **Metadata and Grouping Columns**
 
@@ -65,7 +69,53 @@ Key MDA settings:
 </details>
 
 <details>
+<summary><strong>PLS-DA Computation Method</strong></summary>
+
+PLS-DA (Partial Least Squares Discriminant Analysis) is implemented via `mixOmics::plsda()`. Unlike LDA, which inverts a within-group covariance matrix, PLS-DA finds latent components that maximise the covariance between the measurement variables $\mathbf{X}$ and a dummy-coded group-membership matrix $\mathbf{Y}$:
+
+$$\mathbf{t}, \mathbf{u} = \underset{\mathbf{t} = \mathbf{X}\mathbf{w},\, \mathbf{u} = \mathbf{Y}\mathbf{c}}{\arg\max}\ \mathrm{cov}(\mathbf{t}, \mathbf{u})$$
+
+Components are extracted iteratively via the NIPALS algorithm, deflating $\mathbf{X}$ after each component so subsequent components capture orthogonal, complementary information. Because this never requires inverting a $p \times p$ matrix, PLS-DA remains well-defined when $p > n$ and is not disrupted by collinear predictors — collinear variables simply share loading weight on the same component(s) rather than causing a singular-matrix failure.
+
+The number of components is chosen by the user (**Number of components** setting), defaulting to $G - 1$ to match LDA's discriminant-axis count, but any value up to $\min(n-1,\ p)$ is valid. Use the **Component Diagnostics (perf)** panel to check whether the chosen count is actually justified by cross-validated classification error.
+
+</details>
+
+<details>
+<summary><strong>sPLS-DA Computation Method</strong></summary>
+
+sPLS-DA (sparse PLS-DA) is implemented via `mixOmics::splsda()`. It extends PLS-DA with an $\ell_1$ (LASSO-style) penalty on the component loadings, forcing all but a fixed number of variables to exactly zero on each component:
+
+$$\mathbf{w} = \underset{\mathbf{w}}{\arg\max}\ \mathrm{cov}(\mathbf{X}\mathbf{w}, \mathbf{u}) \quad \text{subject to } \lVert \mathbf{w} \rVert_1 \le \lambda,\ \lVert \mathbf{w} \rVert_2 = 1$$
+
+The **Variables to keep per component (keepX)** setting controls sparsity directly — rather than tuning $\lambda$, mixOmics lets you specify exactly how many variables should retain a nonzero loading on each component. The variables with the largest loading magnitude survive; the rest are set to zero and excluded from that component's score computation entirely. This is the mechanism behind the **Selected Variables** results panel: the parameters most responsible for separating your groups on each component.
+
+**Choosing keepX**: smaller values give a shorter, more interpretable variable list but risk excluding weaker real contributors; larger values behave closer to standard PLS-DA. There is no universally correct value — it is a trade-off between interpretability and completeness. The **Auto-tune keepX (slow)** button runs `mixOmics::tune.splsda()`, a cross-validated grid search over candidate keepX values per component, and fills in the value that minimises balanced classification error. Because this repeats model fitting across a grid × folds × repeats, it can take from several seconds to a few minutes depending on data size — the suggested values are a starting point you can still edit by hand.
+
+**Multicollinearity and variable selection**: when several measurement columns essentially describe the same underlying surface feature at different scales or in 2D vs. 3D, sparse selection may pick one representative more or less arbitrarily and assign the others a zero loading — this does not mean the excluded variables are scientifically irrelevant, only that they were redundant given the ones already selected. When interpreting the Selected Variables list, group correlated parameters conceptually and treat the "selected" one as representative of that group rather than uniquely important. Cross-check with the PCA Correlation Matrix (or a correlation heatmap of your parameter set) to identify which variables cluster together before drawing conclusions about "unimportant" excluded parameters.
+
+</details>
+
+<details>
+<summary><strong>Component Diagnostics (perf) for PLS-DA/sPLS-DA</strong></summary>
+
+The **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Run Component Diagnostics**) wraps `mixOmics::perf()`, which repeats k-fold cross-validation (default 5 folds × 10 repeats) to estimate classification error at each component count, independently of the model fitted by the main **Compute** button. Two error metrics are reported per component:
+
+| Column | Definition |
+|--------|-----------|
+| **Overall Error** | Fraction of all cross-validated predictions that were misclassified |
+| **BER** (Balanced Error Rate) | Average of per-group error rates — more informative than Overall Error when groups are unevenly sized |
+
+Both are computed using the `max.dist` classification rule (assign to the class with maximum predicted score). Look for the component count where error stops decreasing meaningfully (an "elbow") — adding components beyond that point usually adds noise, not signal, to the model. This is the PLS-DA/sPLS-DA-specific analogue of comparing resubstitution vs. LOO-CV accuracy for LDA: it is deliberately separated from the main Validation setting (None / Train-Test Split) because it evaluates *component count*, not the final fitted model's generalisation.
+
+**Note**: PLS-DA/sPLS-DA does not support Leave-one-out CV as a Validation option (unlike LDA/QDA/MDA) because a full model refit per left-out observation would be prohibitively slow at typical component/keepX settings; the perf() panel's repeated k-fold CV is the standard validation approach for this method family in the literature.
+
+</details>
+
+<details>
 <summary><strong>Using PCA Scores as LDA Input</strong></summary>
+
+*This section applies to LDA / QDA / MDA. PLS-DA/sPLS-DA already handle high-dimensional, collinear raw measurements directly and do not need this workaround — running them on PCA scores instead of raw variables discards the "which original parameter matters" interpretability that is usually the reason for choosing PLS-DA in the first place.*
 
 The **Data Source** toggle in the Data Selection tab allows LDA / QDA / MDA to be run on **PCA scores** (the individual coordinates from a prior PCA run) instead of the raw measurements. This two-stage approach is well established in morphometrics and texture analysis.
 
@@ -136,10 +186,10 @@ The **Nu (degrees of freedom)** parameter (visible only for `t` method) governs 
 | Method | What It Measures | Limitation |
 |--------|-----------------|------------|
 | **None (fit only)** | Resubstitution accuracy — classified on training data | Always optimistic; overestimates true performance |
-| **Leave-one-out CV** | Each specimen predicted by a model trained on all others (MASS::lda/qda CV=TRUE; manual loop for MDA) | Conservative for small datasets; computationally intensive for MDA |
+| **Leave-one-out CV** | Each specimen predicted by a model trained on all others (MASS::lda/qda CV=TRUE; manual loop for MDA) | Conservative for small datasets; computationally intensive for MDA; **not available for PLS-DA/sPLS-DA** — use Component Diagnostics (perf) instead |
 | **Train / Test Split** | Stratified random split; holdout set accuracy | Single-split variance; reproducible via **Random seed** |
 
-**Resubstitution accuracy** is always reported in the LDA Results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it.
+**Resubstitution accuracy** is always reported in the LDA Results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it. For PLS-DA/sPLS-DA, component-count validation is handled separately by the **Component Diagnostics (perf)** panel (see above) rather than by the Validation setting.
 
 ##### Data Interpretation — LDA Results Panels
 
@@ -202,11 +252,11 @@ For QDA and MDA the group means have the same interpretation, but the within-gro
 </details>
 
 <details>
-<summary><strong>Coefficients of Linear Discriminants / Discriminant Coefficients</strong></summary>
+<summary><strong>Coefficients of Linear Discriminants / Discriminant Coefficients / Component Loadings</strong></summary>
 
-*Available for LDA and MDA (model mode only); not shown for QDA.*
+*Available for LDA, MDA, and PLS-DA/sPLS-DA (model mode only); not shown for QDA.*
 
-The table lists the discriminant coefficients (the **scaling matrix**): how much each variable contributes to each LD axis. Rows are variables; columns are LD1, LD2, … (LDA) or DC1, DC2, … (MDA).
+The table lists the discriminant coefficients or component loadings (the **scaling matrix**): how much each variable contributes to each axis. Rows are variables; columns are LD1, LD2, … (LDA), DC1, DC2, … (MDA), or Comp1, Comp2, … (PLS-DA/sPLS-DA).
 
 After z-score scaling the coefficients are on a common scale and directly comparable:
 
@@ -216,11 +266,26 @@ After z-score scaling the coefficients are on a common scale and directly compar
 | Large negative | Variable pulls specimens towards the negative end of that axis |
 | Near zero | Variable contributes little to separation on that axis |
 
-To identify the primary discriminating variables: look for the rows with the largest absolute values in LD1. These are the measurements that most strongly separate the groups along the first (and usually most important) discriminant axis.
+To identify the primary discriminating variables: look for the rows with the largest absolute values in LD1 (or Comp1). These are the measurements that most strongly separate the groups along the first (and usually most important) axis.
 
-The **Variable Contributions** jitter plot (separate accordion panel below the LDA Results) visualises these coefficients across all LD axes simultaneously — variables with consistently large absolute values across multiple axes are the overall key discriminators.
+The **Variable Contributions** jitter plot (separate accordion panel below the LDA Results) visualises these coefficients across all axes simultaneously — variables with consistently large absolute values across multiple axes are the overall key discriminators.
 
-For MDA, the coefficients describe the shared pooled discriminant space across all mixture components; their interpretation is analogous to LDA coefficients.
+For MDA, the coefficients describe the shared pooled discriminant space across all mixture components; their interpretation is analogous to LDA coefficients. **For PLS-DA/sPLS-DA, loadings are on a different mathematical footing than LDA discriminant coefficients** — they describe how strongly each variable contributes to a component that jointly maximises covariance with group membership, not a ratio of between/within-group scatter. The *relative ranking* of variables by absolute loading within a component is still meaningful for identifying key drivers, but the absolute values are not directly comparable to LDA coefficients or to loadings from a different PLS-DA fit. For sPLS-DA specifically, variables with a zero loading on a given component were excluded by sparse selection entirely (see the **Selected Variables** panel), not merely judged unimportant.
+
+</details>
+
+<details>
+<summary><strong>Selected Variables (sPLS-DA only)</strong></summary>
+
+*Shown only for sPLS-DA model fits.*
+
+Lists, per component, the measurement columns that survived sparse selection (nonzero loading) — the direct answer to "which of my 40+ parameters actually drive the group differences?" A variable appearing under multiple components is contributing to separation along more than one axis of the group structure.
+
+**Reading this list scientifically**:
+- Treat it as a starting hypothesis for which measured surface features matter, not a final proof — sparse selection is sensitive to the chosen keepX and to which correlated variable "wins" among near-duplicates
+- Cross-reference selected variables against their Component Loadings sign and magnitude (above) to understand *how* each one relates to group differences, not just *that* it was selected
+- If a variable you expected to be important is missing, check whether a highly correlated sibling variable was selected instead — inspect the PCA Correlation Matrix for that variable's correlation partners before concluding it is irrelevant
+- Re-running with a different keepX or a different random seed's cross-validation fold assignment can shift the selection at the margins; variables selected consistently across several settings are the more robust candidates for follow-up (e.g., univariate group comparisons, targeted biological/archaeological interpretation)
 
 </details>
 
@@ -241,20 +306,20 @@ Contains two sub-sections:
 </details>
 
 <details>
-<summary><strong>Proportion of Trace</strong></summary>
+<summary><strong>Proportion of Trace / Explained Variance</strong></summary>
 
-*Available for LDA and MDA (model mode only); not shown for QDA.*
+*Available for LDA, MDA, and PLS-DA/sPLS-DA (model mode only); not shown for QDA. Titled "Explained Variance" for PLS-DA/sPLS-DA.*
 
-The primary summary of discriminant axis importance, directly analogous to the variance-explained table in PCA. Columns:
+The primary summary of discriminant axis / component importance, directly analogous to the variance-explained table in PCA. Columns:
 
 | Column | Definition | Interpretation |
 |--------|-----------|----------------|
-| **LD / DC** | Axis label — LD1, LD2, … for LDA; DC1, DC2, … for MDA | Axes are ranked by discriminating power, LD1/DC1 always first |
+| **LD / DC / Comp** | Axis label — LD1, LD2, … for LDA; DC1, DC2, … for MDA; Comp1, Comp2, … for PLS-DA/sPLS-DA | Axes are ranked by discriminating power, the first axis always largest |
 | **Singular Value** | Square root of the corresponding eigenvalue (LDA only) | Larger → stronger between-group separation on that axis |
-| **Proportion** | Fraction of total between-group variance explained by this axis | Values sum to 1.0 |
+| **Proportion** | Fraction of variance explained by this axis (between-group variance for LDA/MDA; variance in X explained by the component for PLS-DA/sPLS-DA) | Values sum to at most 1.0 |
 | **Cumulative** | Running sum of proportions | Background colour: grey < 0.6, yellow 0.6–0.8, green > 0.8 |
 
-**Reading the table**: If LD1 proportion > 0.90, a single scatter plot of LD1 captures the overwhelming majority of group separation. If the proportion is split more evenly (e.g., 0.69 / 0.31), both axes carry substantial discriminating information and the two-dimensional LD Scores Plot should be examined carefully. The cumulative column reaching green (> 0.80) indicates that the axes up to that row together explain most between-group variance.
+**Reading the table**: If LD1/Comp1 proportion > 0.90, a single scatter plot of that axis captures the overwhelming majority of group separation. If the proportion is split more evenly (e.g., 0.69 / 0.31), both axes carry substantial discriminating information and the two-dimensional Scores Plot should be examined carefully. The cumulative column reaching green (> 0.80) indicates that the axes up to that row together explain most of the relevant variance. **For PLS-DA/sPLS-DA**, unlike LDA's Proportion of Trace, the values here describe variance explained *in the measurement variables* by each component (not strictly between-group variance) — a low proportion does not necessarily mean weak group separation on that component; cross-check against the Component Diagnostics (perf) error rate and the Dimension Evaluation (ANOVA) table below for a group-separation-specific view.
 
 </details>
 
@@ -356,25 +421,28 @@ Two export formats are available:
 
 ##### Plotting Controls
 
-Configure the **LD Scores Plot** in the **LDA Plotting Controls** sidebar tab:
+Configure the **LD Scores Plot** (titled **Component Scores Plot** for PLS-DA/sPLS-DA) in the **LDA Plotting Controls** sidebar tab:
 
 | Control | Options | Effect |
 |---------|---------|--------|
-| **Dim.X / Dim.Y** | LD1, LD2, … (LDA/MDA) or original variables (QDA) | Select which discriminant axes map to the plot axes |
+| **Dim.X / Dim.Y** | LD1, LD2, … (LDA/MDA), Comp1, Comp2, … (PLS-DA/sPLS-DA), or original variables (QDA) | Select which discriminant axes/components map to the plot axes |
 | **Dim.Z** | Same choices as X/Y | Reserved for future 3D discriminant plot |
-| **Show Assumption Diagnostics** | On/Off | Overlays per-group (solid) and pooled within-group (dashed) covariance ellipses; if they match, the equal-covariance assumption holds |
-| **Show Decision Boundaries** | On/Off (default On) | Shades the LD space by predicted class region and draws boundary contour lines |
+| **Show Assumption Diagnostics** | On/Off — hidden for PLS-DA/sPLS-DA | Overlays per-group (solid) and pooled within-group (dashed) covariance ellipses; if they match, the equal-covariance assumption holds. Not applicable to PLS-DA/sPLS-DA, which make no Gaussian equal-covariance assumption |
+| **Show Decision Boundaries** | On/Off (default On) — hidden for PLS-DA/sPLS-DA | Shades the LD space by predicted class region and draws boundary contour lines. Not applicable to PLS-DA/sPLS-DA, which classify by distance-to-centroid in component space rather than a Gaussian decision rule |
 | **Width / Height (cm)** | Numeric | Export dimensions for SVG and PNG downloads |
 
-The **Variable Contributions** jitter plot (visible when discriminant coefficients are available) displays the absolute discriminant coefficient for each variable across all LD axes. Variables with consistently large coefficients are the primary drivers of group separation.
+The **Variable Contributions** jitter plot (visible when discriminant coefficients or component loadings are available) displays the absolute coefficient/loading for each variable across all axes. Variables with consistently large values are the primary drivers of group separation.
 
 ##### Best Practices
 
 - **Start with LDA** — use QDA or MDA only when you have evidence that the equal-covariance assumption is violated or group shapes are clearly non-elliptical
+- **Switch to PLS-DA/sPLS-DA when p ≥ n per group or variables are collinear** — this is the situation LDA/QDA/MDA cannot handle gracefully; PLS-DA/sPLS-DA are designed for exactly this data shape
+- **Use sPLS-DA (not plain PLS-DA) when the goal is variable selection** — plain PLS-DA still reduces dimensionality and separates groups, but sPLS-DA's Selected Variables panel is what directly answers "which parameters matter"
 - **Scale & Center by default** — essential for mixed-unit data; omit only when all variables share the same unit and variance is meaningful
-- **Use PCA scores for high-dimensional data** — when p approaches n per group, run PCA first and use the PCA scores (≥ 90% variance) as LDA input
-- **Compare resubstitution vs. CV accuracy** — a gap > 10% suggests overfitting; reduce p or switch to PCA-based input
-- **Inspect the Proportion of Trace first** — if LD1 captures < 50%, examine higher axes; two-dimensional plots may miss important separation
-- **Enable diagnostics overlay** — covariance ellipsis mismatch between per-group and pooled estimates is the key visual test for the LDA equal-covariance assumption
-- **Download full results** — the Excel export contains the full proportion of trace, discriminant coefficients, posterior probabilities, and per-class accuracy for reporting
+- **Use PCA scores for high-dimensional data with LDA/QDA/MDA** — when p approaches n per group and you are staying with LDA/QDA/MDA, run PCA first and use the PCA scores (≥ 90% variance) as input. Prefer PLS-DA/sPLS-DA directly on raw variables instead if identifying original measurement parameters is the goal
+- **Compare resubstitution vs. CV accuracy** — a gap > 10% suggests overfitting; for LDA/QDA/MDA reduce p or switch to PCA-based input; for PLS-DA/sPLS-DA check the Component Diagnostics (perf) panel for the component count that minimises cross-validated error
+- **Inspect the Proportion of Trace / Explained Variance first** — if LD1/Comp1 captures < 50%, examine higher axes; two-dimensional plots may miss important separation
+- **Enable diagnostics overlay (LDA/QDA/MDA only)** — covariance ellipsis mismatch between per-group and pooled estimates is the key visual test for the equal-covariance assumption
+- **For sPLS-DA, treat correlated variable groups together** — do not conclude an excluded variable is scientifically unimportant without checking whether a correlated sibling was selected in its place
+- **Download full results** — the Excel export contains the full proportion of trace / explained variance, discriminant coefficients or component loadings (plus selected variables for sPLS-DA), posterior probabilities, and per-class accuracy for reporting
 

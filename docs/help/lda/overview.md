@@ -1,6 +1,6 @@
-#### Discriminant Analysis (LDA / QDA / MDA)
+#### Discriminant Analysis (LDA / QDA / MDA / PLS-DA / sPLS-DA)
 
-Supervised method that finds linear combinations of measurement variables maximizing separation between predefined groups. Unlike PCA (which ignores group labels), discriminant analysis explicitly targets group differences.
+Supervised method that finds combinations of measurement variables maximizing separation between predefined groups. Unlike PCA (which ignores group labels), discriminant analysis explicitly targets group differences.
 
 ##### Data Selection
 
@@ -14,13 +14,17 @@ If the **Statistics** tab has computed a parameter screening ranking (see the Pl
 
 ##### Analysis Type
 
-Choose between three methods in the **Analysis Settings** tab:
+Choose between five methods in the **Analysis Settings** tab:
 
 | Method | Decision Boundary | Key Requirement | Best For |
 |--------|-------------------|-----------------|----------|
 | **LDA** (Linear) | Linear (flat) | Groups share same covariance structure | Default; limited observations per group |
 | **QDA** (Quadratic) | Quadratic (curved) | ≥ p+1 observations per group | Groups with clearly different spread/shape |
 | **MDA** (Mixture) | Flexible (mixture) | ≥ subclasses × p observations per group | Multi-modal or non-elliptical group shapes |
+| **PLS-DA** | Distance to component-space centroid | None — works even with more variables than specimens | High-dimensional or collinear measurement sets |
+| **sPLS-DA** (sparse) | Distance to component-space centroid | None | Same as PLS-DA, plus built-in variable selection |
+
+**When to use PLS-DA/sPLS-DA instead of LDA/QDA/MDA**: if you have more measurement parameters than specimens per group (common with 40+ computed 3D surface-texture parameters and modest sample sizes), or your parameters are collinear (e.g., a 2D and a 3D version of a similar surface feature), LDA/QDA/MDA will warn or fail with a singular-matrix error. PLS-DA handles both situations directly, and sPLS-DA additionally performs sparse variable selection to identify which parameters actually drive the group differences — see the **Selected Variables** results panel and the Details tab for the full method description.
 
 ##### Scaling and Preprocessing
 
@@ -29,4 +33,4 @@ Choose between three methods in the **Analysis Settings** tab:
 
 ##### Key Result
 
-After clicking **Compute LDA / QDA / MDA**, the most important result is the **LD Scores Plot** (open by default) — the scatter plot projecting all specimens onto the linear discriminant axes (LD1, LD2, …). The degree of separation between group clouds directly reflects how well the measurement variables discriminate the groups. The **Proportion of Trace** table in **LDA Results** reports how much between-group variance each discriminant axis captures.
+After clicking **Compute**, the most important result is the **LD Scores Plot** (**Component Scores Plot** for PLS-DA/sPLS-DA), open by default — the scatter plot projecting all specimens onto the discriminant axes or components. The degree of separation between group clouds directly reflects how well the measurement variables discriminate the groups. The **Proportion of Trace** (**Explained Variance** for PLS-DA/sPLS-DA) table in **LDA Results** reports how much variance each axis/component captures. For sPLS-DA, the **Selected Variables** panel lists which measurement parameters were retained per component — the primary output for identifying which parameters drive group differences.
