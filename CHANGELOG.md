@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026.14] - 2026-08-18
+
+### Added
+
+- **PLS-DA / sPLS-DA**: New "PLS-DA" and "sPLS-DA (sparse)" analysis types in the LDA module (via the `mixOmics` package), designed for measurement-parameter sets with more variables than specimens per group and/or highly collinear variables — situations where LDA/QDA/MDA warn or fail outright. PLS-DA extracts latent components maximizing covariance between measurements and group membership; sPLS-DA additionally performs sparse variable selection (**keepX** per component), directly identifying which measurement parameters drive group separation, shown in a new **Selected Variables** results panel
+- **keepX auto-tuning**: Opt-in "Auto-tune keepX (slow)" button runs a cross-validated grid search (`mixOmics::tune.splsda`) to suggest keepX values per component, filling the manual inputs while remaining user-editable
+- **Component Diagnostics (perf) panel**: Independent, on-demand repeated k-fold cross-validation (`mixOmics::perf`) reporting Overall Error and Balanced Error Rate per component count, used to justify the chosen number of components for PLS-DA/sPLS-DA
+- **Decision boundary overlay for PLS-DA/sPLS-DA**: The existing "Show Decision Boundaries" shaded-background overlay (previously LDA/QDA/MDA only) now also covers PLS-DA/sPLS-DA, approximated via nearest-neighbour classification on training scores in the plotted 2D projection
+- **Prediction module support**: PLS-DA/sPLS-DA models can be exported as `.rds` bundles and loaded into the Prediction module to classify unknown specimens and overlay them on the Component Scores plot, reusing the existing LDA/MDA overlay infrastructure
+- **Documentation**: Help files (Overview/Details/FAQ) for LDA updated with PLS-DA/sPLS-DA method descriptions, component/keepX selection guidance, and multicollinearity interpretation notes; package citation table extended with mixOmics
+- **Dependencies**: `mixOmics` (Bioconductor) locked in `renv.lock`
+
 ## [2026.13] - 2026-08-18
 
 ### Added
