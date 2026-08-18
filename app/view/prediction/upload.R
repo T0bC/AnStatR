@@ -74,7 +74,12 @@ tab_server <- function(input, output, session,
     bundle <- bundle_reactive()
     if (is.null(bundle)) return(NULL)
 
-    analysis_label <- toupper(bundle$analysis_type)
+    analysis_label <- switch(
+      bundle$analysis_type,
+      plsda = "PLS-DA",
+      splsda = "sPLS-DA",
+      toupper(bundle$analysis_type)
+    )
     n_train <- nrow(bundle$used_data)
     n_vars <- length(bundle$numeric_cols)
     src <- bundle$data_source %||% "raw"
