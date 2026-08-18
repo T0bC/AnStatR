@@ -61,7 +61,7 @@ Perform Principal Component Analysis to reduce data dimensionality. Supports dat
 
 ### LDA
 
-Conduct supervised Discriminant Analysis (LDA, QDA, or MDA) to find linear combinations of variables that maximize separation between predefined groups. Includes scaling and normalization options, with LD scores plots showing group discrimination and proportion of trace tables. Can apply the parameter set recommended by the Statistics tab's screening ranking with one click.
+Conduct supervised Discriminant Analysis (LDA, QDA, MDA, PLS-DA, or sPLS-DA) to find combinations of variables that maximize separation between predefined groups. Includes scaling and normalization options, with scores plots showing group discrimination, decision-region overlays, and proportion of trace / explained variance tables. PLS-DA and sparse PLS-DA (via `mixOmics`) support measurement sets with more variables than specimens and collinear variables, with sPLS-DA additionally performing sparse variable selection to identify which parameters drive group separation. Can apply the parameter set recommended by the Statistics tab's screening ranking with one click.
 
 ### Cluster
 
@@ -69,7 +69,7 @@ Apply unsupervised cluster analysis to partition observations based on similarit
 
 ### Prediction
 
-Apply previously trained PCA, LDA, QDA, or MDA models to new unknown specimens. Upload a model bundle and unknown data to obtain predicted classifications, posterior probabilities, and overlay plots showing unknown samples projected onto the training data space.
+Apply previously trained PCA, LDA, QDA, MDA, PLS-DA, or sPLS-DA models to new unknown specimens. Upload a model bundle and unknown data to obtain predicted classifications, posterior probabilities, and overlay plots showing unknown samples projected onto the training data space.
 
 ### Power Analysis
 
