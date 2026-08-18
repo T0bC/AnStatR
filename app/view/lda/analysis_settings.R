@@ -3,6 +3,7 @@ box::use(
   bslib,
   rhino,
   shiny,
+  stats,
 )
 
 box::use(
@@ -19,7 +20,7 @@ tab_ui <- function(ns) {
       class = "text-muted mb-3",
       "Analysis Settings"
     ),
-    # Analysis type: LDA vs QDA
+    # Analysis type: LDA vs QDA vs MDA vs PLS-DA
     shiny$radioButtons(
       inputId = ns("analysis_type"),
       label = shiny$tags$span(
@@ -34,14 +35,21 @@ tab_ui <- function(ns) {
             "to have its own covariance matrix.",
             "MDA models each group as a mixture",
             "of Gaussians for flexible boundaries.",
-            "QDA/MDA require more observations."
+            "QDA/MDA require more observations.",
+            "PLS-DA/sPLS-DA work even when there are",
+            "more measurement variables than specimens",
+            "and handle collinear variables natively;",
+            "sPLS-DA additionally performs sparse",
+            "variable selection."
           )
         )
       ),
       choices = list(
         "LDA (Linear)" = "lda",
         "QDA (Quadratic)" = "qda",
-        "MDA (Mixture)" = "mda"
+        "MDA (Mixture)" = "mda",
+        "PLS-DA" = "plsda",
+        "sPLS-DA (sparse)" = "splsda"
       ),
       selected = "lda"
     ),
@@ -171,28 +179,112 @@ tab_ui <- function(ns) {
         step = 1
       )
     ),
-    # Prior probabilities
-    shiny$radioButtons(
-      inputId = ns("prior"),
-      label = shiny$tags$span(
-        "Prior Probabilities ",
-        bslib$tooltip(
-          bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+    # PLS-DA / sPLS-DA settings
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("analysis_type"),
+        "'] == 'plsda' || input['",
+        ns("analysis_type"), "'] == 'splsda'"
+      ),
+      shiny$numericInput(
+        inputId = ns("plsda_ncomp"),
+        label = shiny$tags$span(
+          "Number of components ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Number of latent components to",
+              "extract. Defaults to (number of",
+              "groups - 1), matching LDA's LD axis",
+              "count. Use the Component Diagnostics",
+              "panel (perf) to check whether fewer",
+              "or more components minimise",
+              "cross-validated error."
+            )
+          )
+        ),
+        value = 2,
+        min = 1,
+        max = 20,
+        step = 1
+      ),
+      # sPLS-DA: per-component keepX + auto-tune
+      shiny$conditionalPanel(
+        condition = paste0(
+          "input['", ns("analysis_type"), "'] == 'splsda'"
+        ),
+        shiny$tags$label(
+          class = "control-label",
+          "Variables to keep per component ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "sPLS-DA applies sparse selection:",
+              "only this many variables (by loading",
+              "magnitude) are retained per component.",
+              "Smaller values give a more focused",
+              "variable list but may miss weaker",
+              "contributors; larger values behave",
+              "closer to standard PLS-DA."
+            )
+          )
+        ),
+        shiny$uiOutput(ns("plsda_keepx_inputs")),
+        shiny$actionButton(
+          inputId = ns("tune_keepx_button"),
+          label = shiny$tags$span(
+            bsicons$bs_icon("magic", class = "me-1"),
+            "Auto-tune keepX (slow)"
           ),
+          class = "btn-outline-secondary btn-sm w-100 mt-1"
+        ),
+        shiny$tags$small(
+          class = "text-muted d-block mt-1",
           paste(
-            "Proportional: uses class proportions",
-            "from the training set.",
-            "Equal: assigns equal probability to",
-            "each group."
+            "Runs a cross-validated grid search",
+            "(mixOmics::tune.splsda) to suggest",
+            "keepX values. Can take from several",
+            "seconds to a few minutes depending",
+            "on data size — the suggested values",
+            "fill the boxes above, which you can",
+            "still edit before computing."
           )
         )
+      )
+    ),
+    # Prior probabilities (not applicable to PLS-DA/sPLS-DA)
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("analysis_type"),
+        "'] != 'plsda' && input['",
+        ns("analysis_type"), "'] != 'splsda'"
       ),
-      choices = list(
-        "Proportional (default)" = "proportional",
-        "Equal" = "equal"
-      ),
-      selected = "proportional"
+      shiny$radioButtons(
+        inputId = ns("prior"),
+        label = shiny$tags$span(
+          "Prior Probabilities ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle", class = "text-muted"
+            ),
+            paste(
+              "Proportional: uses class proportions",
+              "from the training set.",
+              "Equal: assigns equal probability to",
+              "each group."
+            )
+          )
+        ),
+        choices = list(
+          "Proportional (default)" = "proportional",
+          "Equal" = "equal"
+        ),
+        selected = "proportional"
+      )
     ),
     # Validation method
     shiny$radioButtons(
@@ -340,6 +432,53 @@ tab_ui <- function(ns) {
             max = 100,
             step = 1
           )
+        ),
+        # PLS-DA component diagnostics (perf) settings
+        shiny$conditionalPanel(
+          condition = paste0(
+            "input['", ns("analysis_type"),
+            "'] == 'plsda' || input['",
+            ns("analysis_type"), "'] == 'splsda'"
+          ),
+          shiny$tags$hr(),
+          shiny$fluidRow(
+            shiny$column(
+              6,
+              shiny$numericInput(
+                inputId = ns("perf_folds"),
+                label = "CV folds",
+                value = 5, min = 2, max = 20, step = 1
+              )
+            ),
+            shiny$column(
+              6,
+              shiny$numericInput(
+                inputId = ns("perf_repeats"),
+                label = "CV repeats",
+                value = 10, min = 1, max = 50, step = 1
+              )
+            )
+          ),
+          shiny$actionButton(
+            inputId = ns("run_perf_button"),
+            label = shiny$tags$span(
+              bsicons$bs_icon(
+                "clipboard-data", class = "me-1"
+              ),
+              "Run Component Diagnostics (perf)"
+            ),
+            class = "btn-outline-secondary btn-sm w-100"
+          ),
+          shiny$tags$small(
+            class = "text-muted d-block mt-1",
+            paste(
+              "Estimates classification error per",
+              "component via repeated cross-validation",
+              "(independent of the model fitted by the",
+              "main Compute button). Requires a fitted",
+              "PLS-DA/sPLS-DA model."
+            )
+          )
         )
       )
     )
@@ -355,9 +494,31 @@ tab_ui <- function(ns) {
 #' @param output Shiny output object from parent module
 #' @param session Shiny session object from parent module
 #' @param data_version Reactive returning the data version counter
+#' @param input_data Reactive returning the current raw data frame
+#'   (used to count groups for the PLS-DA ncomp default)
+#' @param pca_scores_data Reactive returning the PCA scores data
+#'   frame, or NULL — used instead of input_data when
+#'   data_source is "pca_scores"
 #' @export
 tab_server <- function(input, output, session,
-                       data_version) {
+                       data_version,
+                       input_data = NULL,
+                       pca_scores_data = NULL) {
+  # Active data source (raw or PCA scores), mirroring
+  # data_selection.R's active_data reactive
+  active_data <- shiny$reactive({
+    if (
+      !is.null(input$data_source) &&
+      input$data_source == "pca_scores" &&
+      !is.null(pca_scores_data)
+    ) {
+      pca_scores_data()
+    } else if (!is.null(input_data)) {
+      input_data()
+    } else {
+      NULL
+    }
+  })
   shiny$observeEvent(data_version(), {
     rhino$log$info(
       "LDA analysis_settings: reset for new data"
@@ -395,5 +556,116 @@ tab_server <- function(input, output, session,
     shiny$updateNumericInput(
       session, "mda_iter", value = 5
     )
+    shiny$updateNumericInput(
+      session, "plsda_ncomp", value = 2
+    )
+    shiny$updateNumericInput(
+      session, "perf_folds", value = 5
+    )
+    shiny$updateNumericInput(
+      session, "perf_repeats", value = 10
+    )
   }, ignoreInit = TRUE)
+
+  # Default ncomp to (n_groups - 1) when the grouping
+  # column changes, mirroring LDA's LD axis count.
+  # Only applied automatically the first time a grouping
+  # column is picked for the current dataset — subsequent
+  # manual edits to plsda_ncomp are never overwritten here.
+  ncomp_auto_set <- shiny$reactiveVal(FALSE)
+
+  shiny$observeEvent(data_version(), {
+    ncomp_auto_set(FALSE)
+  }, ignoreInit = TRUE)
+
+  shiny$observeEvent(input$groupingCol, {
+    grp <- input$groupingCol
+    if (is.null(grp) || grp == "") return()
+    if (isTRUE(ncomp_auto_set())) return()
+
+    data <- active_data()
+    if (is.null(data) || !grp %in% names(data)) return()
+
+    n_groups <- length(unique(stats$na.omit(data[[grp]])))
+    default_ncomp <- max(1, n_groups - 1)
+
+    shiny$updateNumericInput(
+      session, "plsda_ncomp", value = default_ncomp
+    )
+    ncomp_auto_set(TRUE)
+  }, ignoreInit = TRUE)
+
+  # PLS-DA/sPLS-DA have no native LOO-CV fitting mode.
+  # Component-count/error diagnostics are instead available
+  # via the dedicated perf() panel, so hide the LOO-CV choice
+  # and fall back to "None" if it was previously selected.
+  shiny$observeEvent(input$analysis_type, {
+    is_plsda <- input$analysis_type %in% c("plsda", "splsda")
+    choices <- if (is_plsda) {
+      list(
+        "None (fit only)" = "none",
+        "Train / Test Split" = "split"
+      )
+    } else {
+      list(
+        "None (fit only)" = "none",
+        "Leave-one-out CV" = "loo_cv",
+        "Train / Test Split" = "split"
+      )
+    }
+    current <- input$validation_method
+    selected <- if (is_plsda && identical(current, "loo_cv")) {
+      "none"
+    } else {
+      current %||% "none"
+    }
+    shiny$updateRadioButtons(
+      session, "validation_method",
+      choices = choices, selected = selected
+    )
+  }, ignoreInit = TRUE)
+
+  # Dynamic per-component keepX numeric inputs (sPLS-DA)
+  output$plsda_keepx_inputs <- shiny$renderUI({
+    ncomp <- input_num(input$plsda_ncomp, 2)
+    if (ncomp < 1) return(NULL)
+    n_vars <- length(input$measureVar)
+    default_keep <- if (n_vars > 0) min(10, n_vars) else 10
+
+    shiny$tagList(
+      lapply(seq_len(ncomp), function(i) {
+        current <- input[[paste0("keepx_", i)]]
+        shiny$numericInput(
+          inputId = session$ns(paste0("keepx_", i)),
+          label = paste0("Comp", i),
+          value = if (is.null(current) || is.na(current)) {
+            default_keep
+          } else {
+            current
+          },
+          min = 1,
+          max = max(n_vars, 1),
+          step = 1
+        )
+      })
+    )
+  })
+}
+
+
+# =============================================================================
+# Local helpers (not exported)
+# =============================================================================
+
+#' Coalesce a numeric Shiny input to a default
+#'
+#' Unlike `%||%`, also falls back when the input is NA — which
+#' numericInput can transiently send while its DOM element is
+#' being rebuilt by a renderUI() (e.g. when ncomp changes).
+#'
+#' @param value The input value (may be NULL or NA)
+#' @param default Fallback numeric value
+#' @return Numeric, never NULL or NA
+input_num <- function(value, default) {
+  if (is.null(value) || is.na(value)) default else value
 }
