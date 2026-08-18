@@ -44,7 +44,16 @@ ui <- function(id) {
         shiny$tags$link(rel = "icon", type = "image/svg+xml", href = "static/anstatr_icon.svg"),
         shiny$tags$script(src = "static/js/disabled_tabs.js"),
         shiny$tags$script(src = "static/js/plot_resize.js"),
-        shiny$tags$script(src = "static/js/help_resize.js")
+        shiny$tags$script(src = "static/js/help_resize.js"),
+        # Vendored locally (not CDN) so the help panel's LaTeX
+        # formulas render fully offline — see
+        # static/js/mathjax/README.md
+        shiny$tags$script(
+          id = "MathJax-script",
+          src = "static/js/mathjax/tex-svg.js",
+          defer = NA
+        ),
+        shiny$tags$script(src = "static/js/mathjax_typeset.js")
       ),
       help_modal$panel(ns("help"))
     ),
