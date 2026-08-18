@@ -847,7 +847,8 @@ server <- function(id, input_data, data_version,
         shiny$req(res)
         create_lda_excel(
           res, file,
-          test_result = test_result()
+          test_result = test_result(),
+          perf_result = perf_result()
         )
       }
     )
@@ -981,7 +982,8 @@ server <- function(id, input_data, data_version,
 #' error alert if the last run failed, or the error-rate
 #' table (Overall Error + BER per component) otherwise.
 #'
-#' @param perf_res data.frame from run_plsda_perf(), or NULL
+#' @param perf_res List from run_plsda_perf() with $errors
+#'   (data.frame) and $stability (data.frame or NULL), or NULL
 #' @param perf_err Structured error from run_plsda_perf(),
 #'   or NULL
 #' @return Shiny tag(s)
@@ -1003,8 +1005,9 @@ render_perf_panel <- function(perf_res, perf_err) {
       )
     ))
   }
-  DT$datatable(
-    perf_res,
+
+  error_table <- DT$datatable(
+    perf_res$errors,
     options = list(
       pageLength = 20, dom = "t", scrollX = TRUE,
       order = list(),
@@ -1017,6 +1020,59 @@ render_perf_panel <- function(perf_res, perf_err) {
       "table table-sm table-striped",
       "table-hover compact"
     )
+  )
+
+  stability_section <- NULL
+  if (!is.null(perf_res$stability)) {
+    stability_table <- DT$datatable(
+      perf_res$stability,
+      options = list(
+        pageLength = 10, dom = "tip", scrollX = TRUE,
+        order = list(),
+        columnDefs = list(list(
+          className = "dt-right", targets = 2
+        ))
+      ),
+      rownames = FALSE,
+      class = paste(
+        "table table-sm table-striped",
+        "table-hover compact"
+      )
+    ) |>
+      DT$formatStyle(
+        "Frequency",
+        backgroundColor = DT$styleInterval(
+          c(0.5, 0.8),
+          c("#dc354540", "#ffc10740", "#19875440")
+        ),
+        fontWeight = "bold"
+      )
+
+    stability_section <- shiny$tagList(
+      shiny$tags$h6(
+        class = "mt-3 mb-2", "Selected Variable Stability"
+      ),
+      stability_table,
+      shiny$tags$small(
+        class = "text-muted mt-2 d-block",
+        paste(
+          "Fraction of cross-validation folds/repeats in which",
+          "each variable was selected on that component (sPLS-DA",
+          "only). Frequency close to 1.0 means the variable is a",
+          "robust, reproducible selection; a low frequency means",
+          "it was selected mostly because of the specific fold",
+          "assignment and should be treated cautiously as a",
+          "scientific conclusion. This directly follows up on the",
+          "Selected Variables panel's caveat about selection",
+          "instability near the margins."
+        )
+      )
+    )
+  }
+
+  shiny$tagList(
+    error_table,
+    stability_section
   )
 }
 
