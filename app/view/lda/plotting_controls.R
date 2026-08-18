@@ -121,9 +121,12 @@ tab_ui <- function(ns) {
       )
     ),
     # Decision boundaries overlay toggle — available for
-    # LDA/MDA/QDA and PLS-DA/sPLS-DA (approximated via k-NN
-    # on training scores for MDA/PLS-DA; see
-    # add_boundaries_overlay() for details).
+    # LDA/MDA/QDA and PLS-DA/sPLS-DA. Exact for LDA/QDA always,
+    # and for PLS-DA/sPLS-DA when plotting Comp1 vs Comp2
+    # (mixOmics's own max.dist rule, evaluated directly in
+    # component space); approximated via k-NN on training
+    # scores for MDA and for other PLS-DA component pairs —
+    # see add_boundaries_overlay() for details.
     shiny$checkboxInput(
       inputId = ns("show_boundaries"),
       label = shiny$tags$span(
@@ -138,7 +141,11 @@ tab_ui <- function(ns) {
             "regions and boundary lines on the",
             "scores plot. Shaded areas show",
             "which group the model predicts for",
-            "each region of the plotted space."
+            "each region of the plotted space.",
+            "For PLS-DA/sPLS-DA this is exact when",
+            "plotting Comp1 vs Comp2, and",
+            "approximated via k-NN for other",
+            "component pairs or for MDA."
           )
         )
       ),
