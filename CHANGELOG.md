@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026.12] - 2026-08-18
+
+### Added
+
+- **Parameter screening mode**: New "Disable plots (parameter screening mode)" checkbox in the Plotting tab's Data Selection sidebar skips plot and diagnostics generation, enabling fast screening of large measurement-parameter sets (40+ columns) by passing selections straight through to the Statistics tab
+- **Parameter separation ranking**: The Statistics tab now computes a "Parameter Screening — Separation Ranking" table when screening mode is active, ranking every measurement parameter by p-value and effect size across all pairwise group comparisons using the already-computed post-hoc results, and deriving a recommended parameter subset
+- **Recommendation banners in PCA, LDA, and Cluster**: A shared "Apply recommended parameters" banner (`app/view/shared/recommendation_banner.R`) lets users apply the Statistics tab's recommended parameter set with one click in the PCA, LDA, and Cluster (raw-data mode only) Data Selection tabs, refining the parameter-preselection workflow introduced by the ['trident'](https://doi.org/10.24072/pcjournal.467) Shiny app for dental microwear texture analysis (Thiery et al., 2024) into a dataset-agnostic screening step
+- **Auto-select metadata columns in GroupBiplot**: The PCA GroupBiplot metadata selector now auto-populates from the selected metadata columns when empty
+- **Documentation**: Help files (Overview/Details/FAQ) for Plotting, Statistics, PCA, LDA, and Cluster updated to document the parameter screening workflow and its citation
+
+### Changed
+
+- Recommended parameters selected via the banner are applied through the same column-selection mechanism as manual selection, so PCA/LDA `.rds` bundle export and Prediction module alignment behave identically regardless of how parameters were chosen — no code changes were required in Prediction
+
 ## [2026.11] - 2026-05-29
 
 ### Added
