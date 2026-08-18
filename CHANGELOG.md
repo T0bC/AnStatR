@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026.13] - 2026-08-18
+
+### Added
+
+- **Cluster prediction (K-Means / PAM)**: K-Means and PAM clusters fit on raw measurement data can now be exported as an `.rds` bundle (**Download RDS (for Prediction)** in the Cluster Results panel) and loaded into the **Prediction** module to assign new/unknown samples to the nearest centroid (K-Means) or medoid (PAM) — the same out-of-sample rule the algorithms use internally. Hierarchical clustering, DBSCAN, and clusters built on PCA/LDA scores remain unsupported for export, since none has a principled out-of-sample assignment rule (or, for scores, would require nesting an upstream PCA/LDA bundle)
+- **Documentation**: Help files (Overview/Details) for Cluster and Prediction updated to document cluster export/prediction and its scope
+
 ## [2026.12] - 2026-08-18
 
 ### Added
