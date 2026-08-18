@@ -1,6 +1,7 @@
 box::use(
   bsicons,
   bslib,
+  DT,
   ggiraph,
   ggplot2,
   rhino,
@@ -11,7 +12,8 @@ box::use(
   app/logic/shared/error_handling,
   app/logic/lda/data_splitting[create_stratified_split],
   app/logic/lda/lda[
-    run_lda, run_mda, run_predict, run_qda,
+    run_lda, run_mda, run_plsda, run_plsda_perf,
+    run_plsda_tune_keepx, run_predict, run_qda,
     validate_inputs
   ],
   app/logic/lda/lda_export[create_lda_excel, create_lda_bundle],
@@ -73,6 +75,8 @@ server <- function(id, input_data, data_version,
     skewness_info <- shiny$reactiveVal(NULL)
     validation_warnings <- shiny$reactiveVal(character(0))
     bundle_data <- shiny$reactiveVal(NULL)
+    perf_result <- shiny$reactiveVal(NULL)
+    perf_error <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
@@ -84,6 +88,8 @@ server <- function(id, input_data, data_version,
       skewness_info(NULL)
       validation_warnings(character(0))
       bundle_data(NULL)
+      perf_result(NULL)
+      perf_error(NULL)
       rhino$log$info("LDA: state reset for new data")
     }, ignoreInit = TRUE)
 
@@ -120,7 +126,9 @@ server <- function(id, input_data, data_version,
     )
     analysis_settings$tab_server(
       input, output, session,
-      data_version = data_version
+      data_version = data_version,
+      input_data = input_data,
+      pca_scores_data = pca_scores_data
     )
     plotting_controls$tab_server(
       input, output, session,
@@ -145,6 +153,8 @@ server <- function(id, input_data, data_version,
       transform_info(NULL)
       validation_warnings(character(0))
       bundle_data(NULL)
+      perf_result(NULL)
+      perf_error(NULL)
 
       data_source <- input$data_source
       measure_cols <- input$measureVar
@@ -312,7 +322,7 @@ server <- function(id, input_data, data_version,
         " validation='{validation_method}')"
       )
 
-      # Run LDA, QDA, or MDA
+      # Run LDA, QDA, MDA, or PLS-DA/sPLS-DA
       if (analysis_type == "mda") {
         mda_iter <- input$mda_iter %||% 5
         lda_res <- run_mda(
@@ -324,6 +334,29 @@ server <- function(id, input_data, data_version,
           meta_cols = meta_cols,
           subclasses = mda_subclasses,
           iter = mda_iter
+        )
+      } else if (analysis_type %in% c("plsda", "splsda")) {
+        sparse <- analysis_type == "splsda"
+        ncomp <- input_num(input$plsda_ncomp, 2)
+        keep_x <- if (sparse) {
+          vapply(
+            seq_len(ncomp),
+            function(i) {
+              input_num(input[[paste0("keepx_", i)]], 10)
+            },
+            numeric(1)
+          )
+        } else {
+          NULL
+        }
+        lda_res <- run_plsda(
+          data = train_data,
+          columns = measure_cols,
+          grouping_col = grouping_col,
+          ncomp = ncomp,
+          sparse = sparse,
+          keep_x = keep_x,
+          meta_cols = meta_cols
         )
       } else {
         run_fn <- if (analysis_type == "lda") {
@@ -411,7 +444,18 @@ server <- function(id, input_data, data_version,
           prior = prior_choice,
           analysis_type = analysis_type,
           method = method,
-          validation_method = validation_method
+          validation_method = validation_method,
+          ncomp = if (analysis_type %in% c("plsda", "splsda")) {
+            input_num(input$plsda_ncomp, 2)
+          } else {
+            NULL
+          },
+          sparse = analysis_type == "splsda",
+          keep_x = if (analysis_type == "splsda") {
+            lda_res$result$keep_x
+          } else {
+            NULL
+          }
         )
       ))
 
@@ -443,6 +487,126 @@ server <- function(id, input_data, data_version,
           ))
         }
       }
+    })
+
+    # Handle "Run Component Diagnostics (perf)" button
+    # (PLS-DA/sPLS-DA only, independent of the main fit)
+    shiny$observeEvent(input$run_perf_button, {
+      res <- result()
+      if (
+        is.null(res) ||
+        !res$analysis_type %in% c("plsda", "splsda")
+      ) {
+        return()
+      }
+      perf_error(NULL)
+      folds <- input_num(input$perf_folds, 5)
+      repeats <- input_num(input$perf_repeats, 10)
+
+      rhino$log$info(
+        "LDA: running PLS-DA perf() diagnostics — ",
+        "folds={folds}, repeats={repeats}"
+      )
+
+      pf <- run_plsda_perf(res, folds = folds, repeats = repeats)
+      if (pf$success) {
+        perf_result(pf$result)
+      } else {
+        perf_error(pf$error)
+      }
+    })
+
+    # Handle "Auto-tune keepX" button (sPLS-DA only).
+    # Re-derives the same measurement matrix the main compute
+    # button would use (no train/test split or CV — tuning
+    # operates on the full analysis-ready data).
+    shiny$observeEvent(input$tune_keepx_button, {
+      if (input$analysis_type != "splsda") return()
+
+      data_source <- input$data_source
+      measure_cols <- input$measureVar
+      grouping_col <- input$groupingCol
+      ncomp <- input_num(input$plsda_ncomp, 2)
+
+      data <- if (data_source == "pca_scores") {
+        pca_scores_data()
+      } else {
+        input_data()
+      }
+      if (is.null(data) || length(measure_cols) == 0 ||
+          is.null(grouping_col) || grouping_col == "") {
+        shiny$showNotification(
+          "Select measurement and grouping columns first.",
+          type = "warning"
+        )
+        return()
+      }
+
+      meta_cols <- input$metaData
+      if (is.null(meta_cols)) meta_cols <- character(0)
+      na_result <- clean_na_rows(
+        data, measure_cols, meta_cols,
+        grouping_col = grouping_col
+      )
+      tune_data <- na_result$data
+
+      scale_method <- input$scale_method
+      if (
+        data_source == "raw" &&
+        !is.null(scale_method) &&
+        scale_method != "none"
+      ) {
+        do_center <- scale_method %in%
+          c("scale_center", "center_only")
+        do_scale <- scale_method == "scale_center"
+        scale_res <- scale_data(
+          tune_data, measure_cols,
+          center = do_center, scale = do_scale
+        )
+        if (scale_res$success) tune_data <- scale_res$result
+      }
+
+      shiny$showNotification(
+        "Auto-tuning keepX via cross-validation — this may take a while…",
+        type = "message", duration = 5
+      )
+
+      folds <- input_num(input$perf_folds, 5)
+      repeats <- input_num(input$perf_repeats, 10)
+      tune_res <- run_plsda_tune_keepx(
+        tune_data, measure_cols, grouping_col,
+        ncomp = ncomp, folds = folds, repeats = repeats
+      )
+
+      if (!tune_res$success) {
+        shiny$showNotification(
+          paste("keepX tuning failed:", tune_res$error$message),
+          type = "error", duration = 10
+        )
+        return()
+      }
+
+      keep_x <- tune_res$result
+      rhino$log$info(
+        "sPLS-DA: filling keepX inputs — ",
+        "ncomp={ncomp}, keep_x=[{paste(keep_x, collapse=',')}]"
+      )
+      for (i in seq_len(ncomp)) {
+        rhino$log$info(
+          "sPLS-DA: updateNumericInput 'keepx_{i}' -> {keep_x[i]}"
+        )
+        shiny$updateNumericInput(
+          session, paste0("keepx_", i),
+          value = as.numeric(keep_x[i])
+        )
+      }
+      shiny$showNotification(
+        paste(
+          "Suggested keepX:",
+          paste(keep_x, collapse = ", ")
+        ),
+        type = "message"
+      )
     })
 
     # Main content: placeholder, error, or results
@@ -569,18 +733,25 @@ server <- function(id, input_data, data_version,
         lda_content
       )
 
-      # Scores plot panel (LDA or QDA with companion LDA)
+      # Scores plot panel (LDA/MDA/PLS-DA/sPLS-DA, or QDA
+      # with companion LDA)
       res <- result()
       ld_plot_panel <- NULL
       has_lda_plot <- !is.null(res) &&
-        res$analysis_type %in% c("lda", "mda") &&
+        res$analysis_type %in%
+          c("lda", "mda", "plsda", "splsda") &&
         !is.null(res$scores) &&
         ncol(res$scores) > 0
       has_qda_plot <- !is.null(res) &&
         res$analysis_type == "qda" &&
         !is.null(res$model)
       if (has_lda_plot || has_qda_plot) {
-        plot_title <- if (has_lda_plot) {
+        plot_title <- if (
+          !is.null(res) &&
+          res$analysis_type %in% c("plsda", "splsda")
+        ) {
+          "Component Scores Plot"
+        } else if (has_lda_plot) {
           "LD Scores Plot"
         } else {
           "QDA Classification Plot"
@@ -629,6 +800,23 @@ server <- function(id, input_data, data_version,
         )
       }
 
+      # Component diagnostics panel (PLS-DA/sPLS-DA only)
+      perf_panel <- NULL
+      is_plsda_res <- !is.null(res) &&
+        res$analysis_type %in% c("plsda", "splsda")
+      if (is_plsda_res) {
+        perf_panel <- bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon(
+              "clipboard-data", class = "me-1"
+            ),
+            "Component Diagnostics (perf)"
+          ),
+          value = "perf_panel",
+          render_perf_panel(perf_result(), perf_error())
+        )
+      }
+
       shiny$tagList(
         preprocess_banner,
         skew_warning,
@@ -639,7 +827,8 @@ server <- function(id, input_data, data_version,
           multiple = TRUE,
           lda_panel,
           ld_plot_panel,
-          var_contrib_panel
+          var_contrib_panel,
+          perf_panel
         )
       )
     })
@@ -698,7 +887,7 @@ server <- function(id, input_data, data_version,
       }
     )
 
-    # Scores plot renderer (LDA or QDA)
+    # Scores plot renderer (LDA/MDA/PLS-DA/sPLS-DA, or QDA)
     output$ld_plot <- ggiraph$renderGirafe({
       res <- result()
       if (is.null(res)) return(NULL)
@@ -708,10 +897,11 @@ server <- function(id, input_data, data_version,
       show_bound <- isTRUE(input$show_boundaries)
 
       plot_res <- if (
-        res$analysis_type %in% c("lda", "mda")
+        res$analysis_type %in% c("lda", "mda", "plsda", "splsda")
       ) {
         if (is.null(res$scores)) return(NULL)
-        show_diag <- isTRUE(input$show_diagnostics)
+        show_diag <- isTRUE(input$show_diagnostics) &&
+          !res$analysis_type %in% c("plsda", "splsda")
         create_ld_plot(
           lda_result = res,
           dim_x = dim_x,
@@ -784,6 +974,51 @@ server <- function(id, input_data, data_version,
 # =============================================================================
 # Local helpers (not exported)
 # =============================================================================
+
+#' Render the PLS-DA/sPLS-DA component diagnostics panel
+#'
+#' Shows a prompt when no perf() run has happened yet, an
+#' error alert if the last run failed, or the error-rate
+#' table (Overall Error + BER per component) otherwise.
+#'
+#' @param perf_res data.frame from run_plsda_perf(), or NULL
+#' @param perf_err Structured error from run_plsda_perf(),
+#'   or NULL
+#' @return Shiny tag(s)
+render_perf_panel <- function(perf_res, perf_err) {
+  if (!is.null(perf_err)) {
+    return(shiny$tags$div(
+      class = "alert alert-danger py-2 px-2 small",
+      perf_err$message
+    ))
+  }
+  if (is.null(perf_res)) {
+    return(shiny$tags$div(
+      class = "text-muted small",
+      paste(
+        "Click \"Run Component Diagnostics (perf)\" in the",
+        "Analysis Settings sidebar tab to estimate",
+        "classification error per component via repeated",
+        "cross-validation."
+      )
+    ))
+  }
+  DT$datatable(
+    perf_res,
+    options = list(
+      pageLength = 20, dom = "t", scrollX = TRUE,
+      order = list(),
+      columnDefs = list(list(
+        className = "dt-right", targets = c(1, 2)
+      ))
+    ),
+    rownames = FALSE,
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
+  )
+}
 
 #' Build SVG + PNG download buttons for a plot
 #'
@@ -867,4 +1102,18 @@ register_plot_downloads <- function(output, input,
         )
       }
     )
+}
+
+#' Coalesce a numeric Shiny input to a default
+#'
+#' Unlike `%||%`, also falls back when the input is NA — which
+#' numericInput can transiently send while its DOM element is
+#' being rebuilt by a renderUI() (e.g. when ncomp changes,
+#' rebuilding the dynamic keepX inputs in analysis_settings.R).
+#'
+#' @param value The input value (may be NULL or NA)
+#' @param default Fallback numeric value
+#' @return Numeric, never NULL or NA
+input_num <- function(value, default) {
+  if (is.null(value) || is.na(value)) default else value
 }
