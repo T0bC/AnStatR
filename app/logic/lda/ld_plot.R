@@ -210,8 +210,12 @@ build_2d_plot <- function(scores, meta, grouping_col,
   # Title prefix depends on analysis type
   is_mda <- !is.null(lda_result) &&
     identical(lda_result$analysis_type, "mda")
+  is_plsda <- !is.null(lda_result) &&
+    lda_result$analysis_type %in% c("plsda", "splsda")
   title_prefix <- if (is_mda) {
     "Discriminant Scores"
+  } else if (is_plsda) {
+    "Component Scores"
   } else {
     "LD Scores"
   }
@@ -242,9 +246,15 @@ build_2d_plot <- function(scores, meta, grouping_col,
     ) +
     ld_theme()
 
-  # Overlay decision boundaries when requested
+  # Overlay decision boundaries when requested.
+  # PLS-DA/sPLS-DA use distance-to-centroid classification,
+  # not a Gaussian decision rule, so boundary/ellipse overlays
+  # (designed for LDA/MDA) do not apply.
+  is_gaussian_model <- !is.null(lda_result) &&
+    !lda_result$analysis_type %in% c("plsda", "splsda")
   has_model <- !is.null(lda_result) &&
-    !is.null(lda_result$model)
+    !is.null(lda_result$model) &&
+    is_gaussian_model
   if (isTRUE(show_boundaries) && has_model) {
     p <- add_boundaries_overlay(
       p, lda_result, dim_x, dim_y
@@ -306,8 +316,12 @@ build_1d_plot <- function(scores, meta, grouping_col,
 
   is_mda <- !is.null(lda_result) &&
     identical(lda_result$analysis_type, "mda")
+  is_plsda <- !is.null(lda_result) &&
+    lda_result$analysis_type %in% c("plsda", "splsda")
   title_prefix <- if (is_mda) {
     "Discriminant Scores"
+  } else if (is_plsda) {
+    "Component Scores"
   } else {
     "LD Scores"
   }
