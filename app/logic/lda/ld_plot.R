@@ -246,15 +246,11 @@ build_2d_plot <- function(scores, meta, grouping_col,
     ) +
     ld_theme()
 
-  # Overlay decision boundaries when requested.
-  # PLS-DA/sPLS-DA use distance-to-centroid classification,
-  # not a Gaussian decision rule, so boundary/ellipse overlays
-  # (designed for LDA/MDA) do not apply.
-  is_gaussian_model <- !is.null(lda_result) &&
-    !lda_result$analysis_type %in% c("plsda", "splsda")
+  # Overlay decision boundaries when requested. Supported for
+  # LDA, MDA, and PLS-DA/sPLS-DA (approximated via k-NN on
+  # training scores for MDA/PLS-DA — see add_boundaries_overlay()).
   has_model <- !is.null(lda_result) &&
-    !is.null(lda_result$model) &&
-    is_gaussian_model
+    !is.null(lda_result$model)
   if (isTRUE(show_boundaries) && has_model) {
     p <- add_boundaries_overlay(
       p, lda_result, dim_x, dim_y
