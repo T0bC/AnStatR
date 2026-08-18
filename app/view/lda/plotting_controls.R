@@ -90,28 +90,40 @@ tab_ui <- function(ns) {
         )
       )
     ),
-    # Assumption diagnostics overlay toggle
-    shiny$checkboxInput(
-      inputId = ns("show_diagnostics"),
-      label = shiny$tags$span(
-        "Show Assumption Diagnostics ",
-        bslib$tooltip(
-          bsicons$bs_icon(
-            "info-circle",
-            class = "text-muted"
-          ),
-          paste(
-            "Overlay per-group (solid) and pooled",
-            "within-group (dashed) covariance",
-            "ellipses on the LD Scores plot.",
-            "If both match, the equal-covariance",
-            "assumption holds."
-          )
-        )
+    # Assumption diagnostics: only meaningful for
+    # Gaussian-based methods (LDA/QDA/MDA). PLS-DA/sPLS-DA
+    # make no equal-covariance assumption to diagnose.
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("analysis_type"),
+        "'] != 'plsda' && input['",
+        ns("analysis_type"), "'] != 'splsda'"
       ),
-      value = FALSE
+      shiny$checkboxInput(
+        inputId = ns("show_diagnostics"),
+        label = shiny$tags$span(
+          "Show Assumption Diagnostics ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle",
+              class = "text-muted"
+            ),
+            paste(
+              "Overlay per-group (solid) and pooled",
+              "within-group (dashed) covariance",
+              "ellipses on the LD Scores plot.",
+              "If both match, the equal-covariance",
+              "assumption holds."
+            )
+          )
+        ),
+        value = FALSE
+      )
     ),
-    # Decision boundaries overlay toggle
+    # Decision boundaries overlay toggle — available for
+    # LDA/MDA/QDA and PLS-DA/sPLS-DA (approximated via k-NN
+    # on training scores for MDA/PLS-DA; see
+    # add_boundaries_overlay() for details).
     shiny$checkboxInput(
       inputId = ns("show_boundaries"),
       label = shiny$tags$span(
@@ -124,9 +136,9 @@ tab_ui <- function(ns) {
           paste(
             "Overlay classification decision",
             "regions and boundary lines on the",
-            "LD Scores plot. Shaded areas show",
+            "scores plot. Shaded areas show",
             "which group the model predicts for",
-            "each region of the LD space."
+            "each region of the plotted space."
           )
         )
       ),
@@ -205,8 +217,8 @@ tab_server <- function(input, output, session,
     res <- lda_result()
     if (is.null(res)) return()
 
-    if (res$analysis_type == "lda") {
-      # LDA: use LD scores
+    if (res$analysis_type %in% c("lda", "plsda", "splsda")) {
+      # LDA/PLS-DA/sPLS-DA: use LD/component scores
       if (
         is.null(res$scores) ||
         ncol(res$scores) == 0
@@ -217,8 +229,8 @@ tab_server <- function(input, output, session,
       n_ld <- length(ld_names)
 
       rhino$log$info(
-        "plotting_controls: LDA — ",
-        "{n_ld} LD axes available"
+        "plotting_controls: {toupper(res$analysis_type)} — ",
+        "{n_ld} axes available"
       )
 
       shiny$updateSelectizeInput(
