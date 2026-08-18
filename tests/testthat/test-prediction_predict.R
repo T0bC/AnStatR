@@ -118,6 +118,101 @@ make_qda_bundle <- function() {
   )
 }
 
+make_cluster_bundle <- function(variant = "kmeans") {
+  d <- make_iris_data()
+  numeric_data <- d$data[, d$numeric_cols, drop = FALSE]
+
+  if (variant == "pam") {
+    model <- cluster::pam(
+      numeric_data, k = 3, metric = "manhattan"
+    )
+    cluster_labels <- model$clustering
+    metric <- "manhattan"
+  } else {
+    model <- stats::kmeans(
+      numeric_data, centers = 3, nstart = 10
+    )
+    cluster_labels <- model$cluster
+    metric <- "euclidean"
+  }
+
+  list(
+    analysis_type = "cluster",
+    variant = variant,
+    model = model,
+    raw_data = d$data,
+    used_data = d$data,
+    group_col = NULL,
+    numeric_cols = d$numeric_cols,
+    meta_cols = "Species",
+    transform_params = list(),
+    scale_params = NULL,
+    cluster_metric = metric,
+    n_clusters = 3,
+    cluster_labels = as.integer(cluster_labels),
+    settings = list(
+      algorithm = "kmeans",
+      metric = metric,
+      n_clusters = 3
+    ),
+    data_source = "raw",
+    app_version = "2.0.0",
+    created = Sys.time()
+  )
+}
+
+# Two well-separated blobs, for unambiguous round-trip checks
+make_blob_cluster_bundle <- function(variant = "kmeans") {
+  set.seed(42)
+  n <- 30
+  data <- data.frame(
+    a = c(rnorm(n, 0, 0.5), rnorm(n, 10, 0.5)),
+    b = c(rnorm(n, 0, 0.5), rnorm(n, 10, 0.5))
+  )
+  numeric_cols <- c("a", "b")
+
+  if (variant == "pam") {
+    model <- cluster::pam(
+      data[, numeric_cols], k = 2, metric = "manhattan"
+    )
+    cluster_labels <- model$clustering
+    metric <- "manhattan"
+  } else {
+    model <- stats::kmeans(
+      data[, numeric_cols], centers = 2, nstart = 10
+    )
+    cluster_labels <- model$cluster
+    metric <- "euclidean"
+  }
+
+  list(
+    bundle = list(
+      analysis_type = "cluster",
+      variant = variant,
+      model = model,
+      raw_data = data,
+      used_data = data,
+      group_col = NULL,
+      numeric_cols = numeric_cols,
+      meta_cols = character(0),
+      transform_params = list(),
+      scale_params = NULL,
+      cluster_metric = metric,
+      n_clusters = 2,
+      cluster_labels = as.integer(cluster_labels),
+      settings = list(
+        algorithm = "kmeans",
+        metric = metric,
+        n_clusters = 2
+      ),
+      data_source = "raw",
+      app_version = "2.0.0",
+      created = Sys.time()
+    ),
+    data = data
+  )
+}
+
 # --- preprocess_unknown ---
 
 test_that("preprocess_unknown returns data unchanged when no transforms/scaling", {
@@ -229,6 +324,90 @@ test_that("predict_unknown works for QDA with companion LDA", {
   expect_equal(nrow(result$result$posterior), 30)
   # Should have LD scores from companion LDA
   expect_false(is.null(result$result$scores))
+})
+
+# --- predict_unknown: Cluster (K-Means / PAM) ---
+
+test_that("predict_unknown works for cluster kmeans (nearest centroid)", {
+  bundle <- make_cluster_bundle(variant = "kmeans")
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "cluster")
+  expect_length(result$result$predicted_class, 30)
+  expect_true(all(grepl(
+    "^Cluster [0-9]+$",
+    as.character(result$result$predicted_class)
+  )))
+  expect_null(result$result$posterior)
+  expect_true(ncol(result$result$scores) >= 2)
+})
+
+test_that("predict_unknown works for cluster pam (nearest medoid)", {
+  bundle <- make_cluster_bundle(variant = "pam")
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "cluster")
+  expect_length(result$result$predicted_class, 30)
+  expect_null(result$result$posterior)
+  expect_true(ncol(result$result$scores) >= 2)
+})
+
+test_that("predict_cluster assigns exact training points to their own cluster", {
+  built <- make_blob_cluster_bundle(variant = "kmeans")
+  bundle <- built$bundle
+  data <- built$data
+
+  preprocessed <- preprocess_unknown(data, bundle)
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+
+  predicted_idx <- as.integer(gsub(
+    "Cluster ", "",
+    as.character(result$result$predicted_class)
+  ))
+  expect_equal(predicted_idx, bundle$cluster_labels)
+})
+
+test_that("predict_cluster PAM assigns exact training points to their own cluster", {
+  built <- make_blob_cluster_bundle(variant = "pam")
+  bundle <- built$bundle
+  data <- built$data
+
+  preprocessed <- preprocess_unknown(data, bundle)
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+
+  predicted_idx <- as.integer(gsub(
+    "Cluster ", "",
+    as.character(result$result$predicted_class)
+  ))
+  expect_equal(predicted_idx, bundle$cluster_labels)
+})
+
+test_that("predict_cluster handles a centroid-midpoint tie without error", {
+  built <- make_blob_cluster_bundle(variant = "kmeans")
+  bundle <- built$bundle
+  centers <- bundle$model$centers
+
+  midpoint <- colMeans(centers[1:2, , drop = FALSE])
+  unknown <- as.data.frame(
+    matrix(
+      midpoint, nrow = 1,
+      dimnames = list(NULL, bundle$numeric_cols)
+    )
+  )
+
+  preprocessed <- preprocess_unknown(unknown, bundle)
+  result <- predict_unknown(bundle, preprocessed)
+
+  expect_true(result$success)
+  expect_length(result$result$predicted_class, 1)
 })
 
 # --- Skewness transform round-trip ---

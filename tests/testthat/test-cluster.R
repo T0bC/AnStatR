@@ -66,6 +66,18 @@ describe("run_clustering kmeans euclidean", {
     expect_true(!is.null(r$details$centers))
   })
 
+  it("retains the fitted kmeans model object", {
+    data <- make_cluster_data()
+    result <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "euclidean"
+    )
+    expect_true(result$success)
+    fitted <- result$result$details$fitted_model
+    expect_true(!is.null(fitted))
+    expect_true(inherits(fitted, "kmeans"))
+  })
+
   it("assigns all rows to a cluster", {
     data <- make_cluster_data()
     result <- cluster$run_clustering(
@@ -93,6 +105,18 @@ describe("run_clustering kmeans manhattan (PAM)", {
     expect_equal(r$details$variant, "pam")
     expect_equal(r$metric, "manhattan")
     expect_true(!is.null(r$details$medoids))
+  })
+
+  it("retains the fitted pam model object", {
+    data <- make_cluster_data()
+    result <- cluster$run_clustering(
+      data, c("a", "b"), 2,
+      algorithm = "kmeans", metric = "manhattan"
+    )
+    expect_true(result$success)
+    fitted <- result$result$details$fitted_model
+    expect_true(!is.null(fitted))
+    expect_true(inherits(fitted, "pam"))
   })
 })
 
