@@ -13,6 +13,7 @@ box::use(
 
 box::use(
   app/logic/cluster,
+  app/logic/cluster/cluster_export[create_cluster_bundle],
   app/logic/shared/error_handling,
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
@@ -74,6 +75,7 @@ server <- function(id, input_data, data_version,
     analysis_data_store <- shiny$reactiveVal(NULL)
     cleaned_data_store <- shiny$reactiveVal(NULL)
     measure_cols_store <- shiny$reactiveVal(NULL)
+    bundle_data <- shiny$reactiveVal(NULL)
     na_info <- shiny$reactiveVal(NULL)
     transform_info <- shiny$reactiveVal(NULL)
     skewness_info <- shiny$reactiveVal(NULL)
@@ -99,6 +101,7 @@ server <- function(id, input_data, data_version,
       analysis_data_store(NULL)
       cleaned_data_store(NULL)
       measure_cols_store(NULL)
+      bundle_data(NULL)
       na_info(NULL)
       transform_info(NULL)
       skewness_info(NULL)
@@ -210,6 +213,7 @@ server <- function(id, input_data, data_version,
       hopkins_result(NULL)
       optimal_result(NULL)
       transform_info(NULL)
+      bundle_data(NULL)
 
       data_source <- input$data_source
       measure_cols <- input$measureVar
@@ -535,6 +539,72 @@ server <- function(id, input_data, data_version,
           analysis_data_store(analysis_data)
           measure_cols_store(measure_cols)
 
+          # Store bundle data for RDS export — only
+          # supported for K-Means/PAM on raw data
+          if (
+            data_source == "raw" &&
+            algorithm == "kmeans"
+          ) {
+            s_params <- if (
+              !is.null(scale_method) &&
+              scale_method != "none"
+            ) {
+              do_center <- scale_method %in%
+                c("scale_center", "center_only")
+              do_scale <- scale_method == "scale_center"
+              numeric_pre <- cleaned_data[
+                , measure_cols, drop = FALSE
+              ]
+              sc_center <- if (do_center) {
+                colMeans(numeric_pre, na.rm = TRUE)
+              } else {
+                NULL
+              }
+              sc_scale <- if (do_scale) {
+                vapply(
+                  numeric_pre,
+                  function(col) {
+                    stats::sd(col, na.rm = TRUE)
+                  },
+                  numeric(1)
+                )
+              } else {
+                NULL
+              }
+              list(center = sc_center, scale = sc_scale)
+            } else {
+              NULL
+            }
+
+            tf_info <- transform_info()
+            t_params <- if (
+              !is.null(tf_info) &&
+              !is.null(tf_info$transform_params)
+            ) {
+              tf_info$transform_params
+            } else {
+              list()
+            }
+
+            bundle_data(list(
+              raw_data = na_result$data,
+              used_data = analysis_data,
+              numeric_cols = measure_cols,
+              meta_cols = meta_cols,
+              transform_params = t_params,
+              scale_params = s_params,
+              settings = list(
+                algorithm = algorithm,
+                metric = cluster_metric,
+                n_clusters = n_clusters,
+                skewness_correction = isTRUE(
+                  input$correct_skewness
+                ),
+                scale_method = scale_method %||% "none"
+              )
+            ))
+          }
+
           keep_cols <- c(meta_cols, measure_cols)
           md <- cleaned_data[
             , keep_cols, drop = FALSE
@@ -811,7 +881,8 @@ server <- function(id, input_data, data_version,
           value = "cluster_results",
           cluster_results$render_cluster_results(
             res, ns,
-            cluster_summary = cluster_summary()
+            cluster_summary = cluster_summary(),
+            can_export_bundle = !is.null(bundle_data())
           )
         )
       }
@@ -1048,6 +1119,43 @@ server <- function(id, input_data, data_version,
         openxlsx$saveWorkbook(wb, file)
         rhino$log$info(
           "Download: Cluster results Excel"
+        )
+      }
+    )
+
+    # Download handler: RDS export (Prediction bundle)
+    output$download_cluster_rds <- shiny$downloadHandler(
+      filename = function() {
+        bd <- bundle_data()
+        variant <- if (!is.null(result())) {
+          result()$details$variant
+        } else {
+          "kmeans"
+        }
+        paste0(
+          "cluster_bundle_", variant, "_",
+          format(Sys.time(), "%Y%m%d_%H%M%S"),
+          ".rds"
+        )
+      },
+      content = function(file) {
+        res <- result()
+        shiny$req(res)
+        bd <- bundle_data()
+        shiny$req(bd)
+        bundle <- create_cluster_bundle(
+          cluster_result = res,
+          raw_data = bd$raw_data,
+          used_data = bd$used_data,
+          numeric_cols = bd$numeric_cols,
+          meta_cols = bd$meta_cols,
+          transform_params = bd$transform_params,
+          scale_params = bd$scale_params,
+          settings = bd$settings
+        )
+        saveRDS(bundle, file)
+        rhino$log$info(
+          "Download: Cluster RDS bundle"
         )
       }
     )
