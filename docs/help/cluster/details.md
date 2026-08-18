@@ -27,7 +27,9 @@ Select all columns that carry specimen identity, provenance, or group informatio
 
 When the **Statistics** tab has computed a parameter screening ranking (see the Plotting tab's **Disable plots (parameter screening mode)**) and the cluster data source is set to **raw measurements**, an **Apply recommended parameters** banner appears above the measurement-column selector. It applies the union of parameters that ranked among the top group separators across all pairwise comparisons in Statistics. The banner is hidden when the data source is PCA scores or LDA scores, since recommended parameters are raw measurement column names and have no meaning as score dimensions. See the **Statistics** module's Details tab for how the ranking is computed.
 
-Note: unlike PCA and LDA, the Cluster module has no `.rds`/`.rda` export. Cluster results — whether computed on manually selected or recommended parameters — cannot currently be loaded into the **Prediction** module; only PCA, LDA, QDA, and MDA model bundles are supported there.
+**Prediction export**
+
+K-Means and PAM clusters fit on **raw measurement data** can be exported as an `.rds` bundle (**Download RDS (for Prediction)** in the Cluster Results panel) and loaded into the **Prediction** module to assign new/unknown samples to the nearest centroid (K-Means) or medoid (PAM) — see "Prediction Export Scope" below and the **Prediction** module's Details tab for the out-of-sample assignment rule.
 
 ##### Technical Specifications
 
@@ -112,6 +114,20 @@ All algorithms except K-Means (which internally uses squared Euclidean distances
 | **Manhattan** | $\sum_j \vert x_{ij} - x_{kj}\vert$ | Measures "city-block" distance; more robust to outliers and non-normal distributions; automatically triggers PAM for K-Means |
 
 With **Scale & Center** applied, both metrics yield comparable results. Without scaling, Euclidean distances are dominated by high-variance variables; Manhattan distances are somewhat less sensitive but still affected.
+
+</details>
+
+<details>
+<summary><strong>Prediction Export Scope</strong></summary>
+
+Only **K-Means and PAM fit on raw measurement data** can be exported for use in the **Prediction** module. This is a deliberate scope decision, not a temporary limitation:
+
+- **K-Means and PAM** have a well-defined, standard out-of-sample rule — assign the new observation to the nearest centroid or medoid, exactly what the algorithm itself does internally on every iteration. Exporting the fitted `kmeans`/`pam` object plus the stored centroids/medoids is sufficient to reproduce this rule for new data.
+- **Hierarchical clustering** has no `predict()` concept at all: cluster membership only exists as a specific horizontal cut through a dendrogram built from the full training distance matrix. There is no principled way to place a single new point into that structure without recomputing the whole hierarchy.
+- **DBSCAN** tunes `eps` and `minPts` automatically from the training dataset's own density distribution. Applying those same auto-tuned parameters to a new point is not equivalent to how DBSCAN would treat it if it were part of the original density estimation, and "noise" is a legitimate but awkward prediction outcome with no analogue in the other algorithms.
+- **PCA-scores or LDA-scores as the clustering input** are excluded from export because doing so correctly would require bundling the upstream PCA/LDA model *inside* the cluster bundle (a two-stage prediction: project raw → then assign nearest centroid), which is not currently implemented.
+
+The **Download RDS (for Prediction)** button in the Cluster Results panel is only shown when the data source is raw measurements and the algorithm is K-Means (either the Euclidean or the Manhattan/PAM variant).
 
 </details>
 

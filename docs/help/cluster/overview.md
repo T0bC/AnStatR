@@ -44,3 +44,12 @@ The **Number of clusters (k)** is auto-set to the median of three internal metho
 After clicking **Run Clustering**, the most important result is the **Cluster Biplot** (open by default) — a scatter plot projecting all specimens onto the two selected dimensions, colour-coded by cluster membership. The degree of separation between clusters directly reflects how distinct the groups are in the chosen variable space.
 
 The **Cluster Results** accordion contains the algorithm summary banner, cluster sizes, quality metrics (Average Silhouette Width, BSS/TSS, Total Within-SS), and the **Cluster Profile** table showing per-cluster variable means against the overall mean — this is the key table for characterising what distinguishes each cluster.
+
+##### Exporting for Prediction
+
+A **Download RDS (for Prediction)** button appears in the Cluster Results accordion when the clustering run used **K-Means or K-Means (PAM)** on **raw measurement data**. The exported bundle can be loaded in the **Prediction** tab to classify new/unknown samples by nearest centroid (K-Means) or nearest medoid (PAM) — the same rule the algorithm itself uses internally.
+
+The button does not appear for:
+
+- **Hierarchical clustering or DBSCAN** — neither has a principled, well-defined rule for placing a new observation into an existing clustering (hierarchical has no `predict` concept; DBSCAN's `eps`/`minPts` are tuned per training dataset)
+- **PCA Scores or LDA Scores** as the data source — exporting a cluster built on scores would require bundling the upstream PCA/LDA model as well, which is not currently supported
