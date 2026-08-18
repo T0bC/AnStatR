@@ -384,7 +384,8 @@ run_kmeans <- function(num_data, n_clusters, metric) {
       details = list(
         variant = "pam",
         medoids = pam_res$medoids,
-        objective = pam_res$objective
+        objective = pam_res$objective,
+        fitted_model = pam_res
       )
     )
   } else {
@@ -397,7 +398,8 @@ run_kmeans <- function(num_data, n_clusters, metric) {
       clusters = km_res$cluster,
       details = list(
         variant = "kmeans",
-        centers = km_res$centers
+        centers = km_res$centers,
+        fitted_model = km_res
       )
     )
   }
