@@ -39,7 +39,7 @@ Calculate median values for measurement columns with optional quality filtering 
 
 ### Plotting
 
-Visualize data with customizable scatter plots. Select descriptive and measurement columns to generate plots per measurement variable, with configurable X-axis groupings, data filtering, outlier detection, normalization, and styling options including custom colors, point aesthetics, and median/SD lines.
+Visualize data with customizable scatter plots. Select descriptive and measurement columns to generate plots per measurement variable, with configurable X-axis groupings, data filtering, outlier detection, normalization, and styling options including custom colors, point aesthetics, and median/SD lines. An optional parameter screening mode skips plot generation to quickly screen large measurement-parameter sets, feeding selections directly into the Statistics module's separation ranking.
 
 ![Plotting module](docs/screenshots/02_Plotting.png)
 
@@ -49,23 +49,23 @@ Compute descriptive statistics (mean, median, variance, standard deviation, stan
 
 ### Statistics
 
-Run omnibus tests and pairwise post-hoc comparisons for 1-way, 2-way, or 3-way factorial designs. Choose between robust trimmed-means ANOVA, classical parametric ANOVA, or non-parametric approaches. Configure p-value adjustment methods, bootstrap options, and export HTML reports.
+Run omnibus tests and pairwise post-hoc comparisons for 1-way, 2-way, or 3-way factorial designs. Choose between robust trimmed-means ANOVA, classical parametric ANOVA, or non-parametric approaches. Configure p-value adjustment methods, bootstrap options, and export HTML reports. When the Plotting tab's parameter screening mode is active, an additional ranking table screens large measurement-parameter sets by p-value and effect size across all pairwise comparisons, recommending a subset of parameters for downstream dimensionality reduction.
 
 ![Statistics module](docs/screenshots/03_Statsistics.png)
 
 ### PCA
 
-Perform Principal Component Analysis to reduce data dimensionality. Supports data scaling options and normalization for skewed variables. Provides KMO suitability measure, optimal component recommendations, eigenvalue tables, and biplots with metadata grouping.
+Perform Principal Component Analysis to reduce data dimensionality. Supports data scaling options and normalization for skewed variables. Provides KMO suitability measure, optimal component recommendations, eigenvalue tables, and biplots with metadata grouping. Can apply the parameter set recommended by the Statistics tab's screening ranking with one click.
 
 ![PCA module](docs/screenshots/04_PCA.png)
 
 ### LDA
 
-Conduct supervised Discriminant Analysis (LDA, QDA, or MDA) to find linear combinations of variables that maximize separation between predefined groups. Includes scaling and normalization options, with LD scores plots showing group discrimination and proportion of trace tables.
+Conduct supervised Discriminant Analysis (LDA, QDA, or MDA) to find linear combinations of variables that maximize separation between predefined groups. Includes scaling and normalization options, with LD scores plots showing group discrimination and proportion of trace tables. Can apply the parameter set recommended by the Statistics tab's screening ranking with one click.
 
 ### Cluster
 
-Apply unsupervised cluster analysis to partition observations based on similarity. Supports raw measurements, PCA scores, or LDA scores as input. Algorithms include K-Means (Euclidean and PAM), Hierarchical, and DBSCAN. Provides cluster biplots, quality metrics, and cluster profile tables characterizing group differences.
+Apply unsupervised cluster analysis to partition observations based on similarity. Supports raw measurements, PCA scores, or LDA scores as input. Algorithms include K-Means (Euclidean and PAM), Hierarchical, and DBSCAN. Provides cluster biplots, quality metrics, and cluster profile tables characterizing group differences. When clustering on raw measurements, can apply the parameter set recommended by the Statistics tab's screening ranking with one click.
 
 ### Prediction
 
