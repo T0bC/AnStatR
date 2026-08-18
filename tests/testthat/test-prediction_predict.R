@@ -118,6 +118,43 @@ make_qda_bundle <- function() {
   )
 }
 
+make_plsda_bundle <- function(sparse = FALSE) {
+  d <- make_iris_data()
+  numeric_data <- d$data[, d$numeric_cols, drop = FALSE]
+  x_mat <- as.matrix(numeric_data)
+  y <- d$data$Species
+
+  model <- if (sparse) {
+    mixOmics::splsda(
+      x_mat, y, ncomp = 2,
+      keepX = c(2, 2), scale = TRUE
+    )
+  } else {
+    mixOmics::plsda(x_mat, y, ncomp = 2, scale = TRUE)
+  }
+
+  list(
+    analysis_type = if (sparse) "splsda" else "plsda",
+    model = model,
+    raw_data = d$data,
+    used_data = d$data,
+    group_col = "Species",
+    numeric_cols = d$numeric_cols,
+    meta_cols = character(0),
+    transform_params = list(),
+    scale_params = NULL,
+    settings = list(
+      skewness_correction = FALSE,
+      scale_method = "none",
+      ncomp = 2,
+      sparse = sparse
+    ),
+    data_source = "raw",
+    app_version = "2.0.0",
+    created = Sys.time()
+  )
+}
+
 make_cluster_bundle <- function(variant = "kmeans") {
   d <- make_iris_data()
   numeric_data <- d$data[, d$numeric_cols, drop = FALSE]
@@ -323,6 +360,35 @@ test_that("predict_unknown works for QDA with companion LDA", {
   expect_length(result$result$predicted_class, 30)
   expect_equal(nrow(result$result$posterior), 30)
   # Should have LD scores from companion LDA
+  expect_false(is.null(result$result$scores))
+})
+
+# --- predict_unknown: PLS-DA / sPLS-DA ---
+
+test_that("predict_unknown works for PLS-DA", {
+  bundle <- make_plsda_bundle(sparse = FALSE)
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "plsda")
+  expect_length(result$result$predicted_class, 30)
+  expect_equal(nrow(result$result$posterior), 30)
+  expect_false(is.null(result$result$scores))
+  expect_equal(ncol(result$result$scores), 2)
+  expect_equal(colnames(result$result$scores), c("Comp1", "Comp2"))
+})
+
+test_that("predict_unknown works for sPLS-DA", {
+  bundle <- make_plsda_bundle(sparse = TRUE)
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "splsda")
+  expect_length(result$result$predicted_class, 30)
   expect_false(is.null(result$result$scores))
 })
 
