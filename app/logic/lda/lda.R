@@ -479,8 +479,11 @@ run_plsda <- function(data, columns, grouping_col,
 #'   contain a fitted $model, i.e. not already CV-only)
 #' @param folds Integer, number of CV folds
 #' @param repeats Integer, number of repeats of the CV scheme
-#' @return List with $success, $result (data.frame with
-#'   Component, Overall Error, BER, using max.dist) or $error
+#' @return List with $success, $result (list with $errors —
+#'   data.frame of Component, Overall Error, BER using max.dist
+#'   — and $stability — data.frame of Component, Variable,
+#'   Frequency for sPLS-DA fits, or NULL for plain PLS-DA) or
+#'   $error
 #' @export
 run_plsda_perf <- function(plsda_result, folds = 5,
                            repeats = 10) {
@@ -505,14 +508,20 @@ run_plsda_perf <- function(plsda_result, folds = 5,
       ber <- perf_res$error.rate$BER
       n_comp <- nrow(overall)
 
-      df <- data.frame(
+      errors_df <- data.frame(
         Component = paste0("Comp", seq_len(n_comp)),
         `Overall Error` = round(overall[, "max.dist"], 4),
         BER = round(ber[, "max.dist"], 4),
         check.names = FALSE
       )
-      rownames(df) <- NULL
-      df
+      rownames(errors_df) <- NULL
+
+      # Feature stability: how often each variable was selected
+      # across CV folds/repeats (sPLS-DA only — perf() only
+      # tracks $features$stable when the model used keepX).
+      stability_df <- build_stability_table(perf_res, n_comp)
+
+      list(errors = errors_df, stability = stability_df)
     },
     operation_name = "PLS-DA Component Diagnostics",
     error_parser = lda_error_parser
@@ -708,6 +717,33 @@ run_predict <- function(lda_result, test_data, columns,
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+build_stability_table <- function(perf_res, n_comp) {
+  stable <- perf_res$features$stable
+  if (is.null(stable) || length(stable) == 0) {
+    return(NULL)
+  }
+
+  rows <- lapply(seq_along(stable), function(i) {
+    comp_stable <- stable[[i]]
+    if (is.null(comp_stable) || length(comp_stable) == 0) {
+      return(NULL)
+    }
+    data.frame(
+      Component = paste0("Comp", i),
+      Variable = names(comp_stable),
+      Frequency = round(as.numeric(comp_stable), 4),
+      stringsAsFactors = FALSE
+    )
+  })
+  df <- do.call(rbind, rows)
+  if (is.null(df) || nrow(df) == 0) return(NULL)
+
+  df <- df[order(df$Component, -df$Frequency), ]
+  rownames(df) <- NULL
+  df
+}
+
 
 build_prior <- function(prior_choice, grouping) {
   # Drop unused factor levels (important after filtering)
@@ -970,6 +1006,20 @@ build_plsda_result <- function(model, data, columns,
       }
     )
     names(result$selected_variables) <- comp_names
+  }
+
+  # VIP (Variable Importance in Projection): aggregates each
+  # variable's contribution across all components, weighted by
+  # each component's explained variance in Y. Standard mixOmics
+  # companion to loadings for ranking variables by discriminating
+  # power (VIP > 1 conventionally flags above-average importance).
+  vip_mat <- tryCatch(
+    as.data.frame(mixOmics$vip(model)),
+    error = function(e) NULL
+  )
+  if (!is.null(vip_mat)) {
+    colnames(vip_mat) <- comp_names
+    result$vip <- vip_mat
   }
 
   rhino$log$info(
