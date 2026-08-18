@@ -117,6 +117,9 @@ predict_unknown <- function(bundle, preprocessed_data) {
         qda = predict_qda(
           model, numeric_data, bundle
         ),
+        cluster = predict_cluster(
+          bundle, numeric_data
+        ),
         stop(paste0(
           "Unsupported analysis type: '",
           analysis_type, "'"
@@ -225,6 +228,39 @@ predict_qda <- function(model, numeric_data, bundle) {
   }
 
   result
+}
+
+predict_cluster <- function(bundle, numeric_data) {
+  variant <- bundle$variant
+  ref_points <- if (variant == "pam") {
+    bundle$model$medoids
+  } else {
+    bundle$model$centers
+  }
+
+  metric <- bundle$cluster_metric %||% "euclidean"
+  num_mat <- as.matrix(numeric_data)
+
+  dist_fun <- if (metric == "manhattan") {
+    function(x, y) sum(abs(x - y))
+  } else {
+    function(x, y) sqrt(sum((x - y)^2))
+  }
+
+  nearest_idx <- apply(num_mat, 1, function(row) {
+    dists <- apply(ref_points, 1, function(ref) {
+      dist_fun(row, ref)
+    })
+    which.min(dists)
+  })
+
+  list(
+    predicted_class = factor(
+      paste0("Cluster ", nearest_idx)
+    ),
+    posterior = NULL,
+    scores = numeric_data
+  )
 }
 
 prediction_error_parser <- function(
