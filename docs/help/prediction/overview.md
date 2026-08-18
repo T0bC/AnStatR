@@ -9,6 +9,8 @@ Two files are required before running a prediction:
 - **Model bundle (.rds)** — exported from the PCA, LDA, QDA, or MDA tab. Upload via the **Upload** sidebar tab. The bundle summary card confirms the analysis type, number of training observations, and creation date after loading
 - **Unknown data (CSV or XLSX)** — the specimens you want to classify or project. Must contain **the same measurement columns** used during model training. Upload formats: CSV or Excel (`.xlsx`, first sheet)
 
+This applies identically whether the training model used a manually selected parameter set or the subset applied via the Statistics tab's **Apply recommended parameters** banner (see the Plotting module's parameter screening mode) — the bundle records whichever columns were selected at export time, and prediction aligns to those.
+
 **Critical requirement — reference population match**: the unknown data must come from the same reference population as the training data. This means specimens were measured using the same protocol, instrument, and measurement definitions. A model trained on, e.g., modern reference tooth enamel cannot be applied reliably to specimens measured with a different instrument or under different conditions, even if column names match. The bundle was built from a specific comparative reference collection; only apply it to unknowns that are reasonably assumed to be drawn from the same underlying population.
 
 ##### Workflow

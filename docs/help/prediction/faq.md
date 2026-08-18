@@ -1,6 +1,13 @@
 #### Frequently Asked Questions — Prediction
 
 <details>
+<summary>Does prediction work differently if the PCA/LDA model was built from the Statistics tab's recommended parameters instead of a manual selection?</summary>
+
+No. The bundle stores the measurement columns that were selected in the PCA or LDA tab at the time of export (`numeric_cols`), regardless of whether those columns were chosen manually or applied via the **Apply recommended parameters** banner (surfaced by the Statistics tab's parameter screening mode). Prediction always aligns the uploaded unknown data to `numeric_cols` from the bundle — there is no separate code path for a "recommended" parameter set, so this workflow requires no special handling on the Prediction side.
+
+</details>
+
+<details>
 <summary>What is a model bundle and why does prediction require one?</summary>
 
 A model bundle is an `.rds` file exported from the PCA, LDA, QDA, or MDA tab after a successful analysis. It is a self-contained archive that stores everything needed to reproduce the exact same preprocessing and model for new data:
