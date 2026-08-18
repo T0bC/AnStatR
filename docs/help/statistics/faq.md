@@ -171,6 +171,29 @@ The report captures the state at compute time, including all parameter settings 
 </details>
 
 <details>
+<summary>How is the "Parameter Screening — Separation Ranking" table different from the normal post-hoc results?</summary>
+
+It is not a different analysis — it is a re-summary of the same post-hoc results, ranking parameters by how well they separate groups instead of presenting each parameter's results in isolation. It only appears when the Plotting tab's **Disable plots (parameter screening mode)** checkbox is enabled, and only after clicking **Compute Statistics**.
+
+Use it when screening many parameters (e.g., 40+) to identify a data-driven subset for **PCA**, **LDA**, or **Cluster** analysis. If you only care about the detailed results for a handful of parameters, disable screening mode and read the per-measurement cards directly.
+
+</details>
+
+<details>
+<summary>Why is a parameter "recommended" even though its p-value is not significant?</summary>
+
+The ranking deliberately does not apply a significance threshold (such as p < 0.05). A parameter is recommended when it ranks among the top separators *relative to the other parameters in the same comparison* — this identifies the most promising candidates for dimensionality reduction, not a confirmatory claim of a real group difference. Always interpret the recommended set as a screening aid, and verify final conclusions using the full post-hoc results (with adjusted p-values) for the parameters you ultimately use.
+
+</details>
+
+<details>
+<summary>Why does a parameter I expected to be important not appear in the recommended set?</summary>
+
+The recommended set is a union of only the top 3 parameters (default) per pairwise comparison. A parameter that consistently ranks 4th or lower across all comparisons — even with a reasonably small p-value — will not be included. Check the full ranking table (not just the recommended-parameters alert) to see every parameter's rank and p-value per comparison; you can always add parameters manually in the PCA/LDA/Cluster tabs regardless of whether they were recommended.
+
+</details>
+
+<details>
 <summary>Which R packages power the Statistics module?</summary>
 
 | Package | Purpose | Citation |

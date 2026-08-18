@@ -316,3 +316,39 @@ When enabled, the robust omnibus and Lincon post-hoc computations are repeated a
 </details>
 
 See the **FAQ** tab for troubleshooting common errors and edge cases.
+
+---
+
+#### Parameter Screening — Separation Ranking
+
+Available only when the Plotting tab's **Disable plots (parameter screening mode)** checkbox is enabled. This refines the variable-ranking approach introduced by the **'trident'** Shiny app for dental microwear texture analysis (Thiery et al., 2024) into a dataset-agnostic screening step available for any measurement data — see the **Plotting** module's Details tab for the full workflow and citation.
+
+<details>
+<summary><strong>How the ranking is computed</strong></summary>
+
+No additional statistical tests are run. The ranking reuses the post-hoc results already computed for each measurement parameter (respecting whichever approach — Robust, Parametric, Non-Parametric — and adjustment method is currently selected):
+
+1. **Per-comparison ranking**: for each pairwise comparison (`Interaction` row, e.g. `GroupA vs. GroupB`), every parameter is ranked ascending by its **raw** (unadjusted) post-hoc p-value. Raw p-values are used because each parameter's post-hoc table may be adjusted over a different number of surviving rows, making adjusted p-values not directly comparable across parameters.
+2. **Tie-breaking**: ties in p-value are broken by the magnitude of the effect size relative to its null value (`|effect − effect_null|`) — the parameter with the larger separation wins.
+3. **Top-*n* marking**: the top 3 parameters (by default) in each comparison are marked as top-ranked for that comparison.
+4. **Recommended set**: the union of all top-marked parameters across all comparisons becomes the recommended parameter set, sorted first by the number of comparisons a parameter placed top in (descending), then by its best rank achieved.
+
+Parameters whose post-hoc result is missing, errored, or has only `NA` p-values are excluded from the ranking and listed under "measurement(s) excluded from ranking" with a reason.
+
+</details>
+
+<details>
+<summary><strong>Reading the ranking table</strong></summary>
+
+The table has one row per parameter and one column per pairwise comparison. Each cell shows `rank (p-value)` for that parameter in that comparison; cells are highlighted when the parameter ranked in the top *n* for that comparison. The **Top count** column tallies how many comparisons a parameter placed top in — this is the primary sort key. An expandable section below the table shows the same layout with effect-size values instead of ranks.
+
+**Deliberately no significance threshold is applied** — the ranking reflects relative ordering within each comparison, not statistical significance. A parameter can be top-ranked (i.e., the best available separator for that comparison) even if its p-value would not survive multiple-comparison correction. This is intentional: the goal is to identify the *most promising* parameters for downstream dimensionality reduction, not to draw confirmatory conclusions from the ranking itself.
+
+</details>
+
+<details>
+<summary><strong>Using the recommended parameters downstream</strong></summary>
+
+The recommended parameter set is exposed to the **PCA**, **LDA**, and **Cluster** tabs, each of which shows an **Apply recommended parameters** banner in their Data Selection tab (Cluster only when clustering on raw measurement columns, since recommendations are raw parameter names and do not apply to PCA/LDA score inputs). Applying the recommendation populates the measurement-column selector; you can still adjust the selection manually afterward. From that point on, the selected columns behave identically to a fully manual selection, including when saving a PCA/LDA model bundle for later use in the **Prediction** module.
+
+</details>

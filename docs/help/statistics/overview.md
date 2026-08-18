@@ -51,3 +51,9 @@ Seven omnibus rows: three main effects (A, B, C), three two-way interactions (A:
 ##### HTML Report Download
 
 Click the **download icon** (↓) in any card header to export a self-contained HTML report for that measurement, including the plot, omnibus table, and post-hoc results.
+
+##### Parameter Screening — Separation Ranking
+
+When the Plotting tab's **Disable plots (parameter screening mode)** checkbox is enabled, an additional **Parameter Screening — Separation Ranking** card appears above the per-measurement results after clicking **Compute Statistics**. It ranks every measurement parameter by how well it separates groups across all pairwise comparisons, using the p-values and effect sizes already computed in the post-hoc step — no extra tests are run.
+
+The top-ranked parameters become the **recommended parameter set**, which can be applied with one click in the **PCA**, **LDA**, and **Cluster** tabs to reduce a large parameter list to a statistically motivated subset. See the **Details** tab for the ranking method.
