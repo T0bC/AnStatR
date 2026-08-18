@@ -228,6 +228,32 @@ If both **Shape by** and **Color by** are empty, there's nothing to put in the l
 
 ---
 
+##### Parameter Screening
+
+<details>
+<summary>What is parameter screening mode and when should I use it?</summary>
+
+Parameter screening mode (the **Disable plots** checkbox) skips plot and diagnostics generation so you can quickly push a large number of measurement columns through to the Statistics tab, which ranks them by how well each separates your groups. Use it when you have many candidate measurement parameters (roughly 40+) and want a statistically motivated starting subset for PCA, LDA, or Cluster analysis, rather than reviewing each parameter's plot individually or guessing which ones matter.
+
+It is not required for normal use — if you have a manageable number of parameters and want to inspect plots directly, leave it disabled (the default).
+</details>
+
+<details>
+<summary>Does screening mode change my statistical results?</summary>
+
+No. Screening mode only changes what the Plotting tab displays and computes for you — it skips plot rendering and forces auto-normalization on. The omnibus tests and post-hoc comparisons computed in the Statistics tab use the same methods regardless of whether screening mode is active; the only addition is the separation-ranking table and the resulting recommended parameter set, which are derived from those same post-hoc results, not a separate analysis.
+</details>
+
+<details>
+<summary>Where do the "recommended parameters" come from and how do I use them?</summary>
+
+They are computed in the **Statistics** tab from the post-hoc results of every measurement parameter you selected: each parameter is ranked per pairwise comparison by p-value (ties broken by effect size), and parameters that place among the top separators in at least one comparison are recommended. See the Statistics module's Details and FAQ tabs for the full ranking method.
+
+Once computed, an **Apply recommended parameters** banner appears in the Data Selection tab of **PCA**, **LDA**, and **Cluster** (Cluster only when using raw measurement columns as input, not PCA/LDA scores). Clicking it populates the measurement-column selector with the recommended subset — you can still add or remove columns manually afterward.
+</details>
+
+---
+
 ##### Troubleshooting
 
 <details>

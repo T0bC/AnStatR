@@ -24,3 +24,13 @@ Apply optional transformations to improve data quality and meet statistical assu
 ##### Plot Style
 
 Customize plot appearance.. Adjust point size, transparency, shapes, colors, median/SD lines, axis settings, legend position, and export dimensions. The **Custom Colors** panel allows per-group color assignment when color grouping is active.
+
+##### Parameter Screening Mode
+
+Enable **Disable plots (parameter screening mode)** to skip plot and diagnostics generation and screen many measurement parameters at once instead of reviewing them one plot at a time. In this mode:
+
+- Select **X-Axis** and **measurement columns** only — plot styling, outlier detection, and normalization settings are hidden, and auto-normalization is applied automatically
+- Selections pass straight through to the **Statistics** tab, which computes a p-value and effect size for every parameter across all pairwise group comparisons and ranks them by how well each separates the groups
+- The top-ranked parameters are then available as a one-click **recommendation** in the **PCA**, **LDA**, and **Cluster** tabs
+
+This screening-then-reduce workflow is recommended when working with 40+ measurement parameters, where manually inspecting each one is impractical. See the **Statistics** module help for how the ranking is computed, and the **Details** tab below for the underlying method.

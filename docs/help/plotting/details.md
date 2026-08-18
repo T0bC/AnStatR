@@ -247,6 +247,38 @@ When multiple columns are selected in **X-Axis**, the plot creates a nested hier
 
 ---
 
+##### Parameter Screening Mode
+
+<details>
+<summary><strong>Workflow and Rationale</strong></summary>
+
+Parameter screening mode (the **Disable plots** checkbox in Data Selection) addresses a common problem in exploratory morphometric and microwear analysis: datasets with dozens of measurement parameters where manually plotting, inspecting, and statistically testing each one is impractical, yet an unprincipled or purely intuition-based subset choice risks omitting the parameters that actually separate the groups of interest.
+
+The workflow refines the variable-ranking approach introduced by the **'trident'** Shiny app for dental microwear texture analysis (Thiery et al., 2024; see citation below) into a generic, dataset-agnostic screening step available for any tabular measurement data:
+
+1. **Screen**: Enable screening mode in Plotting, select all candidate measurement columns, and let the app skip plotting to save computation time
+2. **Rank**: Run **Compute Statistics** in the Statistics tab — every parameter receives a p-value and effect size for each pairwise group comparison, and the tab ranks parameters by how consistently they place among the top separators
+3. **Reduce**: Apply the recommended parameter subset with one click in the **PCA**, **LDA**, or **Cluster** tab to run dimensionality reduction, discriminant analysis, or clustering on a statistically motivated subset rather than the full parameter list
+
+</details>
+
+<details>
+<summary><strong>What Changes When Screening Mode Is Active</strong></summary>
+
+| Aspect | Normal mode | Screening mode |
+|---|---|---|
+| Plot generation | One plot per measurement column | Skipped entirely |
+| Outlier detection / trimming / normalization panels | Configurable | Hidden; automatic normalization is applied |
+| Data Selection inputs shown | Descriptive, Measurement, X-Axis, Filter, Style | Only X-Axis and Measurement columns |
+| Statistics tab | Computes results for manual review | Additionally computes the **Separation Ranking** table and the `recommended_parameters` set |
+| Downstream PCA/LDA/Cluster tabs | Manual column selection only | Manual selection, plus an **Apply recommended parameters** banner |
+
+Skipping plot rendering is what makes screening dozens of parameters at once practical — rendering is typically the slowest part of the Plotting tab, and screening mode is designed for cases where the per-parameter plot is not yet the object of interest.
+
+</details>
+
+---
+
 ##### Best Practices
 
 - **Start with no processing**: Preview raw data first before applying transformations
@@ -255,3 +287,12 @@ When multiple columns are selected in **X-Axis**, the plot creates a nested hier
 - **Use trimming OR normalization, not both**: Trimming disables normalization automatically
 - **Hide high-cardinality columns**: Hide `SAMPLE_ID` or similar columns with hundreds of unique values to keep the filter UI usable
 - **Export at publication size**: Set width to 16 cm for typical Word document single-column figures
+- **Use screening mode for large parameter sets**: Enable **Disable plots** when working with 40+ measurement columns and let the Statistics tab's ranking guide which parameters to carry into PCA/LDA/Cluster
+
+---
+
+##### Reference
+
+The parameter screening → ranking → dimensionality-reduction workflow refines the parameter-preselection approach introduced by:
+
+Thiery, G., Francisco, A., Louail, M., Berlioz, É., Blondel, C., Brunetière, N., Ramdarshan, A., Walker, A. E. C., & Merceron, G. (2024). Introducing 'trident': a graphical interface for discriminating groups using dental microwear texture analysis. *Peer Community Journal*, 4, e88. <https://doi.org/10.24072/pcjournal.467>
