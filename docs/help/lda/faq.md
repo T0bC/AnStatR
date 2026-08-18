@@ -56,6 +56,21 @@ There is no universally correct value — it is a trade-off between interpretabi
 
 A keepX that is too small may exclude real contributors; a keepX close to your total variable count behaves like plain PLS-DA and loses the interpretability benefit of sparsity. If several correlated variables measure similar features, expect the selection to favour one representative rather than all of them — see the multicollinearity question below.
 
+After computing, run **Component Diagnostics (perf)** and check the **Selected Variable Stability** table it produces — this reports how often each variable was actually selected across cross-validation folds. A variable selected consistently (stability close to 1.0) is a robust finding regardless of the exact keepX chosen; a variable that appears only because of the specific keepX value and fold assignment will show low stability and should be treated with more caution than the Selected Variables panel alone suggests.
+
+</details>
+
+<details>
+<summary>What is a VIP score and how is it different from the Selected Variables list or the Component Loadings?</summary>
+
+VIP (Variable Importance in Projection) is a single importance score per variable that aggregates its contribution across **all** fitted components at once, weighted by how much each component explains of group membership. It answers "how important is this variable to the model overall?" — a different question from what the other two panels answer:
+
+- **Component Loadings** show, per component, how strongly and in which direction (sign) each variable contributes — useful for understanding *how* a variable relates to group differences on a specific axis
+- **Selected Variables** (sPLS-DA only) show *whether* sparse selection kept a variable at all on a given component (nonzero loading) — a binary in/out decision per component
+- **VIP** collapses all of that into one number per variable across the whole model, making it the more convenient starting point for ranking variables by overall importance, especially for **plain PLS-DA**, which never zeroes out any loading and therefore has no equivalent to the Selected Variables list
+
+The conventional threshold is VIP > 1 for "above-average" importance — this is a widely used rule of thumb in the PLS-DA/sPLS-DA literature, not a formal statistical test. Use it to shortlist candidates for follow-up, not as a hard cutoff for scientific claims.
+
 </details>
 
 <details>
