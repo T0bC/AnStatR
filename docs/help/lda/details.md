@@ -193,7 +193,17 @@ The **Nu (degrees of freedom)** parameter (visible only for `t` method) governs 
 | **Leave-one-out CV** | Each specimen predicted by a model trained on all others (MASS::lda/qda CV=TRUE; manual loop for MDA) | Conservative for small datasets; computationally intensive for MDA; **not available for PLS-DA/sPLS-DA** — use Component Diagnostics (perf) instead |
 | **Train / Test Split** | Stratified random split; holdout set accuracy | Single-split variance; reproducible via **Random seed** |
 
-**Resubstitution accuracy** is always reported in the results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it. For PLS-DA/sPLS-DA, component-count validation is handled separately by the **Component Diagnostics (perf)** panel (see above) rather than by the Validation setting.
+**Reading the accuracy figure**: the Summary panel always states which kind of accuracy it is showing. With **None**, the figure is resubstitution — measured on the same specimens the model was fitted to — and the panel says so explicitly, because that number is optimistic by construction and should not be reported as model performance.
+
+When **LOO-CV** or **Train/Test Split** is used, the panel shows the validated figure *and* the resubstitution figure side by side, together with the gap between them in percentage points. That gap is the overfitting diagnostic:
+
+| Gap | Reading |
+|-----|---------|
+| Under 10 pp | The model generalises well to specimens it has not seen |
+| 10–15 pp | Some overfitting — report the validated figure |
+| Over 15 pp | The model is fitting noise specific to these specimens; reduce the variable count or switch to PLS-DA/sPLS-DA |
+
+Report the validated figure in a manuscript, never the resubstitution one. For PLS-DA/sPLS-DA, component-count validation is handled separately by the **Component Diagnostics (perf)** panel (see above) rather than by the Validation setting.
 
 ##### Data Interpretation — Results Panels
 
