@@ -226,13 +226,18 @@ tab_ui <- function(ns) {
               "info-circle", class = "text-muted"
             ),
             paste(
-              "sPLS-DA applies sparse selection:",
-              "only this many variables (by loading",
-              "magnitude) are retained per component.",
-              "Smaller values give a more focused",
-              "variable list but may miss weaker",
-              "contributors; larger values behave",
-              "closer to standard PLS-DA."
+              "How many measurement variables each",
+              "component is allowed to keep. This is a",
+              "count of variables, not a threshold.",
+              "Think of it as: how many parameters do I",
+              "want to report for this component?",
+              "Too small and real contributors are cut;",
+              "too large and sPLS-DA drifts back toward",
+              "plain PLS-DA with no useful shortlist.",
+              "Do not guess: click Optimise variable",
+              "selection to let cross-validation choose,",
+              "then adjust only if you need a shorter",
+              "list for practical reasons."
             )
           )
         ),
@@ -241,20 +246,22 @@ tab_ui <- function(ns) {
           inputId = ns("tune_keepx_button"),
           label = shiny$tags$span(
             bsicons$bs_icon("magic", class = "me-1"),
-            "Auto-tune keepX (slow)"
+            "Optimise variable selection (recommended)"
           ),
           class = "btn-outline-secondary btn-sm w-100 mt-1"
         ),
         shiny$tags$small(
           class = "text-muted d-block mt-1",
           paste(
-            "Runs a cross-validated grid search",
-            "(mixOmics::tune.splsda) to suggest",
-            "keepX values. Can take from several",
-            "seconds to a few minutes depending",
-            "on data size — the suggested values",
-            "fill the boxes above, which you can",
-            "still edit before computing."
+            "Strongly recommended before reporting a",
+            "variable list: cross-validation decides how",
+            "many variables each component should keep,",
+            "instead of you guessing. Takes seconds to a",
+            "few minutes depending on data size. The",
+            "suggested values fill the boxes above; you",
+            "can still edit them, then press Compute to",
+            "apply them. Until this has run, results are",
+            "marked \"keepX not tuned\"."
           )
         )
       )
@@ -468,18 +475,21 @@ tab_ui <- function(ns) {
               bsicons$bs_icon(
                 "clipboard-data", class = "me-1"
               ),
-              "Run Component Diagnostics (perf)"
+              "Check component count (recommended)"
             ),
             class = "btn-outline-secondary btn-sm w-100"
           ),
           shiny$tags$small(
             class = "text-muted d-block mt-1",
             paste(
-              "Estimates classification error per",
-              "component via repeated cross-validation",
-              "(independent of the model fitted by the",
-              "main Compute button). Requires a fitted",
-              "PLS-DA/sPLS-DA model."
+              "Answers: am I using the right number of",
+              "components? Estimates classification error",
+              "per component by repeated cross-validation,",
+              "so you can see where adding components",
+              "stops helping. Does not change the fitted",
+              "model — if it suggests a different count,",
+              "set Number of components above and press",
+              "Compute again. Requires a fitted model."
             )
           )
         )
