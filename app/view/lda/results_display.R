@@ -17,6 +17,28 @@ box::use(
 #' 2. Classification Results (confusion, posterior, split)
 #' 3. Download Results (Excel, RDS)
 #'
+#' Human-readable label for an analysis type
+#'
+#' Single source of truth for how the five supported methods are named
+#' in the UI, so panel titles and summaries cannot drift apart.
+#'
+#' @param analysis_type Character, one of lda/qda/mda/plsda/splsda
+#' @return Character label, e.g. "sPLS-DA"
+#' @export
+analysis_type_label <- function(analysis_type) {
+  if (is.null(analysis_type)) return("LDA")
+  switch(
+    analysis_type,
+    lda = "LDA",
+    qda = "QDA",
+    mda = "MDA",
+    plsda = "PLS-DA",
+    splsda = "sPLS-DA",
+    "LDA"
+  )
+}
+
+
 #' @param lda_result Result list from run_lda()/run_qda()
 #' @param ns Namespace function from parent module
 #' @param test_result Optional prediction result from
@@ -25,15 +47,7 @@ box::use(
 #' @export
 render_lda_results <- function(lda_result, ns,
                                test_result = NULL) {
-  type_label <- switch(
-    lda_result$analysis_type,
-    lda = "LDA",
-    qda = "QDA",
-    mda = "MDA",
-    plsda = "PLS-DA",
-    splsda = "sPLS-DA",
-    "LDA"
-  )
+  type_label <- analysis_type_label(lda_result$analysis_type)
   is_cv <- !is.null(lda_result$cv)
   is_split <- !is.null(test_result)
 
@@ -178,11 +192,25 @@ render_lda_results <- function(lda_result, ns,
           bsicons$bs_icon(
             "check2-square", class = "me-2"
           ),
-          "Selected Variables"
+          "Selected Variables",
+          # Flag an untuned keepX so a UI default is never mistaken
+          # for a cross-validated variable selection.
+          if (isTRUE(lda_result$keepx_tuned)) {
+            shiny$tags$span(
+              class = "badge bg-success ms-2",
+              "keepX tuned"
+            )
+          } else {
+            shiny$tags$span(
+              class = "badge bg-warning text-dark ms-2",
+              "keepX not tuned"
+            )
+          }
         ),
         value = "selected_vars_sub",
         render_selected_variables(
-          lda_result$selected_variables
+          lda_result$selected_variables,
+          keepx_tuned = isTRUE(lda_result$keepx_tuned)
         )
       )
   }
@@ -276,7 +304,27 @@ render_lda_results <- function(lda_result, ns,
           "Confusion Matrix"
         ),
         value = "confusion_sub",
-        render_confusion(confusion)
+        render_confusion(confusion),
+        # PLS-DA/sPLS-DA classify using every component, but the
+        # scores plot shows only two axes. With ncomp > 2 the plot
+        # can look cleanly separated while the matrix disagrees.
+        if (
+          lda_result$analysis_type %in% c("plsda", "splsda") &&
+            !is.null(lda_result$ncomp) &&
+            lda_result$ncomp > 2
+        ) {
+          shiny$tags$small(
+            class = "text-muted mt-2 d-block",
+            paste0(
+              "Classification uses all ", lda_result$ncomp,
+              " components; the Scores Plot shows only the two",
+              " selected ones. Groups that look cleanly separated",
+              " in the plot may still be misclassified here (and",
+              " vice versa) — the plot is a 2D shadow of a ",
+              lda_result$ncomp, "-dimensional model."
+            )
+          )
+        }
       )
   }
 
@@ -512,12 +560,53 @@ render_prior_table <- function(prior) {
 
 
 render_means_table <- function(means) {
+  # Transposed to variables-as-rows: there are almost always far more
+  # measurement variables than groups, so groups-as-columns keeps the
+  # table narrow and lets DT paginate the variables instead of forcing
+  # horizontal scrolling that pushes the row label off-screen.
+  # This also matches the Coefficients/VIP tables' orientation.
+  t_means <- t(as.matrix(means))
   df <- cbind(
-    Group = rownames(means),
-    as.data.frame(round(means, 4))
+    Variable = rownames(t_means),
+    as.data.frame(round(t_means, 4))
   )
   rownames(df) <- NULL
-  make_dt(df, page_length = 20)
+
+  # Point-of-decision nudge: this list is only as trustworthy as the
+  # keepX that produced it, so say so right where it is read.
+  tuning_note <- if (keepx_tuned) {
+    shiny$tags$div(
+      class = "alert alert-success py-2 small mb-2",
+      shiny$tags$strong("keepX was tuned. "),
+      "These counts were chosen by cross-validation, so this",
+      " selection reflects the data rather than a default."
+    )
+  } else {
+    shiny$tags$div(
+      class = "alert alert-warning py-2 small mb-2",
+      shiny$tags$strong("keepX was not tuned. "),
+      "The number of variables kept per component came from the",
+      " values in the sidebar, not from the data. Before reporting",
+      " this list, run ",
+      shiny$tags$strong("Optimise variable selection"),
+      " in the Analysis Settings tab to let cross-validation choose",
+      " how many variables each component should keep."
+    )
+  }
+
+  shiny$tagList(
+    tuning_note,
+    make_dt(df, page_length = 20),
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "Rows are measurement variables, columns are groups.",
+        "Each cell is that group's mean for that variable, in the",
+        "units the model was fitted on (scaled units if scaling",
+        "was applied)."
+      )
+    )
+  )
 }
 
 
@@ -585,7 +674,8 @@ render_vip_table <- function(vip_df) {
 }
 
 
-render_selected_variables <- function(selected_variables) {
+render_selected_variables <- function(selected_variables,
+                                     keepx_tuned = FALSE) {
   rows <- lapply(names(selected_variables), function(comp) {
     vars <- selected_variables[[comp]]
     if (length(vars) == 0) return(NULL)
@@ -782,6 +872,36 @@ render_dim_eval_table <- function(dim_eval_df) {
       fontWeight = "bold"
     )
 
+  # R2 ranks the axes by how much group separation each one carries,
+  # which is exactly the question "which axes should I plot?".
+  # Recommend the top two so the user does not have to read the
+  # table and translate it into Plotting Controls settings by hand.
+  recommendation <- NULL
+  if (nrow(dim_eval_df) >= 2 && !all(is.na(dim_eval_df$R2))) {
+    ord <- order(-dim_eval_df$R2)
+    best <- dim_eval_df$Dimension[ord][1:2]
+    best_r2 <- dim_eval_df$R2[ord][1:2]
+    shown_default <- setequal(best, dim_eval_df$Dimension[1:2])
+    recommendation <- shiny$tags$div(
+      class = "alert alert-info py-2 small mt-2 mb-0",
+      shiny$tags$strong("Best axes to plot: "),
+      sprintf(
+        "%s (R² %.1f%%) and %s (R² %.1f%%). ",
+        best[1], best_r2[1], best[2], best_r2[2]
+      ),
+      "These two axes carry the most group separation. ",
+      if (shown_default) {
+        "The Scores Plot shows them by default."
+      } else {
+        paste0(
+          "The Scores Plot defaults to the first two axes, so set ",
+          "Dim.X and Dim.Y in the Plotting Controls tab to these ",
+          "to see the clearest separation."
+        )
+      }
+    )
+  }
+
   shiny$tagList(
     dt,
     shiny$tags$small(
@@ -791,10 +911,13 @@ render_dim_eval_table <- function(dim_eval_df) {
         "F and R\u00b2 measure how well the ",
         "grouping variable explains variance ",
         "in each discriminant axis. ",
+        "Higher R² means that axis separates ",
+        "the groups more strongly. ",
         "Significance: *** p<0.001, ** p<0.01, ",
         "* p<0.05, . p<0.1"
       )
-    )
+    ),
+    recommendation
   )
 }
 
