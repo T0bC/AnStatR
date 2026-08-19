@@ -101,7 +101,7 @@ render_output <- function(input, output, session,
     # SVG sizing: width scales with dims,
     # height proportional to dims but clamped
     n_dims_vis <- min(
-      ncp, ncol(pca_res$result$ind$contrib)
+      ncp, ncol(pca_res$result$scores)
     )
     width_svg <- min(max(n_dims_vis * 2.5 + 3, 8), 16)
     height_svg <- 6
