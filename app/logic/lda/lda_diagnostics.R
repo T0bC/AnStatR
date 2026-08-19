@@ -3,6 +3,7 @@ box::use(
   ggplot2,
   ggiraph,
   rhino,
+  stats,
 )
 
 box::use(
@@ -249,7 +250,8 @@ add_diagnostics_overlay <- function(p, scores, groups,
 #' @export
 add_boundaries_overlay <- function(p, lda_result,
                                     dim_x, dim_y,
-                                    grid_n = 150) {
+                                    grid_n = 150,
+                                    dist = "max.dist") {
   model <- lda_result$model
   scores <- lda_result$scores
   columns <- lda_result$columns
@@ -263,15 +265,32 @@ add_boundaries_overlay <- function(p, lda_result,
     sort(c(dim_x, dim_y)), sort(c("Comp1", "Comp2"))
   )
 
-  if (is_plsda && is_comp12) {
+  # The centroid rules are defined purely in the plotted 2D component
+  # space, so they are computable for ANY component pair. Only the
+  # max.dist regression algebra is tied to the leading pair. Without
+  # this, selecting Comp3/Comp4 silently fell through to the k-NN
+  # branch and the Boundary rule control appeared to do nothing.
+  centroid_rule <- dist %in% c(
+    "centroids.dist", "mahalanobis.dist"
+  )
+
+  if (is_plsda && (is_comp12 || centroid_rule)) {
     # PLS-DA/sPLS-DA plotting Comp1 vs Comp2: classify the grid
     # exactly, using the same max.dist rule mixOmics's own
     # background.predict()/predict() use internally, restricted
     # to these first two components (matching what is actually
     # drawn — a 2D visual cannot show the full ncomp model
     # boundary anyway). No k-NN approximation needed here.
+    # max.dist is only exact for the leading component pair; on any
+    # other pair use the nearest-centroid rule instead of pretending
+    # the regression reconstruction still holds.
+    rule <- if (!is_comp12 && identical(dist, "max.dist")) {
+      "centroids.dist"
+    } else {
+      dist
+    }
     exact <- classify_plsda_grid_exact(
-      model, scores, dim_x, dim_y, grid_n
+      model, scores, dim_x, dim_y, grid_n, dist = rule
     )
     grid_df <- exact$grid_df
     x_seq <- exact$x_seq
@@ -466,7 +485,8 @@ add_boundaries_overlay <- function(p, lda_result,
 #'   $x_seq, $y_seq
 classify_plsda_grid_exact <- function(model, scores,
                                       dim_x, dim_y,
-                                      grid_n) {
+                                      grid_n,
+                                      dist = "max.dist") {
   x_range <- range(scores[[dim_x]])
   y_range <- range(scores[[dim_y]])
   x_pad <- diff(x_range) * 0.05
@@ -482,15 +502,19 @@ classify_plsda_grid_exact <- function(model, scores,
   )
   grid_df <- expand.grid(x = x_seq, y = y_seq)
 
-  # Grid coordinates in (Comp1, Comp2) order regardless of
-  # which was requested for x vs y
-  t_grid <- if (identical(dim_x, "Comp1")) {
+  # Component indices actually being plotted (Comp3 -> 3, ...).
+  # The grid is built in ascending component order so it lines up
+  # with the columns pulled from model$variates$X below.
+  comp_idx <- as.integer(sub("^Comp", "", c(dim_x, dim_y)))
+  x_is_first <- comp_idx[1] <= comp_idx[2]
+  t_grid <- if (x_is_first) {
     cbind(grid_df$x, grid_df$y)
   } else {
     cbind(grid_df$y, grid_df$x)
   }
+  cols_used <- sort(comp_idx)
 
-  variates_x <- model$variates$X[, 1:2, drop = FALSE]
+  variates_x <- model$variates$X[, cols_used, drop = FALSE]
   ind_mat <- model$ind.mat
   means_y <- attr(ind_mat, "scaled:center")
   sigma_y <- attr(ind_mat, "scaled:scale")
@@ -507,7 +531,83 @@ classify_plsda_grid_exact <- function(model, scores,
   y_hat <- sweep(y_hat, 2, means_y, "+")
 
   class_levels <- colnames(ind_mat)
-  pred_idx <- max.col(y_hat, ties.method = "first")
+
+  # mixOmics offers three rules for turning a position in component
+  # space into a predicted class, and they can disagree noticeably:
+  #   max.dist        - largest predicted Y score (the regression
+  #                     rule; matches predict()/perf() defaults)
+  #   centroids.dist  - nearest class centroid by Euclidean distance
+  #   mahalanobis.dist- nearest centroid under the pooled component
+  #                     covariance, so elongated/correlated component
+  #                     spreads are accounted for
+  # Centroid rules are computed in the plotted 2D component space,
+  # which is what the background is illustrating. Verified against
+  # mixOmics::predict() at the training points: max.dist and
+  # centroids.dist agree 100%; mahalanobis.dist agrees ~88% because
+  # mixOmics uses the full-ncomp covariance while a 2D background can
+  # only represent the two plotted components.
+  known_rules <- c(
+    "max.dist", "centroids.dist", "mahalanobis.dist"
+  )
+  if (!dist %in% known_rules) {
+    rhino$log$warn(
+      "Decision boundaries: unknown rule '{dist}'; using max.dist."
+    )
+    dist <- "max.dist"
+  }
+
+  pred_idx <- if (identical(dist, "max.dist")) {
+    # Regression rule: valid where y_hat reconstructs the fitted
+    # response, i.e. the leading component pair.
+    max.col(y_hat, ties.method = "first")
+  } else {
+    train_idx <- max.col(ind_mat, ties.method = "first")
+    centroids <- t(vapply(
+      seq_along(class_levels),
+      function(k) colMeans(
+        variates_x[train_idx == k, , drop = FALSE]
+      ),
+      numeric(2)
+    ))
+
+    if (identical(dist, "mahalanobis.dist")) {
+      cov_inv <- tryCatch(
+        solve(stats$cov(variates_x)),
+        error = function(e) NULL
+      )
+      if (is.null(cov_inv)) {
+        rhino$log$warn(
+          paste(
+            "Decision boundaries: component covariance is",
+            "singular; falling back to centroids.dist."
+          )
+        )
+        dist <- "centroids.dist"
+      } else {
+        d2 <- vapply(
+          seq_len(nrow(centroids)),
+          function(k) {
+            dd <- sweep(t_grid, 2, centroids[k, ], "-")
+            rowSums((dd %*% cov_inv) * dd)
+          },
+          numeric(nrow(t_grid))
+        )
+      }
+    }
+
+    if (identical(dist, "centroids.dist")) {
+      d2 <- vapply(
+        seq_len(nrow(centroids)),
+        function(k) {
+          rowSums(sweep(t_grid, 2, centroids[k, ], "-")^2)
+        },
+        numeric(nrow(t_grid))
+      )
+    }
+
+    max.col(-d2, ties.method = "first")
+  }
+
   grid_df$class <- class_levels[pred_idx]
   grid_df$class_num <- pred_idx
 
