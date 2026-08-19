@@ -1100,6 +1100,27 @@ build_mda_result <- function(mda_obj, data, numeric_data,
       cum_vals[1],
       diff(cum_vals)
     )
+    # percent.explained is documented as cumulative (non-decreasing),
+    # but EM instability or dimension truncation in mda::mda() can
+    # return a non-monotonic vector. Differencing that would yield a
+    # negative "Proportion" and a decreasing "Cumulative" column, which
+    # is nonsensical and would propagate silently into the Variable
+    # Contributions plot via lda_to_pca_var_structure(). Clamp instead.
+    if (any(prop_vals < 0, na.rm = TRUE)) {
+      n_neg <- sum(prop_vals < 0, na.rm = TRUE)
+      rhino$log$warn(
+        paste(
+          "MDA: mda::mda() returned a non-monotonic",
+          "percent.explained; clamping {n_neg} negative",
+          "proportion(s) to 0. Explained-variance figures for",
+          "this fit may be unreliable - consider reducing",
+          "the subclass count."
+        )
+      )
+      prop_vals <- pmax(prop_vals, 0)
+      # Keep Cumulative consistent with the clamped proportions.
+      cum_vals <- cumsum(prop_vals)
+    }
     proportion_of_trace <- data.frame(
       LD = paste0("DC", seq_len(n_dim)),
       `Proportion` = round(prop_vals, 4),
