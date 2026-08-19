@@ -35,7 +35,8 @@ tab_ui <- function(ns) {
               paste(
                 "Select the discriminant dimension",
                 "for the x-axis (LD for LDA,",
-                "DC for MDA, or original variable",
+                "DC for MDA, Comp for PLS-DA and",
+                "sPLS-DA, or original variable",
                 "for QDA)."
               )
             )
@@ -58,7 +59,8 @@ tab_ui <- function(ns) {
               paste(
                 "Select the discriminant dimension",
                 "for the y-axis (LD for LDA,",
-                "DC for MDA, or original variable",
+                "DC for MDA, Comp for PLS-DA and",
+                "sPLS-DA, or original variable",
                 "for QDA)."
               )
             )
