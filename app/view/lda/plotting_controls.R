@@ -153,6 +153,56 @@ tab_ui <- function(ns) {
       ),
       value = TRUE
     ),
+    # Boundary rule selector: mixOmics offers three ways to turn a
+    # position in component space into a predicted class, and they
+    # can disagree visibly. Only meaningful for PLS-DA/sPLS-DA
+    # (LDA/QDA boundaries come from their own model), and only when
+    # boundaries are actually being drawn.
+    shiny$conditionalPanel(
+      condition = paste0(
+        "(input['", ns("analysis_type"),
+        "'] == 'plsda' || input['",
+        ns("analysis_type"), "'] == 'splsda') && input['",
+        ns("show_boundaries"), "']"
+      ),
+      shiny$selectInput(
+        inputId = ns("boundary_dist"),
+        label = shiny$tags$span(
+          "Boundary rule ",
+          bslib$tooltip(
+            bsicons$bs_icon(
+              "info-circle",
+              class = "text-muted"
+            ),
+            paste(
+              "How a point in component space is",
+              "assigned to a group when drawing the",
+              "background. Maximum distance is the",
+              "rule mixOmics uses for its own",
+              "predictions and confusion matrix, so",
+              "it matches the reported accuracy.",
+              "The two centroid rules often give",
+              "smoother, more intuitive regions;",
+              "Mahalanobis also accounts for",
+              "correlated or elongated component",
+              "spread. If the picture changes a lot",
+              "between rules, the groups are not",
+              "cleanly separated in these two",
+              "components. Note: outside Comp1 vs",
+              "Comp2, maximum distance falls back to",
+              "centroid distance, since its regression",
+              "rule only applies to the leading pair."
+            )
+          )
+        ),
+        choices = c(
+          "Maximum distance (matches accuracy)" = "max.dist",
+          "Centroid distance" = "centroids.dist",
+          "Mahalanobis distance" = "mahalanobis.dist"
+        ),
+        selected = "max.dist"
+      )
+    ),
     shiny$tags$hr(),
     # Plot dimensions for export
     shiny$fluidRow(
