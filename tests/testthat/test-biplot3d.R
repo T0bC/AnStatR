@@ -4,12 +4,13 @@ box::use(
 
 box::use(
   app/logic/pca/biplot3d,
+  app/logic/pca/pca,
 )
 
 impl <- attr(biplot3d, "namespace")
 
 # =============================================================================
-# Helper: build a minimal PCA result for testing
+# Helper: build a real PCA result for testing
 # =============================================================================
 
 make_pca_result <- function(n = 20, p = 5,
@@ -19,70 +20,14 @@ make_pca_result <- function(n = 20, p = 5,
     matrix(rnorm(n * p), nrow = n)
   )
   colnames(data) <- paste0("V", seq_len(p))
-  pca_obj <- stats::prcomp(data, center = TRUE,
-                           scale. = TRUE)
+  data$G1 <- rep(c("A", "B"), length.out = n)
 
-  ncp <- min(p, n - 1)
-  sdev <- pca_obj$sdev
-  eigenvalues <- sdev^2
-  total_var <- sum(eigenvalues)
-  var_pct <- eigenvalues / total_var * 100
-  cum_pct <- cumsum(var_pct)
-
-  eig <- data.frame(
-    eigenvalue = eigenvalues,
-    variance.percent = var_pct,
-    cumulative.variance.percent = cum_pct
+  res <- pca$run_pca(
+    data, paste0("V", seq_len(p)),
+    meta_cols = meta_cols,
+    center = TRUE, scale. = TRUE
   )
-  rownames(eig) <- paste0("Dim.", seq_along(eigenvalues))
-
-  comp_idx <- seq_len(ncp)
-  dim_names <- paste0("Dim.", comp_idx)
-
-  rotation <- pca_obj$rotation[, comp_idx, drop = FALSE]
-  var_coord <- sweep(rotation, 2, sdev[comp_idx],
-                     FUN = "*")
-  colnames(var_coord) <- dim_names
-  var_contrib <- sweep(rotation^2, 2, rep(100, ncp),
-                       FUN = "*")
-  colnames(var_contrib) <- dim_names
-  var_cos2 <- var_coord^2
-  colnames(var_cos2) <- dim_names
-
-  scores <- pca_obj$x[, comp_idx, drop = FALSE]
-  colnames(scores) <- dim_names
-  total_dist2 <- rowSums(pca_obj$x^2)
-  total_dist2[total_dist2 == 0] <- 1
-  ind_cos2 <- sweep(scores^2, 1, total_dist2,
-                    FUN = "/")
-  colnames(ind_cos2) <- dim_names
-  n_eff <- n - 1
-  ind_contrib <- sweep(scores^2, 2,
-                       n_eff * eigenvalues[comp_idx],
-                       FUN = "/") * 100
-  colnames(ind_contrib) <- dim_names
-
-  meta <- data.frame(
-    G1 = rep(c("A", "B"), length.out = n),
-    stringsAsFactors = FALSE
-  )
-
-  list(
-    eig = eig,
-    var = list(
-      coord = var_coord,
-      contrib = var_contrib,
-      cos2 = var_cos2
-    ),
-    ind = list(
-      coord = scores,
-      contrib = ind_contrib,
-      cos2 = ind_cos2,
-      meta = meta
-    ),
-    ncp = ncp,
-    call_info = list(n = n, p = p, ncp = ncp)
-  )
+  res$result
 }
 
 

@@ -6,6 +6,8 @@ box::use(
     detect_skewness, transform_skewed,
     apply_stored_transform
   ],
+  app/logic/pca/pca[run_pca],
+  app/logic/pca/pca_export[create_pca_bundle],
 )
 
 # =============================================================================
@@ -23,28 +25,32 @@ make_iris_data <- function() {
   list(data = data, numeric_cols = numeric_cols)
 }
 
-make_pca_bundle <- function() {
+make_pca_bundle <- function(analysis_type = "pca",
+                            keep_x = NULL,
+                            ipca_mode = "deflation") {
   d <- make_iris_data()
   numeric_data <- d$data[, d$numeric_cols, drop = FALSE]
-  pca_obj <- prcomp(numeric_data, center = TRUE, scale. = TRUE)
 
-  list(
-    analysis_type = "pca",
-    model = pca_obj,
+  res <- run_pca(
+    d$data, d$numeric_cols,
+    meta_cols = "Species",
+    center = TRUE, scale. = TRUE,
+    ncp = if (analysis_type == "ipca") 3 else NULL,
+    analysis_type = analysis_type,
+    keep_x = keep_x, ipca_mode = ipca_mode
+  )
+  stopifnot(res$success)
+
+  create_pca_bundle(
+    res$result,
     raw_data = d$data,
     used_data = d$data,
-    group_col = NULL,
     numeric_cols = d$numeric_cols,
     meta_cols = "Species",
-    transform_params = list(),
-    scale_params = NULL,
     settings = list(
       skewness_correction = FALSE,
       scale_method = "scale_center"
-    ),
-    data_source = "raw",
-    app_version = "2.0.0",
-    created = Sys.time()
+    )
   )
 }
 
@@ -318,10 +324,10 @@ test_that("preprocess_unknown applies stored transforms", {
   )
 })
 
-# --- predict_unknown: PCA ---
+# --- predict_unknown: PCA / sPCA / IPCA ---
 
 test_that("predict_unknown works for PCA", {
-  bundle <- make_pca_bundle()
+  bundle <- make_pca_bundle("pca")
   unknown <- iris[121:150, ]
   preprocessed <- preprocess_unknown(unknown, bundle)
 
@@ -330,6 +336,67 @@ test_that("predict_unknown works for PCA", {
   expect_equal(result$result$analysis_type, "pca")
   expect_equal(nrow(result$result$scores), 30)
   expect_null(result$result$predicted_class)
+})
+
+test_that("predict_unknown works for sPCA", {
+  bundle <- make_pca_bundle("spca", keep_x = c(2, 2, 2, 2))
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "spca")
+  expect_equal(nrow(result$result$scores), 30)
+  expect_null(result$result$predicted_class)
+})
+
+test_that("predict_unknown works for IPCA", {
+  bundle <- make_pca_bundle("ipca")
+  unknown <- iris[121:150, ]
+  preprocessed <- preprocess_unknown(unknown, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+  expect_equal(result$result$analysis_type, "ipca")
+  expect_equal(nrow(result$result$scores), 30)
+  expect_null(result$result$predicted_class)
+})
+
+test_that("sPCA prediction matches refit scores on training data", {
+  # Regression guard for the deflation-aware projection math:
+  # predicting the training data itself should reproduce the
+  # fitted model's own scores exactly.
+  bundle <- make_pca_bundle("spca", keep_x = c(2, 2, 2, 2))
+  train_data <- bundle$used_data
+  preprocessed <- preprocess_unknown(train_data, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+
+  fitted_scores <- bundle$model$variates$X
+  predicted_scores <- as.matrix(result$result$scores)
+  dimnames(predicted_scores) <- dimnames(fitted_scores)
+  expect_equal(
+    predicted_scores, fitted_scores,
+    tolerance = 1e-8, ignore_attr = TRUE
+  )
+})
+
+test_that("IPCA prediction matches refit scores on training data", {
+  bundle <- make_pca_bundle("ipca")
+  train_data <- bundle$used_data
+  preprocessed <- preprocess_unknown(train_data, bundle)
+
+  result <- predict_unknown(bundle, preprocessed)
+  expect_true(result$success)
+
+  fitted_scores <- bundle$model$x
+  predicted_scores <- as.matrix(result$result$scores)
+  dimnames(predicted_scores) <- dimnames(fitted_scores)
+  expect_equal(
+    predicted_scores, fitted_scores,
+    tolerance = 1e-8, ignore_attr = TRUE
+  )
 })
 
 # --- predict_unknown: LDA ---

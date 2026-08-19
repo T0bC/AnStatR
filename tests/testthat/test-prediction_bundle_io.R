@@ -68,7 +68,8 @@ test_that("validate_bundle rejects bundle without model", {
 
 test_that("validate_bundle accepts all valid types", {
   for (type in c(
-    "pca", "lda", "mda", "qda", "cluster", "plsda", "splsda"
+    "pca", "spca", "ipca", "lda", "mda", "qda", "cluster",
+    "plsda", "splsda"
   )) {
     bundle <- make_test_bundle(analysis_type = type)
     result <- validate_bundle(bundle)

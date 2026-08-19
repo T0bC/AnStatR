@@ -420,7 +420,7 @@ describe("axis_label_with_variance", {
 
   it("includes variance percentage", {
     label <- impl$axis_label_with_variance(
-      "Dim.1", pca_res$eig
+      "Dim.1", pca_res$variance
     )
     expect_true(grepl("Dim\\.1", label))
     expect_true(grepl("%", label))
@@ -428,7 +428,7 @@ describe("axis_label_with_variance", {
 
   it("falls back for unknown dimension", {
     label <- impl$axis_label_with_variance(
-      "Dim.99", pca_res$eig
+      "Dim.99", pca_res$variance
     )
     expect_equal(label, "Dim.99")
   })
