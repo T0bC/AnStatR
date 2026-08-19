@@ -202,7 +202,10 @@ describe("run_plsda_perf", {
       fit$result, folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
-    df <- perf_res$result
+    # run_plsda_perf() returns a list of two tables:
+    # $errors (per-component error rates) and $stability.
+    df <- perf_res$result$errors
+    expect_true(is.data.frame(df))
     expect_equal(nrow(df), 2)
     expect_true(all(c("Component", "Overall Error", "BER") %in%
       names(df)))
