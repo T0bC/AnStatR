@@ -827,6 +827,47 @@ build_lda_result <- function(obj, data, columns,
       obj, grouping
     )
     result$model <- NULL
+
+    # MASS::lda(CV = TRUE) returns predictions only, so the
+    # resubstitution figure does not exist here. Fit once more
+    # without CV purely to obtain it: the gap between the two is
+    # the overfitting diagnostic the results panel reports, and one
+    # extra fit is negligible next to LOO-CV's n fits.
+    result$resubstitution <- tryCatch(
+      {
+        # result$prior is a display-oriented structure, not a plain
+        # numeric vector MASS accepts, and CV mode never stored the
+        # original prior_vec. Recover it from the fitted prior when
+        # it is usable, else let MASS use its own default.
+        prior_num <- suppressWarnings(
+          as.numeric(unlist(result$prior))
+        )
+        prior_ok <- length(prior_num) == nlevels(grouping) &&
+          !anyNA(prior_num) &&
+          abs(sum(prior_num) - 1) < 1e-6
+        refit_args <- list(
+          x = data[, columns, drop = FALSE],
+          grouping = grouping,
+          CV = FALSE
+        )
+        if (prior_ok) refit_args$prior <- prior_num
+        refit <- if (analysis_type == "qda") {
+          do.call(MASS::qda, refit_args)
+        } else {
+          do.call(MASS::lda, refit_args)
+        }
+        resub_pred <- stats::predict(
+          refit, data[, columns, drop = FALSE]
+        )
+        build_confusion_stats(grouping, resub_pred$class)
+      },
+      error = function(e) {
+        rhino$log$warn(
+          "LDA: resubstitution refit failed: {conditionMessage(e)}"
+        )
+        NULL
+      }
+    )
     rhino$log$info(
       "LDA: LOO-CV complete — accuracy ",
       "{round(result$cv$accuracy * 100, 1)}%"
@@ -1261,6 +1302,23 @@ build_mda_cv_result <- function(data, numeric_data,
     grouping, predicted
   )
 
+  # Full-data fit purely for the resubstitution comparison; the gap
+  # against the LOO-CV figure is the overfitting diagnostic shown in
+  # the results panel. One extra fit next to the n fits above.
+  resubstitution <- tryCatch(
+    {
+      full_fit <- fit_mda(
+        cbind(numeric_data, .grouping. = grouping),
+        subclasses, iter, dimension, eps
+      )
+      build_confusion_stats(
+        grouping,
+        stats::predict(full_fit, numeric_data)
+      )
+    },
+    error = function(e) NULL
+  )
+
   rhino$log$info(
     "MDA: LOO-CV complete — accuracy ",
     "{round(confusion$accuracy * 100, 1)}%"
@@ -1278,6 +1336,7 @@ build_mda_cv_result <- function(data, numeric_data,
     means = NULL,
     meta = meta,
     model = NULL,
+    resubstitution = resubstitution,
     cv = list(
       predicted_class = predicted,
       posterior = posterior,
