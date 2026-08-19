@@ -128,12 +128,14 @@ Singular correlation matrices occur when variables are perfectly correlated or c
 
 Use the **Correlation Matrix** plot to identify highly correlated pairs (> 0.95) before running PCA.
 
+For **sPCA**, a related but distinct error — "keepX invalid or incomplete" — means the number of keepX values does not match the number of components, or one is missing. Use the dynamically generated keepX input boxes in the Analysis Settings tab (one per component) rather than editing the count separately.
+
 </details>
 
 <details>
 <summary>How do I interpret variable contributions?</summary>
 
-Variable contributions indicate which original measurements define each principal component:
+Not applicable to IPCA — see "Why don't IPCA results show Contribution % or Cos²?" above. For PCA and sPCA, variable contributions indicate which original measurements define each principal component:
 
 - **Sum of contributions** across all variables for a given dimension equals 100%
 - **Average contribution** = 100% / (number of variables)
@@ -151,7 +153,7 @@ Use the **Variable Contributions** jitter plot to identify variables with consis
 <details>
 <summary>Why are my individual contributions so uneven?</summary>
 
-Uneven individual contributions (some points with very high %, most with low) typically indicate:
+Not applicable to IPCA — see "Why don't IPCA results show Contribution % or Cos²?" above. For PCA and sPCA, uneven individual contributions (some points with very high %, most with low) typically indicate:
 
 - **Outliers** — Extreme observations pull component directions toward them
 - **Clusters** — Well-separated groups create high-contribution boundary points
@@ -164,7 +166,7 @@ High individual contributions (cos² near 1 on specific dimensions) warrant inve
 <details>
 <summary>What is the difference between contributions and cos²?</summary>
 
-Both metrics assess quality but answer different questions:
+Applies to PCA and sPCA only — see "Why don't IPCA results show Contribution % or Cos²?" above. Both metrics assess quality but answer different questions:
 
 | Metric | Question Answered | Range | Sum Across |
 |--------|-------------------|-------|------------|
@@ -178,10 +180,72 @@ A variable can have low contribution (little influence) but high cos² (well-rep
 </details>
 
 <details>
+<summary>Should I use PCA, sPCA, or IPCA?</summary>
+
+Start with standard **PCA** — it is the default, well-understood, and sufficient for most dimensionality-reduction and visualization needs.
+
+Switch to **sPCA** when you specifically need to know which subset of your variables defines each component — for example, 40+ computed surface-texture parameters where you want to report the handful that actually matter per axis. sPCA trades a small amount of variance explained for a short, interpretable variable list per component (the **keepX** setting). Always run **Optimise variable selection** before reporting the list, so the count is chosen by cross-validation rather than guessed.
+
+Switch to **IPCA** when your research question is about statistically *independent* sources of variation rather than variance-ranked ones — for example, testing whether two or more distinct underlying processes (rather than a smooth gradient) generated your measurements. This is a different analytical question from PCA/sPCA, not simply a "better" version of them: IPCA components are not ordered by importance, and contribution/cos² are not available for them.
+
+If you are unsure, compute standard PCA first, inspect the biplot and variable contributions, and only switch methods once you have a specific reason (an unmanageable variable list, or a hypothesis about independent sources) that PCA cannot address.
+
+</details>
+
+<details>
+<summary>Why don't IPCA results show Contribution % or Cos²?</summary>
+
+Contribution % and cos² (quality of representation) are derived from having components ranked by variance explained — "how much of this component's variance does this variable/individual account for?" IPCA components are not variance-ranked; ICA optimizes for statistical independence, and component order reflects the algorithm's convergence, not a hierarchy of importance. Reporting a "contribution to component 1" would imply component 1 is somehow the most important, which is not a meaningful claim for IPCA.
+
+Loadings and scores are still available and interpretable — the biplot, results tables, and Excel export all work for IPCA, just without the contribution/cos² columns/plots that PCA and sPCA provide.
+
+</details>
+
+<details>
+<summary>What should I report in a paper or thesis?</summary>
+
+Report enough that a reader can judge the result without re-running it. The minimum is **what you ran**, **how much variance the shown components capture** (or, for IPCA, how they were extracted), and **which variables drove the structure you interpret**.
+
+**Always report these numbers**
+
+| What | Where to find it | Why it is needed |
+|------|------------------|------------------|
+| Method and software | — | e.g. "sPCA (mixOmics 6.x, R 4.x)" — see the package table below for citations |
+| n observations, number of variables | PCA Results panel / Summary | Reviewers need the sample-size-to-variable ratio to judge overfitting/stability risk |
+| Preprocessing | Data Selection sidebar | Scaling/centring method, normalization, how missing values were handled |
+| Variance explained by the components shown | Eigenvalues & Variance table | Readers cannot judge a 2D projection's adequacy without this |
+| Number of components retained and why | Optimal Number of Components panel | State whether Kaiser, Elbow, or Parallel Analysis (or a combination) justified the count |
+
+**Add these depending on method**
+
+- **sPCA** — **keepX per component** and **whether it was tuned** (results are marked "not tuned" otherwise); the Selected Variables list for each component you interpret
+- **IPCA** — the ICA algorithm (**Deflation** or **Parallel**); explicitly state that components are not variance-ranked, so readers do not assume Dim.1 is "the most important" the way they would for PCA
+
+**Which plots to show**
+
+1. **The biplot** — state which dimensions are shown and their variance explained (from the axis labels); for IPCA, state that axis order is arbitrary
+2. **The Variable Contributions plot**, when "which parameters matter" is the question (PCA/sPCA only — not applicable to IPCA)
+3. **The Selected Variables list**, as a table rather than a figure, for sPCA
+
+**The two most common mistakes**
+
+- **Treating an untuned sPCA keepX as a considered result.** A hand-picked keepX has not been validated to be the right sparsity level — always run **Optimise variable selection** and report that it was used.
+- **Applying PCA intuitions to IPCA.** Describing "Dim.1" as the most important IPCA component, or reporting cumulative variance as if it were a meaningful stopping rule, misrepresents what ICA does. State plainly that IPCA components are unordered.
+
+A defensible one-paragraph summary follows this shape (placeholders in `CAPITALS` — substitute your own values):
+
+> We performed METHOD (mixOmics R package) on N observations across P measurement variables, after SCALING_METHOD. NCOMP components were retained based on CRITERION, together explaining CUM_VARIANCE% of total variance. [For sPCA: Sparse variable selection (keepX = KEEPX_VALUES per component, chosen via cross-validation) identified VARIABLE_LIST as the primary drivers of DIM_NAME.] [For IPCA: Components were extracted via ICA_ALGORITHM ICA and are not ranked by variance explained.]
+
+Every placeholder above corresponds to a number the app reports — none of them should be estimated or omitted.
+
+</details>
+
+<details>
 <summary>Which R packages power the PCA computation?</summary>
 
 | Package | Purpose | Citation |
 |---------|---------|----------|
+| **mixOmics** | PCA, sPCA, and IPCA computation | Rohart, F., Gautier, B., Singh, A., & Lê Cao, K.-A. (2017). *mixOmics: An R package for 'omics feature selection and multiple data integration*. *PLOS Computational Biology*, 13(11), e1005752. <https://doi.org/10.1371/journal.pcbi.1005752> |
 | **psych** | KMO measure and factor analysis utilities | Revelle, W. (2026). *psych: Procedures for Psychological, Psychometric, and Personality Research*. <https://CRAN.R-project.org/package=psych> |
 | **ggiraph** | Interactive SVG graphics | Gohel, D., & Skintzos, P. (2026). *ggiraph: Make 'ggplot2' Graphics Interactive*. <https://doi.org/10.32614/CRAN.package.ggiraph> |
 | **ggplot2** | Plot generation and styling | Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer. <https://ggplot2.tidyverse.org> |
