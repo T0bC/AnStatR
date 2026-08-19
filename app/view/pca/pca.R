@@ -21,6 +21,7 @@ box::use(
   ],
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
+  app/view/pca/analysis_settings,
   app/view/pca/biplot,
   app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],
@@ -44,6 +45,7 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
+      analysis_settings$tab_ui(ns),
       plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
@@ -96,6 +98,12 @@ server <- function(id, input_data, data_version,
       input_data = input_data,
       data_version = data_version,
       recommended_parameters = recommended_parameters
+    )
+
+    analysis_settings_state <- analysis_settings$tab_server(
+      input, output, session,
+      data_version = data_version,
+      input_data = input_data
     )
 
     # Delegate correlation plot rendering
@@ -287,9 +295,32 @@ server <- function(id, input_data, data_version,
       )
       optimal_result(opt_res)
 
-      # Run PCA
+      # Run PCA / sPCA / IPCA depending on the Analysis
+      # Settings tab's selection
+      analysis_type <- input$analysis_type %||% "pca"
+      ncp <- switch(
+        analysis_type,
+        spca = input$spca_ncomp %||% 2,
+        ipca = input$ipca_ncomp %||% 2,
+        NULL
+      )
+      keep_x <- if (analysis_type == "spca") {
+        ncomp <- input$spca_ncomp %||% 2
+        vapply(
+          seq_len(ncomp),
+          function(i) {
+            val <- input[[paste0("spca_keepx_", i)]]
+            if (is.null(val) || is.na(val)) 10 else val
+          },
+          numeric(1)
+        )
+      } else {
+        NULL
+      }
+      ipca_mode <- input$ipca_mode %||% "deflation"
+
       rhino$log$info(
-        "PCA: running PCA",
+        "PCA: running {toupper(analysis_type)}",
         " ({length(measure_cols)} columns,",
         " {nrow(analysis_data)} rows)"
       )
@@ -297,8 +328,24 @@ server <- function(id, input_data, data_version,
         analysis_data, measure_cols,
         meta_cols = meta_cols,
         center = do_center,
-        scale. = do_scale
+        scale. = do_scale,
+        ncp = ncp,
+        analysis_type = analysis_type,
+        keep_x = keep_x,
+        ipca_mode = ipca_mode
       )
+
+      # Record whether the keepX values actually used came from a
+      # completed auto-tune run, so the results panel can flag an
+      # untuned selection rather than letting a UI default look
+      # like a cross-validated result.
+      if (analysis_type == "spca" && isTRUE(pca_res$success)) {
+        tuned <- analysis_settings_state$keepx_tuned()
+        pca_res$result$keepx_tuned <- !is.null(tuned) &&
+          length(tuned) == length(keep_x) &&
+          isTRUE(all(tuned == keep_x))
+      }
+
       pca_result(pca_res)
 
       # Store bundle data for RDS export
@@ -329,27 +376,41 @@ server <- function(id, input_data, data_version,
 
       # Update dimension dropdowns to match actual components
       if (pca_res$success) {
-        dim_choices <- colnames(pca_res$result$var$coord)
-        for (dim_id in c("dimX", "dimY", "dimZ")) {
+        dim_choices <- colnames(pca_res$result$loadings)
+        dim_ids <- c("dimX", "dimY", "dimZ")
+        used <- character(0)
+        selections <- list()
+        for (i in seq_along(dim_ids)) {
+          dim_id <- dim_ids[i]
           current <- input[[dim_id]]
+          # Keep the current selection only if it is a valid
+          # choice AND not already claimed by an earlier axis,
+          # so dimX/dimY/dimZ never collide on the same value.
           sel <- if (!is.null(current) &&
-                     current %in% dim_choices) {
+                     current %in% dim_choices &&
+                     !(current %in% used)) {
             current
           } else {
-            dim_choices[min(
-              which(dim_id == c("dimX", "dimY", "dimZ")),
-              length(dim_choices)
-            )]
+            remaining <- setdiff(dim_choices, used)
+            if (length(remaining) > 0) {
+              remaining[[min(i, length(remaining))]]
+            } else {
+              dim_choices[min(i, length(dim_choices))]
+            }
           }
+          used <- c(used, sel)
+          selections[[dim_id]] <- sel
+        }
+        for (dim_id in dim_ids) {
           shiny$updateSelectizeInput(
             session, dim_id,
             choices = dim_choices,
-            selected = sel
+            selected = selections[[dim_id]]
           )
         }
 
         # Update GroupBiplot choices from metadata
-        meta <- pca_res$result$ind$meta
+        meta <- pca_res$result$ind_meta
         if (!is.null(meta) &&
             !("Row" %in% names(meta) &&
               ncol(meta) == 1)) {
@@ -610,7 +671,7 @@ server <- function(id, input_data, data_version,
       } else if (
         !is.null(pca_res) &&
         isTRUE(pca_res$success) &&
-        ncol(pca_res$result$var$coord) >= 3
+        ncol(pca_res$result$loadings) >= 3
       ) {
         plotly$plotlyOutput(
           ns("biplot3d"), height = "600px"
@@ -632,8 +693,27 @@ server <- function(id, input_data, data_version,
         )
       }
 
+      # Contribution %/cos2 are not meaningful for IPCA
+      # (independent components are not variance-ranked) —
+      # matches the has_contrib gating in pca_results.R.
+      is_ipca <- !is.null(pca_res) && isTRUE(pca_res$success) &&
+        identical(pca_res$result$analysis_type, "ipca")
+      not_applicable_ipca <- shiny$tags$div(
+        class = "alert alert-secondary mb-2 py-2",
+        bsicons$bs_icon(
+          "info-circle-fill", class = "me-2"
+        ),
+        paste(
+          "Contribution % and cos2 are not applicable to",
+          "IPCA — independent components are not ranked",
+          "by variance."
+        )
+      )
+
       # Variable contribution jitter plot panel
-      var_contrib_jitter_content <- if (
+      var_contrib_jitter_content <- if (is_ipca) {
+        not_applicable_ipca
+      } else if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
         shiny$tagList(
@@ -656,12 +736,14 @@ server <- function(id, input_data, data_version,
           ),
           value = "var_contrib_jitter_panel",
           var_contrib_jitter_content,
-          download_buttons(ns, "var_contrib")
+          if (!is_ipca) download_buttons(ns, "var_contrib")
         )
       }
 
       # Individual contribution jitter plot panel
-      ind_contrib_content <- if (
+      ind_contrib_content <- if (is_ipca) {
+        not_applicable_ipca
+      } else if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
         shiny$uiOutput(ns("ind_contrib_container"))
@@ -679,7 +761,7 @@ server <- function(id, input_data, data_version,
           ),
           value = "ind_contrib_panel",
           ind_contrib_content,
-          download_buttons(ns, "ind_contrib")
+          if (!is_ipca) download_buttons(ns, "ind_contrib")
         )
       }
 
@@ -687,7 +769,7 @@ server <- function(id, input_data, data_version,
       has_real_meta <- if (
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
-        meta <- pca_res$result$ind$meta
+        meta <- pca_res$result$ind_meta
         !is.null(meta) &&
           !("Row" %in% names(meta) && ncol(meta) == 1)
       } else {
@@ -846,7 +928,7 @@ compute_display_ncp <- function(opt_res, pca_res) {
 
   # Clamp to actual number of components
   if (!is.null(pca_res) && isTRUE(pca_res$success)) {
-    total_dims <- ncol(pca_res$result$var$coord)
+    total_dims <- ncol(pca_res$result$loadings)
     display <- min(display, total_dims)
   }
 
