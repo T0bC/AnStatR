@@ -5,6 +5,10 @@ box::use(
 
 box::use(
   app/logic/shared/settings[app_version],
+  app/logic/pca/pca_stats[
+    compute_var_coord, compute_var_contrib, compute_var_cos2,
+    compute_ind_contrib, compute_ind_cos2
+  ],
 )
 
 # =============================================================================
@@ -14,9 +18,12 @@ box::use(
 
 #' Export PCA results to a formatted Excel workbook
 #'
-#' Creates a multi-sheet Excel file with eigenvalues, variable
-#' coordinates / contributions / cos2, and individual coordinates /
-#' contributions / cos2.
+#' Creates a multi-sheet Excel file with variance explained,
+#' variable coordinates / loadings, and individual (sample)
+#' scores. For PCA and sPCA, also includes contribution % and
+#' cos2 (quality of representation) sheets — these derived
+#' statistics are not meaningful for IPCA (components are not
+#' variance-ranked) and are omitted for it.
 #'
 #' @param pca_result PCA result list from run_pca()
 #'   (the $result field, not the wrapper)
@@ -25,63 +32,72 @@ box::use(
 #' @export
 create_pca_excel <- function(pca_result, file) {
   wb <- openxlsx$createWorkbook()
+  analysis_type <- pca_result$analysis_type
+  has_contrib <- analysis_type != "ipca"
 
-  # Sheet 1: Eigenvalues
-  eig <- as.data.frame(pca_result$eig)
-  eig <- cbind(
-    Component = rownames(eig),
-    round(eig, 4)
+  # Sheet 1: Variance Explained
+  variance <- pca_result$variance
+  variance_out <- data.frame(
+    Component = rownames(variance),
+    `Variance (%)` = round(variance$variance_percent, 4),
+    `Cumulative Variance (%)` = round(
+      variance$cumulative_variance_percent, 4
+    ),
+    check.names = FALSE
   )
-  rownames(eig) <- NULL
-  names(eig) <- c(
-    "Component", "Eigenvalue",
-    "Variance (%)", "Cumulative Variance (%)"
-  )
-  add_sheet(wb, "Eigenvalues", eig)
+  add_sheet(wb, "Variance Explained", variance_out)
 
-  # Sheet 2: Variable Coordinates
-  var_coord <- matrix_to_df(
-    pca_result$var$coord, "Variable"
+  # Sheet 2: Variable Loadings
+  var_loadings <- matrix_to_df(
+    pca_result$loadings, "Variable"
   )
-  add_sheet(wb, "Variable Coordinates", var_coord)
+  add_sheet(wb, "Variable Loadings", var_loadings)
 
-  # Sheet 3: Variable Contributions
-  var_contrib <- matrix_to_df(
-    pca_result$var$contrib, "Variable"
-  )
-  add_sheet(wb, "Variable Contributions", var_contrib)
+  if (has_contrib) {
+    var_coord <- compute_var_coord(
+      pca_result$loadings, pca_result$scores
+    )
+    var_contrib <- compute_var_contrib(pca_result$loadings)
+    var_cos2 <- compute_var_cos2(var_coord)
 
-  # Sheet 4: Variable Cos2
-  var_cos2 <- matrix_to_df(
-    pca_result$var$cos2, "Variable"
-  )
-  add_sheet(wb, "Variable Cos2", var_cos2)
+    add_sheet(
+      wb, "Variable Contributions",
+      matrix_to_df(var_contrib, "Variable")
+    )
+    add_sheet(
+      wb, "Variable Cos2",
+      matrix_to_df(var_cos2, "Variable")
+    )
+  }
 
   # Individual metadata (if available)
-  ind_meta <- pca_result$ind$meta
+  ind_meta <- pca_result$ind_meta
 
-  # Sheet 5: Individual Coordinates
+  # Sheet: Individual Scores
   ind_coord <- ind_matrix_to_df(
-    pca_result$ind$coord, ind_meta
+    pca_result$scores, ind_meta
   )
-  add_sheet(wb, "Individual Coordinates", ind_coord)
+  add_sheet(wb, "Individual Scores", ind_coord)
 
-  # Sheet 6: Individual Contributions
-  ind_contrib <- ind_matrix_to_df(
-    pca_result$ind$contrib, ind_meta
-  )
-  add_sheet(wb, "Individual Contributions", ind_contrib)
+  if (has_contrib) {
+    scores <- pca_result$scores
+    ind_contrib <- compute_ind_contrib(scores)
+    ind_cos2 <- compute_ind_cos2(scores, scores)
 
-  # Sheet 7: Individual Cos2
-  ind_cos2 <- ind_matrix_to_df(
-    pca_result$ind$cos2, ind_meta
-  )
-  add_sheet(wb, "Individual Cos2", ind_cos2)
+    add_sheet(
+      wb, "Individual Contributions",
+      ind_matrix_to_df(ind_contrib, ind_meta)
+    )
+    add_sheet(
+      wb, "Individual Cos2",
+      ind_matrix_to_df(ind_cos2, ind_meta)
+    )
+  }
 
   openxlsx$saveWorkbook(wb, file, overwrite = TRUE)
 
   rhino$log$info(
-    "PCA export: Excel saved ({7} sheets)"
+    "PCA export: Excel saved ({length(wb$sheet_names)} sheets)"
   )
 }
 
@@ -89,14 +105,18 @@ create_pca_excel <- function(pca_result, file) {
 #' Create a standardized RDS bundle for PCA export
 #'
 #' Builds the named list that the prediction module
-#' expects when loading a PCA .rds file.
+#' expects when loading a PCA/sPCA/IPCA .rds file. Stores the
+#' fit-time center/scale vectors explicitly, since mixOmics
+#' only retains them on plain pca() model objects (not on
+#' spca()/ipca()) — the Prediction module needs them for
+#' manual projection of new samples regardless of method.
 #'
 #' @param pca_result PCA result list from run_pca()
 #'   (the $result field, not the wrapper)
 #' @param raw_data Data frame, original data before
 #'   any transforms
 #' @param used_data Data frame, data actually passed
-#'   to prcomp (after transform + NA removal)
+#'   to the mixOmics fit (after transform + NA removal)
 #' @param numeric_cols Character vector of measurement
 #'   column names
 #' @param meta_cols Character vector of metadata column
@@ -113,15 +133,18 @@ create_pca_bundle <- function(pca_result, raw_data,
                               transform_params = list(),
                               settings = list()) {
   bundle <- list(
-    analysis_type = "pca",
-    model = pca_result$pca_obj,
+    analysis_type = pca_result$analysis_type,
+    model = pca_result$model,
     raw_data = raw_data,
     used_data = used_data,
     group_col = NULL,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
     transform_params = transform_params,
-    scale_params = NULL,
+    scale_params = list(
+      center = pca_result$center,
+      scale = pca_result$scale
+    ),
     settings = settings,
     data_source = "raw",
     app_version = app_version,
@@ -129,8 +152,8 @@ create_pca_bundle <- function(pca_result, raw_data,
   )
 
   rhino$log$info(
-    "PCA bundle: created ({length(numeric_cols)} vars,",
-    " {nrow(used_data)} obs)"
+    "{toupper(pca_result$analysis_type)} bundle: created",
+    " ({length(numeric_cols)} vars, {nrow(used_data)} obs)"
   )
 
   bundle
