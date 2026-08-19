@@ -17,6 +17,7 @@ box::use(
     validate_inputs
   ],
   app/logic/lda/lda_export[create_lda_excel, create_lda_bundle],
+  app/logic/lda/perf_plot[create_perf_error_plot],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/scaling[scale_data],
   app/logic/preprocessing/skewness_transform[
@@ -842,7 +843,7 @@ server <- function(id, input_data, data_version,
             "Component Diagnostics (perf)"
           ),
           value = "perf_panel",
-          render_perf_panel(perf_result(), perf_error())
+          render_perf_panel(perf_result(), perf_error(), ns)
         )
       }
 
@@ -917,6 +918,15 @@ server <- function(id, input_data, data_version,
       }
     )
 
+    # Component error-rate curve (PLS-DA/sPLS-DA perf diagnostics)
+    output$perf_error_plot <- ggiraph$renderGirafe({
+      pr <- perf_result()
+      if (is.null(pr) || is.null(pr$errors)) return(NULL)
+      plot_res <- create_perf_error_plot(pr$errors)
+      if (!plot_res$success) return(NULL)
+      plot_res$result
+    })
+
     # Scores plot renderer (LDA/MDA/PLS-DA/sPLS-DA, or QDA)
     output$ld_plot <- ggiraph$renderGirafe({
       res <- result()
@@ -937,7 +947,8 @@ server <- function(id, input_data, data_version,
           dim_x = dim_x,
           dim_y = dim_y,
           show_diagnostics = show_diag,
-          show_boundaries = show_bound
+          show_boundaries = show_bound,
+          boundary_dist = input$boundary_dist %||% "max.dist"
         )
       } else if (res$analysis_type == "qda") {
         if (is.null(res$model)) return(NULL)
@@ -1015,8 +1026,9 @@ server <- function(id, input_data, data_version,
 #'   (data.frame) and $stability (data.frame or NULL), or NULL
 #' @param perf_err Structured error from run_plsda_perf(),
 #'   or NULL
+#' @param ns Namespace function, for the error-curve output slot
 #' @return Shiny tag(s)
-render_perf_panel <- function(perf_res, perf_err) {
+render_perf_panel <- function(perf_res, perf_err, ns) {
   if (!is.null(perf_err)) {
     return(shiny$tags$div(
       class = "alert alert-danger py-2 px-2 small",
@@ -1027,7 +1039,7 @@ render_perf_panel <- function(perf_res, perf_err) {
     return(shiny$tags$div(
       class = "text-muted small",
       paste(
-        "Click \"Run Component Diagnostics (perf)\" in the",
+        "Click \"Check component count\" in the",
         "Analysis Settings sidebar tab to estimate",
         "classification error per component via repeated",
         "cross-validation."
@@ -1100,6 +1112,21 @@ render_perf_panel <- function(perf_res, perf_err) {
   }
 
   shiny$tagList(
+    ggiraph$girafeOutput(
+      ns("perf_error_plot"), height = "400px"
+    ),
+    shiny$tags$small(
+      class = "text-muted mb-3 d-block",
+      paste(
+        "Read this like a PCA scree plot: keep components up to",
+        "the elbow, where error stops falling meaningfully.",
+        "Unlike a scree plot, error can rise again — that means",
+        "the extra components are fitting noise. BER is the more",
+        "reliable curve when group sizes are unbalanced.",
+        "To apply a different count, set Number of components in",
+        "Analysis Settings and press Compute again."
+      )
+    ),
     error_table,
     stability_section
   )
