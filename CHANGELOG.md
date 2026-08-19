@@ -1,16 +1,36 @@
 # Changelog
 
-## [2026.14] - 2026-08-18
+## [2026.14] - 2026-08-19
 
 ### Added
 
 - **PLS-DA / sPLS-DA**: New "PLS-DA" and "sPLS-DA (sparse)" analysis types in the LDA module (via the `mixOmics` package), designed for measurement-parameter sets with more variables than specimens per group and/or highly collinear variables — situations where LDA/QDA/MDA warn or fail outright. PLS-DA extracts latent components maximizing covariance between measurements and group membership; sPLS-DA additionally performs sparse variable selection (**keepX** per component), directly identifying which measurement parameters drive group separation, shown in a new **Selected Variables** results panel
-- **keepX auto-tuning**: Opt-in "Auto-tune keepX (slow)" button runs a cross-validated grid search (`mixOmics::tune.splsda`) to suggest keepX values per component, filling the manual inputs while remaining user-editable
-- **Component Diagnostics (perf) panel**: Independent, on-demand repeated k-fold cross-validation (`mixOmics::perf`) reporting Overall Error and Balanced Error Rate per component count, used to justify the chosen number of components for PLS-DA/sPLS-DA
+- **keepX auto-tuning**: Opt-in "Optimise variable selection (recommended)" button runs a cross-validated grid search (`mixOmics::tune.splsda`) to suggest keepX values per component, filling the manual inputs while remaining user-editable
+- **Component Diagnostics (perf) panel**: Independent, on-demand repeated k-fold cross-validation (`mixOmics::perf`) reporting Overall Error and Balanced Error Rate per component count, used to justify the chosen number of components for PLS-DA/sPLS-DA (button labelled "Check component count (recommended)")
 - **Decision boundary overlay for PLS-DA/sPLS-DA**: The existing "Show Decision Boundaries" shaded-background overlay (previously LDA/QDA/MDA only) now also covers PLS-DA/sPLS-DA, approximated via nearest-neighbour classification on training scores in the plotted 2D projection
 - **Prediction module support**: PLS-DA/sPLS-DA models can be exported as `.rds` bundles and loaded into the Prediction module to classify unknown specimens and overlay them on the Component Scores plot, reusing the existing LDA/MDA overlay infrastructure
 - **Documentation**: Help files (Overview/Details/FAQ) for LDA updated with PLS-DA/sPLS-DA method descriptions, component/keepX selection guidance, and multicollinearity interpretation notes; package citation table extended with mixOmics
 - **Dependencies**: `mixOmics` (Bioconductor) locked in `renv.lock`
+- **"Best axes to plot" recommendation**: The Dimension Evaluation panel now names the two axes with the highest ANOVA R² — the axes carrying the most group separation — and, when those are not the first two, points to the Plotting Controls tab to change Dim.X/Dim.Y. Unlike LDA (whose axes are ordered by discriminating power by construction), PLS-DA/sPLS-DA components are ordered by X–group covariance, so the strongest group signal is not always on Comp1/Comp2
+- **keepX tuning status**: The Selected Variables panel carries a "keepX tuned" / "keepX not tuned" badge plus an in-panel note, so a variable list produced by an untuned sidebar default is never mistaken for a cross-validated result. The badge tracks the values actually used by the fitted model, reverting to "not tuned" if keepX is hand-edited after tuning
+- **Reporting guidance**: New FAQ entry "What should I report in a paper or thesis?" consolidating which numbers and plots belong in a manuscript, which metrics are misleading when quoted alone, and a placeholder template summary; the pattern is documented in `.llm/help_modal_guide.md` for reuse across other analysis modules
+- **Dimension Evaluation test coverage**: New `tests/testthat/test-dimension_eval.R` covering the grouping-column-available and grouping-column-missing paths
+
+### Changed
+
+- **Method-aware UI labels**: The results accordion is now titled after the selected method ("sPLS-DA Results" rather than always "LDA Results"), via a single `analysis_type_label()` helper shared with the results summary. The compute button, empty-state header, and plotting-controls title were made method-neutral ("Compute Discriminant Analysis", "Discriminant Analysis Plotting Controls") instead of enumerating only LDA/QDA/MDA, and the Dim.X/Dim.Y tooltips now mention Comp for PLS-DA/sPLS-DA
+- **Group Means table transposed**: Variables are now rows and groups columns, matching the Coefficients/VIP panels. Datasets normally have far more measurement parameters than groups, so the previous orientation forced horizontal scrolling that pushed the row label off-screen. The Excel export keeps groups as rows for spreadsheet convenience
+- **Button labels state purpose rather than mechanism**: "Auto-tune keepX (slow)" → "Optimise variable selection (recommended)" and "Run Component Diagnostics (perf)" → "Check component count (recommended)"; the runtime warning moved into the helper text so it informs without discouraging a step users should almost always take. The keepX tooltip now explains that keepX is a count of variables rather than a threshold, and that it should be chosen by cross-validation rather than guessed
+- **Variable Contributions plot height**: The SVG height cap was raised from 8 to 24 in both the LDA and PCA jitter plots. The previous cap saturated at roughly 14 variables per axis, guaranteeing overlapping labels for the 40+-parameter datasets the module targets
+- **In-UI caveats surfaced from the docs**: The Explained Variance table carries a PLS-DA/sPLS-DA-specific note that a low proportion does not imply weak group separation, and the Confusion Matrix panel explains (when `ncomp > 2`) that classification uses all components while the scores plot shows only two — so the two can legitimately disagree
+
+### Fixed
+
+- **Dimension Evaluation could report fabricated significance**: When the grouping column was not also selected as a metadata column, `get_grouping()` silently substituted the model's own predicted classes for the true group labels. The ANOVA then regressed the model's scores on its own predictions — circular by construction, and near-guaranteed to produce an inflated R²/F/p-value with no indication to the user. The fallback was removed; the panel is now omitted with an explicit message instead
+- **MDA could display a negative explained-variance proportion**: `mda::mda()`'s `percent.explained` is documented as cumulative, but EM instability or dimension truncation can return a non-monotonic vector, which differencing turned into a negative Proportion and a decreasing Cumulative column that propagated silently into the Variable Contributions plot. Negative values are now clamped to zero with a logged warning, and Cumulative is recomputed to stay consistent
+- **VIP highlighting applied to one component only**: The VIP table's caption claimed "Variables with VIP > 1 (highlighted)" while styling was applied only to the Comp1 column; it now covers every component column
+- **Documentation corrections**: The MDA per-group sample-size rule was stated three different ways across the FAQ, overview table, and sidebar tooltip — all now state the enforced `max(subclasses, p + 1)` minimum, distinguished from the softer "about 10 per subclass" stability recommendation. The Excel export description listed 6 of the 14 sheets actually written and is now a complete conditional table; the stale "up to nine sub-panels" count was removed
+- **Two failing `run_plsda_perf` tests**: The tests read `perf_res$result` directly, but the function returns `list(errors =, stability =)`; the assertions were corrected to target `$errors`. Production code was already consuming the result correctly
 
 ## [2026.13] - 2026-08-18
 
