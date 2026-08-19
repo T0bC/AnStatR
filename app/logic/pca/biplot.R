@@ -7,6 +7,9 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
+  app/logic/pca/pca_stats[
+    compute_var_coord, compute_var_contrib, compute_ind_contrib
+  ],
 )
 
 # =============================================================================
@@ -24,7 +27,7 @@ box::use(
 #' @param dim_x Character, dimension for x-axis (e.g. "Dim.1")
 #' @param dim_y Character, dimension for y-axis (e.g. "Dim.2")
 #' @param layer Character, one of "individuals", "variables", "combined"
-#' @param group_cols Character vector, column name(s) in ind$meta
+#' @param group_cols Character vector, column name(s) in ind_meta
 #'   for grouping. Multiple columns are combined via interaction().
 #'   NULL for no grouping.
 #' @param show_convex_hull Logical, use convex hull instead of
@@ -56,7 +59,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
     expr = {
       validate_biplot_inputs(pca_result, dim_x, dim_y, layer)
 
-      eig <- pca_result$eig
+      variance <- pca_result$variance
       show_ind <- layer %in% c("individuals", "combined")
       show_var <- layer %in% c("variables", "combined")
 
@@ -88,8 +91,8 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
       }
 
       # Base plot
-      x_label <- axis_label_with_variance(dim_x, eig)
-      y_label <- axis_label_with_variance(dim_y, eig)
+      x_label <- axis_label_with_variance(dim_x, variance)
+      y_label <- axis_label_with_variance(dim_y, variance)
 
       p <- ggplot2$ggplot() +
         biplot_theme() +
@@ -385,7 +388,7 @@ validate_biplot_inputs <- function(pca_result, dim_x, dim_y,
     ))
   }
 
-  available_dims <- colnames(pca_result$var$coord)
+  available_dims <- colnames(pca_result$loadings)
   if (!dim_x %in% available_dims) {
     stop(paste("Dimension not found:", dim_x))
   }
@@ -398,9 +401,9 @@ validate_biplot_inputs <- function(pca_result, dim_x, dim_y,
 build_ind_plot_data <- function(pca_result, dim_x, dim_y,
                                 group_cols, point_alpha,
                                 point_size) {
-  coord <- pca_result$ind$coord
-  contrib <- pca_result$ind$contrib
-  meta <- pca_result$ind$meta
+  coord <- pca_result$scores
+  contrib <- compute_ind_contrib(coord)
+  meta <- pca_result$ind_meta
 
   df <- data.frame(
     x = coord[, dim_x],
@@ -459,8 +462,8 @@ build_ind_plot_data <- function(pca_result, dim_x, dim_y,
 
 #' Build variable plot data
 build_var_plot_data <- function(pca_result, dim_x, dim_y) {
-  coord <- pca_result$var$coord
-  contrib <- pca_result$var$contrib
+  coord <- compute_var_coord(pca_result$loadings, pca_result$scores)
+  contrib <- compute_var_contrib(pca_result$loadings)
 
   df <- data.frame(
     xend = coord[, dim_x],
@@ -546,10 +549,10 @@ biplot_theme <- function() {
 }
 
 #' Build axis label with variance percentage
-axis_label_with_variance <- function(dim_name, eig) {
-  dim_idx <- which(rownames(eig) == dim_name)
+axis_label_with_variance <- function(dim_name, variance) {
+  dim_idx <- which(rownames(variance) == dim_name)
   if (length(dim_idx) == 1) {
-    var_pct <- eig[dim_idx, "variance.percent"]
+    var_pct <- variance[dim_idx, "variance_percent"]
     sprintf("%s (%.1f%%)", dim_name, var_pct)
   } else {
     dim_name
