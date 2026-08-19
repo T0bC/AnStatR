@@ -58,7 +58,11 @@ render_output <- function(input, output, session,
     n_facets <- length(unique(plot_data$dim_label))
     n_points <- max(table(plot_data$dim_label))
     width_svg <- min(max(n_facets * 2.5 + 3, 8), 12)
-    height_svg <- min(max(n_points * 0.35 + 3, 6), 8)
+    # Height scales with the number of variables per axis so labels stay
+    # legible for wide datasets (e.g. 40+ surface-texture parameters).
+    # The old cap of 8 saturated at ~14 variables, guaranteeing overlap.
+    # ggiraph output is scrollable, so a tall SVG is fine here.
+    height_svg <- min(max(n_points * 0.35 + 3, 6), 24)
 
     ggiraph$girafe(
       ggobj = res$plot,
