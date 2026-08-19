@@ -12,7 +12,7 @@ box::use(
     axis_label,
   ],
   app/logic/pca/biplot[create_biplot],
-  app/logic/pca/pca[build_pca_result, build_ind_meta],
+  app/logic/pca/pca[build_pca_result, build_ind_meta, apply_row_labels],
   app/logic/cluster/cluster_biplot[create_cluster_biplot],
 )
 
@@ -67,7 +67,9 @@ create_prediction_overlay_plot <- function(
 
       p <- switch(
         analysis_type,
-        pca = build_pca_overlay(
+        pca = ,
+        spca = ,
+        ipca = build_pca_overlay(
           bundle, prediction_result,
           unknown_data, dim_x, dim_y, meta_col,
           group_cols = group_cols,
@@ -76,12 +78,7 @@ create_prediction_overlay_plot <- function(
           point_size = point_size,
           layer = layer
         ),
-        lda = build_ld_overlay(
-          bundle, prediction_result,
-          unknown_data, dim_x, dim_y, meta_col,
-          show_diagnostics = show_diagnostics,
-          show_boundaries = show_boundaries
-        ),
+        lda = ,
         mda = build_ld_overlay(
           bundle, prediction_result,
           unknown_data, dim_x, dim_y, meta_col,
@@ -216,7 +213,7 @@ build_pca_overlay <- function(bundle, pred_result,
 
   # Labels for unknown points — use pca_result coords
   # for y range (p$data is empty in multi-layer ggplot)
-  train_y <- pca_result$ind$coord[, dim_y]
+  train_y <- pca_result$scores[, dim_y]
   y_range <- diff(range(
     c(unknown_df$y, train_y),
     na.rm = TRUE
@@ -533,22 +530,25 @@ build_cluster_overlay <- function(bundle, pred_result,
 
 #' Reconstruct a pca_result structure from a bundle
 #'
-#' Uses the stored prcomp model and training data to
-#' rebuild the same structure that create_biplot expects.
+#' Uses the stored mixOmics pca/spca/ipca model and training
+#' data to rebuild the same structure that create_biplot
+#' expects.
 reconstruct_pca_result <- function(bundle) {
   model <- bundle$model
   used_data <- bundle$used_data
   numeric_cols <- bundle$numeric_cols
   meta_cols <- bundle$meta_cols %||% character(0)
+  analysis_type <- bundle$analysis_type
   n <- nrow(used_data)
   p <- length(numeric_cols)
-  ncp <- min(p, n - 1)
 
-  result <- build_pca_result(model, ncp, n, p)
-  result$pca_obj <- model
-  result$ind$meta <- build_ind_meta(
+  keep_x <- if (analysis_type == "spca") model$keepX else NULL
+
+  result <- build_pca_result(model, analysis_type, n, p, keep_x = keep_x)
+  result$ind_meta <- build_ind_meta(
     used_data, meta_cols, n
   )
+  result <- apply_row_labels(result, result$ind_meta)
   result
 }
 
