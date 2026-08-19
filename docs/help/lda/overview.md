@@ -20,7 +20,7 @@ Choose between five methods in the **Analysis Settings** tab:
 |--------|-------------------|-----------------|----------|
 | **LDA** (Linear) | Linear (flat) | Groups share same covariance structure | Default; limited observations per group |
 | **QDA** (Quadratic) | Quadratic (curved) | ≥ p+1 observations per group | Groups with clearly different spread/shape |
-| **MDA** (Mixture) | Flexible (mixture) | ≥ subclasses × p observations per group | Multi-modal or non-elliptical group shapes |
+| **MDA** (Mixture) | Flexible (mixture) | ≥ max(subclasses, p + 1) observations per group (enforced); more recommended for stability | Multi-modal or non-elliptical group shapes |
 | **PLS-DA** | Distance to component-space centroid | None — works even with more variables than specimens | High-dimensional or collinear measurement sets |
 | **sPLS-DA** (sparse) | Distance to component-space centroid | None | Same as PLS-DA, plus built-in variable selection |
 
