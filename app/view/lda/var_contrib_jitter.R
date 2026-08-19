@@ -37,7 +37,7 @@ render_output <- function(input, output, session,
     pca_like <- lda_to_pca_var_structure(res)
     if (is.null(pca_like)) return(NULL)
 
-    n_dims <- ncol(pca_like$var$contrib)
+    n_dims <- ncol(pca_like$contrib)
 
     plot_res <- create_var_contrib_jitter_plot(
       pca_result = pca_like,
