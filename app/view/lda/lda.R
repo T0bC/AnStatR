@@ -19,6 +19,7 @@ box::use(
   app/logic/lda/lda_export[create_lda_excel, create_lda_bundle],
   app/logic/lda/perf_plot[create_perf_error_plot],
   app/logic/preprocessing/na_handling[clean_na_rows],
+  app/logic/pca/pca[extract_pca_scores],
   app/logic/pca/scaling[scale_data],
   app/logic/preprocessing/skewness_transform[
     detect_skewness, transform_skewed
@@ -102,23 +103,7 @@ server <- function(id, input_data, data_version,
     # Reactive: PCA scores as a flat data frame
     # (metadata cols + Dim.1, Dim.2, … columns)
     pca_scores_data <- shiny$reactive({
-      if (is.null(pca_result)) return(NULL)
-      pca_res <- pca_result()
-      if (is.null(pca_res) || !isTRUE(pca_res$success)) {
-        return(NULL)
-      }
-      res <- pca_res$result
-      coord <- as.data.frame(res$ind$coord)
-      meta <- res$ind$meta
-      if (
-        !is.null(meta) &&
-        nrow(meta) == nrow(coord) &&
-        !("Row" %in% names(meta) && ncol(meta) == 1)
-      ) {
-        cbind(meta, coord)
-      } else {
-        coord
-      }
+      extract_pca_scores(pca_result)
     })
 
     # Delegate to sub-module servers
