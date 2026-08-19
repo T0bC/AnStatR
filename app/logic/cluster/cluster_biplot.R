@@ -198,7 +198,7 @@ build_pca_biplot <- function(data, measure_cols,
     )
   }
 
-  ind_coord <- pca_result$ind$coord
+  ind_coord <- pca_result$scores
   add_cluster_overlays(
     p, ind_coord, clusters, dim_x, dim_y
   )
