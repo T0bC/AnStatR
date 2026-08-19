@@ -99,14 +99,16 @@ The **Variables to keep per component (keepX)** setting controls sparsity direct
 <details>
 <summary><strong>Component Diagnostics (perf) for PLS-DA/sPLS-DA</strong></summary>
 
-The **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Check component count**) wraps `mixOmics::perf()`, which repeats k-fold cross-validation (default 5 folds × 10 repeats) to estimate classification error at each component count, independently of the model fitted by the main **Compute** button. Two error metrics are reported per component:
+The **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Check component count**) wraps `mixOmics::perf()`, which repeats k-fold cross-validation (default 5 folds × 10 repeats) to estimate classification error at each component count, independently of the model fitted by the main **Compute** button. Results are shown as an **error curve** followed by the underlying table. Two error metrics are reported per component:
 
 | Column | Definition |
 |--------|-----------|
 | **Overall Error** | Fraction of all cross-validated predictions that were misclassified |
 | **BER** (Balanced Error Rate) | Average of per-group error rates — more informative than Overall Error when groups are unevenly sized |
 
-Both are computed using the `max.dist` classification rule (assign to the class with maximum predicted score). Look for the component count where error stops decreasing meaningfully (an "elbow") — adding components beyond that point usually adds noise, not signal, to the model. This is the PLS-DA/sPLS-DA-specific analogue of comparing resubstitution vs. LOO-CV accuracy for LDA: it is deliberately separated from the main Validation setting (None / Train-Test Split) because it evaluates *component count*, not the final fitted model's generalisation.
+Both are computed using the `max.dist` classification rule (assign to the class with maximum predicted score). Look for the component count where error stops decreasing meaningfully (an "elbow") — adding components beyond that point usually adds noise, not signal, to the model.
+
+**Reading the error curve**: it is read like the PCA scree plot — the x-axis is the number of dimensions retained, and you keep components up to the elbow. The important difference is what the y-axis measures. A scree plot shows *variance explained*, which always decreases, so it can only ever show diminishing returns. This curve shows *cross-validated classification error*, which can rise again: when it does, those extra components are fitting noise rather than group structure, and the rise is direct evidence of overfitting that a scree plot cannot give you. A dashed line marks the smallest component count whose BER is within one percentage point of the best value — a parsimony rule, so a negligible improvement does not justify an extra component. Prefer the BER curve when group sizes are unbalanced. The suggested count is not applied automatically: set **Number of components** in Analysis Settings and press **Compute** to use it. This is the PLS-DA/sPLS-DA-specific analogue of comparing resubstitution vs. LOO-CV accuracy for LDA: it is deliberately separated from the main Validation setting (None / Train-Test Split) because it evaluates *component count*, not the final fitted model's generalisation.
 
 **Note**: PLS-DA/sPLS-DA does not support Leave-one-out CV as a Validation option (unlike LDA/QDA/MDA) because a full model refit per left-out observation would be prohibitively slow at typical component/keepX settings; the perf() panel's repeated k-fold CV is the standard validation approach for this method family in the literature.
 
@@ -473,6 +475,7 @@ Configure the **LD Scores Plot** (titled **Component Scores Plot** for PLS-DA/sP
 | **Dim.Z** | Same choices as X/Y | Reserved for future 3D discriminant plot |
 | **Show Assumption Diagnostics** | On/Off — hidden for PLS-DA/sPLS-DA | Overlays per-group (solid) and pooled within-group (dashed) covariance ellipses; if they match, the equal-covariance assumption holds. Not applicable to PLS-DA/sPLS-DA, which make no Gaussian equal-covariance assumption |
 | **Show Decision Boundaries** | On/Off (default On) | Shades the plotted space by predicted class region and draws boundary lines. Computed exactly for LDA and QDA. For PLS-DA/sPLS-DA, computed exactly when plotting Comp1 vs Comp2 — the same `max.dist` classification rule mixOmics uses internally (`predict()`/`background.predict()`), evaluated directly in component space; for any other component pair, or for MDA, approximated via nearest-neighbour classification on the training scores (mixOmics' own classification integrates information from all components in original-variable space, which cannot be reduced to a closed-form boundary outside the fitted Comp1/Comp2 pair) |
+| **Boundary rule** (PLS-DA/sPLS-DA only) | Maximum distance (default) / Centroid distance / Mahalanobis distance | Which rule assigns a point in component space to a group when shading the background — the three `dist` options mixOmics exposes via `background.predict()`. Shown only when Show Decision Boundaries is on. See below for how to choose |
 | **Width / Height (cm)** | Numeric | Export dimensions for SVG and PNG downloads |
 
 The **Variable Contributions** jitter plot (visible when discriminant coefficients or component loadings are available) displays the absolute coefficient/loading for each variable across all axes. Variables with consistently large values are the primary drivers of group separation.
@@ -490,3 +493,17 @@ The **Variable Contributions** jitter plot (visible when discriminant coefficien
 - **For sPLS-DA, treat correlated variable groups together** — do not conclude an excluded variable is scientifically unimportant without checking whether a correlated sibling was selected in its place
 - **Download full results** — the Excel export contains the full proportion of trace / explained variance, discriminant coefficients or component loadings (plus selected variables for sPLS-DA), posterior probabilities, and per-class accuracy for reporting
 
+
+**Choosing a boundary rule (PLS-DA/sPLS-DA)**: mixOmics can turn a position in component space into a predicted class three different ways, and they often disagree near the margins.
+
+| Rule | How it decides | When to use it |
+|------|----------------|----------------|
+| **Maximum distance** (`max.dist`) | Largest predicted score from the underlying regression | The default, and the rule behind `predict()`, `perf()` and the Confusion Matrix — use it when the background must be consistent with the reported accuracy |
+| **Centroid distance** (`centroids.dist`) | Nearest group centroid by straight-line distance | Often gives smoother, more intuitive regions; useful when `max.dist` produces visually ragged areas |
+| **Mahalanobis distance** (`mahalanobis.dist`) | Nearest centroid after accounting for the spread and correlation of the components | Best when groups are elongated or the two components are correlated, since it does not treat both axes as equally scaled |
+
+**Interpretation**: if the background changes substantially when you switch rules, the groups are *not* cleanly separated in the two plotted components — the boundary lies in a region where the rules genuinely disagree. That is diagnostic information, not a rendering artefact. If your paper shows a decision background, state which rule produced it.
+
+**A note on exactness**: the maximum- and centroid-distance backgrounds reproduce `mixOmics::predict()` exactly at the training points. The Mahalanobis background is computed using the covariance of the two *plotted* components, whereas mixOmics uses all fitted components, so it can differ slightly from `predict(..., dist = "mahalanobis.dist")` when `ncomp > 2` — an unavoidable consequence of drawing a two-dimensional picture of a higher-dimensional rule.
+
+**Component pairs other than Comp1/Comp2**: the two centroid rules are defined entirely within the plotted two-dimensional space, so they work for any component pair you select. Maximum distance is different — its regression reconstruction is only valid for the leading pair, so when you plot any other combination (Comp3 vs Comp4, say) the background falls back to centroid distance. The selector therefore still changes the picture on every pair, but on non-leading pairs "Maximum distance" and "Centroid distance" produce the same background by design.
