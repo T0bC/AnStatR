@@ -226,24 +226,37 @@ predict_spca <- function(model, numeric_data) {
 
 #' Project new samples onto a fitted IPCA model
 #'
-#' mixOmics computes IPCA's first score as X %*% rotation[,1]
-#' (unit-normalized), then each subsequent component's score
-#' as the residual of X %*% rotation[,h] after regressing out
-#' all prior scores (via lsfit), unit-normalized again. This
-#' recursive residualization — not the unmixing/mixing
-#' matrices — is what must be replayed to project new data.
-#' Verified exact (zero numerical difference) against
-#' mixOmics' own $x on refit data. Data is centered (not
-#' scaled) by preprocess_unknown(), matching ipca()'s default
-#' scale = FALSE.
+#' mixOmics computes IPCA's first score as X %*% rotation[,1],
+#' then unit-normalizes it by dividing by its own norm — a
+#' constant computed over ALL training rows together, not a
+#' per-observation transform. Each subsequent component's score
+#' is the residual of X %*% rotation[,h] after regressing out
+#' all prior TRAINING scores (via lsfit), again normalized by a
+#' training-wide constant. To project new data onto the same
+#' scale as the training scores, new samples must reuse those
+#' training-derived normalization constants and regression
+#' coefficients — normalizing new samples by their own norm (as
+#' an earlier version of this function did) divides by a
+#' completely different, sample-count-dependent constant and
+#' silently rescales new scores by roughly sqrt(n_train /
+#' n_new), producing predicted points that land far outside the
+#' training ellipses even though the projection direction is
+#' correct. Verified exact (zero numerical difference) against
+#' mixOmics' own $x when re-"predicting" the training rows
+#' themselves. Data is centered/scaled by preprocess_unknown()
+#' using the bundle's stored scale_params, matching whatever
+#' scale = argument was used to fit this ipca() model.
 #'
-#' @param model Fitted mixOmics ipca object
+#' @param model Fitted mixOmics ipca object. Requires $X (the
+#'   centered/scaled training matrix ipca() was fit on) to
+#'   recompute the training normalization constants.
 #' @param numeric_data Data frame, already preprocessed
 #' @return List with $scores, $predicted_class (NULL),
 #'   $posterior (NULL)
 predict_ipca <- function(model, numeric_data) {
   rotation <- model$rotation
   ncomp <- ncol(rotation)
+  x_train <- model$X
   x_mat <- as.matrix(numeric_data)[
     , rownames(rotation), drop = FALSE
   ]
@@ -252,16 +265,30 @@ predict_ipca <- function(model, numeric_data) {
     NA_real_, n, ncomp,
     dimnames = list(rownames(x_mat), NULL)
   )
-  scores[, 1] <- as.vector(x_mat %*% rotation[, 1])
-  scores[, 1] <- scores[, 1] / sqrt(sum(scores[, 1]^2))
+  train_scores <- matrix(
+    NA_real_, nrow(x_train), ncomp
+  )
+
+  raw1_train <- as.vector(x_train %*% rotation[, 1])
+  norm1 <- sqrt(sum(raw1_train^2))
+  train_scores[, 1] <- raw1_train / norm1
+  scores[, 1] <- as.vector(x_mat %*% rotation[, 1]) / norm1
+
   if (ncomp >= 2) {
     for (h in 2:ncomp) {
-      target <- as.vector(x_mat %*% rotation[, h])
-      resid <- stats$lsfit(
-        y = target, x = scores[, seq_len(h - 1), drop = FALSE],
-        intercept = FALSE
-      )$residuals
-      scores[, h] <- resid / sqrt(sum(resid^2))
+      prior_train <- train_scores[, seq_len(h - 1), drop = FALSE]
+      target_train <- as.vector(x_train %*% rotation[, h])
+      fit <- stats$lsfit(
+        y = target_train, x = prior_train, intercept = FALSE
+      )
+      resid_train <- fit$residuals
+      norm_h <- sqrt(sum(resid_train^2))
+      train_scores[, h] <- resid_train / norm_h
+
+      prior_new <- scores[, seq_len(h - 1), drop = FALSE]
+      target_new <- as.vector(x_mat %*% rotation[, h])
+      pred_new <- as.vector(prior_new %*% fit$coefficients)
+      scores[, h] <- (target_new - pred_new) / norm_h
     }
   }
   scores <- as.data.frame(scores)
