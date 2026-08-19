@@ -132,7 +132,7 @@ tab_server <- function(input, output, session,
 
     analysis_type <- bundle$analysis_type
 
-    if (analysis_type == "pca") {
+    if (analysis_type %in% c("pca", "spca", "ipca")) {
       shiny$updateTextInput(
         session, "plot_mode", value = "pca"
       )
@@ -608,7 +608,7 @@ update_cluster_choices <- function(session, bundle) {
 get_available_dims <- function(bundle) {
   analysis_type <- bundle$analysis_type
 
-  if (analysis_type == "pca") {
+  if (analysis_type %in% c("pca", "spca", "ipca")) {
     model <- bundle$model
     n_pc <- ncol(model$rotation)
     paste0("Dim.", seq_len(n_pc))
