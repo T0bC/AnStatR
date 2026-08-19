@@ -10,10 +10,13 @@ box::use(
 
 #' Convert LDA result to PCA-like variable structure
 #'
-#' Builds a fake "pca_result" list with $var$contrib, $var$cos2,
-#' $var$coord, and $eig — derived from the LDA scaling matrix
-#' and proportion_of_trace. This allows
-#' create_var_contrib_jitter_plot() to work unchanged.
+#' Builds a fake "pca_result" list with $loadings, $contrib,
+#' $cos2, $coord, and $variance — derived from the LDA scaling
+#' matrix and proportion_of_trace. LDA scaling coefficients are
+#' not unit-norm like PCA loadings, so $contrib/$coord/$cos2
+#' are precomputed here and passed through as-is by
+#' create_var_contrib_jitter_plot() rather than being derived
+#' from $loadings/$scores.
 #'
 #' @param lda_result Result list from run_lda/run_qda/run_mda
 #' @return List mimicking PCA result structure, or NULL if
@@ -76,41 +79,30 @@ lda_to_pca_var_structure <- function(lda_result) {
   var_cos2 <- sweep(scaling_sq, 1, row_totals, "/")
   colnames(var_cos2) <- dim_names
 
-  # --- Eig: build eigenvalue-like table from
-  #     proportion_of_trace ---
+  # --- Variance: build variance-explained table from
+  #     proportion_of_trace, matching run_pca()'s $variance
+  #     shape (component, variance_percent,
+  #     cumulative_variance_percent) ---
   if (!is.null(prop_trace) && nrow(prop_trace) > 0) {
     # prop_trace has columns: LD, Proportion, Cumulative
     # (and optionally Singular Value)
     var_pct <- prop_trace$Proportion * 100
     cum_pct <- prop_trace$Cumulative * 100
-
-    eig <- data.frame(
-      eigenvalue = var_pct / 100,
-      `variance.percent` = var_pct,
-      `cumulative.variance.percent` = cum_pct,
-      check.names = FALSE
-    )
-    rownames(eig) <- dim_names[seq_len(nrow(eig))]
-    colnames(eig) <- c(
-      "eigenvalue", "variance.percent",
-      "cumulative.variance.percent"
-    )
+    variance_dims <- dim_names[seq_len(length(var_pct))]
   } else {
     # Fallback: equal weight per dimension
     var_pct <- rep(100 / n_dims, n_dims)
     cum_pct <- cumsum(var_pct)
-    eig <- data.frame(
-      eigenvalue = var_pct / 100,
-      `variance.percent` = var_pct,
-      `cumulative.variance.percent` = cum_pct,
-      check.names = FALSE
-    )
-    rownames(eig) <- dim_names
-    colnames(eig) <- c(
-      "eigenvalue", "variance.percent",
-      "cumulative.variance.percent"
-    )
+    variance_dims <- dim_names
   }
+
+  variance <- data.frame(
+    component = variance_dims,
+    variance_percent = var_pct,
+    cumulative_variance_percent = cum_pct,
+    check.names = FALSE
+  )
+  rownames(variance) <- variance_dims
 
   rhino$log$info(
     "lda_var_contrib: built PCA-like structure ",
@@ -118,11 +110,10 @@ lda_to_pca_var_structure <- function(lda_result) {
   )
 
   list(
-    var = list(
-      coord = var_coord,
-      contrib = var_contrib,
-      cos2 = var_cos2
-    ),
-    eig = eig
+    loadings = var_coord,
+    coord = var_coord,
+    contrib = var_contrib,
+    cos2 = var_cos2,
+    variance = variance
   )
 }
