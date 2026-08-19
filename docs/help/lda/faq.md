@@ -163,7 +163,7 @@ The `subclasses` parameter controls how many Gaussian components are used to mod
 - **2–3 subclasses** — appropriate for mildly non-elliptical groups (default is 3)
 - **4+ subclasses** — use only when group shapes are clearly multi-modal and you have ≥ 10 observations per subclass per group
 
-The rule of thumb is: each group needs at least `subclasses × p` observations, where p is the number of variables. If groups are too small the app will display an error. Reduce subclasses until the error disappears or switch to LDA.
+The app enforces a hard minimum of `max(subclasses, p + 1)` observations per group, where p is the number of variables — below that, computation is blocked with an error. That is the floor, not a target: for stable subclass estimates aim well above it, ideally around 10 observations per subclass per group. If groups are too small, reduce subclasses until the error disappears or switch to LDA.
 
 If MDA LOO-CV accuracy is lower than LDA LOO-CV accuracy with the same data, the extra flexibility of MDA is not warranted by the data size.
 
