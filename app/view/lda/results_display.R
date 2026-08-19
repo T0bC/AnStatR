@@ -124,16 +124,20 @@ render_lda_results <- function(lda_result, ns,
       )
   }
 
-  # 3. Group Means
-  sub_panels[[length(sub_panels) + 1]] <-
-    bslib$accordion_panel(
-      title = shiny$tags$span(
-        bsicons$bs_icon("table", class = "me-2"),
-        "Group Means"
-      ),
-      value = "means_sub",
-      render_means_table(lda_result$means)
-    )
+  # 3. Group Means (absent for MDA in LOO-CV mode, which fits no
+  # single full-data model to take means from)
+  if (!is.null(lda_result$means) &&
+        length(lda_result$means) > 0) {
+    sub_panels[[length(sub_panels) + 1]] <-
+      bslib$accordion_panel(
+        title = shiny$tags$span(
+          bsicons$bs_icon("table", class = "me-2"),
+          "Group Means"
+        ),
+        value = "means_sub",
+        render_means_table(lda_result$means)
+      )
+  }
 
   # 4. LD Coefficients / Component Loadings
   # (LDA, MDA, PLS-DA/sPLS-DA, model mode)
@@ -446,6 +450,85 @@ build_summary_badge <- function(lda_result, type_label,
     )
   }
 
+  # Validation context. Two cases matter:
+  #  - unvalidated: the headline number is measured on the same data
+  #    the model was fitted to, so it must not be read as
+  #    performance. Say so where the number is.
+  #  - validated: show the resubstitution figure alongside it. The
+  #    gap between the two is the overfitting diagnostic, and users
+  #    otherwise have to run the analysis twice to see it.
+  resub_acc <- if (is_cv) {
+    lda_result$resubstitution$accuracy
+  } else if (is_split) {
+    lda_result$confusion$accuracy
+  } else {
+    NULL
+  }
+
+  validation_note <- if (!is_cv && !is_split) {
+    shiny$tags$div(
+      class = "alert alert-warning py-2 small mb-3",
+      shiny$tags$strong("Not validated. "),
+      "This accuracy is measured on the same specimens the model",
+      " was fitted to, so it is optimistic by construction and",
+      " should not be reported as model performance. For a figure",
+      " you can publish, set ",
+      shiny$tags$strong("Validation"),
+      " in the Analysis Settings tab to ",
+      if (lda_result$analysis_type %in% c("plsda", "splsda")) {
+        "Train / Test Split"
+      } else {
+        "Leave-one-out CV (or Train / Test Split)"
+      },
+      " and compute again."
+    )
+  } else if (!is.null(resub_acc) && !is.null(acc)) {
+    gap <- (resub_acc - acc) * 100
+    gap_class <- if (gap > 15) {
+      "alert alert-danger"
+    } else if (gap > 10) {
+      "alert alert-warning"
+    } else {
+      "alert alert-success"
+    }
+    resub_label <- if (is_split) {
+      "on the training set"
+    } else {
+      "on all data"
+    }
+    shiny$tags$div(
+      class = paste(gap_class, "py-2 small mb-3"),
+      shiny$tags$div(
+        sprintf(
+          "Validated: %.1f%%  ·  Resubstitution (%s): %.1f%%  ·  gap %.1f pp",
+          acc * 100, resub_label, resub_acc * 100, gap
+        )
+      ),
+      shiny$tags$div(
+        class = "mt-1",
+        if (gap > 15) {
+          paste(
+            "A gap this large means the model is fitting noise",
+            "specific to these specimens. Reduce the number of",
+            "variables, or switch to PLS-DA/sPLS-DA if you have",
+            "more variables than specimens per group."
+          )
+        } else if (gap > 10) {
+          paste(
+            "Some overfitting: the model does noticeably better on",
+            "the data it was fitted to. Report the validated figure."
+          )
+        } else {
+          paste(
+            "The two agree closely, so the model generalises well",
+            "to specimens it has not seen. Report the validated",
+            "figure."
+          )
+        }
+      )
+    )
+  }
+
   n_ld <- if (!is.null(lda_result$svd)) {
     length(lda_result$svd)
   } else if (!is.null(lda_result$ncomp)) {
@@ -456,6 +539,7 @@ build_summary_badge <- function(lda_result, type_label,
 
   shiny$tags$div(
     acc_badge,
+    validation_note,
     shiny$tags$dl(
       class = "row mb-0",
       shiny$tags$dt(
@@ -560,6 +644,12 @@ render_prior_table <- function(prior) {
 
 
 render_means_table <- function(means) {
+  if (is.null(means) || length(means) == 0) {
+    return(shiny$tags$p(
+      class = "text-muted small",
+      "Group means are not available for this analysis."
+    ))
+  }
   # Transposed to variables-as-rows: there are almost always far more
   # measurement variables than groups, so groups-as-columns keeps the
   # table narrow and lets DT paginate the variables instead of forcing
