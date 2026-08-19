@@ -572,30 +572,7 @@ render_means_table <- function(means) {
   )
   rownames(df) <- NULL
 
-  # Point-of-decision nudge: this list is only as trustworthy as the
-  # keepX that produced it, so say so right where it is read.
-  tuning_note <- if (keepx_tuned) {
-    shiny$tags$div(
-      class = "alert alert-success py-2 small mb-2",
-      shiny$tags$strong("keepX was tuned. "),
-      "These counts were chosen by cross-validation, so this",
-      " selection reflects the data rather than a default."
-    )
-  } else {
-    shiny$tags$div(
-      class = "alert alert-warning py-2 small mb-2",
-      shiny$tags$strong("keepX was not tuned. "),
-      "The number of variables kept per component came from the",
-      " values in the sidebar, not from the data. Before reporting",
-      " this list, run ",
-      shiny$tags$strong("Optimise variable selection"),
-      " in the Analysis Settings tab to let cross-validation choose",
-      " how many variables each component should keep."
-    )
-  }
-
   shiny$tagList(
-    tuning_note,
     make_dt(df, page_length = 20),
     shiny$tags$small(
       class = "text-muted mt-2 d-block",
@@ -692,7 +669,31 @@ render_selected_variables <- function(selected_variables,
     ))
   }
   rownames(df) <- NULL
+
+  # Point-of-decision nudge: this list is only as trustworthy as the
+  # keepX that produced it, so say so right where it is read.
+  tuning_note <- if (keepx_tuned) {
+    shiny$tags$div(
+      class = "alert alert-success py-2 small mb-2",
+      shiny$tags$strong("keepX was tuned. "),
+      "These counts were chosen by cross-validation, so this",
+      " selection reflects the data rather than a default."
+    )
+  } else {
+    shiny$tags$div(
+      class = "alert alert-warning py-2 small mb-2",
+      shiny$tags$strong("keepX was not tuned. "),
+      "The number of variables kept per component came from the",
+      " values in the sidebar, not from the data. Before reporting",
+      " this list, run ",
+      shiny$tags$strong("Optimise variable selection"),
+      " in the Analysis Settings tab to let cross-validation choose",
+      " how many variables each component should keep."
+    )
+  }
+
   shiny$tagList(
+    tuning_note,
     make_dt(df, page_length = 20),
     shiny$tags$small(
       class = "text-muted mt-2 d-block",
