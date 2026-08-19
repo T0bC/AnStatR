@@ -43,7 +43,8 @@ create_ld_plot <- function(lda_result,
                            dim_x = "LD1",
                            dim_y = "LD2",
                            show_diagnostics = FALSE,
-                           show_boundaries = FALSE) {
+                           show_boundaries = FALSE,
+                           boundary_dist = "max.dist") {
   error_handling$safe_execute(
     expr = {
       scores <- lda_result$scores
@@ -84,7 +85,8 @@ create_ld_plot <- function(lda_result,
           lda_result$proportion_of_trace,
           lda_result = lda_result,
           show_diagnostics = show_diagnostics,
-          show_boundaries = show_boundaries
+          show_boundaries = show_boundaries,
+          boundary_dist = boundary_dist
         )
       }
     },
@@ -186,7 +188,8 @@ build_2d_plot <- function(scores, meta, grouping_col,
                           proportion_of_trace,
                           lda_result = NULL,
                           show_diagnostics = FALSE,
-                          show_boundaries = FALSE) {
+                          show_boundaries = FALSE,
+                          boundary_dist = "max.dist") {
   df <- data.frame(
     x = scores[[dim_x]],
     y = scores[[dim_y]],
@@ -253,7 +256,8 @@ build_2d_plot <- function(scores, meta, grouping_col,
     !is.null(lda_result$model)
   if (isTRUE(show_boundaries) && has_model) {
     p <- add_boundaries_overlay(
-      p, lda_result, dim_x, dim_y
+      p, lda_result, dim_x, dim_y,
+      dist = boundary_dist
     )
   }
 
