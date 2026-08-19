@@ -152,7 +152,7 @@ build_pca_3d_plot <- function(data, measure_cols,
   pca_result <- pca_res$result
 
   # Validate dimensions exist
-  available_dims <- colnames(pca_result$ind$coord)
+  available_dims <- colnames(pca_result$scores)
   for (d in c(dim_x, dim_y, dim_z)) {
     if (!d %in% available_dims) {
       stop(paste("Dimension not found:", d))
@@ -161,7 +161,7 @@ build_pca_3d_plot <- function(data, measure_cols,
 
   # Build coordinate data frame
   clusters_int <- as.integer(as.character(clusters))
-  coord <- pca_result$ind$coord
+  coord <- pca_result$scores
   plot_df <- data.frame(
     x = coord[, dim_x],
     y = coord[, dim_y],
@@ -171,7 +171,7 @@ build_pca_3d_plot <- function(data, measure_cols,
   )
 
   # Add metadata for hover info
-  meta <- pca_result$ind$meta
+  meta <- pca_result$ind_meta
   hover_text <- build_3d_hover_text(plot_df, meta, dim_x, dim_y, dim_z)
 
   # Determine color grouping
@@ -179,11 +179,11 @@ build_pca_3d_plot <- function(data, measure_cols,
   plot_df$color_group <- color_by$values
   legend_title <- color_by$title
 
-  # Get eigenvalues for axis labels
-  eig <- pca_result$eig
-  x_label <- axis_label_3d(dim_x, eig)
-  y_label <- axis_label_3d(dim_y, eig)
-  z_label <- axis_label_3d(dim_z, eig)
+  # Get variance explained for axis labels
+  variance <- pca_result$variance
+  x_label <- axis_label_3d(dim_x, variance)
+  y_label <- axis_label_3d(dim_y, variance)
+  z_label <- axis_label_3d(dim_z, variance)
 
   # Create color palette
   groups <- unique(plot_df$color_group)
@@ -433,10 +433,10 @@ add_cluster_centroids_3d <- function(fig, plot_df) {
 }
 
 #' Build axis label with variance percentage (PCA mode)
-axis_label_3d <- function(dim_name, eig) {
-  dim_idx <- which(rownames(eig) == dim_name)
+axis_label_3d <- function(dim_name, variance) {
+  dim_idx <- which(rownames(variance) == dim_name)
   if (length(dim_idx) == 1) {
-    var_pct <- eig[dim_idx, "variance.percent"]
+    var_pct <- variance[dim_idx, "variance_percent"]
     sprintf("%s (%.1f%%)", dim_name, var_pct)
   } else {
     dim_name
