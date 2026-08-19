@@ -168,7 +168,7 @@ build_caption <- function(meta, analysis_type = NULL) {
 
     parts[[length(parts) + 1]] <- shiny$tags$span(
       paste0(
-        " See the LDA Results tables ",
+        " See the results tables above ",
         "for unfiltered data."
       )
     )
