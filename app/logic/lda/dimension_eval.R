@@ -41,10 +41,14 @@ evaluate_dimensions <- function(lda_result) {
         stop("No grouping column in result.")
       }
 
-      # Reconstruct grouping factor from meta or predicted
+      # Reconstruct grouping factor from the true group labels in meta
       group <- get_grouping(lda_result)
       if (is.null(group)) {
-        stop("Cannot determine group labels.")
+        stop(
+          "Grouping column '", grouping_col, "' is not available in the ",
+          "metadata - add it to the Descriptive columns to enable ",
+          "Dimension Evaluation."
+        )
       }
 
       if (length(group) != nrow(scores)) {
@@ -130,12 +134,10 @@ get_grouping <- function(lda_result) {
     return(as.factor(meta[[gcol]]))
   }
 
-  # Fallback: reconstruct from group_levels + predicted
-  if (!is.null(lda_result$group_levels) &&
-      !is.null(lda_result$predicted_class)) {
-    return(as.factor(lda_result$predicted_class))
-  }
-
+  # No fallback to predicted_class: regressing the model's own scores on
+  # its own predictions is circular and would fabricate an inflated
+  # R2/F/p-value. Signal "unavailable" instead so the caller can fail
+  # explicitly and the panel is omitted.
   NULL
 }
 
