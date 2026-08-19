@@ -17,9 +17,10 @@ box::use(
 #'
 #' Applies stored skewness transforms and scaling params
 #' to unknown data so it matches the training pipeline.
-#' For PCA: only transforms (predict.prcomp handles
-#' center/scale automatically).
-#' For LDA/MDA/QDA: transforms + manual scale.
+#' All analysis types apply the same transforms + manual
+#' scale — PCA/sPCA/IPCA use manual projection rather than a
+#' predict() S3 method, so their center/scale must be applied
+#' here just like LDA/MDA/QDA.
 #'
 #' @param unknown_data Data frame of unknown observations
 #' @param bundle The prediction bundle
@@ -41,12 +42,8 @@ preprocess_unknown <- function(unknown_data, bundle) {
     )
   }
 
-  # Step 2: Apply stored scaling (LDA/MDA/QDA only)
-  # PCA scaling is handled by predict.prcomp
-  if (
-    bundle$analysis_type != "pca" &&
-    !is.null(bundle$scale_params)
-  ) {
+  # Step 2: Apply stored scaling
+  if (!is.null(bundle$scale_params)) {
     sp <- bundle$scale_params
     numeric_subset <- result[
       , numeric_cols, drop = FALSE
@@ -112,6 +109,8 @@ predict_unknown <- function(bundle, preprocessed_data) {
       result <- switch(
         analysis_type,
         pca = predict_pca(model, numeric_data),
+        spca = predict_spca(model, numeric_data),
+        ipca = predict_ipca(model, numeric_data),
         lda = predict_lda(model, numeric_data),
         mda = predict_mda(model, numeric_data),
         qda = predict_qda(
@@ -148,15 +147,125 @@ predict_unknown <- function(bundle, preprocessed_data) {
 # Internal helpers (not exported)
 # =============================================================================
 
+#' Project new samples onto a fitted PCA model
+#'
+#' mixOmics pca() objects have no predict() S3 method, so new
+#' samples are projected via matrix multiplication against the
+#' fitted loadings (mathematically equivalent to
+#' stats::predict.prcomp for plain, non-sparse PCA — a single
+#' matrix multiply reproduces $variates$X exactly, since
+#' loadings are orthogonal SVD vectors with no deflation
+#' between components). Data is already centered/scaled by
+#' preprocess_unknown() using the bundle's stored
+#' scale_params.
+#'
+#' @param model Fitted mixOmics pca object
+#' @param numeric_data Data frame, already preprocessed
+#'   (transforms + center/scale applied by
+#'   preprocess_unknown())
+#' @return List with $scores, $predicted_class (NULL),
+#'   $posterior (NULL)
 predict_pca <- function(model, numeric_data) {
-  scores <- as.data.frame(
-    stats$predict(model, numeric_data)
-  )
-  # Rename PC1..PCn to Dim.1..Dim.n to match
-  # the PCA biplot convention used by create_biplot
+  loadings <- model$loadings$X
+  x_mat <- as.matrix(numeric_data)[, rownames(loadings), drop = FALSE]
+  scores <- as.data.frame(x_mat %*% loadings)
   colnames(scores) <- paste0(
     "Dim.", seq_len(ncol(scores))
   )
+  list(
+    scores = scores,
+    predicted_class = NULL,
+    posterior = NULL
+  )
+}
+
+#' Project new samples onto a fitted sPCA model
+#'
+#' Unlike plain PCA, a single matrix multiply against the
+#' loadings does NOT reproduce sPCA's scores beyond the first
+#' component: mixOmics fits sPCA one component at a time via
+#' NIPALS-style power iteration, deflating the data matrix
+#' after each component by regressing out that component's
+#' score (X <- X - u %*% t(crossprod(X, u) / crossprod(u)))
+#' before fitting the next. Projecting new data must replay
+#' the same per-component deflation to match. Verified exact
+#' (zero numerical difference) against mixOmics' own
+#' $variates$X on both refit and held-out data.
+#'
+#' @param model Fitted mixOmics spca object
+#' @param numeric_data Data frame, already preprocessed
+#'   (transforms + center/scale applied by
+#'   preprocess_unknown())
+#' @return List with $scores, $predicted_class (NULL),
+#'   $posterior (NULL)
+predict_spca <- function(model, numeric_data) {
+  rotation <- model$rotation
+  ncomp <- ncol(rotation)
+  x_temp <- as.matrix(numeric_data)[
+    , rownames(rotation), drop = FALSE
+  ]
+  scores <- matrix(
+    0, nrow(x_temp), ncomp,
+    dimnames = list(rownames(x_temp), NULL)
+  )
+  for (h in seq_len(ncomp)) {
+    loadings_h <- rotation[, h]
+    u <- as.vector(x_temp %*% loadings_h)
+    cvec <- crossprod(x_temp, u) / drop(crossprod(u))
+    x_temp <- x_temp - u %*% t(cvec)
+    scores[, h] <- u
+  }
+  scores <- as.data.frame(scores)
+  colnames(scores) <- paste0("Dim.", seq_len(ncomp))
+  list(
+    scores = scores,
+    predicted_class = NULL,
+    posterior = NULL
+  )
+}
+
+#' Project new samples onto a fitted IPCA model
+#'
+#' mixOmics computes IPCA's first score as X %*% rotation[,1]
+#' (unit-normalized), then each subsequent component's score
+#' as the residual of X %*% rotation[,h] after regressing out
+#' all prior scores (via lsfit), unit-normalized again. This
+#' recursive residualization — not the unmixing/mixing
+#' matrices — is what must be replayed to project new data.
+#' Verified exact (zero numerical difference) against
+#' mixOmics' own $x on refit data. Data is centered (not
+#' scaled) by preprocess_unknown(), matching ipca()'s default
+#' scale = FALSE.
+#'
+#' @param model Fitted mixOmics ipca object
+#' @param numeric_data Data frame, already preprocessed
+#' @return List with $scores, $predicted_class (NULL),
+#'   $posterior (NULL)
+predict_ipca <- function(model, numeric_data) {
+  rotation <- model$rotation
+  ncomp <- ncol(rotation)
+  x_mat <- as.matrix(numeric_data)[
+    , rownames(rotation), drop = FALSE
+  ]
+  n <- nrow(x_mat)
+  scores <- matrix(
+    NA_real_, n, ncomp,
+    dimnames = list(rownames(x_mat), NULL)
+  )
+  scores[, 1] <- as.vector(x_mat %*% rotation[, 1])
+  scores[, 1] <- scores[, 1] / sqrt(sum(scores[, 1]^2))
+  if (ncomp >= 2) {
+    for (h in 2:ncomp) {
+      target <- as.vector(x_mat %*% rotation[, h])
+      resid <- stats$lsfit(
+        y = target, x = scores[, seq_len(h - 1), drop = FALSE],
+        intercept = FALSE
+      )$residuals
+      scores[, h] <- resid / sqrt(sum(resid^2))
+    }
+  }
+  scores <- as.data.frame(scores)
+  colnames(scores) <- paste0("Dim.", seq_len(ncomp))
   list(
     scores = scores,
     predicted_class = NULL,
