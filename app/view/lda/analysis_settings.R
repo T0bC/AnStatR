@@ -306,14 +306,24 @@ tab_ui <- function(ns) {
             "info-circle", class = "text-muted"
           ),
           paste(
-            "None: fit model on all data",
-            "(resubstitution accuracy only).",
-            "LOO-CV: leave-one-out",
-            "cross-validation — each observation",
-            "is predicted using a model trained",
-            "on all other observations.",
-            "Train/Test Split: stratified random",
-            "split for predictive evaluation."
+            "Decides whether the reported accuracy",
+            "is a real performance estimate or just",
+            "the model grading itself.",
+            "None: fits on all data and scores the",
+            "same specimens - fast for exploring,",
+            "but always optimistic; do not report",
+            "it. LOO-CV: predicts each specimen",
+            "with a model trained without it -",
+            "uses all your data, best choice for",
+            "LDA/QDA/MDA and for small groups.",
+            "Train/Test Split: fits on part of the",
+            "data and scores the held-out rest -",
+            "the strictest check, and the option",
+            "to use for PLS-DA/sPLS-DA, where",
+            "LOO-CV would be too slow.",
+            "Whichever you pick, the Summary panel",
+            "shows both figures so you can see the",
+            "overfitting gap."
           )
         )
       ),
