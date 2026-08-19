@@ -263,7 +263,7 @@ Report enough that a reader can judge the result without re-running it. The mini
 **Add these depending on method**
 
 - **LDA/MDA** — Proportion of Trace for the axes you show, and the discriminant coefficients (or the top few) if you interpret axis meaning
-- **PLS-DA/sPLS-DA** — the number of components and *how you chose it* (the **Check component count** error curve); VIP scores for the variables you highlight
+- **PLS-DA/sPLS-DA** — the number of components and *how you chose it* (the error curve and table produced by **Check component count**); VIP scores for the variables you highlight
 - **sPLS-DA** — keepX per component **and whether it was tuned**; the Selected Variables list; and the stability values, which tell a reader the selection is reproducible rather than an artefact of one data split
 
 **Which plots to show**
