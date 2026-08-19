@@ -52,7 +52,7 @@ ui <- function(id) {
     action_button = shiny$tagList(
       shiny$actionButton(
         inputId = ns("compute_lda_button"),
-        label = "Compute LDA / QDA / MDA",
+        label = "Compute Discriminant Analysis",
         class = "btn-primary btn-sm w-100",
         icon = bsicons$bs_icon("play-fill")
       )
@@ -77,6 +77,11 @@ server <- function(id, input_data, data_version,
     bundle_data <- shiny$reactiveVal(NULL)
     perf_result <- shiny$reactiveVal(NULL)
     perf_error <- shiny$reactiveVal(NULL)
+    # keepX values produced by the last successful auto-tune run.
+    # Compared against the values actually used at compute time so an
+    # untuned (or hand-edited) selection is never presented as
+    # cross-validated. NULL = tuning never ran for this session.
+    keepx_tuned <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(), {
@@ -358,6 +363,16 @@ server <- function(id, input_data, data_version,
           keep_x = keep_x,
           meta_cols = meta_cols
         )
+        # Record whether the keepX values actually used came from a
+        # completed auto-tune run, so the results panel can flag an
+        # untuned selection rather than letting a UI default look
+        # like a cross-validated result.
+        if (sparse && isTRUE(lda_res$success)) {
+          tuned <- keepx_tuned()
+          lda_res$result$keepx_tuned <- !is.null(tuned) &&
+            length(tuned) == length(keep_x) &&
+            isTRUE(all(tuned == keep_x))
+        }
       } else {
         run_fn <- if (analysis_type == "lda") {
           run_lda
@@ -587,6 +602,7 @@ server <- function(id, input_data, data_version,
       }
 
       keep_x <- tune_res$result
+      keepx_tuned(as.numeric(keep_x))
       rhino$log$info(
         "sPLS-DA: filling keepX inputs — ",
         "ncomp={ncomp}, keep_x=[{paste(keep_x, collapse=',')}]"
@@ -639,7 +655,7 @@ server <- function(id, input_data, data_version,
         return(shiny$tagList(
           warn_banner,
           bslib$card(
-            bslib$card_header("LDA / QDA Results"),
+            bslib$card_header("Discriminant Analysis Results"),
             bslib$card_body(
               class = paste(
                 "d-flex align-items-center",
@@ -659,7 +675,7 @@ server <- function(id, input_data, data_version,
                   "Configure options in the sidebar",
                   " and click ",
                   shiny$tags$strong(
-                    "Compute LDA / QDA / MDA"
+                    "Compute Discriminant Analysis"
                   ),
                   " to run the analysis."
                 ),
@@ -672,7 +688,11 @@ server <- function(id, input_data, data_version,
                     "QDA allows each group to have",
                     "its own covariance structure.",
                     "MDA models each group as a",
-                    "mixture of Gaussians."
+                    "mixture of Gaussians.",
+                    "PLS-DA and sPLS-DA handle many",
+                    "collinear variables, including",
+                    "more variables than specimens;",
+                    "sPLS-DA also selects variables."
                   )
                 )
               )
@@ -722,12 +742,21 @@ server <- function(id, input_data, data_version,
         test_result = test_result()
       )
 
+      # Title tracks the selected method so an sPLS-DA run is not
+      # labelled "LDA Results".
+      results_title <- paste(
+        results_display$analysis_type_label(
+          result()$analysis_type
+        ),
+        "Results"
+      )
+
       lda_panel <- bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
             "bar-chart-line", class = "me-1"
           ),
-          "LDA Results"
+          results_title
         ),
         value = "lda_panel",
         lda_content
