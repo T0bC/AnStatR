@@ -37,6 +37,10 @@ box::use(
   app/logic/lda/dimension_eval[
     evaluate_dimensions,
   ],
+  app/logic/lda/perf_plot[
+    create_perf_error_plot,
+    suggest_ncomp,
+  ],
   app/logic/lda/lda_var_contrib[
     lda_to_pca_var_structure,
   ],
