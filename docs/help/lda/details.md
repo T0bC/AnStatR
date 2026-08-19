@@ -195,7 +195,7 @@ The **Nu (degrees of freedom)** parameter (visible only for `t` method) governs 
 
 ##### Data Interpretation — LDA Results Panels
 
-The **LDA Results** accordion contains up to nine sub-panels depending on analysis type and validation mode. The panels appear in the order described below.
+The **LDA Results** accordion contains a variable number of sub-panels depending on analysis type and validation mode. The panels appear in the order described below.
 
 <details>
 <summary><strong>Resubstitution / LOO-CV / Test Accuracy (Summary panel)</strong></summary>
@@ -436,7 +436,26 @@ The confusion matrix and posterior probabilities shown in their respective panel
 
 Two export formats are available:
 
-**Download Excel (All Results)** — an `.xlsx` workbook with one sheet per result component: LD scores (or posterior probabilities for QDA) with metadata columns prepended, proportion of trace, group means, discriminant coefficients, confusion matrix, and per-class metrics. Sheet 1 (scores / posteriors with metadata) is ready for import into the Cluster module or for external analysis.
+**Download Excel (All Results)** — an `.xlsx` workbook with one sheet per result component. Which sheets appear depends on the analysis type and validation mode:
+
+| Sheet | Written when |
+|-------|--------------|
+| **LD Scores** | LDA, MDA, PLS-DA, sPLS-DA — scores with metadata columns prepended |
+| **Classification** | QDA, or cross-validation mode (posterior probabilities + predicted class, in place of LD Scores) |
+| **Prior Probabilities** | Prior probabilities are available (not for PLS-DA/sPLS-DA) |
+| **Group Means** | Group means are available |
+| **LD Coefficients** | Discriminant coefficients / component loadings are available |
+| **VIP Scores** | PLS-DA and sPLS-DA only |
+| **Selected Variables** | sPLS-DA only — the variables retained per component |
+| **Selected Variable Stability** | sPLS-DA only, and only if **Run perf()** was executed |
+| **Proportion of Trace** | Proportion of trace / explained variance is available |
+| **Confusion Matrix** | A confusion matrix is available |
+| **Per-Class Metrics** | Alongside the confusion matrix |
+| **Posterior Probabilities** | LDA, MDA, PLS-DA, sPLS-DA (QDA reports these in the Classification sheet instead) |
+| **Subclass Priors** | MDA only — per-group subclass prior weights |
+| **Split Summary** | Train/test split mode only |
+
+The first sheet (scores, or posteriors with metadata for QDA/CV) is ready for import into the Cluster module or for external analysis.
 
 **Download RDS (LDA/QDA Object)** — an `.rds` file containing the full result bundle including the fitted model object, raw and scaled data, transformation parameters, scale parameters, and all settings. Load in R with `readRDS()` for programmatic access to the model or for reproducibility documentation.
 
