@@ -110,6 +110,25 @@ tab_ui <- function(ns) {
       ),
       selected = "scale_center"
     ),
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("analysis_type"), "'] == 'ipca'"
+      ),
+      shiny$tags$div(
+        class = "alert alert-secondary py-2 small mb-2",
+        bsicons$bs_icon(
+          "info-circle-fill", class = "me-1"
+        ),
+        paste(
+          "IPCA always centers data internally",
+          "(mixOmics has no option to disable this);",
+          "\"Center only\" and \"No scaling\" behave",
+          "identically for IPCA. Only the",
+          "\"Scale & Center\" vs. non-scaled choice",
+          "has an effect."
+        )
+      )
+    ),
     bslib$accordion(
       id = ns("scaling_help_accordion"),
       open = FALSE,
