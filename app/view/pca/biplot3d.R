@@ -96,7 +96,7 @@ render_output <- function(input, output, session,
     if (is.null(dim_z)) dim_z <- "Dim.3"
 
     # Need at least 3 distinct dims
-    available <- colnames(pca_res$result$var$coord)
+    available <- colnames(pca_res$result$loadings)
     if (length(available) < 3) return(NULL)
 
     group_cols <- params$group_cols
