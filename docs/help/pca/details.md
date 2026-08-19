@@ -29,9 +29,9 @@ When the **Statistics** tab has computed a parameter screening ranking (see the 
 <details>
 <summary><strong>PCA Computation Method</strong></summary>
 
-The application uses `stats::prcomp()` from the R stats package, which performs PCA via singular value decomposition (SVD) of the data matrix. This approach is numerically stable and computationally efficient compared to eigen-decomposition of the covariance matrix.
+Standard PCA uses `mixOmics::pca()`, which performs PCA via singular value decomposition (SVD) of the data matrix — numerically equivalent to `stats::prcomp()` for non-sparse PCA. sPCA and IPCA also run through mixOmics (`spca()` and `ipca()` respectively), so all three methods share one computational engine.
 
-The mathematical formulation follows:
+The mathematical formulation for standard PCA follows:
 
 **X** = **U** **D** **V**ᵀ
 
@@ -42,6 +42,31 @@ Where:
 - **V** contains the right singular vectors (variable loadings)
 
 Principal component scores are computed as **X** **V**, and eigenvalues are the squared singular values divided by (n-1).
+
+</details>
+
+<details>
+<summary><strong>Sparse PCA (sPCA)</strong></summary>
+
+sPCA fits components one at a time via an iterative NIPALS-style procedure. For each component, a LASSO-style penalty restricts the loading vector to the **keepX** number of non-zero variables, then the data is deflated (the component's contribution removed) before fitting the next component. This means later components' scores depend on the specific sequence of prior components, not just a single matrix projection.
+
+**Choosing keepX**: use the **Optimise variable selection** button in the Analysis Settings tab to run `mixOmics::tune.spca()`, which performs repeated cross-validation over a grid of candidate keepX values and reports the choice that best reproduces the un-penalized components. This mirrors sPLS-DA's keepX tuning in the LDA module. Manually chosen keepX values are marked as untuned in the results until tuning has run.
+
+**Selected Variables**: the non-zero loadings per component are listed in the **Selected Variables** results panel — this is the direct answer to "which variables define this component?"
+
+</details>
+
+<details>
+<summary><strong>Independent PCA (IPCA)</strong></summary>
+
+IPCA (`mixOmics::ipca()`) applies Independent Component Analysis (ICA) after an initial PCA-based whitening step, seeking components that are statistically independent — a stronger condition than the uncorrelated-but-possibly-dependent components PCA/sPCA produce. This can reveal structure (e.g., non-Gaussian source signals) that variance maximization does not separate.
+
+**Algorithm**: choose **Deflation** (components extracted one at a time via FastICA, generally more stable for smaller samples) or **Parallel** (all components extracted simultaneously, can be faster on larger datasets but sometimes less stable).
+
+**Important differences from PCA/sPCA**:
+- IPCA always centers the data internally; the app's scaling options only control whether variance-scaling is additionally applied
+- Components are **not ranked by variance explained** — component order is arbitrary, driven by the ICA algorithm's convergence, not a hierarchy of importance
+- **Contribution % and cos² are not computed for IPCA** and do not appear in the results tables, Excel export, or biplot legends — these are FactoMineR-style statistics that presuppose variance-ranked components
 
 </details>
 
@@ -93,31 +118,34 @@ The **Correlation Matrix** heatmap displays Pearson correlations between all mea
 
 **Eigenvalues and Variance**
 
-The eigenvalue table is the primary reference for component importance:
+The Eigenvalues & Variance table is the primary reference for component importance (PCA/sPCA):
 
 | Statistic | Interpretation | Decision Guidance |
 |-----------|----------------|-----------------|
-| **Eigenvalue** | Variance captured by component | Kaiser criterion: retain components with λ > 1 |
-| **Variance %** | Proportion of total variance | Cumulative target typically 70-90% |
+| **Variance %** | Proportion of total variance captured by the component | Cumulative target typically 70-90% |
 | **Cumulative %** | Running total of explained variance | Stop when adding components yields diminishing returns |
 
-**Kaiser-Guttman Rule**: Components with eigenvalues exceeding 1.0 explain more variance than the average original variable (standardized data), justifying retention.
+**Kaiser-Guttman Rule** (PCA/sPCA only): components whose eigenvalue exceeds 1.0 (standardized data) explain more variance than the average original variable, justifying retention. See the **Optimal Number of Components** panel.
+
+**IPCA**: the same table is shown, but the percentages reflect each independent component's own variance in fitted order — not a ranking. Do not apply the Kaiser rule or a cumulative-variance target to IPCA; the table is labeled "not ranked" for this reason.
 
 **Variable Results**
 
-| Metric | Definition | Interpretation |
-|--------|-----------|----------------|
-| **Coordinates** | Correlation between variable and component | High absolute values indicate strong relationship |
-| **Contributions (%)** | Variable's share of component variance | Values > 1/p indicate above-average contribution |
-| **Cos²** | Squared coordinate (quality of representation) | Sum across components indicates how well variable is represented |
+| Metric | Definition | Interpretation | Available for |
+|--------|-----------|----------------|----------------|
+| **Coordinates / Loadings** | Correlation between variable and component (PCA/sPCA) or raw loading (IPCA) | High absolute values indicate strong relationship | All methods |
+| **Contributions (%)** | Variable's share of component variance | Values > 1/p indicate above-average contribution | PCA, sPCA |
+| **Cos²** | Squared coordinate (quality of representation) | Sum across components indicates how well variable is represented | PCA, sPCA |
+
+For sPCA, variables with a zero loading on a component (excluded by **keepX**) are not part of that component at all — see the **Selected Variables** panel for the explicit non-zero list per component.
 
 **Individual Results**
 
-| Metric | Definition | Interpretation |
-|--------|-----------|----------------|
-| **Coordinates** | PC scores (position in reduced space) | Visualized in biplot; relative positions show similarity |
-| **Contributions (%)** | Individual's influence on component direction | High values indicate leverage points or outliers |
-| **Cos²** | Quality of individual representation | Near 1 = well-represented; near 0 = poorly represented |
+| Metric | Definition | Interpretation | Available for |
+|--------|-----------|----------------|----------------|
+| **Coordinates / Scores** | Component scores (position in reduced space) | Visualized in biplot; relative positions show similarity | All methods |
+| **Contributions (%)** | Individual's influence on component direction | High values indicate leverage points or outliers | PCA, sPCA |
+| **Cos²** | Quality of individual representation | Near 1 = well-represented; near 0 = poorly represented | PCA, sPCA |
 
 **Visualization Panels**
 
@@ -180,5 +208,7 @@ Check the **Individual Variable KMO** table for specific variables with low MSA 
 - **Select meaningful metadata** — Descriptive columns enable richer visualization and correlation analysis
 - **Validate component count** — Compare Kaiser, Elbow, and Parallel Analysis recommendations; avoid over/under-extraction
 - **Inspect biplot layer by layer** — Examine "Individuals" and "Variables" separately before combined view
-- **Download full results** — The Excel export contains all coordinates, contributions, and cos² for external validation
+- **Download full results** — The Excel export contains all coordinates, contributions, and cos² for external validation (IPCA exports omit contribution/cos² sheets, since they do not apply)
 - **Handle missing data proactively** — Review which rows are excluded; systematic missingness may bias results
+- **Start with standard PCA** — Only switch to sPCA when you specifically need a short variable list, or to IPCA when you specifically want to test for independent (not just uncorrelated) structure; both change what the components mean
+- **Always tune keepX before reporting sPCA results** — An untuned, hand-picked keepX is marked as such in the results; use **Optimise variable selection** so the count is chosen by cross-validation, not guesswork
