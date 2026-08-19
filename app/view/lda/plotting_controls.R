@@ -17,7 +17,7 @@ tab_ui <- function(ns) {
     value = "plotting_tab",
     shiny$h6(
       class = "text-muted mb-3",
-      "LDA Plotting Controls"
+      "Discriminant Analysis Plotting Controls"
     ),
     # LD dimension selection
     shiny$fluidRow(
