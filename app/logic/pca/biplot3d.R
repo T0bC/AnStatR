@@ -6,6 +6,7 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
+  app/logic/pca/pca_stats[compute_var_coord],
 )
 
 # =============================================================================
@@ -23,7 +24,7 @@ box::use(
 #' @param dim_x Character, dimension for x-axis (e.g. "Dim.1")
 #' @param dim_y Character, dimension for y-axis (e.g. "Dim.2")
 #' @param dim_z Character, dimension for z-axis (e.g. "Dim.3")
-#' @param group_cols Character vector, column name(s) in ind$meta
+#' @param group_cols Character vector, column name(s) in ind_meta
 #'   for grouping. Multiple columns are combined via interaction().
 #'   NULL for no grouping.
 #' @return List with $success, $result (plotly) or $error
@@ -49,7 +50,7 @@ create_biplot3d <- function(pca_result,
       )
 
       dims <- c(dim_x, dim_y, dim_z)
-      eig <- pca_result$eig
+      variance <- pca_result$variance
 
       # Build data frames
       ind_data <- build_ind_data(
@@ -65,9 +66,9 @@ create_biplot3d <- function(pca_result,
       )
 
       # Axis labels with variance %
-      x_label <- axis_label(dim_x, eig)
-      y_label <- axis_label(dim_y, eig)
-      z_label <- axis_label(dim_z, eig)
+      x_label <- axis_label(dim_x, variance)
+      y_label <- axis_label(dim_y, variance)
+      z_label <- axis_label(dim_z, variance)
 
       # Color palette
       groups <- unique(ind_data$group)
@@ -221,7 +222,7 @@ validate_biplot3d_inputs <- function(pca_result,
     stop("pca_result is NULL")
   }
 
-  available_dims <- colnames(pca_result$var$coord)
+  available_dims <- colnames(pca_result$loadings)
   if (length(available_dims) < 3) {
     stop(paste(
       "Need at least 3 PCA dimensions, but only",
@@ -243,8 +244,8 @@ validate_biplot3d_inputs <- function(pca_result,
 #' Build individual scores data frame
 build_ind_data <- function(pca_result, dims,
                            group_cols) {
-  coord <- pca_result$ind$coord
-  meta <- pca_result$ind$meta
+  coord <- pca_result$scores
+  meta <- pca_result$ind_meta
 
   df <- as.data.frame(
     coord[, dims, drop = FALSE]
@@ -280,7 +281,9 @@ build_ind_data <- function(pca_result, dims,
 #' match the range of individual scores
 build_var_data <- function(pca_result, dims,
                            ind_data) {
-  var_coord <- pca_result$var$coord
+  var_coord <- compute_var_coord(
+    pca_result$loadings, pca_result$scores
+  )
   df <- as.data.frame(
     var_coord[, dims, drop = FALSE]
   )
@@ -318,7 +321,7 @@ compute_axis_ranges <- function(ind_data, var_data,
 #' Build hover text for individuals
 build_hover_text <- function(pca_result, ind_data,
                              dims) {
-  meta <- pca_result$ind$meta
+  meta <- pca_result$ind_meta
   meta_cols <- if (!is.null(meta) &&
       !("Row" %in% names(meta) &&
         ncol(meta) == 1)) {
@@ -408,10 +411,10 @@ add_origin_axes <- function(fig, axis_ranges, dims) {
 }
 
 #' Build axis label with variance percentage
-axis_label <- function(dim_name, eig) {
-  dim_idx <- which(rownames(eig) == dim_name)
+axis_label <- function(dim_name, variance) {
+  dim_idx <- which(rownames(variance) == dim_name)
   if (length(dim_idx) == 1) {
-    var_pct <- eig[dim_idx, "variance.percent"]
+    var_pct <- variance[dim_idx, "variance_percent"]
     sprintf("%s (%.1f%%)", dim_name, var_pct)
   } else {
     dim_name
