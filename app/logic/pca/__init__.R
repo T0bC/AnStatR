@@ -16,7 +16,11 @@ box::use(
   app/logic/pca/kmo[calculate_kmo],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/optimal_components[calculate_optimal_components],
-  app/logic/pca/pca[validate_inputs, run_pca],
+  app/logic/pca/pca[validate_inputs, run_pca, run_pca_tune_keepx],
   app/logic/pca/pca_export[create_pca_excel],
+  app/logic/pca/pca_stats[
+    compute_var_coord, compute_var_contrib, compute_var_cos2,
+    compute_ind_contrib, compute_ind_cos2
+  ],
   app/logic/pca/scaling[scale_data],
 )
