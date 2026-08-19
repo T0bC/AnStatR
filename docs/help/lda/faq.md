@@ -245,6 +245,40 @@ Several data configurations produce warnings or errors:
 </details>
 
 <details>
+<summary>Which Validation setting should I use, and does it matter?</summary>
+
+It matters more than any other setting on that tab, because it decides whether the accuracy you are shown is a real performance estimate or the model grading its own homework.
+
+Every model classifies its training data well — it has already seen the answers. **None (fit only)** reports exactly that: *resubstitution accuracy*, measured on the same specimens the model was fitted to. It is fast and fine for exploring, but it is optimistic by construction and sometimes wildly so. A model with 40 measurement parameters and 15 specimens per group can report 100% while being no better than chance on new specimens.
+
+| Your situation | Use | Why |
+|----------------|-----|-----|
+| Exploring — "do these groups separate at all?" | **None** | Fastest; you are reading the scores plot, not claiming performance |
+| LDA / QDA / MDA, reporting a number | **Leave-one-out CV** | Uses every specimen, no dependence on a lucky split, deterministic |
+| Small groups (under ~15 specimens) | **Leave-one-out CV** | A 30% holdout might leave only 3–4 specimens per group — too few to measure anything |
+| PLS-DA / sPLS-DA, reporting a number | **Train / Test Split** | LOO-CV is not offered here (a full refit per specimen is prohibitively slow); use **Check component count** for the cross-validated view |
+| Large dataset, strictest possible check | **Train / Test Split** | The held-out specimens are used exactly once |
+
+**Rule of thumb**: Leave-one-out CV for LDA/QDA/MDA, Train / Test Split for PLS-DA/sPLS-DA.
+
+**Are the defaults sensible?** Yes. **None** is the right default because the first thing you do is check whether the groups separate at all, and making every first run slow would be a poor trade. The 70/30 split is standard and is stratified, so class proportions are preserved, and the fixed random seed means your split is reproducible. What you should *not* do is leave it on None and then quote the number.
+
+**Where the results appear**: the setting does not add panels — it changes what three existing ones are computed from.
+
+| Panel | None | Leave-one-out CV | Train / Test Split |
+|-------|------|------------------|--------------------|
+| Summary badge | "Resubstitution Accuracy" | "LOO-CV Accuracy" | "Test Accuracy" |
+| Confusion Matrix | All specimens, self-predicted | Each specimen predicted by a model fitted without it | Test specimens only |
+| Posterior Probabilities | "(All Data)" | "(LOO-CV)" | "(Test Set)" |
+| Train/Test Split panel | — | — | Appears, showing specimen counts per group per split |
+
+Whenever a validated option is active, the Summary panel also shows the resubstitution figure next to it and the gap between them — see the Details tab for how to read that gap.
+
+One thing to keep in mind: the **scores plot always shows the full fitted model**, even in split mode. It is not restricted to training specimens, so the plot and a test-set confusion matrix are describing different things.
+
+</details>
+
+<details>
 <summary>What should I report in a paper or thesis?</summary>
 
 Report enough that a reader can judge the result without re-running it. The minimum is **what you ran**, **how well it worked**, and **which variables drove it**.
