@@ -7,6 +7,9 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
+  app/logic/pca/pca_stats[
+    compute_var_coord, compute_var_contrib, compute_var_cos2
+  ],
 )
 
 # =============================================================================
@@ -25,7 +28,13 @@ box::use(
 #' - Facet strips annotated with surviving variable count
 #' - Y-axis starts from data minimum (not 0) to maximize spread
 #'
-#' @param pca_result PCA result list (the $result field from run_pca)
+#' @param pca_result PCA result list (the $result field from
+#'   run_pca()), with $loadings and $scores. Callers whose
+#'   loadings are not unit-norm (e.g. LDA scaling coefficients,
+#'   via lda_to_pca_var_structure()) may instead supply
+#'   pre-computed $contrib / $coord / $cos2 directly on this
+#'   list — when present, those are used as-is instead of being
+#'   derived from $loadings / $scores.
 #' @param display_ncp Integer, number of dimensions to show
 #' @param show_title Logical, whether to show the plot title
 #' @param cos2_threshold Numeric, cos2 cutoff for high-dim filtering
@@ -41,13 +50,15 @@ create_var_contrib_jitter_plot <- function(pca_result,
     expr = {
       if (is.null(pca_result)) stop("pca_result is NULL")
 
-      contrib <- pca_result$var$contrib
-      cos2 <- pca_result$var$cos2
-      coord <- pca_result$var$coord
+      loadings <- pca_result$loadings
+      contrib <- pca_result$contrib %||% compute_var_contrib(loadings)
+      coord <- pca_result$coord %||%
+        compute_var_coord(loadings, pca_result$scores)
+      cos2 <- pca_result$cos2 %||% compute_var_cos2(coord)
       n_dims <- min(display_ncp, ncol(contrib))
       n_vars <- nrow(contrib)
       dims <- colnames(contrib)[seq_len(n_dims)]
-      eig <- pca_result$eig
+      variance <- pca_result$variance
       high_dim <- n_vars >= 20
 
       # Build long-format data frame (all variables)
@@ -124,9 +135,11 @@ create_var_contrib_jitter_plot <- function(pca_result,
 
       # Build dimension labels with variance %
       dim_labels <- vapply(dims, function(d) {
-        idx <- which(rownames(eig) == d)
+        idx <- which(rownames(variance) == d)
         if (length(idx) == 1) {
-          sprintf("%s (%.1f%%)", d, eig[idx, "variance.percent"])
+          sprintf(
+            "%s (%.1f%%)", d, variance[idx, "variance_percent"]
+          )
         } else {
           d
         }
