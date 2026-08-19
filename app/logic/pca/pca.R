@@ -1,6 +1,6 @@
 box::use(
+  mixOmics,
   rhino,
-  stats,
 )
 
 box::use(
@@ -8,9 +8,13 @@ box::use(
 )
 
 # =============================================================================
-# Pure logic functions for PCA
+# Pure logic functions for PCA / sPCA / IPCA
 # No Shiny dependencies allowed in this file.
 # =============================================================================
+
+#' Valid PCA analysis types
+#' @export
+VALID_ANALYSIS_TYPES <- c("pca", "spca", "ipca")
 
 #' Validate inputs before PCA computation
 #' @param columns Character vector of selected column names
@@ -49,48 +53,64 @@ validate_inputs <- function(columns, data) {
   list(valid = TRUE, error = NULL)
 }
 
-#' Run PCA using stats::prcomp
+#' Run PCA, sPCA, or IPCA using mixOmics
 #'
-#' Data is assumed to be already cleaned (no NAs). Centering
-#' and scaling are handled by prcomp() via the center and
-#' scale. arguments. Computes eigenvalues, variable coordinates
-#' / contributions / cos2, and individual coordinates /
-#' contributions / cos2. The returned structure mirrors
-#' FactoMineR::PCA output so that downstream renderers work
-#' with the same shape.
+#' Data is assumed to be already cleaned (no NAs). Centering and
+#' scaling are handled by mixOmics via the center/scale arguments
+#' (ignored for IPCA, which mixOmics does not center/scale by
+#' default the same way — see mixOmics::ipca()). The returned
+#' structure exposes mixOmics' native fields (scores, loadings,
+#' variance) directly rather than reshaping them into a
+#' FactoMineR-like object.
 #'
 #' @param data Data frame (full, may include metadata columns)
 #' @param columns Character vector of measurement column names
 #' @param meta_cols Character vector of metadata column names
 #'   (optional). When provided, the metadata is attached to the
-#'   result as $ind$meta and used to label individual rows.
+#'   result as $ind_meta and used to label individuals.
 #' @param ncp Number of components to retain. NULL (default)
-#'   retains all feasible components. The full result is always
-#'   stored; downstream renderers use a separate display_ncp
-#'   to limit what is shown in the UI.
+#'   retains all feasible components.
 #' @param center Logical, whether to center variables before
-#'   PCA. Default FALSE for backward compatibility.
+#'   fitting. Default FALSE for backward compatibility.
 #' @param scale. Logical, whether to scale variables to unit
-#'   variance before PCA. Default FALSE.
-#' @return List with $success, $result or $error.
-#'   $result contains $eig, $var, $ind, $ncp, $call_info.
+#'   variance before fitting. Default FALSE.
+#' @param analysis_type One of "pca", "spca", "ipca".
+#' @param keep_x Integer vector of length ncp, number of
+#'   variables to keep per component (sPCA only, required
+#'   when analysis_type == "spca").
+#' @param ipca_mode Character, "deflation" or "parallel"
+#'   (IPCA only).
+#' @return List with $success, $result or $error. $result
+#'   contains $model, $analysis_type, $scores, $loadings,
+#'   $variance, $center, $scale, $ncomp, $call_info.
 #' @export
 run_pca <- function(data, columns,
                     meta_cols = character(0), ncp = NULL,
-                    center = FALSE, scale. = FALSE) {
+                    center = FALSE, scale. = FALSE,
+                    analysis_type = "pca", keep_x = NULL,
+                    ipca_mode = "deflation") {
   error_context <- list(
     n_variables = length(columns),
     n_observations = nrow(data),
-    variables = paste(columns, collapse = ", ")
+    variables = paste(columns, collapse = ", "),
+    analysis_type = analysis_type
   )
 
   error_handling$safe_execute(
     expr = {
+      if (!analysis_type %in% VALID_ANALYSIS_TYPES) {
+        stop(paste0(
+          "Invalid analysis_type: '", analysis_type,
+          "'. Expected one of: ",
+          paste(VALID_ANALYSIS_TYPES, collapse = ", ")
+        ))
+      }
+
       numeric_data <- data[, columns, drop = FALSE]
       n <- nrow(numeric_data)
       p <- ncol(numeric_data)
+      x_mat <- as.matrix(numeric_data)
 
-      # Retain all feasible components by default
       max_possible <- min(p, n - 1)
       max_ncp <- if (is.null(ncp)) {
         max_possible
@@ -98,28 +118,66 @@ run_pca <- function(data, columns,
         min(ncp, max_possible)
       }
 
-      pca_obj <- stats$prcomp(
-        numeric_data,
-        center = center,
-        scale. = scale.
-      )
-
-      result <- build_pca_result(pca_obj, max_ncp, n, p)
-
-      # Store raw prcomp object for predict() in bundle
-      result$pca_obj <- pca_obj
-
-      # Attach metadata for individual labelling and grouping
-      result$ind$meta <- build_ind_meta(
-        data, meta_cols, n
-      )
-      result <- apply_row_labels(
-        result, result$ind$meta
-      )
+      if (analysis_type == "spca") {
+        if (is.null(keep_x) || anyNA(keep_x) ||
+            length(keep_x) != max_ncp) {
+          stop(
+            "keepX invalid or incomplete: a numeric value is ",
+            "required for every component in sPCA."
+          )
+        }
+      }
 
       rhino$log$info(
-        "PCA: complete ({p} variables, {n} observations,",
-        " {max_ncp} components retained)"
+        "{toupper(analysis_type)}: running mixOmics::",
+        "{analysis_type}() — {p} variables, {n} observations,",
+        " {max_ncp} components"
+      )
+
+      model <- switch(
+        analysis_type,
+        pca = mixOmics$pca(
+          x_mat, ncomp = max_ncp, center = center, scale = scale.
+        ),
+        spca = mixOmics$spca(
+          x_mat, ncomp = max_ncp, keepX = keep_x,
+          center = center, scale = scale.
+        ),
+        ipca = mixOmics$ipca(
+          x_mat, ncomp = max_ncp, mode = ipca_mode,
+          scale = scale.
+        )
+      )
+
+      result <- build_pca_result(
+        model, analysis_type, n, p, keep_x = keep_x
+      )
+
+      # Centering/scaling used at fit time, captured explicitly:
+      # mixOmics::pca() stores $center/$scale on the model, but
+      # spca()/ipca() do not, so this must be tracked separately
+      # for consistent manual projection of new data in the
+      # Prediction module. mixOmics::ipca() has no `center`
+      # argument and always centers internally, regardless of
+      # the `center` flag passed here — so IPCA must always
+      # record the true column means, not the requested value.
+      result$center <- if (isTRUE(center) || analysis_type == "ipca") {
+        colMeans(x_mat)
+      } else {
+        stats::setNames(rep(0, p), columns)
+      }
+      result$scale <- if (isTRUE(scale.)) {
+        apply(x_mat, 2, stats::sd)
+      } else {
+        stats::setNames(rep(1, p), columns)
+      }
+
+      result$ind_meta <- build_ind_meta(data, meta_cols, n)
+      result <- apply_row_labels(result, result$ind_meta)
+
+      rhino$log$info(
+        "{toupper(analysis_type)}: complete ({p} variables,",
+        " {n} observations, {max_ncp} components retained)"
       )
 
       result
@@ -127,6 +185,153 @@ run_pca <- function(data, columns,
     operation_name = "PCA",
     context = error_context,
     error_parser = pca_error_parser
+  )
+}
+
+#' Tune sPCA keepX per component via repeated CV
+#'
+#' Wraps mixOmics::tune.spca() to select how many variables
+#' each component should keep, analogous to
+#' run_plsda_tune_keepx() for sPLS-DA. Requires nrepeat >= 3
+#' for mixOmics to return a usable choice.
+#'
+#' @param data Data frame (cleaned, optionally scaled)
+#' @param columns Character vector of measurement column names
+#' @param ncomp Integer, number of components
+#' @param test_keep_x Integer vector, candidate keepX values
+#'   to test (default a modest grid capped by column count)
+#' @param folds Integer, number of CV folds
+#' @param repeats Integer, number of CV repeats (>= 3)
+#' @param center Logical, center variables before fitting
+#' @param scale. Logical, scale variables before fitting
+#' @return List with $success, $result (named integer vector,
+#'   one keepX per component) or $error
+#' @export
+run_pca_tune_keepx <- function(data, columns, ncomp,
+                               test_keep_x = NULL,
+                               folds = 5, repeats = 3,
+                               center = TRUE, scale. = TRUE) {
+  error_handling$safe_execute(
+    {
+      x_mat <- as.matrix(data[, columns, drop = FALSE])
+      p <- length(columns)
+
+      candidates <- test_keep_x %||% unique(pmin(
+        p, c(5, 10, 15, 20, 30)
+      ))
+
+      rhino$log$info(
+        "sPCA: tuning keepX — ncomp={ncomp},",
+        " candidates=[{paste(candidates, collapse=',')}],",
+        " folds={folds}, repeats={repeats}"
+      )
+
+      tune_res <- mixOmics$tune.spca(
+        x_mat, ncomp = ncomp,
+        test.keepX = candidates,
+        folds = folds, nrepeat = repeats,
+        center = center, scale = scale.
+      )
+
+      choice <- tune_res$choice.keepX
+      if (is.character(choice)) {
+        stop(
+          "Not enough repeats to compute a stable keepX ",
+          "choice. Increase CV repeats to at least 3."
+        )
+      }
+
+      keep_x <- as.integer(choice[seq_len(ncomp)])
+      names(keep_x) <- paste0("Dim.", seq_len(ncomp))
+
+      rhino$log$info(
+        "sPCA: tuning complete — ",
+        "keepX=[{paste(keep_x, collapse=',')}]"
+      )
+
+      keep_x
+    },
+    operation_name = "sPCA keepX Tuning",
+    error_parser = pca_error_parser
+  )
+}
+
+#' Extract PCA/sPCA/IPCA scores as a flat data frame
+#'
+#' Combines individual scores with any attached metadata into
+#' a single data frame (metadata columns + Dim.1, Dim.2, …),
+#' the shape downstream modules (LDA, Cluster) expect when
+#' chaining PCA output as their "PCA scores" data source.
+#' Shared so both modules read the PCA result the same way
+#' instead of duplicating this extraction logic.
+#'
+#' @param pca_result_reactive A zero-arg function (e.g. a
+#'   Shiny reactive) returning the $result-wrapper from
+#'   run_pca() (with $success and $result), or NULL
+#' @return Data frame, or NULL if no successful PCA result
+#'   is available
+#' @export
+extract_pca_scores <- function(pca_result_reactive) {
+  if (is.null(pca_result_reactive)) return(NULL)
+  pca_res <- pca_result_reactive()
+  if (is.null(pca_res) || !isTRUE(pca_res$success)) {
+    return(NULL)
+  }
+  res <- pca_res$result
+  coord <- as.data.frame(res$scores)
+  meta <- res$ind_meta
+  if (
+    !is.null(meta) &&
+    nrow(meta) == nrow(coord) &&
+    !("Row" %in% names(meta) && ncol(meta) == 1)
+  ) {
+    cbind(meta, coord)
+  } else {
+    coord
+  }
+}
+
+#' Extract variance-explained recommendation thresholds
+#'
+#' Reads the cumulative variance table and returns the number
+#' of components needed to reach 90%/95% cumulative variance.
+#' For IPCA results, this reflects mixOmics' per-component
+#' variance in fitted order (not a meaningful ranking, since
+#' independent components are not variance-ordered) — callers
+#' displaying this to users should note that caveat for IPCA.
+#'
+#' @param pca_result_reactive A zero-arg function (e.g. a
+#'   Shiny reactive) returning the $result-wrapper from
+#'   run_pca() (with $success and $result), or NULL
+#' @return List with n90, cum90, n95, cum95, or NULL
+#' @export
+extract_variance_explained <- function(pca_result_reactive) {
+  if (is.null(pca_result_reactive)) return(NULL)
+  pca_res <- tryCatch(
+    pca_result_reactive(),
+    error = function(e) NULL
+  )
+  if (
+    is.null(pca_res) ||
+    !isTRUE(pca_res$success) ||
+    is.null(pca_res$result$variance)
+  ) {
+    return(NULL)
+  }
+  variance <- pca_res$result$variance
+  cum_var <- variance[["cumulative_variance_percent"]]
+  if (is.null(cum_var) || length(cum_var) == 0) {
+    return(NULL)
+  }
+  n90 <- which(cum_var >= 90)[1]
+  n95 <- which(cum_var >= 95)[1]
+  if (is.na(n90)) n90 <- length(cum_var)
+  if (is.na(n95)) n95 <- length(cum_var)
+  list(
+    n90 = n90,
+    cum90 = round(cum_var[n90], 1),
+    n95 = n95,
+    cum95 = round(cum_var[n95], 1)
   )
 }
 
@@ -156,13 +361,15 @@ pca_error_parser <- function(error_msg,
       ": Data contains missing values.",
       " Please handle missing data first."
     )
+  } else if (grepl("keepX", error_msg, ignore.case = TRUE)) {
+    paste0(operation_name, ": ", error_msg)
   } else if (grepl("numeric", error_msg, ignore.case = TRUE)) {
     paste0(
       operation_name,
       ": All selected columns must be numeric."
     )
   } else if (grepl(
-    "ncp|dimension",
+    "ncp|dimension|ncomp",
     error_msg, ignore.case = TRUE
   )) {
     paste0(
@@ -180,110 +387,68 @@ pca_error_parser <- function(error_msg,
 # Internal helpers (not exported)
 # =============================================================================
 
-#' Build the structured PCA result from a prcomp object
+#' Build the structured PCA/sPCA/IPCA result from a fitted mixOmics model
 #'
-#' @param pca_obj prcomp result
-#' @param ncp Number of components to retain
+#' Exposes mixOmics' native scores/loadings/variance fields directly.
+#' Does not compute contribution/cos2 — see pca_stats.R for those,
+#' called on demand by renderers.
+#'
+#' @param model Fitted mixOmics pca/spca/ipca object
+#' @param analysis_type "pca", "spca", or "ipca"
 #' @param n Number of observations
 #' @param p Number of variables
-#' @return List with $eig, $var, $ind, $ncp, $call_info
+#' @param keep_x Integer vector, keepX per component (sPCA only)
+#' @return List with $model, $analysis_type, $scores, $loadings,
+#'   $variance, $ncomp, $call_info, and (sPCA only) $keep_x /
+#'   $selected_variables
 #' @export
-build_pca_result <- function(pca_obj, ncp, n, p) {
-  sdev <- pca_obj$sdev
-  eigenvalues <- sdev^2
-  total_var <- sum(eigenvalues)
-  var_pct <- eigenvalues / total_var * 100
-  cum_pct <- cumsum(var_pct)
+build_pca_result <- function(model, analysis_type, n, p,
+                             keep_x = NULL) {
+  ncomp <- model$ncomp
+  comp_names <- paste0("Dim.", seq_len(ncomp))
 
-  # Eigenvalue table (all components)
-  eig <- data.frame(
-    eigenvalue = eigenvalues,
-    `variance.percent` = var_pct,
-    `cumulative.variance.percent` = cum_pct,
+  scores <- if (analysis_type == "ipca") model$x else model$variates$X
+  scores <- as.matrix(scores)
+  colnames(scores) <- comp_names
+
+  loadings <- as.matrix(model$loadings$X)
+  colnames(loadings) <- comp_names
+
+  prop_var <- as.numeric(model$prop_expl_var$X)
+  variance <- data.frame(
+    component = comp_names,
+    prop_expl_var = prop_var,
+    cumulative_variance_percent = cumsum(prop_var) * 100,
     check.names = FALSE
   )
-  rownames(eig) <- paste0("Dim.", seq_along(eigenvalues))
-  colnames(eig) <- c(
-    "eigenvalue", "variance.percent",
-    "cumulative.variance.percent"
+  variance$prop_expl_var <- variance$prop_expl_var * 100
+  names(variance)[names(variance) == "prop_expl_var"] <-
+    "variance_percent"
+  rownames(variance) <- comp_names
+
+  result <- list(
+    model = model,
+    analysis_type = analysis_type,
+    scores = scores,
+    loadings = loadings,
+    variance = variance,
+    ncomp = ncomp,
+    call_info = list(n = n, p = p, ncp = ncomp)
   )
 
-  # Limit to ncp components for var/ind results
-  comp_idx <- seq_len(ncp)
-  dim_names <- paste0("Dim.", comp_idx)
-
-  # --- Variable results ---
-  # rotation: p x p matrix, columns are PCs
-  rotation <- pca_obj$rotation[, comp_idx, drop = FALSE]
-
-  # Coordinates: correlation between variable and PC
-  # For centered (possibly scaled) data: coord = rotation * sdev
-  var_coord <- sweep(
-    rotation, 2, sdev[comp_idx], FUN = "*"
-  )
-  colnames(var_coord) <- dim_names
-
-  # Cos2: squared coordinates (quality of representation)
-  var_cos2 <- var_coord^2
-  colnames(var_cos2) <- dim_names
-
-  # Contributions: (rotation^2 * 100) since rotation
-  # columns are unit vectors, rotation[,k]^2 sums to 1
-  var_contrib <- sweep(
-    rotation^2, 2,
-    rep(100, ncp), FUN = "*"
-  )
-  colnames(var_contrib) <- dim_names
-
-  var_result <- list(
-    coord = var_coord,
-    contrib = var_contrib,
-    cos2 = var_cos2
-  )
-
-  # --- Individual results ---
-  scores <- pca_obj$x[, comp_idx, drop = FALSE]
-  colnames(scores) <- dim_names
-
-  # Individual coordinates (scores)
-  ind_coord <- scores
-
-  # Individual cos2: score^2 / sum(score^2 across all PCs)
-  total_dist2 <- rowSums(pca_obj$x^2)
-  # Avoid division by zero for rows at the origin
-  total_dist2[total_dist2 == 0] <- 1
-  ind_cos2 <- sweep(
-    scores^2, 1, total_dist2, FUN = "/"
-  )
-  colnames(ind_cos2) <- dim_names
-
-  # Individual contributions: (score^2 / (n_eff * eigenvalue)) * 100
-  # prcomp uses (n-1) divisor for variance, so eigenvalue = sum(score^2)/(n-1)
-  # To make contributions sum to 100: use (n-1) as divisor
-  n_eff <- n - 1
-  ind_contrib <- sweep(
-    scores^2, 2,
-    n_eff * eigenvalues[comp_idx], FUN = "/"
-  ) * 100
-  colnames(ind_contrib) <- dim_names
-
-  ind_result <- list(
-    coord = ind_coord,
-    contrib = ind_contrib,
-    cos2 = ind_cos2
-  )
-
-  list(
-    eig = eig,
-    var = var_result,
-    ind = ind_result,
-    ncp = ncp,
-    call_info = list(
-      n = n,
-      p = p,
-      ncp = ncp
+  if (analysis_type == "spca") {
+    result$keep_x <- keep_x
+    result$selected_variables <- lapply(
+      seq_len(ncomp),
+      function(i) {
+        loadings_i <- loadings[, i]
+        rownames(loadings)[loadings_i != 0]
+      }
     )
-  )
+    names(result$selected_variables) <- comp_names
+  }
+
+  result
 }
 
 
@@ -321,15 +486,16 @@ build_ind_meta <- function(data, meta_cols, n) {
 }
 
 
-#' Apply row labels from metadata to individual result matrices
+#' Apply row labels from metadata to score/loading matrices
 #'
-#' Sets rownames on ind$coord, ind$contrib, and ind$cos2 using
-#' a composite label built from metadata columns. If labels are
-#' not unique, appends a row number suffix.
+#' Sets rownames on $scores using a composite label built from
+#' metadata columns. If labels are not unique, appends a row
+#' number suffix.
 #'
-#' @param result PCA result list (modified in place via reference)
+#' @param result PCA result list (from build_pca_result())
 #' @param meta Data frame from build_ind_meta
-#' @return The modified result (invisibly)
+#' @return The modified result
+#' @export
 apply_row_labels <- function(result, meta) {
   if ("Row" %in% names(meta) && ncol(meta) == 1) {
     labels <- as.character(meta$Row)
@@ -344,9 +510,7 @@ apply_row_labels <- function(result, meta) {
     labels <- make.unique(labels, sep = "_")
   }
 
-  rownames(result$ind$coord) <- labels
-  rownames(result$ind$contrib) <- labels
-  rownames(result$ind$cos2) <- labels
+  rownames(result$scores) <- labels
 
-  invisible(result)
+  result
 }
