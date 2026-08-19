@@ -35,7 +35,7 @@ render_output <- function(input, output, session,
     if (!pca_res$success) return(NULL)
 
     # Check metadata availability
-    meta <- pca_res$result$ind$meta
+    meta <- pca_res$result$ind_meta
     if (is.null(meta)) return(NULL)
     if ("Row" %in% names(meta) && ncol(meta) == 1) return(NULL)
 
@@ -101,13 +101,13 @@ render_output <- function(input, output, session,
     if (is.null(pca_res) || !pca_res$success) {
       return(ggiraph$girafeOutput(ns("eigencorplot")))
     }
-    meta <- pca_res$result$ind$meta
+    meta <- pca_res$result$ind_meta
     if (is.null(meta)) {
       return(ggiraph$girafeOutput(ns("eigencorplot")))
     }
     ncp <- if (!is.null(display_ncp)) display_ncp() else 5L
     if (is.null(ncp)) ncp <- 5L
-    n_dims <- min(ncp, ncol(pca_res$result$ind$coord))
+    n_dims <- min(ncp, ncol(pca_res$result$scores))
     px_height <- n_dims * 70L + 110L
     ggiraph$girafeOutput(
       ns("eigencorplot"),
