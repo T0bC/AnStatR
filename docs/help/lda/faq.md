@@ -52,11 +52,11 @@ Use PLS-DA when you want dimensionality reduction and group separation without n
 There is no universally correct value — it is a trade-off between interpretability (fewer variables, cleaner story) and completeness (more variables, less risk of excluding a genuine contributor). Two approaches:
 
 1. **Manual**: set keepX directly per component (default 10). Start with a value roughly 10-25% of your total variable count and inspect whether the Selected Variables make biological/scientific sense and whether resubstitution accuracy stays reasonable
-2. **Auto-tune**: click **Auto-tune keepX (slow)** to run a cross-validated grid search (`mixOmics::tune.splsda`) that selects the keepX minimising cross-validated balanced error rate per component. This can take from several seconds to a few minutes; the suggested values fill the manual boxes and can still be edited afterward
+2. **Auto-tune**: click **Optimise variable selection (recommended)** to run a cross-validated grid search (`mixOmics::tune.splsda`) that selects the keepX minimising cross-validated balanced error rate per component. This can take from several seconds to a few minutes; the suggested values fill the manual boxes and can still be edited afterward
 
 A keepX that is too small may exclude real contributors; a keepX close to your total variable count behaves like plain PLS-DA and loses the interpretability benefit of sparsity. If several correlated variables measure similar features, expect the selection to favour one representative rather than all of them — see the multicollinearity question below.
 
-After computing, run **Component Diagnostics (perf)** and check the **Selected Variable Stability** table it produces — this reports how often each variable was actually selected across cross-validation folds. A variable selected consistently (stability close to 1.0) is a robust finding regardless of the exact keepX chosen; a variable that appears only because of the specific keepX value and fold assignment will show low stability and should be treated with more caution than the Selected Variables panel alone suggests.
+After computing, run **Check component count** and check the **Selected Variable Stability** table it produces — this reports how often each variable was actually selected across cross-validation folds. A variable selected consistently (stability close to 1.0) is a robust finding regardless of the exact keepX chosen; a variable that appears only because of the specific keepX value and fold assignment will show low stability and should be treated with more caution than the Selected Variables panel alone suggests.
 
 </details>
 
@@ -87,7 +87,7 @@ This means an excluded variable is not necessarily scientifically unimportant �
 
 The **Number of components** setting defaults to (number of groups − 1), matching LDA's discriminant-axis count, but PLS-DA components do not have the same strict upper bound as LDA — you can use more or fewer depending on what the data supports.
 
-Use the **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Run Component Diagnostics**) to check this empirically: it reports cross-validated Overall Error and Balanced Error Rate (BER) per component count. Look for the point where error stops decreasing meaningfully — an "elbow." Adding components past that point usually adds noise rather than genuine group-separation signal. This diagnostic is independent of the main Compute button and can be re-run after adjusting the component count.
+Use the **Check component count** button (Analysis Settings sidebar) to check this empirically: it reports cross-validated Overall Error and Balanced Error Rate (BER) per component count. Look for the point where error stops decreasing meaningfully — an "elbow." Adding components past that point usually adds noise rather than genuine group-separation signal. This diagnostic is independent of the main Compute button and can be re-run after adjusting the component count.
 
 </details>
 
@@ -241,6 +241,47 @@ Several data configurations produce warnings or errors:
 - **Perfectly balanced groups with equal priors** — posteriors for boundary specimens may be exactly 0.5. This is expected and not an error
 - **MDA with subclasses = 1** — recovers LDA behaviour; useful as a baseline before increasing subclasses
 - **PCA scores as input with very few dimensions** — if only 2 PCA dimensions are selected but these capture < 50% of variance, the LDA input space is impoverished. Select enough dimensions for ≥ 90% cumulative variance
+
+</details>
+
+<details>
+<summary>What should I report in a paper or thesis?</summary>
+
+Report enough that a reader can judge the result without re-running it. The minimum is **what you ran**, **how well it worked**, and **which variables drove it**.
+
+**Always report these numbers**
+
+| What | Where to find it | Why it is needed |
+|------|------------------|------------------|
+| Method and software | — | e.g. "sPLS-DA (mixOmics 6.x, R 4.x)" — see the package table below for citations |
+| n per group, number of variables | Summary panel | Reviewers need the sample-size-to-variable ratio to judge overfitting risk |
+| Preprocessing | Data Selection sidebar | Scaling/centring, transformations, how missing values were handled |
+| **Validated** accuracy — not resubstitution | Confusion Matrix panel | LOO-CV or test-set accuracy. Resubstitution alone overstates performance |
+| Validation scheme | Analysis Settings | "LOO-CV", or "70/30 stratified split", or "5-fold CV × 10 repeats" |
+| Per-class performance | Per-Class Metrics | An overall accuracy hides a group that classifies poorly, especially with unbalanced groups |
+
+**Add these depending on method**
+
+- **LDA/MDA** — Proportion of Trace for the axes you show, and the discriminant coefficients (or the top few) if you interpret axis meaning
+- **PLS-DA/sPLS-DA** — the number of components and *how you chose it* (the **Check component count** error curve); VIP scores for the variables you highlight
+- **sPLS-DA** — keepX per component **and whether it was tuned**; the Selected Variables list; and the stability values, which tell a reader the selection is reproducible rather than an artefact of one data split
+
+**Which plots to show**
+
+1. **The scores plot** — usually the only plot you need. Label the axes with their explained variance, and state which axes are shown. For PLS-DA/sPLS-DA, show the axes that actually separate the groups (see the **Best axes to plot** recommendation in the Dimension Evaluation panel), not Comp1/Comp2 by default — and say so explicitly if they are not the first two, with the ANOVA R² as justification. That is a finding about your data, not a caveat.
+2. **A variable-importance figure**, when "which parameters matter" is the question — the VIP scores or Variable Contributions plot
+3. **The confusion matrix**, as a small table rather than a figure
+
+**The two most common mistakes**
+
+- **Reporting resubstitution accuracy as performance.** It is measured on the same specimens the model was fitted to, so it is optimistic by construction — sometimes dramatically. Always report the cross-validated or test-set figure, and if you quote both, say which is which.
+- **Describing separation from the plot instead of the metric.** The scores plot shows two axes; the model classifies using all of them. A clean-looking plot is not evidence of accuracy, and an overlapping one is not evidence of failure. The confusion matrix is the result; the plot illustrates it.
+
+A defensible one-paragraph summary follows this shape (placeholders in `CAPITALS` — substitute your own values):
+
+> *"sPLS-DA (mixOmics) was applied to `N_VARIABLES` measurement parameters across `N_GROUPS` groups (n = `N_PER_GROUP` each), scaled and centred. `N_COMPONENTS` components were retained based on cross-validated balanced error rate; keepX was tuned by cross-validation (`KEEPX_PER_COMPONENT` variables per component). Classification accuracy was `ACCURACY`% under `VALIDATION_SCHEME`; per-class accuracy ranged `MIN`–`MAX`%. `VARIABLE_A`, `VARIABLE_B` and `VARIABLE_C` had VIP > 1 on component 1 and were selected in > `STABILITY`% of cross-validation folds."*
+
+Every placeholder above corresponds to a number the app reports — none of them should be estimated or omitted.
 
 </details>
 
