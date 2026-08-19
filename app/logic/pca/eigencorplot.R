@@ -35,19 +35,19 @@ compute_eigencor_data <- function(pca_result, display_ncp = 5L) {
     expr = {
       if (is.null(pca_result)) stop("pca_result is NULL")
 
-      meta <- pca_result$ind$meta
+      meta <- pca_result$ind_meta
       validate_metadata(meta)
 
-      scores <- pca_result$ind$coord
+      scores <- pca_result$scores
       n_dims <- min(display_ncp, ncol(scores))
       dims <- colnames(scores)[seq_len(n_dims)]
-      eig <- pca_result$eig
+      variance <- pca_result$variance
 
       # Build dimension labels with variance %
       dim_labels <- vapply(dims, function(d) {
-        idx <- which(rownames(eig) == d)
+        idx <- which(rownames(variance) == d)
         if (length(idx) == 1) {
-          sprintf("%s (%.1f%%)", d, eig[idx, "variance.percent"])
+          sprintf("%s (%.1f%%)", d, variance[idx, "variance_percent"])
         } else {
           d
         }
@@ -323,7 +323,7 @@ eigencor_error_parser <- function(error_msg,
 #' Checks that metadata exists, is not just a "Row" fallback,
 #' and has at least one column.
 #'
-#' @param meta Data frame from pca_result$ind$meta
+#' @param meta Data frame from pca_result$ind_meta
 validate_metadata <- function(meta) {
   if (is.null(meta)) {
     stop("No metadata available for eigencorrelation")
