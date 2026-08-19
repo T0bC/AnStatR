@@ -224,7 +224,8 @@ render_lda_results <- function(lda_result, ns,
         ),
         value = "trace_sub",
         render_trace_table(
-          lda_result$proportion_of_trace
+          lda_result$proportion_of_trace,
+          analysis_type = lda_result$analysis_type
         )
       )
   }
@@ -544,10 +545,12 @@ render_vip_table <- function(vip_df) {
   }
 
   dt <- make_dt(df, page_length = 10)
+  # Highlight every component column, not just Comp1 — the caption
+  # below claims "VIP > 1 (highlighted)" without qualification.
   if (ncol(vip_df) >= 1) {
     dt <- dt |>
       DT$formatStyle(
-        colnames(vip_df)[1],
+        colnames(vip_df),
         backgroundColor = DT$styleInterval(
           c(1),
           c("#6c757d40", "#19875440")
@@ -680,8 +683,8 @@ render_mda_subclass_info <- function(lda_result) {
 }
 
 
-render_trace_table <- function(trace_df) {
-  DT$datatable(
+render_trace_table <- function(trace_df, analysis_type = NULL) {
+  dt <- DT$datatable(
     trace_df,
     options = list(
       pageLength = 20,
@@ -709,6 +712,32 @@ render_trace_table <- function(trace_df) {
       ),
       fontWeight = "bold"
     )
+
+  # The grey/yellow/green thresholds are calibrated for LDA/MDA
+  # between-group variance. For PLS-DA/sPLS-DA the same column is
+  # X-variance, where a low value need not mean weak separation.
+  if (!is.null(analysis_type) &&
+        analysis_type %in% c("plsda", "splsda")) {
+    return(shiny$tagList(
+      dt,
+      shiny$tags$small(
+        class = "text-muted mt-2 d-block",
+        paste(
+          "For PLS-DA/sPLS-DA these values describe variance",
+          "explained in the measurement variables by each",
+          "component, not between-group variance as in LDA.",
+          "A low proportion does not necessarily mean weak group",
+          "separation on that component, so the colour thresholds",
+          "should be read with caution here. Cross-check against",
+          "the Component Diagnostics (perf) error rate and the",
+          "Dimension Evaluation (ANOVA) table for a",
+          "group-separation-specific view."
+        )
+      )
+    ))
+  }
+
+  dt
 }
 
 
