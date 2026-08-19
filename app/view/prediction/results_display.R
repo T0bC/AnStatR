@@ -25,7 +25,7 @@ render_prediction_results <- function(
     prediction_result, bundle, unknown_data, ns) {
   analysis_type <- prediction_result$analysis_type
 
-  if (analysis_type == "pca") {
+  if (analysis_type %in% c("pca", "spca", "ipca")) {
     render_pca_results(
       prediction_result, unknown_data, ns
     )
@@ -157,7 +157,7 @@ build_results_table <- function(prediction_result,
     )
   }
 
-  if (analysis_type == "pca") {
+  if (analysis_type %in% c("pca", "spca", "ipca")) {
     scores <- prediction_result$scores
     df <- cbind(
       Sample = labels,
