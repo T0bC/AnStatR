@@ -142,8 +142,11 @@ tab_ui <- function(ns) {
               "1 = equivalent to standard LDA.",
               "Higher values capture multi-modal",
               "or non-elliptical group shapes but",
-              "need enough observations per group",
-              "(rule of thumb: >= 10 per subclass).",
+              "need enough observations per group.",
+              "The app enforces a hard minimum of",
+              "max(subclasses, p + 1) observations per",
+              "group; around 10 per subclass is",
+              "recommended for stable estimates.",
               "Changing this also changes the",
               "discriminant coordinate system."
             )
