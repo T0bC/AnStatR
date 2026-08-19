@@ -6,6 +6,7 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
+  app/logic/pca/pca_stats[compute_ind_contrib, compute_ind_cos2],
 )
 
 # =============================================================================
@@ -58,7 +59,7 @@ ind_contrib_error_parser <- function(error_msg,
 #' @param pca_result PCA result list ($result from run_pca)
 #' @param display_ncp Integer, number of dimensions to show
 #' @param group_cols Character vector, column name(s) in
-#'   ind$meta for coloring. NULL for no grouping.
+#'   ind_meta for coloring. NULL for no grouping.
 #' @param show_title Logical, whether to show the plot title
 #' @return List with $success, $result (ggplot) or $error
 #' @export
@@ -79,22 +80,24 @@ create_ind_contrib_plot <- function(pca_result,
         stop("pca_result is NULL")
       }
 
-      contrib <- pca_result$ind$contrib
-      cos2 <- pca_result$ind$cos2
-      meta <- pca_result$ind$meta
-      eig <- pca_result$eig
-      n_obs <- nrow(contrib)
-      n_dims <- min(display_ncp, ncol(contrib))
-      dims <- colnames(contrib)[seq_len(n_dims)]
+      scores <- pca_result$scores
+      contrib_full <- compute_ind_contrib(scores)
+      meta <- pca_result$ind_meta
+      variance <- pca_result$variance
+      n_obs <- nrow(scores)
+      n_dims <- min(display_ncp, ncol(scores))
+      dims <- colnames(scores)[seq_len(n_dims)]
+      contrib <- contrib_full[, dims, drop = FALSE]
+      cos2 <- compute_ind_cos2(scores, scores[, dims, drop = FALSE])
       threshold <- 100 / n_obs
 
       # Build dimension labels with variance %
       dim_labels <- vapply(dims, function(d) {
-        idx <- which(rownames(eig) == d)
+        idx <- which(rownames(variance) == d)
         if (length(idx) == 1) {
           sprintf(
             "%s (%.1f%%)",
-            d, eig[idx, "variance.percent"]
+            d, variance[idx, "variance_percent"]
           )
         } else {
           d
