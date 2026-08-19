@@ -407,7 +407,7 @@ server <- function(id) {
       shiny$req(unknown)
 
       analysis_type <- bdl$analysis_type
-      is_pca <- analysis_type == "pca"
+      is_pca <- analysis_type %in% c("pca", "spca", "ipca")
       is_cluster <- analysis_type == "cluster"
 
       # Dimension inputs differ by analysis type
