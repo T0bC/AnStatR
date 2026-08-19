@@ -77,7 +77,7 @@ $$\mathbf{t}, \mathbf{u} = \underset{\mathbf{t} = \mathbf{X}\mathbf{w},\, \mathb
 
 Components are extracted iteratively via the NIPALS algorithm, deflating $\mathbf{X}$ after each component so subsequent components capture orthogonal, complementary information. Because this never requires inverting a $p \times p$ matrix, PLS-DA remains well-defined when $p > n$ and is not disrupted by collinear predictors — collinear variables simply share loading weight on the same component(s) rather than causing a singular-matrix failure.
 
-The number of components is chosen by the user (**Number of components** setting), defaulting to $G - 1$ to match LDA's discriminant-axis count, but any value up to $\min(n-1,\ p)$ is valid. Use the **Component Diagnostics (perf)** panel to check whether the chosen count is actually justified by cross-validated classification error.
+The number of components is chosen by the user (**Number of components** setting), defaulting to $G - 1$ to match LDA's discriminant-axis count, but any value up to $\min(n-1,\ p)$ is valid. Use the **Check component count** button (Analysis Settings sidebar) to check whether the chosen count is actually justified by cross-validated classification error.
 
 </details>
 
@@ -90,7 +90,7 @@ $$\mathbf{w} = \underset{\mathbf{w}}{\arg\max}\ \mathrm{cov}(\mathbf{X}\mathbf{w
 
 The **Variables to keep per component (keepX)** setting controls sparsity directly — rather than tuning $\lambda$, mixOmics lets you specify exactly how many variables should retain a nonzero loading on each component. The variables with the largest loading magnitude survive; the rest are set to zero and excluded from that component's score computation entirely. This is the mechanism behind the **Selected Variables** results panel: the parameters most responsible for separating your groups on each component.
 
-**Choosing keepX**: smaller values give a shorter, more interpretable variable list but risk excluding weaker real contributors; larger values behave closer to standard PLS-DA. There is no universally correct value — it is a trade-off between interpretability and completeness. The **Auto-tune keepX (slow)** button runs `mixOmics::tune.splsda()`, a cross-validated grid search over candidate keepX values per component, and fills in the value that minimises balanced classification error. Because this repeats model fitting across a grid × folds × repeats, it can take from several seconds to a few minutes depending on data size — the suggested values are a starting point you can still edit by hand.
+**Choosing keepX**: keepX is a *count of variables*, not a threshold — it answers "how many parameters should this component be allowed to keep?" Smaller values give a shorter, more interpretable variable list but risk excluding weaker real contributors; larger values behave closer to standard PLS-DA and stop producing a useful shortlist. There is no universally correct value — it is a trade-off between interpretability and completeness, and it should be decided by cross-validation rather than guessed. Until tuning has been run, the **Selected Variables** panel is marked **keepX not tuned**, because the variable list then reflects a sidebar default rather than the data. The **Optimise variable selection (recommended)** button runs `mixOmics::tune.splsda()`, a cross-validated grid search over candidate keepX values per component, and fills in the value that minimises balanced classification error. Because this repeats model fitting across a grid × folds × repeats, it can take from several seconds to a few minutes depending on data size — the suggested values are a starting point you can still edit by hand.
 
 **Multicollinearity and variable selection**: when several measurement columns essentially describe the same underlying surface feature at different scales or in 2D vs. 3D, sparse selection may pick one representative more or less arbitrarily and assign the others a zero loading — this does not mean the excluded variables are scientifically irrelevant, only that they were redundant given the ones already selected. When interpreting the Selected Variables list, group correlated parameters conceptually and treat the "selected" one as representative of that group rather than uniquely important. Cross-check with the PCA Correlation Matrix (or a correlation heatmap of your parameter set) to identify which variables cluster together before drawing conclusions about "unimportant" excluded parameters.
 
@@ -99,7 +99,7 @@ The **Variables to keep per component (keepX)** setting controls sparsity direct
 <details>
 <summary><strong>Component Diagnostics (perf) for PLS-DA/sPLS-DA</strong></summary>
 
-The **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Run Component Diagnostics**) wraps `mixOmics::perf()`, which repeats k-fold cross-validation (default 5 folds × 10 repeats) to estimate classification error at each component count, independently of the model fitted by the main **Compute** button. Two error metrics are reported per component:
+The **Component Diagnostics (perf)** panel (Analysis Settings sidebar → **Check component count**) wraps `mixOmics::perf()`, which repeats k-fold cross-validation (default 5 folds × 10 repeats) to estimate classification error at each component count, independently of the model fitted by the main **Compute** button. Two error metrics are reported per component:
 
 | Column | Definition |
 |--------|-----------|
@@ -191,11 +191,11 @@ The **Nu (degrees of freedom)** parameter (visible only for `t` method) governs 
 | **Leave-one-out CV** | Each specimen predicted by a model trained on all others (MASS::lda/qda CV=TRUE; manual loop for MDA) | Conservative for small datasets; computationally intensive for MDA; **not available for PLS-DA/sPLS-DA** — use Component Diagnostics (perf) instead |
 | **Train / Test Split** | Stratified random split; holdout set accuracy | Single-split variance; reproducible via **Random seed** |
 
-**Resubstitution accuracy** is always reported in the LDA Results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it. For PLS-DA/sPLS-DA, component-count validation is handled separately by the **Component Diagnostics (perf)** panel (see above) rather than by the Validation setting.
+**Resubstitution accuracy** is always reported in the results panel. When LOO-CV or Train/Test Split is used, the cross-validated or test-set accuracy is reported alongside it. For PLS-DA/sPLS-DA, component-count validation is handled separately by the **Component Diagnostics (perf)** panel (see above) rather than by the Validation setting.
 
-##### Data Interpretation — LDA Results Panels
+##### Data Interpretation — Results Panels
 
-The **LDA Results** accordion contains a variable number of sub-panels depending on analysis type and validation mode. The panels appear in the order described below.
+The results accordion — titled after the selected method (**LDA Results**, **sPLS-DA Results**, and so on) — contains a variable number of sub-panels depending on analysis type and validation mode. The panels appear in the order described below.
 
 <details>
 <summary><strong>Resubstitution / LOO-CV / Test Accuracy (Summary panel)</strong></summary>
@@ -241,7 +241,7 @@ Prior probabilities influence posterior probabilities and decision boundaries bu
 <details>
 <summary><strong>Group Means</strong></summary>
 
-Shows the within-group mean for every measurement variable, computed on the (scaled) data used for analysis. Rows are groups; columns are variables.
+Shows the within-group mean for every measurement variable, computed on the (scaled) data used for analysis. Rows are variables; columns are groups — datasets normally have far more measurement variables than groups, so this orientation keeps the table narrow and paginates the variables instead of scrolling sideways. (The Excel export uses the opposite orientation, groups as rows, for spreadsheet convenience.)
 
 These are the centroid coordinates that LDA/QDA uses as the reference points for classification. Key uses:
 
@@ -270,7 +270,7 @@ After z-score scaling the coefficients are on a common scale and directly compar
 
 To identify the primary discriminating variables: look for the rows with the largest absolute values in LD1 (or Comp1). These are the measurements that most strongly separate the groups along the first (and usually most important) axis.
 
-The **Variable Contributions** jitter plot (separate accordion panel below the LDA Results) visualises these coefficients across all axes simultaneously — variables with consistently large absolute values across multiple axes are the overall key discriminators.
+The **Variable Contributions** jitter plot (separate accordion panel below the results panel) visualises these coefficients across all axes simultaneously — variables with consistently large absolute values across multiple axes are the overall key discriminators.
 
 For MDA, the coefficients describe the shared pooled discriminant space across all mixture components; their interpretation is analogous to LDA coefficients. **For PLS-DA/sPLS-DA, loadings are on a different mathematical footing than LDA discriminant coefficients** — they describe how strongly each variable contributes to a component that jointly maximises covariance with group membership, not a ratio of between/within-group scatter. The *relative ranking* of variables by absolute loading within a component is still meaningful for identifying key drivers, but the absolute values are not directly comparable to LDA coefficients or to loadings from a different PLS-DA fit. For sPLS-DA specifically, variables with a zero loading on a given component were excluded by sparse selection entirely (see the **Selected Variables** panel), not merely judged unimportant.
 
@@ -362,6 +362,8 @@ A one-way ANOVA is run separately for each discriminant axis, testing whether gr
 | **Sig.** | Significance stars | *** p < 0.001, ** p < 0.01, * p < 0.05, . p < 0.1 |
 
 A high R² (e.g., 90 %) on LD1 confirms that group membership strongly structures the scores on that axis. Low R² or non-significant F on an axis means that axis adds little discriminating value over chance — consider omitting it from plots and interpretation.
+
+**Which axes should I plot?** R² answers this directly: it ranks the axes by how much group separation each one carries. The panel therefore ends with a **Best axes to plot** recommendation naming the two highest-R² axes. If those are not the first two, the Scores Plot is not showing your clearest separation — set **Dim.X** and **Dim.Y** in the Plotting Controls tab to the recommended axes. This matters most for PLS-DA/sPLS-DA with several components, where the strongest group signal is not always on Comp1/Comp2 and an overlapping default plot can otherwise be mistaken for a genuine lack of separation.
 
 **Note for QDA**: the ANOVA uses the companion LDA projection (fitted internally for visualisation purposes), not the QDA classification boundaries. It still provides useful guidance on which projected axes carry group signal.
 
@@ -463,7 +465,7 @@ The first sheet (scores, or posteriors with metadata for QDA/CV) is ready for im
 
 ##### Plotting Controls
 
-Configure the **LD Scores Plot** (titled **Component Scores Plot** for PLS-DA/sPLS-DA) in the **LDA Plotting Controls** sidebar tab:
+Configure the **LD Scores Plot** (titled **Component Scores Plot** for PLS-DA/sPLS-DA) in the **Discriminant Analysis Plotting Controls** sidebar tab:
 
 | Control | Options | Effect |
 |---------|---------|--------|
