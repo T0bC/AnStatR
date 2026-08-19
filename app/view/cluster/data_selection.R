@@ -7,6 +7,7 @@ box::use(
 
 box::use(
   app/logic/shared/column_utils,
+  app/logic/pca/pca[extract_variance_explained],
   app/view/components/sidebar_tabs,
   app/view/shared/recommendation_banner,
 )
@@ -541,33 +542,7 @@ tab_server <- function(input, output, session,
 #'   result or NULL
 #' @return List with n90, cum90, n95, cum95 or NULL
 pca_dims_recommendation <- function(pca_result) {
-  if (is.null(pca_result)) return(NULL)
-  pca_res <- tryCatch(
-    pca_result(),
-    error = function(e) NULL
-  )
-  if (
-    is.null(pca_res) ||
-    !isTRUE(pca_res$success) ||
-    is.null(pca_res$result$eig)
-  ) {
-    return(NULL)
-  }
-  eig <- pca_res$result$eig
-  cum_var <- eig[["cumulative.variance.percent"]]
-  if (is.null(cum_var) || length(cum_var) == 0) {
-    return(NULL)
-  }
-  n90 <- which(cum_var >= 90)[1]
-  n95 <- which(cum_var >= 95)[1]
-  if (is.na(n90)) n90 <- length(cum_var)
-  if (is.na(n95)) n95 <- length(cum_var)
-  list(
-    n90 = n90,
-    cum90 = round(cum_var[n90], 1),
-    n95 = n95,
-    cum95 = round(cum_var[n95], 1)
-  )
+  extract_variance_explained(pca_result)
 }
 
 #' Build the hint UI for when LDA scores are unavailable
