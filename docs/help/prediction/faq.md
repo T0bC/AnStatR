@@ -106,6 +106,24 @@ The specimen is assigned to the group with the highest posterior. Posteriors sum
 </details>
 
 <details>
+<summary>What are T² and Q-residual, and why do I see them for PCA/sPCA/IPCA predictions?</summary>
+
+They are an "applicability domain" check: a quantitative statement of whether an unknown's measurement profile actually looks like the training data, rather than just where it falls visually on the overlay plot. **Hotelling's T²** measures how far the unknown's score vector sits from the training centroid *within* the components the model retained. **Q-residual (SPE)** measures how much of the unknown's profile is left unexplained *after* projecting onto those retained components and reconstructing back — the part of the sample the model never saw.
+
+This distinction matters more for **sPCA and IPCA** than for plain PCA. Plain PCA's components are variance-ranked, so a handful of retained components already capture most of the structure ordinary data can have, and a sample with low T² rarely also has high Q. sPCA's sparse loadings and IPCA's independence-based rotation are not variance-ranked in the same way, so a sample can look completely normal on the retained components (low T²) while being structurally unlike anything in the training set (high Q) — the "low-T², high-Q" cell is the case worth watching for those two methods specifically. See the Details tab for the full reading of all four T²/Q combinations.
+
+</details>
+
+<details>
+<summary>What is typicality probability and how is it different from posterior probability?</summary>
+
+This is exactly the scenario the posterior-probability caveat above describes: posteriors are computed under a closed-world assumption, so a specimen from a group that was never in the training data still gets assigned somewhere with a posterior that can look confident. **Typicality probability is the metric that quantifies that gap.** It is the chi-square probability that the unknown's Mahalanobis distance to its *nearest* group — not necessarily the predicted one — is consistent with ordinary within-group scatter. A high posterior together with a low typicality probability is the specific pattern that flags "the model had to pick something, but this specimen does not actually resemble any trained group."
+
+This is standard practice in the wildlife and archaeological discriminant-function literature for exactly this reason: posterior probability alone cannot tell you the unknown might belong to a group you never sampled.
+
+</details>
+
+<details>
 <summary>All my unknown specimens are predicted as the same group — is this a problem?</summary>
 
 Not necessarily, but it warrants investigation. Possible explanations:
@@ -153,6 +171,41 @@ The overlay plot is shown only when LD scores or PC scores are available:
 - **QDA**: shown only when the companion LDA model is present in the bundle and successfully projects unknowns. If the bundle was exported without a companion LDA, the plot section is suppressed
 
 If the plot is missing and you expected it: check the results table for a `scores` column — if no LD scores are listed, the plot cannot be generated from the current bundle.
+
+</details>
+
+<details>
+<summary>What should I report in a paper or thesis?</summary>
+
+A predicted class and its position on the overlay plot are never sufficient on their own — a reviewer needs both a quantitative confidence/distance metric for the specific specimen and a statement of how trustworthy the underlying model is in the first place.
+
+**Always report**
+
+| What | Where to find it | Why needed |
+|------|-------------------|------------|
+| Predicted class and posterior probability | Prediction Results panel / `Predicted`, `P(Group)` columns | The primary result and its within-model confidence |
+| The method-appropriate distance/confidence metric (see below) | Prediction Diagnostics panel | Detects whether the specimen actually resembles *any* trained group, which posterior probability alone cannot |
+| Training-set classification accuracy, with its evaluation source stated | Training Model Quality panel | A prediction is only as trustworthy as the model producing it — an unvalidated (resubstitution) accuracy figure is optimistic by construction |
+| Reference-population justification | — (methodological statement, not a panel value) | See the dedicated FAQ entry on reference population — this cannot be verified by the software |
+
+**Method-specific additions**
+
+- **PCA / sPCA / IPCA** — report Hotelling's T² and Q-residual (with their flags) for the specimen; note explicitly whether either exceeded its threshold
+- **LDA / MDA / QDA** — report Mahalanobis distance to the predicted group and typicality probability; report `Nearest_group` if it differs from the predicted class
+- **PLS-DA / sPLS-DA** — same as LDA/MDA/QDA, computed in component-score space rather than original measurement space (the space these methods actually classify in)
+- **Cluster** — report the distance ratio; a value near 1 should be reported as an ambiguous assignment even though the algorithm still names a single cluster
+
+**Which plots to show**
+
+1. The overlay plot, captioned to make clear it **illustrates** the assignment rather than substituting for it — visual proximity to a group's cloud is not the same as passing a quantitative distance check, and this distinction is the entire reason the diagnostics panel exists
+
+**Common mistakes**
+
+- **Reporting only the plot position** — "sample X falls within group Y's ellipse" is a visual impression, not a statistic a reviewer can independently evaluate; it must be accompanied by the corresponding distance/typicality metric
+- **Quoting resubstitution accuracy as if it were validated** — the Training Model Quality panel labels its accuracy source explicitly (cross-validated / held-out test / resubstitution); resubstitution accuracy is measured on the same data used to fit the model and is optimistic by construction
+- **Treating a high posterior as proof the group is correct** — posterior probability is computed under a closed-world assumption and cannot detect an unrepresented group; typicality probability is the metric that addresses this (see the dedicated FAQ entry)
+
+> Specimen SAMPLE_ID was classified as GROUP_NAME (posterior = POSTERIOR_VALUE, Mahalanobis distance to nearest group centroid = DISTANCE_VALUE, typicality p = TYPICALITY_VALUE). The training model achieved N_PERCENT accuracy under CONFUSION_SOURCE_LABEL evaluation (Per-Class Metrics panel).
 
 </details>
 
