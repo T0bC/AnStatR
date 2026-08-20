@@ -202,12 +202,103 @@ describe("run_plsda_perf", {
       fit$result, folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
-    # run_plsda_perf() returns a list of two tables:
+    # run_plsda_perf() returns a list of tables:
     # $errors (per-component error rates) and $stability.
     df <- perf_res$result$errors
     expect_true(is.data.frame(df))
     expect_equal(nrow(df), 2)
     expect_true(all(c("Component", "Overall Error", "BER") %in%
       names(df)))
+  })
+
+  it("keeps $errors to exactly the three max.dist columns", {
+    # create_perf_error_plot() and suggest_ncomp() both depend on
+    # this exact shape. Adding the distance comparison must not
+    # leak extra columns into the reported error table.
+    data <- make_high_dim_data()
+    fit <- lda$run_plsda(
+      data, all_cols(), "species", ncomp = 2
+    )
+    perf_res <- lda$run_plsda_perf(
+      fit$result, folds = 3, repeats = 2
+    )
+    expect_true(perf_res$success)
+    expect_equal(
+      names(perf_res$result$errors),
+      c("Component", "Overall Error", "BER")
+    )
+  })
+
+  it("reports cross-validated error per group", {
+    data <- make_high_dim_data()
+    fit <- lda$run_plsda(
+      data, all_cols(), "species", ncomp = 2
+    )
+    perf_res <- lda$run_plsda_perf(
+      fit$result, folds = 3, repeats = 2
+    )
+    expect_true(perf_res$success)
+
+    ce <- perf_res$result$class_errors
+    if (!is.null(ce)) {
+      expect_true(is.data.frame(ce))
+      expect_true("Class" %in% names(ce))
+      expect_true("max.dist" %in% names(ce))
+      # One row per group present in the data.
+      expect_equal(
+        sort(ce$Class),
+        sort(levels(droplevels(as.factor(data$species))))
+      )
+      rates <- unlist(ce[, setdiff(names(ce), "Class")])
+      expect_true(all(rates >= 0 & rates <= 1, na.rm = TRUE))
+    }
+  })
+
+  it("reports mixOmics' own component-count recommendation", {
+    data <- make_high_dim_data()
+    fit <- lda$run_plsda(
+      data, all_cols(), "species", ncomp = 2
+    )
+    perf_res <- lda$run_plsda_perf(
+      fit$result, folds = 3, repeats = 2
+    )
+    expect_true(perf_res$success)
+
+    mc <- perf_res$result$mixomics_choice
+    if (!is.null(mc)) {
+      expect_true(is.data.frame(mc))
+      expect_true("Measure" %in% names(mc))
+      expect_true("max.dist" %in% names(mc))
+      counts <- unlist(mc[, setdiff(names(mc), "Measure")])
+      expect_true(all(counts >= 1, na.rm = TRUE))
+    }
+  })
+
+  it("reports all available prediction distances", {
+    data <- make_high_dim_data()
+    fit <- lda$run_plsda(
+      data, all_cols(), "species", ncomp = 2
+    )
+    perf_res <- lda$run_plsda_perf(
+      fit$result, folds = 3, repeats = 2
+    )
+    expect_true(perf_res$success)
+
+    cmp <- perf_res$result$dist_comparison
+    # NULL is a legitimate outcome when perf() could only compute
+    # one rule, so only assert structure when it is present.
+    if (!is.null(cmp)) {
+      expect_true(is.data.frame(cmp))
+      expect_true(all(c("Component", "Measure") %in% names(cmp)))
+      expect_true("max.dist" %in% names(cmp))
+      expect_setequal(
+        unique(cmp$Measure), c("BER", "Overall Error")
+      )
+
+      agree <- perf_res$result$dist_agreement
+      expect_false(is.null(agree))
+      expect_true(agree$max_spread_pp >= 0)
+      expect_true(agree$best_rule %in% names(cmp))
+    }
   })
 })

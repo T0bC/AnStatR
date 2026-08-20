@@ -262,8 +262,32 @@ describe("run_pca_tune_keepx", {
       folds = 3, repeats = 3
     )
     expect_true(res$success)
-    expect_equal(length(res$result), 2)
-    expect_equal(names(res$result), c("Dim.1", "Dim.2"))
+    expect_equal(length(res$result$keep_x), 2)
+    expect_equal(names(res$result$keep_x), c("Dim.1", "Dim.2"))
+  })
+
+  it("records the settings actually used, for provenance", {
+    res <- pca$run_pca_tune_keepx(
+      test_data, cols, ncomp = 2,
+      test_keep_x = c(2, 4, 6),
+      folds = 3, repeats = 3
+    )
+    expect_true(res$success)
+    expect_equal(res$result$settings$folds, 3)
+    expect_equal(res$result$settings$repeats, 3)
+    expect_equal(res$result$settings$grid, c(2, 4, 6))
+  })
+
+  it("returns the component-stability values used to choose keepX", {
+    res <- pca$run_pca_tune_keepx(
+      test_data, cols, ncomp = 2,
+      test_keep_x = c(2, 4, 6),
+      folds = 3, repeats = 3
+    )
+    expect_true(res$success)
+    # $cor_comp is the evidence behind the choice; without it the
+    # stability curve has nothing to plot.
+    expect_false(is.null(res$result$cor_comp))
   })
 })
 
