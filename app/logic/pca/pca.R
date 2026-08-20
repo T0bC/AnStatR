@@ -204,8 +204,10 @@ run_pca <- function(data, columns,
 #' @param repeats Integer, number of CV repeats (>= 3)
 #' @param center Logical, center variables before fitting
 #' @param scale. Logical, scale variables before fitting
-#' @return List with $success, $result (named integer vector,
-#'   one keepX per component) or $error
+#' @return List with $success, $result (list with $keep_x — named
+#'   integer vector, one keepX per component — $cor_comp, the
+#'   correlation between cross-validated and full-data components
+#'   per candidate keepX, and $settings for provenance) or $error
 #' @export
 run_pca_tune_keepx <- function(data, columns, ncomp,
                                test_keep_x = NULL,
@@ -249,7 +251,16 @@ run_pca_tune_keepx <- function(data, columns, ncomp,
         "keepX=[{paste(keep_x, collapse=',')}]"
       )
 
-      keep_x
+      list(
+        keep_x = keep_x,
+        # Correlation between the cross-validated and full-data
+        # component at each candidate keepX — the evidence behind
+        # the chosen value, plotted by create_tune_spca_plot().
+        cor_comp = tune_res$cor.comp,
+        settings = list(
+          folds = folds, repeats = repeats, grid = candidates
+        )
+      )
     },
     operation_name = "sPCA keepX Tuning",
     error_parser = pca_error_parser
