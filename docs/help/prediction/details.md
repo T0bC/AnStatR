@@ -4,16 +4,16 @@
 
 **Model Bundle**
 
-The bundle file must be an `.rds` object exported directly from the PCA, LDA, QDA, MDA, or Cluster tab of this application. It must contain all of the following fields:
+The bundle file must be an `.rds` object exported directly from the PCA, LDA, QDA, MDA, PLS-DA/sPLS-DA, or Cluster tab of this application. It must contain all of the following fields:
 
 | Field | Content |
 |-------|---------|
-| `analysis_type` | One of `pca`, `lda`, `qda`, `mda`, `cluster` |
-| `model` | The fitted model object (`prcomp`, `lda`, `qda`, `mda`, `kmeans`, or `pam`) |
+| `analysis_type` | One of `pca`, `spca`, `ipca`, `lda`, `qda`, `mda`, `plsda`, `splsda`, `cluster` |
+| `model` | The fitted model object (`mixOmics::pca`/`spca`/`ipca`, `MASS::lda`/`qda`, `mda::mda`, `mixOmics::plsda`/`splsda`, `stats::kmeans`, or `cluster::pam`) |
 | `numeric_cols` | Character vector of measurement column names used during training |
 | `raw_data` | Training data before preprocessing (used for range validation) |
 | `used_data` | Training data after preprocessing (used for overlay plots) |
-| `scale_params` | Center and scale vectors (LDA/MDA/QDA/Cluster) or NULL (PCA) |
+| `scale_params` | Center and scale vectors — stored for every analysis type, including PCA/sPCA/IPCA |
 | `transform_params` | Stored skewness transformation parameters or empty list |
 | `app_version` | Version of AnStatR that created the bundle |
 | `created` | Timestamp of bundle creation |
@@ -44,7 +44,7 @@ Before prediction, the unknown data is transformed using parameters stored in th
 
 If skewness normalization was enabled during model training, `bestNormalize` transformation objects are stored in the bundle. The same transformations (Box-Cox, Yeo-Johnson, log, square-root — whichever was selected per column) are applied to the corresponding unknown data columns using `predict()` on the stored transformer objects.
 
-**Step 2 — Scaling** (LDA / MDA / QDA / Cluster only)
+**Step 2 — Scaling** (all analysis types)
 
 The stored `center` and `scale` vectors are applied to the transformed unknown data:
 
@@ -52,7 +52,7 @@ $$x'_{ij} = \frac{x_{ij} - \bar{x}_{j,\text{train}}}{s_{j,\text{train}}}$$
 
 where $\bar{x}_{j,\text{train}}$ and $s_{j,\text{train}}$ are the training mean and standard deviation for column $j$.
 
-**PCA is handled differently**: `predict.prcomp()` applies centering and scaling automatically from the stored `prcomp` object. No manual scaling step is needed.
+**PCA / sPCA / IPCA use the same manual step**: mixOmics' `pca()`/`spca()`/`ipca()` objects have no `predict()` S3 method, so unlike `stats::prcomp`, there is no automatic centering/scaling on projection. The stored `center`/`scale` vectors are applied to PCA/sPCA/IPCA unknown data via the exact same Step 2 formula above as LDA/MDA/QDA/Cluster — there is no special case for PCA.
 
 This design ensures that the preprocessing pipeline is fully reproducible and that the unknown data occupies the same feature space as the training data.
 
@@ -61,13 +61,21 @@ This design ensures that the preprocessing pipeline is fully reproducible and th
 <details>
 <summary><strong>Prediction Methods by Analysis Type</strong></summary>
 
-All prediction dispatches through R's generic `stats::predict()` applied to the stored model object.
+LDA/MDA/QDA/PLS-DA/sPLS-DA dispatch through R's generic `stats::predict()` applied to the stored model object. PCA/sPCA/IPCA have no `predict()` S3 method in mixOmics and are projected manually via matrix multiplication instead.
 
 **PCA**
 
-`predict.prcomp(model, newdata)` projects unknown observations into the PC space defined by the training eigenvectors. The result is a matrix of PC scores (`Dim.1`, `Dim.2`, …) — one row per unknown specimen. No classification is performed; the scores indicate where each unknown falls within the training variance structure.
+A single matrix multiply against the stored loadings (`model$loadings$X`) reproduces `$variates$X` exactly — projection is `x_new %*% loadings`, mathematically equivalent to `stats::predict.prcomp` for plain, non-sparse PCA since loadings are orthogonal SVD vectors with no deflation between components. The result is a matrix of PC scores (`Dim.1`, `Dim.2`, …) — one row per unknown specimen. No classification is performed; the scores indicate where each unknown falls within the training variance structure.
 
 Interpreting PCA projections: an unknown that projects close to a cluster of training specimens in PC space shares a similar multivariate profile with those specimens. An unknown that falls far from all training specimens (extrapolation zone) may have a measurement profile outside the range the training data can describe reliably.
+
+**sPCA**
+
+Unlike plain PCA, a single matrix multiply against the loadings does **not** reproduce sPCA's scores beyond the first component: mixOmics fits sPCA one component at a time via NIPALS-style power iteration, deflating the training data matrix after each component by regressing out that component's score. Projecting new data replays the same per-component deflation to match. Interpretation is otherwise identical to PCA.
+
+**IPCA**
+
+IPCA computes each score by projecting onto the rotation matrix and then normalizing by a constant derived from the *training* data as a whole (not a per-observation transform). To keep new samples on the same scale as training scores, projection reuses those training-derived normalization constants rather than recomputing them from the new sample count. Interpretation is otherwise identical to PCA, with the caveat that IPCA's components are not variance-ranked (see the IPCA scaling documentation in the PCA module's Details tab).
 
 **LDA**
 
@@ -89,6 +97,10 @@ where $f_k(\mathbf{x})$ is the multivariate Gaussian density under the pooled wi
 **QDA**
 
 `predict.qda(model, newdata)` returns `$class` and `$posterior` using per-group quadratic discriminant functions. Because QDA does not produce linear discriminant axes, LD scores for visualization are obtained by projecting the preprocessed unknown data through a **companion LDA** model stored in the bundle (`bundle$lda_model`). This companion LDA is fitted on the same training data for visualization purposes only and does not influence classification.
+
+**PLS-DA / sPLS-DA**
+
+`predict.mixo_plsda(model, newdata)` returns `$class$max.dist` (predicted group, using the maximum-distance classification rule) and `$predict` (posterior-like class scores) for the final retained component, plus `$variates` (component scores, labelled `Comp1`, `Comp2`, …). sPLS-DA uses the identical prediction call — its stored model already encodes which variables were selected during training, so no additional handling is needed at prediction time.
 
 **Cluster (K-Means / PAM)**
 
@@ -160,6 +172,60 @@ Hover over any triangle to see the specimen label, predicted class, and axis coo
 **Positioning interpretation for LDA/MDA/QDA**: an unknown triangle that falls deep within a group's cloud and far from decision boundaries indicates a high-confidence assignment. A triangle near a boundary line — especially between two groups — corresponds to low posterior probability separation, regardless of the printed predicted label.
 
 **Positioning interpretation for PCA**: the overlay plot does not classify; it shows the unknown's multivariate profile relative to the training population. An unknown that plots outside all training group clouds may be atypical or may belong to a group not represented in the training data.
+
+</details>
+
+<details>
+<summary><strong>Interpreting T² and Q-Residual (PCA / sPCA / IPCA)</strong></summary>
+
+The overlay plot shows *where* an unknown falls relative to training groups, but it cannot substitute for a quantitative statement of how well the unknown's measurement profile is actually described by the fitted model. Two complementary metrics answer that:
+
+- **Hotelling's T²** — the (Mahalanobis-type) distance of the unknown's score vector from the training score centroid, measured within the retained components. A large T² means the unknown is unusual *along the axes the model actually captures*.
+- **Q-residual (SPE)** — the part of the unknown's measurement profile **not** explained by the retained components, i.e. how much is left over after projecting onto the model and reconstructing back. A large Q means the unknown has structure the model was never fit to describe.
+
+Reading the two together:
+
+| T² | Q | Interpretation |
+|----|---|-----------------|
+| Low | Low | Typical — well described by the model on every axis that matters |
+| High | Low | Unusual position within the retained components, but still well-reconstructed |
+| Low | High | **The critical blind spot**: looks normal within the retained components, but is structurally unlike anything in training — see below |
+| High | High | Clear outlier by both measures |
+
+**This matters most for sPCA and IPCA.** Plain PCA's early components are variance-ranked, so a small number of retained components already captures most of the structure any Iris-scale dataset can have — low-T² samples are rarely also high-Q. sPCA's sparse loadings and IPCA's independence-based rotation do **not** guarantee this: a sample can land squarely inside the training cloud on the retained components (low T²) while being poorly reconstructed by them (high Q), because those methods do not prioritize explaining total variance the way plain PCA's leading components do.
+
+`T2_flag`/`Q_flag` in the diagnostics table mark samples exceeding a threshold at each metric. T²'s threshold is the standard F-distribution-based cutoff. Q's threshold is an **empirical 95th percentile of the training set's own Q-residuals** rather than the parametric Jackson-Mudholkar chi-square approximation — the parametric form needs eigenvalues of the full (not just retained) training covariance matrix, which this application does not retain; the empirical quantile is a standard, dependency-free alternative used in the process-monitoring literature and degrades gracefully for small training sets.
+
+</details>
+
+<details>
+<summary><strong>Interpreting Mahalanobis Distance and Typicality Probability (LDA / MDA / QDA / PLS-DA / sPLS-DA)</strong></summary>
+
+Posterior probability alone cannot detect that an unknown belongs to a group **not represented in the training data** — see the FAQ entry on posterior probability for the closed-world caveat this addresses. Typicality probability is the metric designed to catch it: it is the chi-square probability that the unknown's distance to its *nearest* group centroid — not necessarily the predicted group — is consistent with normal within-group scatter. A low typicality probability flags a specimen the model still had to assign somewhere, but which does not actually resemble any trained group.
+
+| Column | Content |
+|--------|---------|
+| `Mahalanobis_to_predicted` | Mahalanobis distance from the unknown to the centroid of its *predicted* group |
+| `Nearest_group` | The group whose centroid is closest, which may differ from the predicted group |
+| `Mahalanobis_to_nearest` | Mahalanobis distance to that nearest group |
+| `Typicality_p` | Chi-square probability associated with `Mahalanobis_to_nearest` — low values flag an atypical specimen |
+
+**Where the distance is computed**: for LDA/QDA/MDA the metric uses true Mahalanobis distance in **original measurement space**, with per-group covariance and per-group mean — this is QDA's native classification geometry, applied uniformly to LDA/MDA as well. For PLS-DA/sPLS-DA the metric is computed in **component-score space** instead, because that is the space these methods' classification decision actually lives in.
+
+</details>
+
+<details>
+<summary><strong>Interpreting the Distance-Ratio Confidence Proxy (Cluster)</strong></summary>
+
+K-Means and PAM have no posterior probability or discriminant model — cluster assignment is a hard nearest-centroid/medoid rule with no built-in confidence measure. The **distance ratio** is a lightweight, out-of-sample confidence proxy: the ratio of the unknown's distance to its assigned centroid/medoid versus its distance to the second-nearest one.
+
+| Column | Content |
+|--------|---------|
+| `Dist_to_assigned` | Distance to the nearest (assigned) centroid/medoid |
+| `Dist_to_second_nearest` | Distance to the second-nearest centroid/medoid |
+| `Distance_ratio` | `Dist_to_assigned / Dist_to_second_nearest`, always in `[0, 1]` |
+
+A ratio near **0** means the unknown sits much closer to its assigned cluster than to any alternative — a confident assignment. A ratio near **1** means the unknown is nearly equidistant between two clusters — an ambiguous assignment, analogous to a near-zero silhouette width. This proxy exists specifically because full silhouette width requires pairwise distances to every training point, which is not cheaply available for a single new observation at prediction time.
 
 </details>
 
