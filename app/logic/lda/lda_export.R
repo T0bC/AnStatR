@@ -1,6 +1,7 @@
 box::use(
   openxlsx,
   rhino,
+  stats,
 )
 
 box::use(
@@ -327,6 +328,16 @@ build_posterior_sheet <- function(lda_result,
 }
 
 
+#' Pick the least-optimistic available confusion matrix
+#'
+#' Priority: cross-validated (most externally valid) > held-out test >
+#' resubstitution (same data used for training -- optimistic).
+#'
+#' @param lda_result Result list from run_lda/run_qda/run_mda
+#' @param test_result Optional prediction result for train/test split mode
+#' @return List with $matrix, $accuracy, $per_class, or NULL if none
+#'   of the three sources is available
+#' @export
 get_best_confusion <- function(lda_result,
                                test_result) {
   is_cv <- !is.null(lda_result$cv)
@@ -364,6 +375,9 @@ get_best_confusion <- function(lda_result,
 #' @param settings List with skewness_correction,
 #'   scale_method, prior, etc.
 #' @param data_source Character, "raw" or "pca_scores"
+#' @param test_result Optional prediction result from run_predict() for
+#'   train/test split mode -- used to compute $confusion via the same
+#'   priority as create_lda_excel() (CV > held-out test > resubstitution)
 #' @return Named list (the bundle)
 #' @export
 create_lda_bundle <- function(lda_result, raw_data,
@@ -372,15 +386,17 @@ create_lda_bundle <- function(lda_result, raw_data,
                               transform_params = list(),
                               scale_params = NULL,
                               settings = list(),
-                              data_source = "raw") {
+                              data_source = "raw",
+                              test_result = NULL) {
   analysis_type <- lda_result$analysis_type
+  group_col <- lda_result$grouping_col
 
   bundle <- list(
     analysis_type = analysis_type,
     model = lda_result$model,
     raw_data = raw_data,
     used_data = used_data,
-    group_col = lda_result$grouping_col,
+    group_col = group_col,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
     transform_params = transform_params,
@@ -407,6 +423,28 @@ create_lda_bundle <- function(lda_result, raw_data,
     bundle$selected_variables <- lda_result$selected_variables
   }
 
+  # Prediction diagnostics reference stats: component-space group stats
+  # for PLS-DA/sPLS-DA (the space these methods actually classify in),
+  # original-measurement-space per-group stats for everything else.
+  if (analysis_type %in% c("plsda", "splsda")) {
+    bundle$group_component_stats <- build_group_component_stats(
+      lda_result$scores, used_data[[group_col]]
+    )
+  } else {
+    bundle$group_stats <- build_group_stats(used_data, numeric_cols, group_col)
+  }
+
+  bundle$confusion <- get_best_confusion(lda_result, test_result)
+  bundle$confusion_source <- if (!is.null(lda_result$cv)) {
+    "cv"
+  } else if (!is.null(test_result) && !is.null(test_result$confusion)) {
+    "held_out_test"
+  } else if (!is.null(lda_result$confusion)) {
+    "resubstitution"
+  } else {
+    NA_character_
+  }
+
   rhino$log$info(
     "LDA bundle: created {toupper(analysis_type)}",
     " ({length(numeric_cols)} vars,",
@@ -415,6 +453,70 @@ create_lda_bundle <- function(lda_result, raw_data,
   )
 
   bundle
+}
+
+#' Build per-group Mahalanobis reference stats in original measurement space
+#'
+#' One entry per training group: per-group mean and inverse covariance,
+#' used by the Prediction module to compute Mahalanobis distance and
+#' typicality probability for LDA/QDA/MDA. Uses per-group (not pooled)
+#' covariance, matching QDA's native geometry -- for LDA/MDA this is a
+#' strict generalization with no methodological loss.
+#'
+#' @param used_data Data frame, training data actually used to fit the model
+#' @param numeric_cols Character vector of measurement column names
+#' @param group_col Character, name of the grouping column in used_data
+#' @return Named list (one entry per group) of list($mean, $cov_inv), or
+#'   NULL if group_col is missing or every group's covariance is singular
+build_group_stats <- function(used_data, numeric_cols, group_col) {
+  if (is.null(group_col) || !(group_col %in% names(used_data))) return(NULL)
+  x <- as.matrix(used_data[, numeric_cols, drop = FALSE])
+  groups <- used_data[[group_col]]
+  group_names <- if (is.factor(groups)) levels(groups) else sort(unique(as.character(groups)))
+
+  stats_list <- lapply(group_names, function(g) {
+    idx <- as.character(groups) == g
+    xg <- x[idx, , drop = FALSE]
+    if (nrow(xg) < ncol(xg) + 1) return(NULL)
+    cov_g <- stats$cov(xg)
+    cov_inv <- tryCatch(solve(cov_g), error = function(e) NULL)
+    if (is.null(cov_inv)) return(NULL)
+    list(mean = colMeans(xg), cov_inv = cov_inv)
+  })
+  names(stats_list) <- group_names
+  stats_list <- stats_list[!vapply(stats_list, is.null, logical(1))]
+  if (length(stats_list) == 0) return(NULL)
+  stats_list
+}
+
+#' Build per-group Mahalanobis reference stats in component-score space
+#'
+#' Same shape as build_group_stats(), but computed from PLS-DA/sPLS-DA
+#' component scores rather than original measurement space -- that is the
+#' space these methods' classification decision actually lives in.
+#'
+#' @param scores Data frame/matrix of training component scores
+#' @param groups Vector of group labels aligned with scores' rows
+#' @return Named list (one entry per group) of list($mean, $cov_inv), or
+#'   NULL if scores are unavailable or every group's covariance is singular
+build_group_component_stats <- function(scores, groups) {
+  if (is.null(scores) || nrow(scores) == 0) return(NULL)
+  x <- as.matrix(scores)
+  group_names <- sort(unique(as.character(groups)))
+
+  stats_list <- lapply(group_names, function(g) {
+    idx <- as.character(groups) == g
+    xg <- x[idx, , drop = FALSE]
+    if (nrow(xg) < ncol(xg) + 1) return(NULL)
+    cov_g <- stats$cov(xg)
+    cov_inv <- tryCatch(solve(cov_g), error = function(e) NULL)
+    if (is.null(cov_inv)) return(NULL)
+    list(mean = colMeans(xg), cov_inv = cov_inv)
+  })
+  names(stats_list) <- group_names
+  stats_list <- stats_list[!vapply(stats_list, is.null, logical(1))]
+  if (length(stats_list) == 0) return(NULL)
+  stats_list
 }
 
 add_sheet <- function(wb, sheet_name, data) {
