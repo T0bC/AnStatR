@@ -132,6 +132,38 @@ render_classification_results <- function(
   )
 }
 
+#' Render a compact training-set classification performance summary
+#'
+#' @param confusion List with $matrix, $accuracy, $per_class
+#'   (as returned by build_confusion_stats() / get_best_confusion())
+#' @param confusion_source Character, "cv" / "held_out_test" /
+#'   "resubstitution" -- determines the caveat text shown
+#' @param ns Namespace function
+#' @return shiny tagList
+#' @export
+render_confusion_summary <- function(confusion, confusion_source, ns) {
+  source_label <- switch(
+    confusion_source,
+    cv = "cross-validated (leave-one-out)",
+    held_out_test = "held-out test set",
+    resubstitution = "resubstitution (same data used for training -- optimistic)",
+    "unknown"
+  )
+  shiny$tagList(
+    shiny$tags$p(
+      shiny$tags$strong("Overall accuracy: "),
+      paste0(round(confusion$accuracy * 100, 1), "%"),
+      shiny$tags$span(
+        class = "text-muted small",
+        paste0(" (", source_label, ")")
+      )
+    ),
+    DT$DTOutput(ns("confusion_matrix_table")),
+    shiny$tags$h6(class = "mt-3", "Per-Class Metrics"),
+    DT$DTOutput(ns("confusion_perclass_table"))
+  )
+}
+
 #' Build the prediction results data frame for DT
 #'
 #' @param prediction_result Result from predict_unknown
