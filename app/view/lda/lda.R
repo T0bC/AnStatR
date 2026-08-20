@@ -26,6 +26,7 @@ box::use(
   ],
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
+  app/view/shared/tuning_controls[parse_keepx_grid],
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
   app/view/lda/plotting_controls,
@@ -509,11 +510,31 @@ server <- function(id, input_data, data_version,
         "folds={folds}, repeats={repeats}"
       )
 
-      pf <- run_plsda_perf(res, folds = folds, repeats = repeats)
+      pf <- shiny$withProgress(
+        message = "Checking component count",
+        value = 0,
+        {
+          shiny$incProgress(
+            0.1,
+            detail = "Cross-validating each component…"
+          )
+          out <- run_plsda_perf(
+            res, folds = folds, repeats = repeats
+          )
+          shiny$incProgress(0.9, detail = "Summarising…")
+          out
+        }
+      )
       if (pf$success) {
         perf_result(pf$result)
       } else {
         perf_error(pf$error)
+        shiny$showNotification(
+          paste(
+            "Component diagnostics failed:", pf$error$message
+          ),
+          type = "error", duration = 10
+        )
       }
     })
 
@@ -574,9 +595,32 @@ server <- function(id, input_data, data_version,
 
       folds <- input_num(input$perf_folds, 5)
       repeats <- input_num(input$perf_repeats, 10)
-      tune_res <- run_plsda_tune_keepx(
-        tune_data, measure_cols, grouping_col,
-        ncomp = ncomp, folds = folds, repeats = repeats
+      grid_parsed <- parse_keepx_grid(
+        input$tune_keepx_grid, length(measure_cols)
+      )
+      if (!is.null(grid_parsed$message)) {
+        shiny$showNotification(
+          grid_parsed$message, type = "warning", duration = 8
+        )
+      }
+
+      tune_res <- shiny$withProgress(
+        message = "Tuning keepX",
+        value = 0,
+        {
+          shiny$incProgress(
+            0.1,
+            detail = "Cross-validating candidate values…"
+          )
+          res <- run_plsda_tune_keepx(
+            tune_data, measure_cols, grouping_col,
+            ncomp = ncomp,
+            test_keep_x = grid_parsed$values,
+            folds = folds, repeats = repeats
+          )
+          shiny$incProgress(0.9, detail = "Applying results…")
+          res
+        }
       )
 
       if (!tune_res$success) {
@@ -587,7 +631,7 @@ server <- function(id, input_data, data_version,
         return()
       }
 
-      keep_x <- tune_res$result
+      keep_x <- tune_res$result$keep_x
       keepx_tuned(as.numeric(keep_x))
       rhino$log$info(
         "sPLS-DA: filling keepX inputs — ",
@@ -1097,6 +1141,14 @@ render_perf_panel <- function(perf_res, perf_err, ns) {
     )
   }
 
+  dist_section <- render_dist_comparison(
+    perf_res$dist_comparison, perf_res$dist_agreement
+  )
+  class_section <- render_class_errors(perf_res$class_errors)
+  choice_section <- render_mixomics_choice(
+    perf_res$mixomics_choice
+  )
+
   shiny$tagList(
     ggiraph$girafeOutput(
       ns("perf_error_plot"), height = "400px"
@@ -1114,7 +1166,242 @@ render_perf_panel <- function(perf_res, perf_err, ns) {
       )
     ),
     error_table,
+    choice_section,
+    class_section,
+    dist_section,
     stability_section
+  )
+}
+
+
+#' Render per-class cross-validated error rates
+#'
+#' @param class_errors Data frame from run_plsda_perf(), or NULL
+#' @return Shiny tags, or NULL
+render_class_errors <- function(class_errors) {
+  if (is.null(class_errors)) return(NULL)
+
+  rule_cols <- setdiff(names(class_errors), "Class")
+  tbl <- DT$datatable(
+    class_errors,
+    options = list(
+      pageLength = 20, dom = "t", scrollX = TRUE,
+      order = list()
+    ),
+    rownames = FALSE,
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
+  ) |>
+    DT$formatStyle(
+      rule_cols,
+      backgroundColor = DT$styleInterval(
+        c(0.2, 0.4),
+        c("#19875440", "#ffc10740", "#dc354540")
+      )
+    )
+
+  worst <- max(
+    unlist(class_errors[, rule_cols, drop = FALSE]),
+    na.rm = TRUE
+  )
+  worst_class <- class_errors$Class[which.max(
+    apply(
+      class_errors[, rule_cols, drop = FALSE], 1,
+      function(r) max(r, na.rm = TRUE)
+    )
+  )]
+
+  note <- if (worst >= 0.5) {
+    paste0(
+      "Group \"", worst_class, "\" is misclassified at ",
+      round(worst * 100), "% under at least one rule — at or ",
+      "worse than chance for that group. An acceptable overall ",
+      "error can hide this: the model may be working only for ",
+      "the easily separated groups. Check whether that group is ",
+      "small, heterogeneous, or genuinely overlaps another."
+    )
+  } else if (worst >= 0.3) {
+    paste0(
+      "Group \"", worst_class, "\" is the hardest to classify (",
+      round(worst * 100), "% error). Worth reporting per-class ",
+      "rather than only the overall figure."
+    )
+  } else {
+    "No group is classified substantially worse than the others."
+  }
+
+  shiny$tagList(
+    shiny$tags$h6(
+      class = "mt-3 mb-2", "Error Rate per Group"
+    ),
+    tbl,
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "Cross-validated error for each group separately, at the",
+        "fitted component count.", note,
+        "These are cross-validated, unlike the per-class metrics",
+        "in the Confusion Matrix panel, which are measured on the",
+        "same specimens the model was fitted to."
+      )
+    )
+  )
+}
+
+
+#' Render mixOmics' own component-count recommendation
+#'
+#' @param mix_choice Data frame from run_plsda_perf(), or NULL
+#' @return Shiny tags, or NULL
+render_mixomics_choice <- function(mix_choice) {
+  if (is.null(mix_choice)) return(NULL)
+
+  rule_cols <- setdiff(names(mix_choice), "Measure")
+  values <- unlist(mix_choice[, rule_cols, drop = FALSE])
+  agreed <- length(unique(values[!is.na(values)])) == 1
+
+  tbl <- DT$datatable(
+    mix_choice,
+    options = list(
+      pageLength = 10, dom = "t", scrollX = TRUE,
+      order = list()
+    ),
+    rownames = FALSE,
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
+  )
+
+  shiny$tagList(
+    shiny$tags$h6(
+      class = "mt-3 mb-2", "Suggested Component Count (mixOmics)"
+    ),
+    tbl,
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "mixOmics' own recommendation, from one-sided t-tests",
+        "comparing each component against the previous one —",
+        "the count beyond which adding components stops",
+        "significantly improving error. Shown per error measure",
+        "and per distance rule.",
+        if (agreed) {
+          paste(
+            "All measures and rules agree here, which is a good",
+            "sign that the count is well determined."
+          )
+        } else {
+          paste(
+            "The entries disagree, so the count is not sharply",
+            "determined; prefer the BER row when group sizes are",
+            "unbalanced, and favour the smaller count when in",
+            "doubt."
+          )
+        },
+        "This is a second opinion on the dashed line in the plot",
+        "above, which applies a simpler parsimony rule. Neither",
+        "is applied automatically."
+      )
+    )
+  )
+}
+
+
+#' Render the three-distance-rule comparison
+#'
+#' perf() computes every prediction rule anyway, so this costs no
+#' extra computation. It is purely informational: the reported
+#' accuracy and confusion matrix stay on max.dist regardless of
+#' what this table shows.
+#'
+#' @param dist_comparison Data frame from run_plsda_perf(), or NULL
+#' @param dist_agreement List from run_plsda_perf(), or NULL
+#' @return Shiny tags, or NULL when unavailable
+render_dist_comparison <- function(dist_comparison,
+                                   dist_agreement) {
+  if (is.null(dist_comparison)) return(NULL)
+
+  rule_labels <- c(
+    max.dist = "Maximum distance",
+    centroids.dist = "Centroid distance",
+    mahalanobis.dist = "Mahalanobis distance"
+  )
+  rules <- intersect(names(rule_labels), names(dist_comparison))
+
+  display <- dist_comparison
+  names(display)[match(rules, names(display))] <-
+    rule_labels[rules]
+
+  dist_table <- DT$datatable(
+    display,
+    options = list(
+      pageLength = 20, dom = "t", scrollX = TRUE,
+      order = list()
+    ),
+    rownames = FALSE,
+    class = paste(
+      "table table-sm table-striped",
+      "table-hover compact"
+    )
+  ) |>
+    DT$formatRound(rule_labels[rules], digits = 4)
+
+  spread <- if (!is.null(dist_agreement)) {
+    dist_agreement$max_spread_pp
+  } else {
+    NA_real_
+  }
+
+  interpretation <- if (is.na(spread)) {
+    paste(
+      "The rules could not be compared for this fit."
+    )
+  } else if (spread < 2) {
+    paste0(
+      "All rules agree to within ", spread, " pp. The choice of ",
+      "distance is not critical for this dataset — the groups ",
+      "separate the same way however you measure it."
+    )
+  } else if (spread <= 5) {
+    paste0(
+      "The rules differ by up to ", spread, " pp. Centroid rules ",
+      "can do better when groups are roughly spherical and ",
+      "similarly sized; Mahalanobis additionally accounts for ",
+      "correlated or elongated spread. A difference this size is ",
+      "worth noting but rarely changes a conclusion."
+    )
+  } else {
+    paste0(
+      "The rules disagree substantially (up to ", spread, " pp). ",
+      "This usually means the groups are not cleanly separated, ",
+      "so the headline accuracy is one of several defensible ",
+      "numbers rather than a single fact about the data. State ",
+      "which rule you used when reporting, and treat the ",
+      "differences between rules as part of the uncertainty."
+    )
+  }
+
+  shiny$tagList(
+    shiny$tags$h6(
+      class = "mt-3 mb-2", "Prediction Distance Comparison"
+    ),
+    dist_table,
+    shiny$tags$small(
+      class = "text-muted mt-2 d-block",
+      paste(
+        "How a sample is assigned to a group from its component",
+        "scores. Cross-validated error under each rule, computed",
+        "from the same run as the table above at no extra cost.",
+        interpretation,
+        "The accuracy and confusion matrix reported elsewhere in",
+        "this module always use maximum distance, which is the",
+        "rule mixOmics applies in predict(); this table does not",
+        "change them."
+      )
+    )
   )
 }
 
