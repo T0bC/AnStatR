@@ -14,7 +14,10 @@ box::use(
   app/logic/pca/kmo[calculate_kmo, kmo_badge_class, kmo_interpretation],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/optimal_components[calculate_optimal_components],
-  app/logic/pca/pca[validate_inputs, run_pca],
+  app/logic/pca/pca[
+    validate_inputs, run_pca, extract_variance_explained
+  ],
+  app/logic/pca/tune_plot[create_tune_spca_plot],
   app/logic/pca/pca_export[create_pca_excel, create_pca_bundle],
   app/logic/preprocessing/skewness_transform[
     detect_skewness, transform_skewed
@@ -562,7 +565,9 @@ server <- function(id, input_data, data_version,
         )
       } else if (!is.null(opt_res)) {
         optimal_components$render_optimal_components(
-          opt_res$result, ns
+          opt_res$result, ns,
+          variance_info = extract_variance_explained(pca_result),
+          analysis_type = input$analysis_type %||% "pca"
         )
       } else {
         NULL
@@ -800,6 +805,27 @@ server <- function(id, input_data, data_version,
         )
       }
 
+      # Evidence behind the tuned keepX. Only meaningful once the
+      # user has actually run the tuning, so absent otherwise.
+      tune_details <- analysis_settings_state$tune_details()
+      tune_panel <- if (
+        !is.null(tune_details) &&
+        !is.null(tune_details$cor_comp) &&
+        identical(input$analysis_type, "spca")
+      ) {
+        bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon("magic", class = "me-1"),
+            "keepX Tuning Evidence"
+          ),
+          value = "tune_panel",
+          ggiraph$girafeOutput(
+            ns("tune_spca_plot"), height = "400px"
+          ),
+          render_tune_settings_note(tune_details$settings)
+        )
+      }
+
       shiny$tagList(
         preprocess_banner,
         skew_warning,
@@ -825,9 +851,23 @@ server <- function(id, input_data, data_version,
           biplot3d_panel,
           var_contrib_jitter_panel,
           ind_contrib_panel,
-          eigencor_panel
+          eigencor_panel,
+          tune_panel
         )
       )
+    })
+
+    # keepX stability curve from tune.spca()'s correlation output
+    output$tune_spca_plot <- ggiraph$renderGirafe({
+      details <- analysis_settings_state$tune_details()
+      shiny$req(details, details$cor_comp)
+      plot_res <- create_tune_spca_plot(
+        details$cor_comp,
+        grid = details$settings$grid,
+        chosen = details$keep_x
+      )
+      shiny$req(isTRUE(plot_res$success))
+      plot_res$result
     })
 
     # Render optimal components scree plot
@@ -894,6 +934,30 @@ server <- function(id, input_data, data_version,
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+#' Describe the CV settings a keepX tuning run actually used
+#'
+#' Turns the recorded settings into the sentence a user can put in
+#' a methods section, so the chosen keepX is reportable rather than
+#' just a number that appeared in a box.
+#'
+#' @param settings List with $folds, $repeats, $grid, or NULL
+#' @return Shiny tag, or NULL
+render_tune_settings_note <- function(settings) {
+  if (is.null(settings)) return(NULL)
+  shiny$tags$small(
+    class = "text-muted d-block mt-2",
+    paste0(
+      "keepX selected by ", settings$repeats, " repeat(s) of ",
+      settings$folds, "-fold cross-validation over candidates [",
+      paste(settings$grid, collapse = ", "), "], ",
+      "maximising the correlation between the cross-validated ",
+      "and full-data component (mixOmics::tune.spca). ",
+      "Where the curve is already flat, a smaller keepX gives a ",
+      "shorter variable list at no real cost to stability."
+    )
+  )
+}
 
 #' Compute display_ncp: how many dimensions to show in UI
 #'
