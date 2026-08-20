@@ -234,9 +234,29 @@ Report enough that a reader can judge the result without re-running it. The mini
 
 A defensible one-paragraph summary follows this shape (placeholders in `CAPITALS` — substitute your own values):
 
-> We performed METHOD (mixOmics R package) on N observations across P measurement variables, after SCALING_METHOD. NCOMP components were retained based on CRITERION, together explaining CUM_VARIANCE% of total variance. [For sPCA: Sparse variable selection (keepX = KEEPX_VALUES per component, chosen via cross-validation) identified VARIABLE_LIST as the primary drivers of DIM_NAME.] [For IPCA: Components were extracted via ICA_ALGORITHM ICA and are not ranked by variance explained.]
+> We performed METHOD (mixOmics R package) on N observations across P measurement variables, after SCALING_METHOD. NCOMP components were retained based on CRITERION, together explaining CUM_VARIANCE% of total variance. [For sPCA: Sparse variable selection (keepX = KEEPX_VALUES per component, tuned by REPEATS repeats of FOLDS-fold cross-validation over the grid GRID using `mixOmics::tune.spca()`) identified VARIABLE_LIST as the primary drivers of DIM_NAME.] [For IPCA: Components were extracted via ICA_ALGORITHM ICA and are not ranked by variance explained.]
 
 Every placeholder above corresponds to a number the app reports — none of them should be estimated or omitted.
+
+</details>
+
+<details>
+<summary>How do I justify my keepX in a paper?</summary>
+
+"We kept 10 variables per component" invites the obvious question: *why ten?* If the answer is "it seemed reasonable," a reviewer is right to be sceptical — the variable list is the main result of an sPCA, and an arbitrary sparsity level makes that list arbitrary too.
+
+Run **Optimise variable selection** and report the tuning, not just the outcome. Three things make the choice defensible:
+
+1. **The value and how it was chosen** — the keepX per component, plus the method: cross-validation maximising the correlation between the cross-validated and full-data component (`mixOmics::tune.spca()`).
+2. **The cross-validation settings** — folds, repeats and the candidate grid. These are stated verbatim beneath the **keepX Tuning Evidence** plot, in a form you can paste into a methods section. The grid matters especially: only values in it could have been chosen, so a reader needs to know what was on the table.
+3. **The stability actually achieved** — the correlation value at the chosen keepX, from the tuning plot. A selection tuned to a correlation of 0.95 is a much stronger claim than one tuned to 0.55, and reporting only "keepX was tuned" hides that difference.
+
+Two honest caveats worth including when they apply:
+
+- If the stability curve **plateaus** well before the selected value, say so and consider reporting the smaller keepX instead — a shorter variable list at equivalent stability is a better result, and choosing it deliberately is more defensible than accepting the automatic pick without comment.
+- If the correlation is **low or erratic** across the whole grid, the variable selection is not reproducible on your sample size. Report the list as provisional rather than as a finding. This is a limitation of the data, not a failure of the analysis, and stating it plainly is far safer than having a reviewer infer it.
+
+Do not tune keepX, dislike the resulting variable list, and then hand-pick a different value without saying so. If you override the tuned value for a practical reason — needing a shorter list for a follow-up assay, say — state the tuned value alongside the one you used and give the reason.
 
 </details>
 
