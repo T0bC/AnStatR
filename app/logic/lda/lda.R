@@ -499,8 +499,11 @@ run_plsda_perf <- function(plsda_result, folds = 5,
         " repeats={repeats}"
       )
 
+      # dist = "all" is mixOmics' default, but state it explicitly:
+      # we rely on all three rules being present to build the
+      # distance comparison below.
       perf_res <- mixOmics$perf(
-        model, validation = "Mfold", folds = folds,
+        model, dist = "all", validation = "Mfold", folds = folds,
         nrepeat = repeats, progressBar = FALSE
       )
 
@@ -508,6 +511,11 @@ run_plsda_perf <- function(plsda_result, folds = 5,
       ber <- perf_res$error.rate$BER
       n_comp <- nrow(overall)
 
+      # The reported error table stays on max.dist — the rule
+      # mixOmics uses for predict()/confusion elsewhere in this
+      # module, so the headline accuracy and this table agree.
+      # Shape is depended on by create_perf_error_plot(); do not
+      # add or rename columns here.
       errors_df <- data.frame(
         Component = paste0("Comp", seq_len(n_comp)),
         `Overall Error` = round(overall[, "max.dist"], 4),
@@ -521,7 +529,30 @@ run_plsda_perf <- function(plsda_result, folds = 5,
       # tracks $features$stable when the model used keepX).
       stability_df <- build_stability_table(perf_res, n_comp)
 
-      list(errors = errors_df, stability = stability_df)
+      # All three prediction distances, already computed by perf()
+      # above at no extra cost. Purely informational: it lets the
+      # user see whether the choice of rule matters for their data.
+      dist_comparison <- build_dist_comparison(overall, ber, n_comp)
+      dist_agreement <- build_dist_agreement(dist_comparison)
+
+      # Per-class CV error, also already computed. An acceptable
+      # overall BER can hide one class failing completely, which
+      # the aggregate figures cannot show.
+      class_errors <- build_class_error_table(perf_res)
+
+      # mixOmics' own component-count recommendation, derived from
+      # one-sided t-tests between successive components. Reported
+      # alongside our parsimony heuristic rather than replacing it.
+      mix_choice <- build_mixomics_choice(perf_res)
+
+      list(
+        errors = errors_df,
+        stability = stability_df,
+        dist_comparison = dist_comparison,
+        dist_agreement = dist_agreement,
+        class_errors = class_errors,
+        mixomics_choice = mix_choice
+      )
     },
     operation_name = "PLS-DA Component Diagnostics",
     error_parser = lda_error_parser
@@ -545,12 +576,20 @@ run_plsda_perf <- function(plsda_result, folds = 5,
 #'   to test (default a modest grid capped by column count)
 #' @param folds Integer, number of CV folds
 #' @param repeats Integer, number of CV repeats
-#' @return List with $success, $result (named integer vector,
-#'   one keepX per component) or $error
+#' @param dist Character, prediction distance used to score the
+#'   grid: "max.dist", "centroids.dist" or "mahalanobis.dist".
+#'   Defaults to max.dist, the rule this module reports elsewhere.
+#' @param measure Character, "BER" (default, robust to unbalanced
+#'   group sizes) or "overall"
+#' @return List with $success, $result (list with $keep_x — named
+#'   integer vector, one keepX per component — and $settings, the
+#'   CV settings actually used, for provenance) or $error
 #' @export
 run_plsda_tune_keepx <- function(data, columns, grouping_col,
                                  ncomp, test_keep_x = NULL,
-                                 folds = 5, repeats = 10) {
+                                 folds = 5, repeats = 10,
+                                 dist = "max.dist",
+                                 measure = "BER") {
   error_handling$safe_execute(
     {
       grouping <- droplevels(as.factor(data[[grouping_col]]))
@@ -564,14 +603,19 @@ run_plsda_tune_keepx <- function(data, columns, grouping_col,
       rhino$log$info(
         "sPLS-DA: tuning keepX — ncomp={ncomp},",
         " candidates=[{paste(candidates, collapse=',')}],",
-        " folds={folds}, repeats={repeats}"
+        " folds={folds}, repeats={repeats},",
+        " dist={dist}, measure={measure}"
       )
 
+      # dist/measure were previously left to mixOmics' defaults
+      # (max.dist/BER). Passing them explicitly keeps the same
+      # behaviour while making the choice visible and testable.
       tune_res <- mixOmics$tune.splsda(
         X = x_mat, Y = grouping, ncomp = ncomp,
         test.keepX = candidates,
         validation = "Mfold", folds = folds,
-        nrepeat = repeats, progressBar = FALSE
+        nrepeat = repeats, dist = dist, measure = measure,
+        progressBar = FALSE
       )
 
       keep_x <- as.integer(tune_res$choice.keepX[seq_len(ncomp)])
@@ -582,7 +626,13 @@ run_plsda_tune_keepx <- function(data, columns, grouping_col,
         "keepX=[{paste(keep_x, collapse=',')}]"
       )
 
-      keep_x
+      list(
+        keep_x = keep_x,
+        settings = list(
+          folds = folds, repeats = repeats,
+          grid = candidates, dist = dist, measure = measure
+        )
+      )
     },
     operation_name = "sPLS-DA keepX Tuning",
     error_parser = lda_error_parser
@@ -717,6 +767,170 @@ run_predict <- function(lda_result, test_data, columns,
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+# The three prediction rules mixOmics can report, in the order we
+# want them shown. See ?predict.mixo_plsda for the definitions.
+PLSDA_DIST_RULES <- c(
+  "max.dist", "centroids.dist", "mahalanobis.dist"
+)
+
+
+#' Build the per-component error table across all distance rules
+#'
+#' perf() already computes every rule it was asked for, so this is
+#' pure reshaping — no extra cross-validation is run.
+#'
+#' @param overall Matrix of overall error rates (components x rules)
+#' @param ber Matrix of balanced error rates (components x rules)
+#' @param n_comp Integer, number of components
+#' @return Data frame with Component, Measure and one column per
+#'   available rule, or NULL when fewer than two rules are present
+#'   (with only one rule there is nothing to compare)
+build_dist_comparison <- function(overall, ber, n_comp) {
+  rules <- intersect(PLSDA_DIST_RULES, colnames(overall))
+  # mahalanobis.dist is dropped by perf() when the component
+  # covariance is singular, so never assume all three are here.
+  if (length(rules) < 2) return(NULL)
+
+  build_block <- function(mat, measure_label) {
+    block <- data.frame(
+      Component = paste0("Comp", seq_len(n_comp)),
+      Measure = measure_label,
+      stringsAsFactors = FALSE
+    )
+    for (rule in rules) {
+      block[[rule]] <- round(mat[, rule], 4)
+    }
+    block
+  }
+
+  df <- rbind(
+    build_block(ber, "BER"),
+    build_block(overall, "Overall Error")
+  )
+  rownames(df) <- NULL
+  df
+}
+
+
+#' Summarise how much the distance rules disagree
+#'
+#' Drives the interpretive note in the UI: the spread is what tells
+#' the user whether the choice of rule is consequential for their
+#' data or an irrelevant detail.
+#'
+#' @param dist_comparison Data frame from build_dist_comparison(),
+#'   or NULL
+#' @return List with $max_spread_pp (largest between-rule BER gap on
+#'   any component, in percentage points), $best_rule (rule with the
+#'   lowest BER at its best component) and $rules, or NULL
+build_dist_agreement <- function(dist_comparison) {
+  if (is.null(dist_comparison)) return(NULL)
+
+  ber_rows <- dist_comparison[
+    dist_comparison$Measure == "BER", , drop = FALSE
+  ]
+  rules <- intersect(PLSDA_DIST_RULES, names(ber_rows))
+  if (nrow(ber_rows) == 0 || length(rules) < 2) return(NULL)
+
+  ber_mat <- as.matrix(ber_rows[, rules, drop = FALSE])
+  if (all(is.na(ber_mat))) return(NULL)
+
+  # Widest disagreement on any single component, in pp — the
+  # worst case is what the user needs to know about.
+  spreads <- apply(ber_mat, 1, function(row) {
+    if (all(is.na(row))) return(NA_real_)
+    max(row, na.rm = TRUE) - min(row, na.rm = TRUE)
+  })
+  max_spread_pp <- round(max(spreads, na.rm = TRUE) * 100, 1)
+
+  best_per_rule <- apply(ber_mat, 2, function(col) {
+    if (all(is.na(col))) NA_real_ else min(col, na.rm = TRUE)
+  })
+  best_rule <- names(best_per_rule)[which.min(best_per_rule)]
+
+  list(
+    max_spread_pp = max_spread_pp,
+    best_rule = best_rule,
+    rules = rules
+  )
+}
+
+
+#' Build the per-class cross-validated error table
+#'
+#' perf() reports error per class per distance rule at the final
+#' component count. An overall BER in an acceptable range can
+#' conceal one class being classified at near-chance, so this is
+#' the check that says whether the model works for every group or
+#' only for the easy ones.
+#'
+#' @param perf_res The object returned by mixOmics::perf()
+#' @return Data frame with Class and one column per rule, or NULL
+build_class_error_table <- function(perf_res) {
+  class_err <- perf_res$error.rate.class
+  if (is.null(class_err) || length(class_err) == 0) return(NULL)
+
+  rules <- intersect(PLSDA_DIST_RULES, names(class_err))
+  if (length(rules) == 0) return(NULL)
+
+  # perf() gives a classes-x-components matrix per rule (unlike
+  # perf.assess(), which returns a single named vector). Report the
+  # last component, matching the fitted model's component count.
+  extract_final <- function(mat) {
+    if (is.matrix(mat)) {
+      if (ncol(mat) == 0) return(NULL)
+      vals <- mat[, ncol(mat)]
+      names(vals) <- rownames(mat)
+      vals
+    } else {
+      mat
+    }
+  }
+
+  first <- extract_final(class_err[[rules[1]]])
+  classes <- names(first)
+  if (is.null(classes) || length(classes) == 0) return(NULL)
+
+  df <- data.frame(Class = classes, stringsAsFactors = FALSE)
+  for (rule in rules) {
+    vals <- extract_final(class_err[[rule]])
+    if (is.null(vals)) next
+    # Align by name — never assume the rules share an ordering.
+    df[[rule]] <- round(as.numeric(vals[classes]), 4)
+  }
+  if (ncol(df) < 2) return(NULL)
+  rownames(df) <- NULL
+  df
+}
+
+
+#' Extract mixOmics' own component-count recommendation
+#'
+#' perf() runs one-sided t-tests between successive components and
+#' reports the count at which adding another stops helping, per
+#' distance rule and per measure. This is a second opinion on our
+#' own suggest_ncomp() parsimony rule, not a replacement.
+#'
+#' @param perf_res The object returned by mixOmics::perf()
+#' @return Data frame with Measure and one column per rule, or NULL
+build_mixomics_choice <- function(perf_res) {
+  choice <- perf_res$choice.ncomp
+  if (is.null(choice) || !is.matrix(choice)) return(NULL)
+
+  rules <- intersect(PLSDA_DIST_RULES, colnames(choice))
+  if (length(rules) == 0) return(NULL)
+
+  df <- data.frame(
+    Measure = rownames(choice), stringsAsFactors = FALSE
+  )
+  for (rule in rules) {
+    df[[rule]] <- as.integer(choice[, rule])
+  }
+  rownames(df) <- NULL
+  df
+}
+
 
 build_stability_table <- function(perf_res, n_comp) {
   stable <- perf_res$features$stable
