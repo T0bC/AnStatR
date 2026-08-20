@@ -17,6 +17,7 @@ box::use(
     validate_file_extension
   ],
   app/logic/prediction/bundle_io[load_bundle],
+  app/logic/prediction/diagnostics[compute_diagnostics],
   app/logic/prediction/predict[
     preprocess_unknown, predict_unknown
   ],
@@ -29,7 +30,8 @@ box::use(
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
   app/view/prediction/results_display[
-    render_prediction_results, build_results_table
+    render_prediction_results, build_results_table,
+    render_confusion_summary
   ],
   app/view/prediction/plotting_controls,
   app/view/prediction/upload,
@@ -68,6 +70,7 @@ server <- function(id) {
     unknown_data <- shiny$reactiveVal(NULL)
     validation_result <- shiny$reactiveVal(NULL)
     prediction_result <- shiny$reactiveVal(NULL)
+    diagnostics_result <- shiny$reactiveVal(NULL)
     last_plot <- shiny$reactiveVal(NULL)
 
     # Delegate upload sidebar
@@ -91,6 +94,7 @@ server <- function(id) {
       bundle(NULL)
       validation_result(NULL)
       prediction_result(NULL)
+      diagnostics_result(NULL)
       last_plot(NULL)
 
       file_info <- input$bundle_file
@@ -129,6 +133,7 @@ server <- function(id) {
       unknown_data(NULL)
       validation_result(NULL)
       prediction_result(NULL)
+      diagnostics_result(NULL)
       last_plot(NULL)
 
       file_info <- input$unknown_file
@@ -191,6 +196,7 @@ server <- function(id) {
     shiny$observeEvent(input$predict_button, {
       last_error(NULL)
       prediction_result(NULL)
+      diagnostics_result(NULL)
       last_plot(NULL)
 
       bdl <- bundle()
@@ -251,6 +257,21 @@ server <- function(id) {
         "Prediction: complete — ",
         "{pred_res$result$n_unknowns} predicted"
       )
+
+      # Diagnostics: a failure here (e.g. singular training covariance)
+      # must never hide a valid prediction, so it is deliberately NOT
+      # treated as last_error()/return() the way pred_res is above --
+      # do not "fix" this into matching that pattern.
+      diag_res <- compute_diagnostics(bdl, preprocessed, pred_res$result)
+      if (isTRUE(diag_res$success)) {
+        diagnostics_result(diag_res$result)
+      } else {
+        diagnostics_result(NULL)
+        rhino$log$warn(
+          "Prediction: diagnostics unavailable -- ",
+          "{diag_res$error$message %||% 'unknown error'}"
+        )
+      }
     })
 
     # Main content rendering
@@ -304,6 +325,35 @@ server <- function(id) {
           pred, bdl, unknown, ns
         )
       )
+
+      # Diagnostics panel (T2/Q, Mahalanobis/typicality, distance-ratio --
+      # per-unknown-sample quantitative confidence metrics)
+      diag <- diagnostics_result()
+      diagnostics_panel <- NULL
+      if (!is.null(diag)) {
+        diagnostics_panel <- bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon("rulers", class = "me-1"),
+            "Prediction Diagnostics"
+          ),
+          value = "diagnostics_panel",
+          DT$DTOutput(ns("diagnostics_table"))
+        )
+      }
+
+      # Training Model Quality panel (property of the model, not of
+      # individual unknowns -- shown alongside results after a run)
+      quality_panel <- NULL
+      if (!is.null(bdl$confusion)) {
+        quality_panel <- bslib$accordion_panel(
+          title = shiny$tags$span(
+            bsicons$bs_icon("clipboard-data", class = "me-1"),
+            "Training Model Quality"
+          ),
+          value = "quality_panel",
+          render_confusion_summary(bdl$confusion, bdl$confusion_source, ns)
+        )
+      }
 
       # Plot panel
       plot_panel <- NULL
@@ -362,6 +412,8 @@ server <- function(id) {
           },
           multiple = TRUE,
           results_panel,
+          diagnostics_panel,
+          quality_panel,
           plot_panel
         )
       )
@@ -392,6 +444,99 @@ server <- function(id) {
           scrollX = TRUE,
           dom = "frtip"
         ),
+        rownames = FALSE,
+        class = "compact stripe"
+      )
+    })
+
+    # Diagnostics table rendering
+    output$diagnostics_table <- DT$renderDT({
+      diag <- diagnostics_result()
+      shiny$req(diag)
+      unknown <- unknown_data()
+      shiny$req(unknown)
+
+      meta_col <- input$label_col
+      if (is.null(meta_col) || meta_col == "") {
+        meta_col <- NULL
+      }
+      labels <- if (
+        !is.null(meta_col) && meta_col %in% names(unknown)
+      ) {
+        as.character(unknown[[meta_col]])
+      } else {
+        paste0("Unknown_", seq_len(nrow(unknown)))
+      }
+
+      numeric_cols_diag <- names(diag)[
+        vapply(diag, is.numeric, logical(1))
+      ]
+      diag[numeric_cols_diag] <- lapply(
+        diag[numeric_cols_diag], round, 4
+      )
+      diag <- cbind(Sample = labels, diag)
+
+      # Highlight rows a reader should look at twice: T2/Q flagged
+      # (PCA family), a low typicality probability (classifiers), or a
+      # distance ratio close to 1 -- i.e. an ambiguous cluster assignment.
+      flag_row <- rep(FALSE, nrow(diag))
+      if ("T2_flag" %in% names(diag)) flag_row <- flag_row | diag$T2_flag
+      if ("Q_flag" %in% names(diag)) flag_row <- flag_row | diag$Q_flag
+      if ("Typicality_p" %in% names(diag)) {
+        flag_row <- flag_row | diag$Typicality_p < 0.05
+      }
+      if ("Distance_ratio" %in% names(diag)) {
+        flag_row <- flag_row | diag$Distance_ratio > 0.8
+      }
+      flag_row[is.na(flag_row)] <- FALSE
+
+      # formatStyle needs the flag as an actual (hidden) column to key
+      # per-row styling off of -- attach and hide it via columnDefs.
+      diag$.flag <- flag_row
+      flag_col_idx <- ncol(diag) - 1
+
+      dt <- DT$datatable(
+        diag,
+        options = list(
+          pageLength = 25,
+          scrollX = TRUE,
+          dom = "frtip",
+          columnDefs = list(list(targets = flag_col_idx, visible = FALSE))
+        ),
+        rownames = FALSE,
+        class = "compact stripe"
+      )
+      DT$formatStyle(
+        dt, ".flag",
+        target = "row",
+        backgroundColor = DT$styleEqual(
+          c(TRUE, FALSE), c("#fdecea", "transparent")
+        )
+      )
+    })
+
+    # Training confusion matrix rendering
+    output$confusion_matrix_table <- DT$renderDT({
+      bdl <- bundle()
+      shiny$req(bdl$confusion)
+      cm_df <- as.data.frame.matrix(bdl$confusion$matrix)
+      cm_df <- cbind(`True \\ Predicted` = rownames(cm_df), cm_df)
+      rownames(cm_df) <- NULL
+      DT$datatable(
+        cm_df,
+        options = list(dom = "t"),
+        rownames = FALSE,
+        class = "compact stripe"
+      )
+    })
+
+    # Training per-class metrics rendering
+    output$confusion_perclass_table <- DT$renderDT({
+      bdl <- bundle()
+      shiny$req(bdl$confusion)
+      DT$datatable(
+        bdl$confusion$per_class,
+        options = list(dom = "t"),
         rownames = FALSE,
         class = "compact stripe"
       )
@@ -567,6 +712,43 @@ server <- function(id) {
             cols = seq_len(ncol(df)),
             widths = "auto"
           )
+
+          # Diagnostics sheet -- row order matches df's by construction:
+          # both are derived from the same prediction_result$scores/
+          # $predicted_class row order, and neither build_results_table()
+          # nor compute_diagnostics() re-sorts.
+          diag <- diagnostics_result()
+          if (!is.null(diag)) {
+            numeric_cols_diag <- names(diag)[
+              vapply(diag, is.numeric, logical(1))
+            ]
+            diag[numeric_cols_diag] <- lapply(
+              diag[numeric_cols_diag], round, 4
+            )
+            diag_out <- cbind(Sample = df$Sample, diag)
+            openxlsx$addWorksheet(wb, "Diagnostics")
+            openxlsx$writeData(wb, "Diagnostics", diag_out)
+            openxlsx$setColWidths(
+              wb, "Diagnostics",
+              cols = seq_len(ncol(diag_out)),
+              widths = "auto"
+            )
+          }
+
+          bdl <- bundle()
+          if (!is.null(bdl$confusion)) {
+            cm_df <- as.data.frame.matrix(bdl$confusion$matrix)
+            cm_df <- cbind(
+              `True_Predicted` = rownames(cm_df), cm_df
+            )
+            openxlsx$addWorksheet(wb, "Training Confusion Matrix")
+            openxlsx$writeData(wb, "Training Confusion Matrix", cm_df)
+            openxlsx$addWorksheet(wb, "Training Per-Class Metrics")
+            openxlsx$writeData(
+              wb, "Training Per-Class Metrics", bdl$confusion$per_class
+            )
+          }
+
           openxlsx$saveWorkbook(
             wb, file, overwrite = TRUE
           )
