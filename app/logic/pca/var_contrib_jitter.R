@@ -303,6 +303,40 @@ create_var_contrib_jitter_plot <- function(pca_result,
 }
 
 
+#' Shared ggiraph options for the variable contribution jitter plot
+#'
+#' Centralized so the PCA and LDA/QDA/MDA views render an identical
+#' interactive style. Hover CSS is split per element type via
+#' \code{girafe_css()}: points get a black outline highlight, but
+#' the repelled variable-name labels are excluded (only their color
+#' is nudged) so a hovered label's own black stroke doesn't get
+#' applied to its text and render it illegible.
+#'
+#' @return List of ggiraph options, for \code{girafe(options = ...)}
+#' @export
+var_contrib_jitter_girafe_opts <- function() {
+  list(
+    ggiraph$opts_sizing(rescale = TRUE, width = 1),
+    ggiraph$opts_hover(
+      css = ggiraph$girafe_css(
+        css = "fill-opacity:1;stroke:black;stroke-width:2px;",
+        text = "fill-opacity:1;stroke:none;"
+      )
+    ),
+    ggiraph$opts_tooltip(
+      css = paste0(
+        "background-color:white;padding:8px;",
+        "border-radius:4px;",
+        "border:1px solid #ccc;",
+        "font-family:sans-serif;"
+      ),
+      use_fill = FALSE
+    ),
+    ggiraph$opts_selection(type = "none")
+  )
+}
+
+
 #' Error parser for variable contribution jitter plot errors
 #'
 #' @param error_msg Character, the original error message
