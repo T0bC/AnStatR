@@ -1,6 +1,7 @@
 box::use(
   openxlsx,
   rhino,
+  stats,
 )
 
 box::use(
@@ -148,7 +149,8 @@ create_pca_bundle <- function(pca_result, raw_data,
     settings = settings,
     data_source = "raw",
     app_version = app_version,
-    created = Sys.time()
+    created = Sys.time(),
+    t2_q_ref = build_t2_q_reference(pca_result, used_data, numeric_cols)
   )
 
   rhino$log$info(
@@ -157,6 +159,49 @@ create_pca_bundle <- function(pca_result, raw_data,
   )
 
   bundle
+}
+
+#' Build Hotelling's T2 / Q-residual reference statistics for a PCA bundle
+#'
+#' Computed once at bundle-creation time since T2/Q thresholds are a
+#' property of the training fit, not of any individual prediction run.
+#' Q's threshold uses an empirical quantile (95th percentile of training
+#' Q-residuals) rather than the parametric Jackson-Mudholkar chi-square
+#' approximation, since the latter needs eigenvalues of the full (not just
+#' retained) covariance matrix, which this codebase's PCA result objects
+#' do not retain.
+#'
+#' @param pca_result PCA result list from run_pca() (the $result field)
+#' @param used_data Data frame, data actually passed to the mixOmics fit
+#' @param numeric_cols Character vector of measurement column names
+#' @return List with $score_cov_inv, $n_train, $k, $loadings, $q_threshold,
+#'   or NULL if the training score covariance is singular
+build_t2_q_reference <- function(pca_result, used_data, numeric_cols) {
+  train_scores <- as.matrix(pca_result$scores)
+  loadings <- as.matrix(pca_result$loadings)
+  k <- ncol(train_scores)
+  n_train <- nrow(train_scores)
+
+  score_cov_inv <- tryCatch(
+    solve(stats$cov(train_scores)), error = function(e) NULL
+  )
+  if (is.null(score_cov_inv)) return(NULL)
+
+  train_x <- scale(
+    as.matrix(used_data[, numeric_cols, drop = FALSE]),
+    center = pca_result$center, scale = pca_result$scale
+  )
+  recon <- train_scores %*% t(loadings)
+  train_resid <- train_x[, rownames(loadings), drop = FALSE] - recon
+  train_q <- rowSums(train_resid^2)
+
+  list(
+    score_cov_inv = score_cov_inv,
+    n_train = n_train,
+    k = k,
+    loadings = loadings,
+    q_threshold = stats$quantile(train_q, 0.95, names = FALSE)
+  )
 }
 
 # =============================================================================
