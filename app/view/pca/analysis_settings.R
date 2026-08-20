@@ -7,6 +7,10 @@ box::use(
 
 box::use(
   app/view/components/sidebar_tabs,
+  app/view/shared/tuning_controls[
+    check_cv_settings, estimate_cv_runtime, parse_keepx_grid,
+    render_cv_advice, render_runtime_estimate
+  ],
   app/logic/pca/pca[run_pca_tune_keepx],
 )
 
@@ -109,18 +113,94 @@ tab_ui <- function(ns) {
         ),
         class = "btn-outline-secondary btn-sm w-100 mt-1"
       ),
+      shiny$uiOutput(ns("spca_tune_runtime")),
       shiny$tags$small(
         class = "text-muted d-block mt-1",
         paste(
           "Strongly recommended before reporting a",
           "variable list: cross-validation decides how",
           "many variables each component should keep,",
-          "instead of you guessing. Takes seconds to a",
-          "few minutes depending on data size. The",
-          "suggested values fill the boxes above; you",
-          "can still edit them, then press Compute PCA",
-          "to apply them. Until this has run, results",
-          "are marked \"keepX not tuned\"."
+          "instead of you guessing. The suggested values",
+          "fill the boxes above; you can still edit them,",
+          "then press Compute PCA to apply them. Until",
+          "this has run, results are marked",
+          "\"keepX not tuned\"."
+        )
+      ),
+      # Collapsed by default: sensible defaults are already in
+      # place, so the sidebar stays quiet unless the user wants
+      # to change how the tuning is validated.
+      bslib$accordion(
+        open = FALSE,
+        class = "mt-2",
+        bslib$accordion_panel(
+          title = "Tuning settings",
+          value = "spca_tuning_settings",
+          icon = bsicons$bs_icon("sliders"),
+          shiny$numericInput(
+            inputId = ns("spca_tune_folds"),
+            label = shiny$tags$span(
+              "CV folds ",
+              bslib$tooltip(
+                bsicons$bs_icon(
+                  "info-circle", class = "text-muted"
+                ),
+                paste(
+                  "How many parts the data is split into",
+                  "for cross-validation. Each part takes a",
+                  "turn as the test set. More folds means",
+                  "more training data per fit and a slower",
+                  "run. mixOmics requires at least three",
+                  "samples per test set, so with few",
+                  "samples you may need to lower this."
+                )
+              )
+            ),
+            value = 5, min = 2, max = 20, step = 1
+          ),
+          shiny$numericInput(
+            inputId = ns("spca_tune_repeats"),
+            label = shiny$tags$span(
+              "CV repeats ",
+              bslib$tooltip(
+                bsicons$bs_icon(
+                  "info-circle", class = "text-muted"
+                ),
+                paste(
+                  "How many times the whole fold split is",
+                  "redone with a different random",
+                  "partition. Repeats average out the luck",
+                  "of one particular split. At least 3 are",
+                  "needed for a stable keepX choice;",
+                  "runtime grows in direct proportion."
+                )
+              )
+            ),
+            value = 3, min = 1, max = 50, step = 1
+          ),
+          shiny$textInput(
+            inputId = ns("spca_tune_grid"),
+            label = shiny$tags$span(
+              "keepX values to test ",
+              bslib$tooltip(
+                bsicons$bs_icon(
+                  "info-circle", class = "text-muted"
+                ),
+                paste(
+                  "The candidate variable counts",
+                  "cross-validation will choose between,",
+                  "comma-separated. Only these values can",
+                  "be selected, so include the range you",
+                  "consider plausible. Values above the",
+                  "number of available variables are",
+                  "capped. Leave blank for the default",
+                  "grid."
+                )
+              )
+            ),
+            value = "5, 10, 15, 20, 30",
+            placeholder = "5, 10, 15, 20, 30"
+          )
         )
       )
     ),
@@ -206,6 +286,9 @@ tab_server <- function(input, output, session,
   # untuned (or hand-edited) selection is never presented as
   # cross-validated. NULL = tuning never ran for this session.
   keepx_tuned <- shiny$reactiveVal(NULL)
+  # Full tuning output ($keep_x, $cor_comp, $settings) — feeds the
+  # stability-curve panel in the results accordion.
+  tune_details <- shiny$reactiveVal(NULL)
 
   shiny$observeEvent(data_version(), {
     rhino$log$info(
@@ -224,10 +307,12 @@ tab_server <- function(input, output, session,
       session, "ipca_mode", selected = "deflation"
     )
     keepx_tuned(NULL)
+    tune_details(NULL)
   }, ignoreInit = TRUE)
 
   shiny$observeEvent(input$analysis_type, {
     keepx_tuned(NULL)
+    tune_details(NULL)
   }, ignoreInit = TRUE)
 
   # Dynamic per-component keepX numeric inputs (sPCA)
@@ -256,6 +341,40 @@ tab_server <- function(input, output, session,
     )
   })
 
+  # Live runtime estimate under the tune button, so the cost of
+  # the run is known before committing to it.
+  output$spca_tune_runtime <- shiny$renderUI({
+    data <- input_data()
+    measure_cols <- input$measureVar
+    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+
+    grid <- parse_keepx_grid(
+      input$spca_tune_grid, length(measure_cols)
+    )$values %||% unique(pmin(
+      length(measure_cols), c(5, 10, 15, 20, 30)
+    ))
+
+    folds <- input_num(input$spca_tune_folds, 5)
+    repeats <- input_num(input$spca_tune_repeats, 3)
+
+    shiny$tagList(
+      render_runtime_estimate(estimate_cv_runtime(
+        n_samples = nrow(data),
+        n_vars = length(measure_cols),
+        folds = folds,
+        repeats = repeats,
+        n_grid = length(grid),
+        ncomp = input_num(input$spca_ncomp, 2),
+        method = "spca"
+      )),
+      render_cv_advice(check_cv_settings(
+        n_samples = nrow(data),
+        folds = folds,
+        repeats = repeats
+      ))
+    )
+  })
+
   # Tune keepX via cross-validation, fill the boxes above
   shiny$observeEvent(input$tune_spca_keepx_button, {
     if (input$analysis_type != "spca") return()
@@ -264,6 +383,10 @@ tab_server <- function(input, output, session,
     measure_cols <- input$measureVar
     if (is.null(data) || is.null(measure_cols) ||
         length(measure_cols) == 0) {
+      shiny$showNotification(
+        "Select measurement columns first.",
+        type = "warning"
+      )
       return()
     }
 
@@ -274,9 +397,34 @@ tab_server <- function(input, output, session,
     do_scale <- !is.null(scale_method) &&
       scale_method == "scale_center"
 
-    tune_res <- run_pca_tune_keepx(
-      data, measure_cols, ncomp = ncomp,
-      center = do_center, scale. = do_scale
+    folds <- input_num(input$spca_tune_folds, 5)
+    repeats <- input_num(input$spca_tune_repeats, 3)
+    grid_parsed <- parse_keepx_grid(
+      input$spca_tune_grid, length(measure_cols)
+    )
+    if (!is.null(grid_parsed$message)) {
+      shiny$showNotification(
+        grid_parsed$message, type = "warning", duration = 8
+      )
+    }
+
+    tune_res <- shiny$withProgress(
+      message = "Tuning keepX",
+      value = 0,
+      {
+        shiny$incProgress(
+          0.1,
+          detail = "Cross-validating candidate values…"
+        )
+        res <- run_pca_tune_keepx(
+          data, measure_cols, ncomp = ncomp,
+          test_keep_x = grid_parsed$values,
+          folds = folds, repeats = repeats,
+          center = do_center, scale. = do_scale
+        )
+        shiny$incProgress(0.9, detail = "Applying results…")
+        res
+      }
     )
 
     if (!tune_res$success) {
@@ -284,20 +432,33 @@ tab_server <- function(input, output, session,
         "sPCA: keepX tuning failed — ",
         "{tune_res$error$message}"
       )
+      # Previously this failed silently and the user saw nothing
+      # happen at all after pressing the button.
+      shiny$showNotification(
+        paste("keepX tuning failed:", tune_res$error$message),
+        type = "error", duration = 10
+      )
       return()
     }
 
-    keep_x <- tune_res$result
+    keep_x <- tune_res$result$keep_x
     keepx_tuned(as.numeric(keep_x))
+    tune_details(tune_res$result)
     for (i in seq_len(ncomp)) {
       shiny$updateNumericInput(
         session, paste0("spca_keepx_", i),
         value = as.numeric(keep_x[i])
       )
     }
+    shiny$showNotification(
+      paste(
+        "Suggested keepX:", paste(keep_x, collapse = ", ")
+      ),
+      type = "message"
+    )
   })
 
-  list(keepx_tuned = keepx_tuned)
+  list(keepx_tuned = keepx_tuned, tune_details = tune_details)
 }
 
 
