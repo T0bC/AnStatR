@@ -92,6 +92,37 @@ Use the **Check component count** button (Analysis Settings sidebar) to check th
 </details>
 
 <details>
+<summary>Which prediction distance metric should I use?</summary>
+
+For reporting, use the one the app already reports: **maximum distance** (`max.dist`). It is what `mixOmics::predict()` applies, so it is what the accuracy, confusion matrix, posterior probabilities and the exported `.rds` prediction bundle are all based on. It is also generally the strongest performer for discriminant analysis, and the mixOmics default.
+
+The **Prediction Distance Comparison** table (in the Component Diagnostics panel, after running **Check component count**) shows the cross-validated error under all three rules — maximum distance, centroid distance and Mahalanobis distance. It costs nothing extra to compute, because `perf()` calculates all three in the same run.
+
+Its purpose is diagnostic, not decisional. It answers "does the choice of assignment rule matter for my data?", and in most well-separated datasets the answer is no. **Do not** pick the rule with the lowest error after looking at the table and then report that number: choosing a rule on the basis of the error it produces is selecting on the test statistic, and it biases your reported accuracy optimistically. Decide on `max.dist`, report `max.dist`, and use the table to say how sensitive that figure is.
+
+The one place you can freely change the rule is the **Boundary rule** dropdown in Plotting Controls, which affects only how the decision-boundary background is shaded in the scores plot. That is a purely visual choice and changes no reported statistic.
+
+</details>
+
+<details>
+<summary>The three distance rules disagree — what does that mean?</summary>
+
+A large spread between the rules (the app flags anything above about 5 percentage points) is *information about your data*, not a problem with the analysis.
+
+The three rules differ in what geometry they assume. Centroid distance assumes groups are roughly spherical and similarly spread; Mahalanobis additionally allows for elongated or correlated component spread; maximum distance uses the fitted regression response rather than geometry at all. When groups are cleanly separated, every reasonable rule puts the boundary in much the same place, so they agree. When they disagree, it means samples are sitting close enough to the boundaries that the *assumptions* of each rule change the outcome — i.e. your groups overlap in component space.
+
+Practical consequences:
+
+- Treat the headline accuracy as one of several defensible numbers, not a single fact. State which rule produced it.
+- Check the Component Diagnostics error curve as well — poor separation often shows up simultaneously as a flat or rising error curve.
+- Look at the scores plot with decision boundaries enabled and try the **Boundary rule** dropdown. If the shaded regions shift noticeably between rules, you are seeing the same overlap visually.
+- If group separation is the scientific claim, this is a signal to be cautious about it, and to report the between-rule variation as part of the uncertainty rather than suppressing it.
+
+A large spread combined with a *high* accuracy under every rule is much less concerning than a large spread around a mediocre accuracy — in the former case the groups separate well and only the marginal cases move.
+
+</details>
+
+<details>
 <summary>What does the Grouping column actually do?</summary>
 
 The grouping column provides the class label for each observation. LDA/QDA builds a discriminant function that maximises the ratio of *between-group* scatter (how far apart the group means are) to *within-group* scatter (how spread out specimens are within each group). The algorithm never sees the actual values in the grouping column as a number — it uses them purely as category labels to partition the data.
