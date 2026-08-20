@@ -897,7 +897,8 @@ server <- function(id, input_data, data_version,
           transform_params = bd$transform_params,
           scale_params = bd$scale_params,
           settings = bd$settings,
-          data_source = bd$data_source
+          data_source = bd$data_source,
+          test_result = test_result()
         )
         saveRDS(bundle, file)
       }
