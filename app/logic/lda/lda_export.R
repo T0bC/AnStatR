@@ -26,9 +26,11 @@ box::use(
 #' @param test_result Optional prediction result from
 #'   run_predict() for train/test split mode
 #' @param perf_result Optional list from run_plsda_perf()
-#'   (with $errors and $stability) — when present and
-#'   $stability is non-NULL, adds a Selected Variable
-#'   Stability sheet (sPLS-DA only)
+#'   (with $errors, $stability and $dist_comparison) — when
+#'   present and $stability is non-NULL, adds a Selected
+#'   Variable Stability sheet (sPLS-DA only); when
+#'   $dist_comparison is non-NULL, adds a Distance Comparison
+#'   sheet
 #' @return NULL (side effect: writes file)
 #' @export
 create_lda_excel <- function(lda_result, file,
@@ -147,6 +149,26 @@ create_lda_excel <- function(lda_result, file,
     !is.null(perf_result$stability)
   ) {
     add_sheet(wb, "Selected Variable Stability", perf_result$stability)
+    sheet_count <- sheet_count + 1
+  }
+
+  # ---------------------------------------------------------------
+  # Sheet 4d: Prediction distance comparison (PLS-DA, if perf() run)
+  # ---------------------------------------------------------------
+  if (!is.null(perf_result) &&
+      !is.null(perf_result$dist_comparison)) {
+    add_sheet(
+      wb, "Distance Comparison", perf_result$dist_comparison
+    )
+    sheet_count <- sheet_count + 1
+  }
+
+  # ---------------------------------------------------------------
+  # Sheet 4e: Per-group CV error rates (PLS-DA, if perf() run)
+  # ---------------------------------------------------------------
+  if (!is.null(perf_result) &&
+      !is.null(perf_result$class_errors)) {
+    add_sheet(wb, "CV Error per Group", perf_result$class_errors)
     sheet_count <- sheet_count + 1
   }
 
