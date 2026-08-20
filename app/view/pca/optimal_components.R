@@ -19,15 +19,25 @@ box::use(
 #' @param optimal_result Result from calculate_optimal_components()
 #'   (the $result field, not the wrapper)
 #' @param ns Namespace function for output IDs
+#' @param variance_info List from extract_variance_explained()
+#'   (n90/cum90/n95/cum95), or NULL to omit those rows
+#' @param analysis_type Character, "pca"/"spca"/"ipca" — the
+#'   variance rows are suppressed for IPCA, whose components are
+#'   not variance-ordered
 #' @return Shiny tags object with formatted display
 #' @export
-render_optimal_components <- function(optimal_result, ns) {
+render_optimal_components <- function(optimal_result, ns,
+                                      variance_info = NULL,
+                                      analysis_type = "pca") {
   if (is.null(optimal_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
       "Optimal component estimation not available."
     ))
   }
+
+  methods <- optimal_result$methods
+  variance_rows <- build_variance_rows(variance_info, analysis_type)
 
   shiny$tagList(
     render_optimal_summary(optimal_result),
@@ -39,7 +49,56 @@ render_optimal_components <- function(optimal_result, ns) {
     ),
     shiny$tags$div(
       class = "mt-3",
-      render_methods_table(optimal_result$methods)
+      render_methods_table(c(methods, variance_rows))
+    ),
+    if (identical(analysis_type, "ipca")) {
+      shiny$tags$small(
+        class = "text-muted d-block mt-2",
+        paste(
+          "Cumulative-variance thresholds are not shown for IPCA:",
+          "independent components are not ordered by variance, so",
+          "\"how many components reach 90%\" has no meaning here."
+        )
+      )
+    }
+  )
+}
+
+
+#' Build the cumulative-variance rows for the methods table
+#'
+#' Reuses the thresholds already computed by
+#' extract_variance_explained() rather than recomputing them.
+#'
+#' @param variance_info List with n90/cum90/n95/cum95, or NULL
+#' @param analysis_type Character
+#' @return Named list in the same shape as optimal_result$methods,
+#'   or an empty list
+build_variance_rows <- function(variance_info, analysis_type) {
+  # IPCA components carry no variance ordering, so the threshold
+  # would invite a conclusion the method cannot support.
+  if (is.null(variance_info) || identical(analysis_type, "ipca")) {
+    return(list())
+  }
+
+  list(
+    variance90 = list(
+      name = "90% cumulative variance",
+      ncp = variance_info$n90,
+      description = paste0(
+        "Components needed to explain 90% of total variance (",
+        variance_info$cum90, "% at this count). A reporting ",
+        "convention rather than a statistical test."
+      )
+    ),
+    variance95 = list(
+      name = "95% cumulative variance",
+      ncp = variance_info$n95,
+      description = paste0(
+        "Components needed to explain 95% of total variance (",
+        variance_info$cum95, "% at this count). Stricter; often ",
+        "keeps components that mostly carry noise."
+      )
     )
   )
 }
