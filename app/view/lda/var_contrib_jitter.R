@@ -6,7 +6,8 @@ box::use(
 box::use(
   app/logic/lda/lda_var_contrib[lda_to_pca_var_structure],
   app/logic/pca/var_contrib_jitter[
-    create_var_contrib_jitter_plot
+    create_var_contrib_jitter_plot,
+    var_contrib_jitter_girafe_opts
   ],
 )
 
@@ -67,25 +68,7 @@ render_output <- function(input, output, session,
       ggobj = plot_data$plot,
       width_svg = width_svg,
       height_svg = height_svg,
-      options = list(
-        ggiraph$opts_sizing(rescale = TRUE, width = 1),
-        ggiraph$opts_hover(
-          css = paste0(
-            "fill-opacity:1;",
-            "stroke:black;stroke-width:2px;"
-          )
-        ),
-        ggiraph$opts_tooltip(
-          css = paste0(
-            "background-color:white;padding:8px;",
-            "border-radius:4px;",
-            "border:1px solid #ccc;",
-            "font-family:sans-serif;"
-          ),
-          use_fill = FALSE
-        ),
-        ggiraph$opts_selection(type = "none")
-      )
+      options = var_contrib_jitter_girafe_opts()
     )
   })
 
