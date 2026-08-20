@@ -8,6 +8,10 @@ box::use(
 
 box::use(
   app/view/components/sidebar_tabs,
+  app/view/shared/tuning_controls[
+    check_cv_settings, estimate_cv_runtime, parse_keepx_grid,
+    render_cv_advice, render_runtime_estimate
+  ],
 )
 
 #' @export
@@ -479,6 +483,36 @@ tab_ui <- function(ns) {
               )
             )
           ),
+          # sPLS-DA only: the candidate grid the keepX tuning
+          # button searches over.
+          shiny$conditionalPanel(
+            condition = paste0(
+              "input['", ns("analysis_type"), "'] == 'splsda'"
+            ),
+            shiny$textInput(
+              inputId = ns("tune_keepx_grid"),
+              label = shiny$tags$span(
+                "keepX values to test ",
+                bslib$tooltip(
+                  bsicons$bs_icon(
+                    "info-circle", class = "text-muted"
+                  ),
+                  paste(
+                    "The candidate variable counts",
+                    "cross-validation will choose between,",
+                    "comma-separated. Only these values can be",
+                    "selected, so include the range you",
+                    "consider plausible. Values above the",
+                    "number of available variables are capped.",
+                    "Leave blank for the default grid."
+                  )
+                )
+              ),
+              value = "5, 10, 15, 20, 30",
+              placeholder = "5, 10, 15, 20, 30"
+            ),
+            shiny$uiOutput(ns("tune_keepx_runtime"))
+          ),
           shiny$actionButton(
             inputId = ns("run_perf_button"),
             label = shiny$tags$span(
@@ -489,6 +523,7 @@ tab_ui <- function(ns) {
             ),
             class = "btn-outline-secondary btn-sm w-100"
           ),
+          shiny$uiOutput(ns("perf_runtime")),
           shiny$tags$small(
             class = "text-muted d-block mt-1",
             paste(
@@ -496,10 +531,13 @@ tab_ui <- function(ns) {
               "components? Estimates classification error",
               "per component by repeated cross-validation,",
               "so you can see where adding components",
-              "stops helping. Does not change the fitted",
-              "model — if it suggests a different count,",
-              "set Number of components above and press",
-              "Compute again. Requires a fitted model."
+              "stops helping. Also reports the error under",
+              "all three prediction distances, so you can",
+              "see whether that choice matters. Does not",
+              "change the fitted model — if it suggests a",
+              "different count, set Number of components",
+              "above and press Compute again. Requires a",
+              "fitted model."
             )
           )
         )
@@ -542,6 +580,58 @@ tab_server <- function(input, output, session,
       NULL
     }
   })
+  # Up-front runtime estimates, so the cost of these opt-in
+  # cross-validation runs is visible before committing to one.
+  output$tune_keepx_runtime <- shiny$renderUI({
+    data <- active_data()
+    measure_cols <- input$measureVar
+    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+
+    grid <- parse_keepx_grid(
+      input$tune_keepx_grid, length(measure_cols)
+    )$values %||% unique(pmin(
+      length(measure_cols), c(5, 10, 15, 20, 30)
+    ))
+
+    render_runtime_estimate(estimate_cv_runtime(
+      n_samples = nrow(data),
+      n_vars = length(measure_cols),
+      folds = input$perf_folds %||% 5,
+      repeats = input$perf_repeats %||% 10,
+      n_grid = length(grid),
+      ncomp = input$plsda_ncomp %||% 2,
+      method = "splsda"
+    ))
+  })
+
+  output$perf_runtime <- shiny$renderUI({
+    data <- active_data()
+    measure_cols <- input$measureVar
+    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+
+    folds <- input$perf_folds %||% 5
+    repeats <- input$perf_repeats %||% 10
+
+    # perf() refits the existing model rather than searching a
+    # grid, so n_grid stays 1.
+    shiny$tagList(
+      render_runtime_estimate(estimate_cv_runtime(
+        n_samples = nrow(data),
+        n_vars = length(measure_cols),
+        folds = folds,
+        repeats = repeats,
+        n_grid = 1,
+        ncomp = input$plsda_ncomp %||% 2,
+        method = "perf"
+      )),
+      render_cv_advice(check_cv_settings(
+        n_samples = nrow(data),
+        folds = folds,
+        repeats = repeats
+      ))
+    )
+  })
+
   shiny$observeEvent(data_version(), {
     rhino$log$info(
       "LDA analysis_settings: reset for new data"
