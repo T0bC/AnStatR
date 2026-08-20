@@ -52,6 +52,19 @@ sPCA fits components one at a time via an iterative NIPALS-style procedure. For 
 
 **Choosing keepX**: use the **Optimise variable selection** button in the Analysis Settings tab to run `mixOmics::tune.spca()`, which performs repeated cross-validation over a grid of candidate keepX values and reports the choice that best reproduces the un-penalized components. This mirrors sPLS-DA's keepX tuning in the LDA module. Manually chosen keepX values are marked as untuned in the results until tuning has run.
 
+**The tuning criterion**: `tune.spca()` does not minimise an error rate — sPCA has no outcome variable to be wrong about. Instead it splits the data, fits sPCA at each candidate keepX on the training part, and measures the **correlation between the cross-validated component and the component fitted on the full data**. A keepX that yields a high, stable correlation is one whose variable selection is reproducible across resamples; a low or erratic correlation means the selected variable set changes depending on which specimens happen to be in the training split, and the resulting component is not a dependable description of the data.
+
+**Reading the keepX Tuning Evidence panel**: after tuning runs, a **keepX Tuning Evidence** panel appears in the results accordion, plotting that correlation against each tested keepX, one line per component, with dashed lines marking the selected values. What to look for:
+
+- **A curve that plateaus early** — the most useful outcome. Everything to the right of the plateau adds variables without improving stability, so you can justify the *smallest* keepX on the plateau and get a shorter, more interpretable variable list at no real cost. The automatic choice does not always take this option, so it is worth checking by eye.
+- **A curve that only climbs at the largest keepX values** — sparsity is costing you signal. The data may not support a sparse description, and plain PCA may be the more honest choice.
+- **An erratic or low curve (well below ~0.8)** — the selection is unstable at every keepX tested. Treat the selected variable list as provisional; more specimens, or fewer candidate variables, would be needed before reporting it.
+- **Wide separation between components** — later components are typically less stable than the first. A Dim.1 curve near 1.0 with a Dim.2 curve near 0.5 means the second component's variable selection should not be reported with the same confidence as the first.
+
+**Tuning settings**: the folds, repeats and candidate grid are exposed under **Tuning settings** (collapsed by default) in the Analysis Settings tab. Defaults are 5 folds × 3 repeats over a grid of 5, 10, 15, 20, 30 (capped at your variable count). Only values present in the grid can be selected, so include the range you consider plausible; mixOmics advises starting with a coarse grid and refining it once you know roughly where the answer lies. An estimated runtime is shown beneath the button before you commit to a run.
+
+**Choosing folds and repeats**: mixOmics advises **at least 5–6 samples per fold** (so with 20 specimens, do not use more than 4 folds; `tune.spca()` requires at least 3 per fold and errors below that), and **50–100 repeats for a final reported result**. The defaults here are tuned for responsiveness and give a provisional answer — at least 3 repeats are required before `tune.spca()` can produce a stable choice at all, and the app reports an error rather than a number you should not trust if you go below that. The sidebar warns when either guideline is not met. For datasets with fewer than about 30 specimens, mixOmics recommends leave-one-out instead, i.e. setting folds equal to your sample size. Raise the repeat count before reporting a keepX in a manuscript; a fixed random seed makes an unstable choice reproducible, not reliable.
+
 **Selected Variables**: the non-zero loadings per component are listed in the **Selected Variables** results panel — this is the direct answer to "which variables define this component?"
 
 </details>
@@ -127,7 +140,9 @@ The Eigenvalues & Variance table is the primary reference for component importan
 
 **Kaiser-Guttman Rule** (PCA/sPCA only): components whose eigenvalue exceeds 1.0 (standardized data) explain more variance than the average original variable, justifying retention. See the **Optimal Number of Components** panel.
 
-**IPCA**: the same table is shown, but the percentages reflect each independent component's own variance in fitted order — not a ranking. Do not apply the Kaiser rule or a cumulative-variance target to IPCA; the table is labeled "not ranked" for this reason.
+**Cumulative-variance thresholds** (PCA/sPCA only): the **Optimal Number of Components** panel lists, alongside Kaiser, Elbow and Parallel Analysis, the number of components needed to reach 90% and 95% of total variance. Treat these as *reporting conventions rather than statistical tests* — unlike Parallel Analysis, they make no comparison against what random data would produce, so they cannot tell you whether a component carries real signal. A 95% threshold in particular will often retain components that are mostly noise. They are included because many journals and reviewers expect the figure, and because a large gap between the threshold count and the Kaiser/Parallel Analysis counts is itself informative: it means much of your variance is spread thinly across many minor components.
+
+**IPCA**: the same table is shown, but the percentages reflect each independent component's own variance in fitted order — not a ranking. Do not apply the Kaiser rule or a cumulative-variance target to IPCA; the table is labeled "not ranked" for this reason. For the same reason, the 90%/95% cumulative-variance rows are omitted from the Optimal Number of Components panel when IPCA is selected: "how many components reach 90%" presupposes a variance ordering that independent components do not have.
 
 **Variable Results**
 
