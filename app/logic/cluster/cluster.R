@@ -36,6 +36,26 @@ cluster_color <- function(cluster_id) {
   CLUSTER_PALETTE[idx]
 }
 
+#' Build a named color vector for a set of cluster labels
+#'
+#' Assigns palette colors in order, wrapping around when
+#' there are more labels than palette entries.
+#'
+#' @param labels Character vector of cluster labels
+#' @return Named character vector of hex colors
+#' @export
+cluster_color_map <- function(labels) {
+  n_cl <- length(labels)
+  if (n_cl == 0) return(stats$setNames(character(0), character(0)))
+  colors <- if (n_cl > length(CLUSTER_PALETTE)) {
+    rep_len(CLUSTER_PALETTE, n_cl)
+  } else {
+    CLUSTER_PALETTE[seq_len(n_cl)]
+  }
+  names(colors) <- labels
+  colors
+}
+
 #' Validate clustering inputs before computation
 #' @param columns Character vector of selected column names
 #' @param data Data frame to validate against
