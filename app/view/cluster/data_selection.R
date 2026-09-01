@@ -194,6 +194,39 @@ tab_ui <- function(ns) {
         )
       ),
       shiny$tags$hr(),
+      shiny$tags$label(
+        class = "control-label",
+        "Residualize by (optional) ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Remove a known confound before clustering by",
+            "subtracting each group's mean from every",
+            "measurement column. Use this when a metadata",
+            "variable (e.g. site/location) is expected to",
+            "dominate the measurements and mask the signal",
+            "you actually care about. Check the PCA module's",
+            "eigencorrelation plot first to see which",
+            "metadata variable correlates most strongly with",
+            "the top components — that is usually the one to",
+            "residualize by. Applied before scaling, on the",
+            "original units."
+          )
+        )
+      ),
+      shiny$selectizeInput(
+        inputId = ns("residualizeCol"),
+        label = NULL,
+        choices = NULL,
+        multiple = TRUE,
+        options = list(
+          maxItems = 1,
+          placeholder = "None (use raw measurements)"
+        )
+      ),
+      shiny$tags$hr(),
       shiny$checkboxInput(
         inputId = ns("correct_skewness"),
         label = shiny$tags$span(
@@ -445,6 +478,11 @@ tab_server <- function(input, output, session,
       choices = group_biplot_choices(desc_cols),
       selected = CLUSTER_OPTION
     )
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = desc_cols,
+      selected = character(0)
+    )
   }, ignoreInit = TRUE)
 
   # Smart retention on new data: keep selections that
@@ -470,6 +508,11 @@ tab_server <- function(input, output, session,
         choices = CLUSTER_OPTION,
         selected = CLUSTER_OPTION
       )
+      shiny$updateSelectizeInput(
+        session, "residualizeCol",
+        choices = character(0),
+        selected = character(0)
+      )
       return()
     }
 
@@ -479,6 +522,7 @@ tab_server <- function(input, output, session,
     cur_meta <- shiny$isolate(input$metaData)
     cur_meas <- shiny$isolate(input$measureVar)
     cur_grp  <- shiny$isolate(input$groupBiplot)
+    cur_resid <- shiny$isolate(input$residualizeCol)
 
     ret_meta <- intersect(cur_meta, desc_cols)
     ret_meas <- intersect(cur_meas, meas_cols)
@@ -487,6 +531,7 @@ tab_server <- function(input, output, session,
     ret_grp  <- intersect(
       cur_grp, group_biplot_choices(ret_meta)
     )
+    ret_resid <- intersect(cur_resid, ret_meta)
 
     rhino$log$info(
       "Cluster data_selection: ",
@@ -506,6 +551,11 @@ tab_server <- function(input, output, session,
       session, "groupBiplot",
       choices = group_biplot_choices(ret_meta),
       selected = ret_grp
+    )
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = ret_meta,
+      selected = ret_resid
     )
   }, ignoreInit = TRUE)
 
@@ -534,6 +584,12 @@ tab_server <- function(input, output, session,
       session, "groupBiplot",
       choices = all_choices,
       selected = cur_grp[cur_grp %in% all_choices]
+    )
+    cur_resid <- shiny$isolate(input$residualizeCol)
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = selected_meta,
+      selected = cur_resid[cur_resid %in% selected_meta]
     )
   })
 }

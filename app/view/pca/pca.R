@@ -17,6 +17,7 @@ box::use(
   app/logic/pca/pca[
     validate_inputs, run_pca, extract_variance_explained
   ],
+  app/logic/pca/scaling[residualize_data],
   app/logic/pca/tune_plot[create_tune_spca_plot],
   app/logic/pca/pca_export[create_pca_excel, create_pca_bundle],
   app/logic/preprocessing/skewness_transform[
@@ -250,6 +251,24 @@ server <- function(id, input_data, data_version,
         }
       }
 
+      # Residualize by a confound column, before scaling
+      residualize_col <- input$residualizeCol
+      if (!is.null(residualize_col) &&
+          length(residualize_col) > 0 &&
+          nzchar(residualize_col)) {
+        rhino$log$info(
+          "PCA: residualizing by '{residualize_col}'"
+        )
+        resid_res <- residualize_data(
+          cleaned_data, measure_cols, residualize_col
+        )
+        if (!resid_res$success) {
+          last_error(resid_res$error)
+          return()
+        }
+        cleaned_data <- resid_res$result
+      }
+
       # Determine scaling params for PCA
       analysis_data <- cleaned_data
       scale_method <- input$scale_method
@@ -372,7 +391,8 @@ server <- function(id, input_data, data_version,
             skewness_correction = isTRUE(
               input$correct_skewness
             ),
-            scale_method = scale_method %||% "none"
+            scale_method = scale_method %||% "none",
+            residualize_col = residualize_col %||% "none"
           )
         ))
       }

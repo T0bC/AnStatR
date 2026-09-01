@@ -238,6 +238,23 @@ When using **PCA scores** or **LDA scores** as input, scaling is automatically s
 </details>
 
 <details>
+<summary><strong>Residualizing by a Metadata Column</strong></summary>
+
+**What it does**: subtracts each group's mean (for a chosen categorical metadata column, e.g. `SITE`) from every measurement column, before the Scale & Center / Center only / No scaling step runs. Set it via the **Residualize by** dropdown in the Data Selection sidebar (Raw Data source only — it has no effect on PCA/LDA Scores input, since those are already reduced).
+
+**When to use it**: a known confound (site, batch, collection date) is expected to dominate the distance matrix and produce clusters that reflect the confound rather than the structure you are actually interested in. The PCA module's **Eigencorrelation** plot is the recommended diagnostic — a metadata column that correlates strongly with the top PCA components is a candidate to residualize by before clustering the raw measurements.
+
+**What it does not do**: residualizing removes average level differences between groups but does not equalize variance between measurement columns — Scale & Center still has real work to do on the distance matrix afterward. It also cannot separate a confound from the structure of interest if the two are perfectly correlated in the sample (e.g. a species found at only one site).
+
+| Preprocessing | Effect on Distance Matrix |
+|---------------|---------------------------|
+| **Residualize only** | Removes group-mean differences; raw variable magnitudes still dominate distances |
+| **Residualize + Scale & Center** | Removes group-mean differences, then standardises variance — the recommended combination when a confound is suspected in mixed-unit data |
+| **Scale & Center only (no residualize)** | Standardises variance, but any confound-driven mean shift remains and can still dominate the resulting clusters |
+
+</details>
+
+<details>
 <summary><strong>Data Normalisation (Skewness Correction)</strong></summary>
 
 The **Normalize skewed variables** option uses the `bestNormalize` package to transform variables with |skewness| > 2 before clustering. Candidate transformations (Box-Cox, Yeo-Johnson, log, square-root, ordered quantile normalisation) are evaluated automatically; the best one is selected by minimising the Pearson P/df statistic.

@@ -56,6 +56,13 @@ compute_eigencor_data <- function(pca_result, display_ncp = 5L) {
       xvals <- scores[, dims, drop = FALSE]
 
       # Prepare metadata: coerce non-numeric columns
+      # NOTE: Pearson r against an arbitrary 1/2/3.. encoding of an
+      # unordered factor can understate a real categorical group effect
+      # (e.g. 3+ site levels with no natural order). A low |r| here is
+      # not solid evidence of "no effect" for such columns —
+      # ANOVA/eta-squared would be the more correct diagnostic. Treat a
+      # HIGH r as a strong signal; treat a low r on a multi-level
+      # categorical column with caution.
       coerced_cols <- character(0)
       yvals <- meta
       for (col in names(yvals)) {

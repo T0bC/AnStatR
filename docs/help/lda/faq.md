@@ -132,6 +132,21 @@ The grouping column must be selected from your **Descriptive (metadata) columns*
 </details>
 
 <details>
+<summary>When should I residualize by a metadata column?</summary>
+
+Use the **Residualize by** dropdown (Data Selection sidebar, Raw Data source only) when a metadata variable *other than* your Grouping column — a confound such as `SITE`, batch, or collection date — is suspected to dominate the measurements and interfere with discriminant separation.
+
+**It must be a different column from Grouping column.** Residualizing subtracts each group's mean for the chosen column from every measurement column — if you picked the same column you are discriminating on, you would subtract away the exact between-group differences LDA is trying to find, and the discriminant function would have nothing left to separate.
+
+**How to decide which column**: run PCA on the same measurement columns first and check its **Eigencorrelation** plot for which metadata column correlates most strongly with the top components — that is usually the column to residualize by.
+
+**Ordering**: residualizing runs before scaling, on the original measurement units — it does not replace Scale & Center, which still standardises variance on the residualized data afterward.
+
+**What it cannot do**: it does not fix unequal variance between measurement columns, and it cannot separate a confound from your grouping variable if the two are perfectly correlated in the sample (e.g. every specimen of one species came from a single site).
+
+</details>
+
+<details>
 <summary>What does "Proportion of Trace" mean and how do I read it?</summary>
 
 The Proportion of Trace table is the key summary of discriminant axis importance. Each row corresponds to one linear discriminant axis (LD1, LD2, …). The **Proportion** column shows what fraction of the total between-group variance that axis captures; values sum to 1.0.

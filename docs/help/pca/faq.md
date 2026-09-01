@@ -96,6 +96,21 @@ Categorical metadata is automatically converted to numeric (factor levels) for c
 
 **Use case**: If `SITE` correlates strongly with Dim.1, your samples separate primarily by location.
 
+Categorical metadata with 3+ unordered levels is converted to an arbitrary 1/2/3… numeric code before computing r. A **low** correlation against such a column is a weaker "no effect" signal than the same low r against an ordered or numeric variable — the arbitrary level ordering can hide a real group effect. Treat a **high** r as a strong signal regardless of column type; treat a low r on a multi-level unordered categorical column with more caution.
+
+</details>
+
+<details>
+<summary>When should I residualize by a metadata column?</summary>
+
+Use the **Residualize by** dropdown (Data Selection sidebar, below the measurement columns) when a metadata variable you are not directly interested in — a confound such as `SITE`, batch, or collection date — is suspected to dominate the measurements and mask the signal you actually care about.
+
+**How to decide which column**: run PCA once without residualizing, then check the **Eigencorrelation** plot (see above) for which metadata column correlates most strongly with the top components. A high correlation there is the signal to residualize by; remember that a low correlation against a multi-level unordered categorical column is weaker evidence of "no effect" than it looks.
+
+**Ordering**: residualizing runs before scaling, on the original measurement units — it does not replace Scale & Center. Group-mean subtraction removes location shifts only; Scale & Center still standardizes variance afterward and should generally stay enabled.
+
+**What it cannot do**: it does not fix unequal variance between measurement columns (units in mm vs. percentages still need Scale & Center), and it cannot separate a confound from your variable of interest if the two are perfectly correlated in your sample — for example, if a species was only ever collected at one site, no adjustment can tell species and site apart.
+
 </details>
 
 <details>
@@ -212,7 +227,7 @@ Report enough that a reader can judge the result without re-running it. The mini
 |------|------------------|------------------|
 | Method and software | — | e.g. "sPCA (mixOmics 6.x, R 4.x)" — see the package table below for citations |
 | n observations, number of variables | PCA Results panel / Summary | Reviewers need the sample-size-to-variable ratio to judge overfitting/stability risk |
-| Preprocessing | Data Selection sidebar | Scaling/centring method, normalization, how missing values were handled |
+| Preprocessing | Data Selection sidebar | Scaling/centring method, normalization, how missing values were handled (and grouping column, if residualized) |
 | Variance explained by the components shown | Eigenvalues & Variance table | Readers cannot judge a 2D projection's adequacy without this |
 | Number of components retained and why | Optimal Number of Components panel | State whether Kaiser, Elbow, or Parallel Analysis (or a combination) justified the count |
 

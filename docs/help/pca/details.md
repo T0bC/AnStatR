@@ -99,6 +99,23 @@ Scaling decisions fundamentally change the PCA solution and interpretation:
 </details>
 
 <details>
+<summary><strong>Residualizing by a Metadata Column</strong></summary>
+
+**What it does**: subtracts each group's mean (for a chosen categorical metadata column, e.g. `SITE`) from every measurement column, before the Scale & Center / Center only / No scaling step runs. Set it via the **Residualize by** dropdown in the Data Selection sidebar, directly below the measurement column selector.
+
+**When to use it**: a known confound (site, batch, collection date, etc.) is expected to dominate the measurements and mask the signal of interest. Check the **Eigencorrelation** plot first — a metadata column with a strong correlation against the top components (especially Dim.1/Dim.2) is a candidate to residualize by.
+
+**What it does not do**: residualizing removes average level differences between groups, but does not equalize variance between measurement columns — Scale & Center still has a job to do afterward on the residualized data. It also cannot fully separate a confound from the signal of interest if the two are perfectly correlated in the sample (e.g. a species found at only one site) — no statistical adjustment can recover information that was never in the data.
+
+| Preprocessing | Effect |
+|---------------|--------|
+| **Residualize only** | Removes group-mean differences; measurement units and relative variable magnitudes are unchanged |
+| **Residualize + Scale & Center** | Removes group-mean differences, then standardizes variance — the recommended combination for mixed-unit data with a known confound |
+| **Scale & Center only (no residualize)** | Standardizes variance, but any confound-driven mean shift remains and can still dominate the leading components |
+
+</details>
+
+<details>
 <summary><strong>Data Normalization</strong></summary>
 
 The **bestNormalize** package automatically selects optimal transformations for skewed variables (|skewness| > 2). Candidate transformations include:

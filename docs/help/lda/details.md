@@ -190,6 +190,19 @@ Scaling decisions directly affect the within-group and between-group scatter mat
 </details>
 
 <details>
+<summary><strong>Residualizing by a Metadata Column</strong></summary>
+
+**What it does**: subtracts each group's mean (for a chosen categorical metadata column, e.g. `SITE`) from every measurement column, before the Scale & Center / Center only / No scaling step runs. Set it via the **Residualize by** dropdown in the Data Selection sidebar (Raw Data source only).
+
+**Must be different from the Grouping column**: the **Residualize by** column must not be the same column as **Grouping column**. Residualizing by the discriminant target would subtract away the exact between-group mean differences that $\mathbf{S}_B$ (and LDA itself) is built to detect, leaving nothing for the discriminant axes to separate.
+
+**When to use it**: a *different* metadata variable — a confound not related to your grouping of interest, such as site, batch, or collection date — is expected to dominate the measurements and interfere with discriminant separation. Run PCA on the same measurement columns first and check its **Eigencorrelation** plot for which metadata column correlates most strongly with the top components; that is usually the column to residualize by here.
+
+**What it does not do**: residualizing removes average level differences for the chosen confound only, and does not equalize variance between measurement columns — Scale & Center still has a role afterward. It also cannot separate a confound from your grouping variable if the two are perfectly correlated in the sample (e.g. every specimen of one species came from a single site).
+
+</details>
+
+<details>
 <summary><strong>Data Normalisation</strong></summary>
 
 The **Normalize skewed variables** option uses the `bestNormalize` package to transform variables with |skewness| > 2 before analysis. Candidate transformations include Box-Cox, Yeo-Johnson, log, and square-root. The transformation that best achieves normality (assessed by the Pearson P/df statistic) is selected automatically.

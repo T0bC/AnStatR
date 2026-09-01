@@ -20,7 +20,7 @@ box::use(
   app/logic/lda/perf_plot[create_perf_error_plot],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/pca[extract_pca_scores],
-  app/logic/pca/scaling[scale_data],
+  app/logic/pca/scaling[scale_data, residualize_data],
   app/logic/preprocessing/skewness_transform[
     detect_skewness, transform_skewed
   ],
@@ -192,6 +192,30 @@ server <- function(id, input_data, data_version,
         validation_warnings(validation$warnings)
       }
 
+      # Residualize by must differ from the Grouping column, or
+      # LDA would have nothing left to discriminate
+      residualize_col <- input$residualizeCol
+      if (
+        data_source == "raw" &&
+        !is.null(residualize_col) &&
+        length(residualize_col) > 0 &&
+        nzchar(residualize_col) &&
+        identical(residualize_col, grouping_col)
+      ) {
+        last_error(error_handling$simple_error(
+          message = paste(
+            "\"Residualize by\" cannot be the same column as",
+            "\"Grouping column\". Residualizing subtracts each",
+            "group's mean from the measurements, which would",
+            "remove the exact between-group differences LDA",
+            "is trying to find. Choose a different metadata",
+            "column to residualize by, or clear the selection."
+          ),
+          operation_name = "LDA Data Preparation"
+        ))
+        return()
+      }
+
       # Clean NAs in measurement columns and grouping column
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
@@ -244,6 +268,27 @@ server <- function(id, input_data, data_version,
             }
           }
         }
+      }
+
+      # Residualize by a confound column, before scaling
+      # (raw data only, skip for PCA scores)
+      if (
+        data_source == "raw" &&
+        !is.null(residualize_col) &&
+        length(residualize_col) > 0 &&
+        nzchar(residualize_col)
+      ) {
+        rhino$log$info(
+          "LDA: residualizing by '{residualize_col}'"
+        )
+        resid_res <- residualize_data(
+          cleaned_data, measure_cols, residualize_col
+        )
+        if (!resid_res$success) {
+          last_error(resid_res$error)
+          return()
+        }
+        cleaned_data <- resid_res$result
       }
 
       # Scale data (raw data only, skip for PCA scores)
@@ -564,6 +609,25 @@ server <- function(id, input_data, data_version,
         return()
       }
 
+      residualize_col <- input$residualizeCol
+      if (
+        data_source == "raw" &&
+        !is.null(residualize_col) &&
+        length(residualize_col) > 0 &&
+        nzchar(residualize_col) &&
+        identical(residualize_col, grouping_col)
+      ) {
+        shiny$showNotification(
+          paste(
+            "\"Residualize by\" cannot be the same column as",
+            "\"Grouping column\" — choose a different metadata",
+            "column, or clear the selection."
+          ),
+          type = "error", duration = 10
+        )
+        return()
+      }
+
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
       na_result <- clean_na_rows(
@@ -571,6 +635,17 @@ server <- function(id, input_data, data_version,
         grouping_col = grouping_col
       )
       tune_data <- na_result$data
+
+      if (
+        data_source == "raw" &&
+        length(residualize_col) > 0 &&
+        nzchar(residualize_col)
+      ) {
+        resid_res <- residualize_data(
+          tune_data, measure_cols, residualize_col
+        )
+        if (resid_res$success) tune_data <- resid_res$result
+      }
 
       scale_method <- input$scale_method
       if (

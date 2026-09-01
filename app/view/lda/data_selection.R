@@ -212,6 +212,38 @@ tab_ui <- function(ns) {
         )
       ),
       shiny$tags$hr(),
+      shiny$tags$label(
+        class = "control-label",
+        "Residualize by (optional) ",
+        bslib$tooltip(
+          bsicons$bs_icon(
+            "info-circle", class = "text-muted"
+          ),
+          paste(
+            "Remove a known confound before LDA/QDA by",
+            "subtracting each group's mean from every",
+            "measurement column. Use this when a metadata",
+            "variable (e.g. site/location) other than your",
+            "Grouping column is expected to dominate the",
+            "measurements. Must be different from the",
+            "Grouping column — residualizing by the same",
+            "column you are discriminating on would remove",
+            "the very group differences LDA looks for.",
+            "Applied before scaling, on the original units."
+          )
+        )
+      ),
+      shiny$selectizeInput(
+        inputId = ns("residualizeCol"),
+        label = NULL,
+        choices = NULL,
+        multiple = TRUE,
+        options = list(
+          maxItems = 1,
+          placeholder = "None (use raw measurements)"
+        )
+      ),
+      shiny$tags$hr(),
       shiny$checkboxInput(
         inputId = ns("correct_skewness"),
         label = shiny$tags$span(
@@ -420,6 +452,11 @@ tab_server <- function(input, output, session,
       choices = desc_cols,
       selected = character(0)
     )
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = desc_cols,
+      selected = character(0)
+    )
   }, ignoreInit = TRUE)
 
   # Smart retention on new data: keep selections that
@@ -445,6 +482,11 @@ tab_server <- function(input, output, session,
         choices = character(0),
         selected = character(0)
       )
+      shiny$updateSelectizeInput(
+        session, "residualizeCol",
+        choices = character(0),
+        selected = character(0)
+      )
       return()
     }
 
@@ -454,12 +496,14 @@ tab_server <- function(input, output, session,
     cur_meta <- shiny$isolate(input$metaData)
     cur_meas <- shiny$isolate(input$measureVar)
     cur_grp  <- shiny$isolate(input$groupingCol)
+    cur_resid <- shiny$isolate(input$residualizeCol)
 
     ret_meta <- intersect(cur_meta, desc_cols)
     ret_meas <- intersect(cur_meas, meas_cols)
     ret_grp  <- if (
       !is.null(cur_grp) && cur_grp %in% ret_meta
     ) cur_grp else character(0)
+    ret_resid <- intersect(cur_resid, ret_meta)
 
     rhino$log$info(
       "LDA data_selection: ",
@@ -478,6 +522,10 @@ tab_server <- function(input, output, session,
     shiny$updateSelectizeInput(
       session, "groupingCol",
       choices = ret_meta, selected = ret_grp
+    )
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = ret_meta, selected = ret_resid
     )
   }, ignoreInit = TRUE)
 
@@ -509,6 +557,12 @@ tab_server <- function(input, output, session,
       session, "groupingCol",
       choices = selected_meta,
       selected = sel
+    )
+    cur_resid <- shiny$isolate(input$residualizeCol)
+    shiny$updateSelectizeInput(
+      session, "residualizeCol",
+      choices = selected_meta,
+      selected = cur_resid[cur_resid %in% selected_meta]
     )
   })
 }

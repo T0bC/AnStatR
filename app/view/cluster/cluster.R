@@ -17,7 +17,7 @@ box::use(
   app/logic/shared/error_handling,
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/pca[extract_pca_scores],
-  app/logic/pca/scaling[scale_data],
+  app/logic/pca/scaling[scale_data, residualize_data],
   app/logic/preprocessing/skewness_transform[
     detect_skewness, transform_skewed
   ],
@@ -202,6 +202,7 @@ server <- function(id, input_data, data_version,
       algorithm <- input$algorithm
       cluster_metric <- input$cluster_metric
       scale_method <- input$scale_method
+      residualize_col <- input$residualizeCol
 
       # Select source data
       is_reduced <- data_source %in%
@@ -331,6 +332,24 @@ server <- function(id, input_data, data_version,
             }
           }
 
+          # Step 1c: Residualize by a confound column, before scaling
+          if (!is.null(residualize_col) &&
+              length(residualize_col) > 0 &&
+              nzchar(residualize_col)) {
+            rhino$log$info(
+              "Cluster: residualizing by",
+              " '{residualize_col}'"
+            )
+            resid_res <- residualize_data(
+              cleaned_data, measure_cols, residualize_col
+            )
+            if (!resid_res$success) {
+              last_error(resid_res$error)
+              return()
+            }
+            cleaned_data <- resid_res$result
+          }
+
           # Step 2: Scale data
           shiny$incProgress(
             0.10,
@@ -369,6 +388,7 @@ server <- function(id, input_data, data_version,
           nrow(analysis_data),
           ncol(analysis_data),
           scale_method %||% "none",
+          residualize_col %||% "none",
           sep = "|"
         )
         use_cache <- identical(fp, cached_fingerprint())

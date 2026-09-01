@@ -80,3 +80,106 @@ scaling_error_parser <- function(error_msg,
     paste0(operation_name, " failed: ", error_msg)
   }
 }
+
+# =============================================================================
+# residualize_data
+# =============================================================================
+
+#' Remove a known confound by group-mean centering
+#'
+#' For each measurement column, subtracts the mean of that column within
+#' each level of `group_col` (e.g. site/location), so downstream analysis
+#' no longer sees the average level difference between groups — only the
+#' within-group variation. Must be applied before scale_data(), since a
+#' global z-score mixes all groups' variance into one SD and makes
+#' "subtract this group's mean" meaningless afterward. Does not equalize
+#' variance between columns; scale_data() still has a role after this.
+#'
+#' @param data Data frame (full, including metadata columns)
+#' @param measurement_cols Character vector of measurement column names
+#' @param group_col Character, name of the categorical metadata column
+#'   to residualize by
+#' @return List with $success, $result (residualized data frame) or $error
+#' @export
+residualize_data <- function(data, measurement_cols, group_col) {
+  error_handling$safe_execute(
+    expr = {
+      if (is.null(group_col) || !nzchar(group_col)) {
+        stop("No grouping column selected for residualization")
+      }
+      if (!group_col %in% names(data)) {
+        stop(paste0(
+          "Grouping column '", group_col, "' not found in data"
+        ))
+      }
+      if (anyNA(data[[group_col]])) {
+        stop(paste0(
+          "Grouping column '", group_col,
+          "' contains missing values; ave() treats each NA",
+          " row as its own group, silently zeroing it out —",
+          " remove or impute missing values in this column",
+          " first"
+        ))
+      }
+      groups <- as.factor(data[[group_col]])
+      if (nlevels(groups) < 2) {
+        stop(paste0(
+          "Grouping column '", group_col,
+          "' has fewer than 2 levels; nothing to residualize"
+        ))
+      }
+
+      subset_df <- data[, measurement_cols, drop = FALSE]
+      residualized <- subset_df
+      for (col in measurement_cols) {
+        group_means <- stats::ave(subset_df[[col]], groups)
+        residualized[[col]] <- subset_df[[col]] - group_means
+      }
+
+      result <- data
+      result[, measurement_cols] <- residualized
+
+      rhino$log$info(
+        "Residualize: {length(measurement_cols)} columns",
+        " by '{group_col}' ({nlevels(groups)} groups)"
+      )
+
+      result
+    },
+    operation_name = "Residualize by Group",
+    error_parser = residualize_error_parser
+  )
+}
+
+#' Error parser for residualize-specific errors
+#'
+#' @param error_msg Character, the original error message
+#' @param operation_name Character, name of the operation
+#' @return Character, user-friendly error message
+#' @export
+residualize_error_parser <- function(
+    error_msg,
+    operation_name = "Residualize by Group") {
+  if (grepl("not found", error_msg, ignore.case = TRUE)) {
+    paste0(operation_name, ": ", error_msg)
+  } else if (grepl(
+    "fewer than 2 levels", error_msg, ignore.case = TRUE
+  )) {
+    paste0(
+      operation_name,
+      ": Selected column has only one group — choose a",
+      " column with at least two distinct values."
+    )
+  } else if (grepl(
+    "missing values", error_msg, ignore.case = TRUE
+  )) {
+    paste0(
+      operation_name,
+      ": The grouping column has missing values.",
+      " Remove or impute them before residualizing,",
+      " or choose a different column."
+    )
+  } else {
+    paste0(operation_name, " failed: ", error_msg)
+  }
+}

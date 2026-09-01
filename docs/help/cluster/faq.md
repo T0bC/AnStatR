@@ -69,6 +69,19 @@ The only cases where you might skip scaling are:
 </details>
 
 <details>
+<summary>When should I residualize by a metadata column?</summary>
+
+Use the **Residualize by** dropdown (Data Selection sidebar, Raw Data source only) when a metadata variable you are not directly interested in — a confound such as `SITE`, batch, or collection date — is suspected to dominate the distance matrix and produce clusters that reflect that confound rather than the structure you actually care about.
+
+**How to decide which column**: run PCA on the same measurement columns first and check its **Eigencorrelation** plot for which metadata column correlates most strongly with the top components — that is usually the column to residualize by here too.
+
+**Ordering**: residualizing runs before scaling, on the original measurement units — it does not replace Scale & Center, which still standardises variance on the residualized data afterward.
+
+**What it cannot do**: it does not fix unequal variance between measurement columns, and it cannot separate a confound from your variable of interest if the two are perfectly correlated in your sample (e.g. a species found at only one site).
+
+</details>
+
+<details>
 <summary>How should I interpret the Hopkins statistic?</summary>
 
 The Hopkins statistic H tests whether your data has a non-random clustering structure at all, before you commit to a specific k. Values range from 0 to 1:
