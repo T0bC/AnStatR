@@ -16,23 +16,43 @@ tab_ui <- function(ns) {
     tooltip_text = "Clustering Settings",
     value = "settings_tab",
     shiny$h6(class = "text-muted mb-3", "Clustering Settings"),
-    # Number of clusters
-    shiny$numericInput(
-      inputId = ns("n_clusters"),
-      label = shiny$tags$span(
-        "Number of clusters ",
-        bslib$tooltip(
-          bsicons$bs_icon("info-circle", class = "text-muted"),
-          paste(
-            "Number of clusters for the analysis.",
-            "Automatically set to the optimal value",
-            "on first run. Change manually to override."
-          )
-        )
+    # Number of clusters (not applicable to DBSCAN, which
+    # derives the cluster count from density instead)
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("algorithm"), "'] != 'dbscan'"
       ),
-      value = 3,
-      min = 2,
-      max = 10
+      shiny$numericInput(
+        inputId = ns("n_clusters"),
+        label = shiny$tags$span(
+          "Number of clusters ",
+          bslib$tooltip(
+            bsicons$bs_icon("info-circle", class = "text-muted"),
+            paste(
+              "Number of clusters for the analysis.",
+              "Automatically set to the optimal value",
+              "on first run. Change manually to override."
+            )
+          )
+        ),
+        value = 3,
+        min = 2,
+        max = 10
+      )
+    ),
+    shiny$conditionalPanel(
+      condition = paste0(
+        "input['", ns("algorithm"), "'] == 'dbscan'"
+      ),
+      shiny$div(
+        class = "alert alert-light border small py-2 mb-3",
+        bsicons$bs_icon("info-circle", class = "text-muted me-1"),
+        shiny$tags$span(
+          "DBSCAN finds the number of clusters on its own ",
+          "from the data density, so no cluster count is set ",
+          "here. Points in sparse regions are labelled as noise."
+        )
+      )
     ),
     # Clustering algorithm
     shiny$selectInput(
@@ -148,9 +168,13 @@ tab_server <- function(input, output, session,
     data <- input_data()
     if (!is.null(data) && nrow(data) > 0) {
       max_clusters <- min(nrow(data) - 1, 10)
+      # n_clusters is hidden for DBSCAN, so its input value can
+      # be NULL or NA while that algorithm is selected
       current_clusters <- input$n_clusters
-      
-      if (current_clusters > max_clusters) {
+
+      if (!is.null(current_clusters) &&
+          !is.na(current_clusters) &&
+          current_clusters > max_clusters) {
         shiny$updateNumericInput(
           session, "n_clusters",
           value = max_clusters,
