@@ -25,6 +25,14 @@ CLUSTER_PALETTE <- c(
   "#6610f2", "#ffc107"
 )
 
+#' Noise fraction above which the auto-computed DBSCAN eps is
+#' treated as degenerate and the fallback estimate is tried.
+DBSCAN_MAX_NOISE_FRACTION <- 0.7
+
+#' Quantile of the sorted kNN distances used as the fallback
+#' eps when the knee estimate leaves too many points as noise.
+DBSCAN_FALLBACK_QUANTILE <- 0.95
+
 #' Get color for a cluster ID
 #'
 #' @param cluster_id Integer cluster ID (1-based)
@@ -481,8 +489,44 @@ run_dbscan <- function(num_data, metric) {
   db_res <- dbscan$dbscan(
     dist_matrix, eps = eps, minPts = min_pts
   )
-
   clusters <- db_res$cluster
+  eps_source <- "knee"
+
+  # Guard against a degenerate knee. On curves without a
+  # pronounced elbow the estimate can still come out too
+  # small, leaving almost everything as noise. Retry with a
+  # high percentile of the kNN distances, which is a blunter
+  # but much more stable choice, and keep whichever result
+  # labels more points.
+  noise_frac <- mean(clusters == 0)
+  if (noise_frac > DBSCAN_MAX_NOISE_FRACTION) {
+    fallback_eps <- unname(stats$quantile(
+      sorted_dists, DBSCAN_FALLBACK_QUANTILE
+    ))
+    if (fallback_eps > eps) {
+      fallback_res <- dbscan$dbscan(
+        dist_matrix, eps = fallback_eps, minPts = min_pts
+      )
+      fallback_clusters <- fallback_res$cluster
+      fallback_noise <- mean(fallback_clusters == 0)
+      if (
+        fallback_noise < noise_frac &&
+          any(fallback_clusters > 0)
+      ) {
+        rhino$log$info(
+          "DBSCAN: knee eps={round(eps, 4)} left ",
+          "{round(noise_frac * 100, 1)}% noise; ",
+          "falling back to eps={round(fallback_eps, 4)} ",
+          "({round(fallback_noise * 100, 1)}% noise)"
+        )
+        db_res <- fallback_res
+        clusters <- fallback_clusters
+        eps <- fallback_eps
+        eps_source <- "quantile_fallback"
+      }
+    }
+  }
+
   # Label noise points (cluster 0) as their own group
   # so downstream code can handle them
   n_found <- length(unique(clusters[clusters > 0]))
@@ -497,7 +541,7 @@ run_dbscan <- function(num_data, metric) {
   }
 
   rhino$log$info(
-    "DBSCAN: eps={round(eps, 4)}, ",
+    "DBSCAN: eps={round(eps, 4)} ({eps_source}), ",
     "minPts={min_pts}, ",
     "clusters={n_found}, ",
     "noise={sum(clusters == 0)}"
@@ -533,9 +577,17 @@ estimate_dbscan_eps <- function(sorted_dists) {
   y_norm <- (sorted_dists - y_min) / (y_max - y_min)
 
   # Deviation from the straight line connecting
-  # first and last points
+  # first and last points.
+  #
+  # A sorted kNN-distance curve is CONVEX: flat across the
+  # bulk of the points, then sweeping up sharply where the
+  # outliers are. The elbow is that upward sweep, and for a
+  # convex curve the deviation is negative everywhere, so the
+  # elbow is the MINIMUM. Taking the maximum here picks a
+  # point near the start of the curve, yielding an eps far too
+  # small and pushing nearly every point into noise.
   deviation <- y_norm - x
-  knee_idx <- which.max(deviation)
+  knee_idx <- which.min(deviation)
   knee_idx <- max(1, min(knee_idx, n))
   sorted_dists[knee_idx]
 }
