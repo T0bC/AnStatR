@@ -2,6 +2,7 @@
 library(ARTool)
 library(base64enc)
 library(bestNormalize)
+library(BiocVersion)
 library(bsicons)
 library(bslib)
 library(cli)
