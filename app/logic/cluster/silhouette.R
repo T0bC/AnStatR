@@ -7,7 +7,7 @@ box::use(
 )
 
 box::use(
-  app/logic/cluster/cluster[CLUSTER_PALETTE],
+  app/logic/cluster/cluster[cluster_color_map],
   app/logic/shared/error_handling,
 )
 
@@ -178,14 +178,9 @@ create_silhouette_plot <- function(sil_data,
 
       # Build named color vector
       cluster_ids <- sort(unique(sil_df$cluster))
-      n_cl <- length(cluster_ids)
-      cl_colors <- CLUSTER_PALETTE[
-        seq_len(min(n_cl, length(CLUSTER_PALETTE)))
-      ]
-      if (n_cl > length(CLUSTER_PALETTE)) {
-        cl_colors <- rep_len(CLUSTER_PALETTE, n_cl)
-      }
-      names(cl_colors) <- paste("Cluster", cluster_ids)
+      cl_colors <- cluster_color_map(
+        paste("Cluster", cluster_ids)
+      )
 
       # Resolve metadata grouping for border color
       has_group <- !is.null(group_cols) &&
