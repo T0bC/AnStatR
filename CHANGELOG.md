@@ -1,5 +1,20 @@
 # Changelog
 
+## [2026.16] - 2026-09-01
+
+### Added
+
+- **Residualize-by-group confound removal (PCA, Cluster, LDA)**: New pre-scaling option to remove a known categorical confound (e.g. site/location) by subtracting each measurement column's mean within each level of a chosen grouping column, so downstream analysis reflects only within-group variation. Must run before z-scoring, since a global SD computed across groups would mix the removed between-group variance back in; the grouping column must be complete, since `ave()` silently treats each `NA` as its own group and zeroes those rows out
+- **Synthetic "CLUSTER" option in the Cluster module's group biplot selector**: Lets the fitted cluster assignment itself be picked as the biplot grouping variable, alongside the existing metadata columns
+- **`group_is_cluster` alignment for cluster biplots**: Point fill and convex-hull colors now match when grouping the biplot by cluster, via a new `cluster_color_map()` helper that builds a named color vector from cluster labels (replacing the previous unnamed `CLUSTER_PALETTE` vector, also reused for silhouette-plot coloring)
+- **DBSCAN UI**: The "Number of clusters" input is now hidden for DBSCAN (which derives its cluster count from density, not a target count) and replaced with an explanatory note; the setting reverts cleanly when switching back to another algorithm, and the max-cluster-count guard no longer errors when `n_clusters` is `NULL`/`NA` while DBSCAN is selected
+- **Dependencies**: `BiocVersion` added to `dependencies.R` and locked in `renv.lock`
+
+### Fixed
+
+- **DBSCAN eps estimation picked the wrong knee**: The sorted kNN-distance curve is convex, so its elbow — the point separating the dense bulk from the noise sweep — is a *minimum* of the deviation-from-chord curve, not a maximum. Taking the maximum picked a point near the start of the curve, giving an eps far too small and mislabelling most points as noise. Fixed to take the minimum, with a fallback: if the knee estimate still leaves over 70% of points as noise, a 95th-percentile kNN-distance estimate is tried instead and used if it labels more points
+- **renv.lock**: Regenerated/synced for macOS
+
 ## [2026.15] - 2026-08-20
 
 ### Added
