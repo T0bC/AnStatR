@@ -577,7 +577,9 @@ server <- function(id, input_data, data_version,
               settings = list(
                 algorithm = algorithm,
                 metric = cluster_metric,
-                n_clusters = n_clusters,
+                # DBSCAN derives k from density, so the
+                # n_clusters input is hidden and unset there
+                n_clusters = n_clusters %||% NA,
                 skewness_correction = isTRUE(
                   input$correct_skewness
                 ),
