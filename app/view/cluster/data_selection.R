@@ -12,6 +12,10 @@ box::use(
   app/view/shared/recommendation_banner,
 )
 
+# Synthetic Group Biplot option that colors points by
+# cluster assignment rather than by a data column.
+CLUSTER_OPTION <- "CLUSTER"
+
 #' @export
 tab_ui <- function(ns) {
   sidebar_tabs$create_tab(
@@ -438,8 +442,8 @@ tab_server <- function(input, output, session,
     )
     shiny$updateSelectizeInput(
       session, "groupBiplot",
-      choices = desc_cols,
-      selected = character(0)
+      choices = group_biplot_choices(desc_cols),
+      selected = CLUSTER_OPTION
     )
   }, ignoreInit = TRUE)
 
@@ -463,8 +467,8 @@ tab_server <- function(input, output, session,
       )
       shiny$updateSelectizeInput(
         session, "groupBiplot",
-        choices = character(0),
-        selected = character(0)
+        choices = CLUSTER_OPTION,
+        selected = CLUSTER_OPTION
       )
       return()
     }
@@ -478,7 +482,11 @@ tab_server <- function(input, output, session,
 
     ret_meta <- intersect(cur_meta, desc_cols)
     ret_meas <- intersect(cur_meas, meas_cols)
-    ret_grp  <- intersect(cur_grp, ret_meta)
+    # "CLUSTER" is synthetic, so it is not in ret_meta and
+    # must be retained explicitly rather than intersected away
+    ret_grp  <- intersect(
+      cur_grp, group_biplot_choices(ret_meta)
+    )
 
     rhino$log$info(
       "Cluster data_selection: ",
@@ -496,7 +504,8 @@ tab_server <- function(input, output, session,
     )
     shiny$updateSelectizeInput(
       session, "groupBiplot",
-      choices = ret_meta, selected = ret_grp
+      choices = group_biplot_choices(ret_meta),
+      selected = ret_grp
     )
   }, ignoreInit = TRUE)
 
@@ -519,8 +528,7 @@ tab_server <- function(input, output, session,
 
   shiny$observe({
     selected_meta <- debounced_meta()
-    cluster_option <- "CLUSTER"
-    all_choices <- unique(c(selected_meta, cluster_option))
+    all_choices <- group_biplot_choices(selected_meta)
     cur_grp <- shiny$isolate(input$groupBiplot)
     shiny$updateSelectizeInput(
       session, "groupBiplot",
@@ -534,6 +542,20 @@ tab_server <- function(input, output, session,
 # =============================================================================
 # Internal helpers (not exported)
 # =============================================================================
+
+#' Build the choice list for the Group Biplot selector
+#'
+#' "CLUSTER" is a synthetic option (not a real data column)
+#' that colors the biplot by cluster assignment. It must be
+#' offered alongside the descriptive columns everywhere the
+#' selector is repopulated, otherwise a reset silently drops
+#' it and the biplot loses its per-cluster coloring.
+#'
+#' @param desc_cols Character vector of descriptive columns
+#' @return Character vector of choices including "CLUSTER"
+group_biplot_choices <- function(desc_cols) {
+  unique(c(desc_cols, CLUSTER_OPTION))
+}
 
 #' Compute PCA dimension recommendation based on
 #' cumulative variance thresholds (90% and 95%).
