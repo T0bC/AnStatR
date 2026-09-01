@@ -3,12 +3,13 @@ box::use(
   ggplot2,
   grDevices,
   rhino,
+  stats,
 )
 
 box::use(
   app/logic/cluster/cluster[
-    CLUSTER_PALETTE,
     cluster_color,
+    cluster_color_map,
   ],
   app/logic/shared/error_handling,
   app/logic/pca/biplot[create_biplot],
@@ -200,7 +201,8 @@ build_pca_biplot <- function(data, measure_cols,
 
   ind_coord <- pca_result$scores
   add_cluster_overlays(
-    p, ind_coord, clusters, dim_x, dim_y
+    p, ind_coord, clusters, dim_x, dim_y,
+    group_is_cluster = identical(group_cols, "CLUSTER")
   )
 }
 
@@ -390,32 +392,36 @@ build_raw_biplot <- function(data, measure_cols,
   colnames(ind_coord) <- c(dim_x, dim_y)
 
   add_cluster_overlays(
-    p, ind_coord, clusters, dim_x, dim_y
+    p, ind_coord, clusters, dim_x, dim_y,
+    group_is_cluster = identical(group_cols, "CLUSTER")
   )
 }
 
 #' Add cluster polygon overlays and centroid labels
+#'
+#' The colour scale and centroid labels are derived from the
+#' cluster vector itself, not from the hull data. Clusters with
+#' fewer than 3 points (or perfectly collinear ones) cannot form
+#' a polygon, but they still get a label and a legend entry.
+#'
+#' @param group_is_cluster Logical, TRUE when points are grouped
+#'   by the "CLUSTER" pseudo-column. When TRUE the point fill
+#'   scale is aligned with the hull colour scale so both use
+#'   CLUSTER_PALETTE for the same cluster.
 add_cluster_overlays <- function(p, ind_coord,
                                   clusters,
-                                  dim_x, dim_y) {
+                                  dim_x, dim_y,
+                                  group_is_cluster = FALSE) {
+  cluster_ids <- sort(unique(clusters[clusters > 0]))
+  if (length(cluster_ids) == 0) return(p)
+
+  cluster_levels <- paste("Cluster", cluster_ids)
+  cl_colors <- cluster_color_map(cluster_levels)
+
   hull_data <- build_cluster_hull_data(
     ind_coord, clusters, dim_x, dim_y
   )
-
   if (!is.null(hull_data) && nrow(hull_data) > 0) {
-    # Build named color vector from shared palette
-    cluster_levels <- levels(hull_data$cluster_label)
-    n_cl <- length(cluster_levels)
-    cl_colors <- CLUSTER_PALETTE[
-      seq_len(min(n_cl, length(CLUSTER_PALETTE)))
-    ]
-    if (n_cl > length(CLUSTER_PALETTE)) {
-      cl_colors <- rep_len(
-        CLUSTER_PALETTE, n_cl
-      )
-    }
-    names(cl_colors) <- cluster_levels
-
     p <- p + ggplot2$geom_polygon(
       data = hull_data,
       ggplot2$aes(
@@ -429,36 +435,56 @@ add_cluster_overlays <- function(p, ind_coord,
       alpha = 0.8,
       show.legend = TRUE
     )
+  }
 
-    centroid_data <- build_cluster_centroids(
-      ind_coord, clusters, dim_x, dim_y
+  centroid_data <- build_cluster_centroids(
+    ind_coord, clusters, dim_x, dim_y
+  )
+  if (!is.null(centroid_data) &&
+      nrow(centroid_data) > 0) {
+    p <- p + ggplot2$geom_label(
+      data = centroid_data,
+      ggplot2$aes(
+        x = x, y = y,
+        label = cluster_label,
+        colour = cluster_label
+      ),
+      fill = "white",
+      alpha = 0.8,
+      size = 3.5,
+      fontface = "bold",
+      label.padding = ggplot2$unit(
+        0.2, "lines"
+      ),
+      show.legend = FALSE
     )
-    if (!is.null(centroid_data) &&
-        nrow(centroid_data) > 0) {
-      p <- p + ggplot2$geom_label(
-        data = centroid_data,
-        ggplot2$aes(
-          x = x, y = y,
-          label = cluster_label,
-          colour = cluster_label
-        ),
-        fill = "white",
-        alpha = 0.8,
-        size = 3.5,
-        fontface = "bold",
-        label.padding = ggplot2$unit(
-          0.2, "lines"
-        ),
-        show.legend = FALSE
+  }
+
+  p <- p +
+    ggplot2$scale_colour_manual(
+      values = cl_colors,
+      name = "Cluster"
+    ) +
+    ggplot2$labs(colour = "Cluster")
+
+  # Match point fill to hull colour when grouping by CLUSTER.
+  # Point fill levels come from as.factor(clusters), so they are
+  # bare ids ("1", "2", …) and may include the DBSCAN noise
+  # level "0", which has no hull and therefore no colour yet.
+  if (group_is_cluster) {
+    fill_colors <- stats$setNames(
+      unname(cl_colors), as.character(cluster_ids)
+    )
+    if (any(clusters == 0)) {
+      fill_colors <- c(
+        fill_colors,
+        stats$setNames(cluster_color(length(cluster_ids) + 1L), "0")
       )
     }
-
-    p <- p +
-      ggplot2$scale_colour_manual(
-        values = cl_colors,
-        name = "Cluster"
-      ) +
-      ggplot2$labs(colour = "Cluster")
+    p <- p + ggplot2$scale_fill_manual(
+      values = fill_colors,
+      name = "Cluster"
+    )
   }
 
   p
