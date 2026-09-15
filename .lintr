@@ -7,6 +7,14 @@ linters:
 exclusions:
   list(
     "app/logic/statistics/Rallfun-v43.R",
+    "app/logic/statistics/customWRS.R" = list(
+      object_name_linter = Inf,
+      seq_linter = Inf
+    ),
+    "app/logic/statistics/cliff_delta.R" = list(
+      object_name_linter = Inf,
+      seq_linter = Inf
+    ),
     "app/logic/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
     "app/logic/cluster/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
     "app/logic/lda/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
