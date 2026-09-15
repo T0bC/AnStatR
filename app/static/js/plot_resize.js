@@ -124,20 +124,70 @@ function initializeWindowSize(targetId, windowInputId) {
         }
     });
 
-    // Re-report when container content changes (uiOutput renders)
-    var contentObserver = new MutationObserver(function () {
-        var container = document.getElementById(targetId);
-        if (container && container.offsetWidth > 0) {
-            setTimeout(reportWindowSize, 50);
-        }
-    });
+    // Re-report when container content changes (uiOutput renders).
+    //
+    // The layout read below (offsetWidth, plus the querySelector/offsetWidth
+    // reads inside reportWindowSize) must never run synchronously inside the
+    // MutationObserver callback: that callback fires from within Shiny's
+    // WebSocket message handler while the new DOM is being inserted, so the
+    // read forces a synchronous full-document layout mid-insertion. On the
+    // deployed app a single one of those was measured at 5,608 ms.
+    //
+    // Instead the measurement is deferred to idle time (or the next frame),
+    // by which point the browser has laid out the new content on its own
+    // schedule and the read is free. It is also coalesced, so one burst of
+    // mutations produces one measurement rather than one per batch.
+    var sizeReportPending = false;
 
-    $(document).ready(function () {
+    var deferIdle = function (fn) {
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(fn, { timeout: 500 });
+        } else {
+            setTimeout(fn, 50);
+        }
+    };
+
+    var scheduleSizeReport = function () {
+        if (sizeReportPending) return;
+        sizeReportPending = true;
+        deferIdle(function () {
+            sizeReportPending = false;
+            var container = document.getElementById(targetId);
+            if (container && container.offsetWidth > 0) {
+                reportWindowSize();
+            }
+        });
+    };
+
+    var contentObserver = new MutationObserver(scheduleSizeReport);
+
+    // Scope the observer to this module's own container instead of the whole
+    // document. Previously every module that called initializeWindowSize()
+    // observed document.body with subtree:true, so a DOM insertion in any one
+    // tab woke all of them.
+    // targetId is a uiOutput container, so Shiny replaces its children and
+    // the element itself persists -- safe to observe once and keep.
+    var attached = false;
+    var attempts = 0;
+
+    var observeContainer = function () {
+        if (attached) return;
+        var container = document.getElementById(targetId);
+        if (!container) {
+            // initializeWindowSize() is itself called from a shiny:connected
+            // handler, so there is no later lifecycle event to wait on.
+            // Retry briefly in case the container has not been inserted yet.
+            if (++attempts < 20) setTimeout(observeContainer, 100);
+            return;
+        }
+        attached = true;
         contentObserver.observe(
-            document.body,
+            container,
             { childList: true, subtree: true }
         );
-    });
+    };
+
+    observeContainer();
 }
 
 // =============================================================================
@@ -222,22 +272,27 @@ var ANSTATR_DEBUG = false;
         }
     }
 
+    // Coalesce all mutations in a frame into a single sweep. The previous
+    // version ran querySelectorAll() on every added node, so inserting a
+    // large plot meant walking its whole subtree once per node. One
+    // document-level sweep on the next frame does the same work far cheaper,
+    // and keeps the style writes out of the WebSocket message handler.
+    var fixScheduled = false;
+
+    function scheduleFix() {
+        if (fixScheduled) return;
+        fixScheduled = true;
+        requestAnimationFrame(function () {
+            fixScheduled = false;
+            fixAllGirafeSvgs();
+        });
+    }
+
     var observer = new MutationObserver(function (mutations) {
         for (var i = 0; i < mutations.length; i++) {
-            var added = mutations[i].addedNodes;
-            for (var j = 0; j < added.length; j++) {
-                var node = added[j];
-                if (node.nodeType !== 1) continue;
-                if (node.tagName === 'svg') {
-                    fixGirafeSvg(node);
-                } else if (node.querySelectorAll) {
-                    var svgs = node.querySelectorAll(
-                        '.girafe_container_std svg'
-                    );
-                    for (var k = 0; k < svgs.length; k++) {
-                        fixGirafeSvg(svgs[k]);
-                    }
-                }
+            if (mutations[i].addedNodes.length > 0) {
+                scheduleFix();
+                return;
             }
         }
     });
