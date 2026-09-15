@@ -3,7 +3,17 @@
 # to avoid stack overflow when loading the full 95,000-line Rallfun library.
 #
 # Original source: Rand Wilcox's Rallfun-v43.R
-# Functions: elimna, binomci, binomcipv, cid, cidv2, bmp, cidmulv2_labelled
+# Functions: elimna, binomci, binomcipv, cid, cidv2, bmp, cidmulv2_labelled,
+# pool.a.list (elimna dependency)
+
+#' Pool all data in a list into a single vector
+#' @keywords internal
+pool.a.list <- function(x) {
+  if (!is.list(x)) stop("x should have list mode")
+  pts <- NULL
+  for (j in 1:length(x)) pts <- c(pts, x[[j]])
+  pts
+}
 
 #' Remove rows with missing values
 #' @keywords internal
