@@ -36,7 +36,7 @@ compute_pooled_vc <- function(scores, groups) {
     idx <- which(groups == g)
     n_g <- length(idx)
     if (n_g < 2) next
-    g_scores <- scores[idx, , drop = FALSE] # nolint: unused_declared_object_linter.
+    g_scores <- scores[idx, , drop = FALSE] # nolint
     g_cov <- stats::cov(g_scores)
     pooled <- pooled + (n_g - 1) * g_cov
     total_df <- total_df + (n_g - 1)
