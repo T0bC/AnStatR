@@ -20,7 +20,8 @@ describe("compute_optimal_clusters", {
       b = c(rnorm(30, 0), rnorm(30, 5))
     )
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 5
+      data, c("a", "b"),
+      max_k = 5
     )
     expect_true(result$success)
     expect_true(!is.null(result$result$methods$elbow))
@@ -37,7 +38,8 @@ describe("compute_optimal_clusters", {
       b = c(rnorm(20, 0), rnorm(20, 5))
     )
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 6
+      data, c("a", "b"),
+      max_k = 6
     )
     expect_true(result$success)
     methods <- result$result$methods
@@ -56,7 +58,8 @@ describe("compute_optimal_clusters", {
       b = c(rnorm(30, 0), rnorm(30, 5))
     )
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 5
+      data, c("a", "b"),
+      max_k = 5
     )
     expect_true(result$success)
     s <- result$result$summary
@@ -69,7 +72,8 @@ describe("compute_optimal_clusters", {
     set.seed(42)
     data <- data.frame(a = 1:5, b = 6:10)
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 20
+      data, c("a", "b"),
+      max_k = 20
     )
     expect_true(result$success)
     # max_k should be clamped to 4 (nrow - 1)
@@ -80,7 +84,8 @@ describe("compute_optimal_clusters", {
 
   it("returns error for NULL data", {
     result <- optimal_clusters$compute_optimal_clusters(
-      NULL, c("a"), max_k = 5
+      NULL, c("a"),
+      max_k = 5
     )
     expect_true(!result$success)
   })
@@ -88,7 +93,8 @@ describe("compute_optimal_clusters", {
   it("returns error for empty columns", {
     data <- data.frame(a = 1:10)
     result <- optimal_clusters$compute_optimal_clusters(
-      data, character(0), max_k = 5
+      data, character(0),
+      max_k = 5
     )
     expect_true(!result$success)
   })
@@ -100,7 +106,8 @@ describe("compute_optimal_clusters", {
       stringsAsFactors = FALSE
     )
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 5
+      data, c("a", "b"),
+      max_k = 5
     )
     expect_true(!result$success)
   })
@@ -108,7 +115,8 @@ describe("compute_optimal_clusters", {
   it("returns error for too few rows", {
     data <- data.frame(a = 1:2, b = 3:4)
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 5
+      data, c("a", "b"),
+      max_k = 5
     )
     expect_true(!result$success)
   })
@@ -120,7 +128,8 @@ describe("compute_optimal_clusters", {
       b = c(rnorm(30, 0), rnorm(30, 5))
     )
     result <- optimal_clusters$compute_optimal_clusters(
-      data, c("a", "b"), max_k = 5
+      data, c("a", "b"),
+      max_k = 5
     )
     expect_true(result$success)
     pd <- result$result$plot_data

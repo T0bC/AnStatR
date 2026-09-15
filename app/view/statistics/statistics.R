@@ -19,7 +19,6 @@ box::use(
   app/logic/statistics/report,
   app/logic/statistics/robust_posthoc,
   app/logic/statistics/robust_tests,
-  app/logic/statistics/validate,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
   app/view/statistics/adjustments,
@@ -40,7 +39,8 @@ render_omnibus_result <- function(result, x_axis, approach,
 
   if (error_handling$is_app_error(result)) {
     return(error_display$error_alert_structured(
-      result, type = "warning"
+      result,
+      type = "warning"
     ))
   }
 
@@ -204,7 +204,9 @@ render_rm_mixed_posthoc <- function(display_df, params) {
 
 # --- Private helper: render post-hoc result as UI ---
 render_posthoc_result <- function(result, x_axis, params) {
-  if (is.null(result)) return(NULL)
+  if (is.null(result)) {
+    return(NULL)
+  }
 
   if (error_handling$is_app_error(result)) {
     return(shiny$tags$div(
@@ -215,7 +217,8 @@ render_posthoc_result <- function(result, x_axis, params) {
         "Combined Pairwise Comparisons"
       ),
       error_display$error_alert_structured(
-        result, type = "warning"
+        result,
+        type = "warning"
       )
     ))
   }
@@ -233,7 +236,6 @@ render_posthoc_result <- function(result, x_axis, params) {
     schema <- posthoc_columns$detect_posthoc_schema(display_df)
     has_lincon <- identical(schema$approach, "robust")
     has_rm_lincon <- identical(schema$approach, "rm_robust")
-    has_tukey <- identical(schema$approach, "parametric")
     has_paired_t <- identical(schema$approach, "rm_parametric")
     has_paired_d <- any(grepl(
       "^Paired\\.d", names(display_df)
@@ -251,9 +253,9 @@ render_posthoc_result <- function(result, x_axis, params) {
     p_adj_col <- if (is.na(schema$p_adj_col)) NULL else schema$p_adj_col
 
     if (isTRUE(params$filter_p_values) &&
-        !is.null(p_adj_col) &&
-        p_adj_col %in% names(display_df) &&
-        is.numeric(display_df[[p_adj_col]])) {
+      !is.null(p_adj_col) &&
+      p_adj_col %in% names(display_df) &&
+      is.numeric(display_df[[p_adj_col]])) {
       display_df <- display_df[
         display_df[[p_adj_col]] < 0.07, ,
         drop = FALSE
@@ -340,12 +342,14 @@ render_posthoc_result <- function(result, x_axis, params) {
     } else {
       left_cols <- grep(
         paste0("^", left_prefix, "\\."),
-        names(display_df), value = TRUE
+        names(display_df),
+        value = TRUE
       )
       right_cols <- if (!is.null(right_prefix)) {
         grep(
           paste0("^", right_prefix, "\\."),
-          names(display_df), value = TRUE
+          names(display_df),
+          value = TRUE
         )
       } else {
         character(0)
@@ -354,7 +358,8 @@ render_posthoc_result <- function(result, x_axis, params) {
 
     # Left table: Interaction + left columns, strip prefix
     left_df <- display_df[
-      , c("Interaction", left_cols), drop = FALSE
+      , c("Interaction", left_cols),
+      drop = FALSE
     ]
     names(left_df) <- gsub(
       paste0("^", left_prefix, "\\."), "", names(left_df)
@@ -399,7 +404,7 @@ render_posthoc_result <- function(result, x_axis, params) {
     }
 
     rm_note <- if (isTRUE(params$is_repeated_measures) &&
-                   identical(params$test_approach, "parametric")) {
+      identical(params$test_approach, "parametric")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       shiny$tags$p(
         class = "text-muted small mb-2",
@@ -416,7 +421,7 @@ render_posthoc_result <- function(result, x_axis, params) {
         "for both test regimes."
       )
     } else if (isTRUE(params$is_repeated_measures) &&
-               identical(params$test_approach, "nonparametric")) {
+      identical(params$test_approach, "nonparametric")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       if (length(x_axis) <= 1) {
         # 1-way pure within: every comparison is paired
@@ -449,7 +454,7 @@ render_posthoc_result <- function(result, x_axis, params) {
         )
       }
     } else if (isTRUE(params$is_repeated_measures) &&
-               identical(params$test_approach, "robust")) {
+      identical(params$test_approach, "robust")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       # Mirror the harmonized labels used in the downloadable report.
       left_label <- "Location (lincon / paired Yuen)"
@@ -583,13 +588,16 @@ server <- function(id, input_data, data_version,
     })
 
     # --- Reset state on new data ---
-    shiny$observeEvent(data_version(), {
-      computation_results(NULL)
-      computation_status("idle")
-      snapshotted_plots(NULL)
-      last_error(NULL)
-      rhino$log$info("Statistics: state reset for new data")
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        computation_results(NULL)
+        computation_status("idle")
+        snapshotted_plots(NULL)
+        last_error(NULL)
+        rhino$log$info("Statistics: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
 
     # --- Delegate to sub-module servers ---
     options$tab_server(
@@ -709,7 +717,7 @@ server <- function(id, input_data, data_version,
       }
 
       if (plots_enabled &&
-          (is.null(cached_plots) || length(cached_plots) == 0)) {
+        (is.null(cached_plots) || length(cached_plots) == 0)) {
         computation_status("error")
         computation_results(list(
           error = paste(
@@ -755,289 +763,291 @@ server <- function(id, input_data, data_version,
       # Wrap computation in withProgress to force UI flush
       shiny$withProgress(
         message = "Computing Statistics",
-        value = 0, {
+        value = 0,
+        {
+          # --- Collect RM parameters ---
+          rm_active <- isTRUE(params$is_repeated_measures)
+          rm_id <- params$rm_id_col
+          rm_within <- params$rm_within_col
 
-      # --- Collect RM parameters ---
-      rm_active <- isTRUE(params$is_repeated_measures)
-      rm_id <- params$rm_id_col
-      rm_within <- params$rm_within_col
+          # --- Run omnibus tests per measurement ---
+          n_ways <- length(x_cols)
+          omnibus_results <- lapply(measures, function(m) {
+            df_m <- filter_excluded_rows(data, m)
 
-      # --- Run omnibus tests per measurement ---
-      n_ways <- length(x_cols)
-      omnibus_results <- lapply(measures, function(m) {
-        df_m <- filter_excluded_rows(data, m)
+            if (params$test_approach == "robust") {
+              if (n_ways == 1) {
+                robust_tests$perform_t1way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  use_bootstrap = params$use_bootstrap,
+                  boot_samples = params$boot_samples,
+                  boot_sample_size = params$boot_sample_size,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 2) {
+                robust_tests$perform_t2way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  use_bootstrap = params$use_bootstrap,
+                  boot_samples = params$boot_samples,
+                  boot_sample_size = params$boot_sample_size,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 3) {
+                robust_tests$perform_t3way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  use_bootstrap = params$use_bootstrap,
+                  boot_samples = params$boot_samples,
+                  boot_sample_size = params$boot_sample_size,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else {
+                error_handling$simple_error(
+                  message = paste0(
+                    n_ways,
+                    "-way robust test is not supported."
+                  ),
+                  operation_name = "statistics_compute"
+                )
+              }
+            } else if (params$test_approach == "parametric") {
+              if (n_ways == 1) {
+                parametric_tests$perform_anova1way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 2) {
+                parametric_tests$perform_anova2way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 3) {
+                parametric_tests$perform_anova3way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else {
+                error_handling$simple_error(
+                  message = paste0(
+                    n_ways,
+                    "-way parametric test is not ",
+                    "supported."
+                  ),
+                  operation_name = "statistics_compute"
+                )
+              }
+            } else if (params$test_approach == "nonparametric") {
+              if (n_ways == 1) {
+                nonparametric_tests$perform_kruskal1way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 2) {
+                nonparametric_tests$perform_art2way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else if (n_ways == 3) {
+                nonparametric_tests$perform_art3way(
+                  df = df_m,
+                  x_axis = x_cols,
+                  measure_col = m,
+                  tr_value = tr_val,
+                  is_rm = rm_active,
+                  id_col = rm_id,
+                  within_col = rm_within
+                )
+              } else {
+                error_handling$simple_error(
+                  message = paste0(
+                    n_ways,
+                    "-way non-parametric test is not ",
+                    "supported."
+                  ),
+                  operation_name = "statistics_compute"
+                )
+              }
+            } else {
+              error_handling$simple_error(
+                message = paste0(
+                  "Unknown test approach: '",
+                  params$test_approach, "'."
+                ),
+                operation_name = "statistics_compute"
+              )
+            }
+          })
+          names(omnibus_results) <- measures
 
-        if (params$test_approach == "robust") {
-          if (n_ways == 1) {
-            robust_tests$perform_t1way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              use_bootstrap = params$use_bootstrap,
-              boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
+          shiny$incProgress(0.4, detail = "Running omnibus tests...")
+
+          # --- Count NAs per measure with per-group breakdown ---
+          na_details <- lapply(measures, function(m) {
+            df_m <- filter_excluded_rows(data, m)
+            na_mask <- is.na(df_m[[m]])
+            total_na <- sum(na_mask)
+            if (total_na == 0) {
+              return(list(total = 0L, groups = NULL))
+            }
+            # Build per-group NA counts
+            grp <- df_m[, x_cols, drop = FALSE]
+            grp$.na <- na_mask
+            agg <- stats$aggregate(
+              .na ~ .,
+              data = grp, FUN = sum
             )
-          } else if (n_ways == 2) {
-            robust_tests$perform_t2way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              use_bootstrap = params$use_bootstrap,
-              boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else if (n_ways == 3) {
-            robust_tests$perform_t3way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              use_bootstrap = params$use_bootstrap,
-              boot_samples = params$boot_samples,
-              boot_sample_size = params$boot_sample_size,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
+            # Keep only groups that actually have NAs
+            agg <- agg[agg$.na > 0, , drop = FALSE]
+            list(total = total_na, groups = agg)
+          })
+          names(na_details) <- measures
+
+          shiny$incProgress(0.1, detail = "Running post-hoc tests...")
+
+          # --- Run post-hoc tests per measurement ---
+          posthoc_results <- if (
+            params$test_approach == "robust"
+          ) {
+            ph <- lapply(measures, function(m) {
+              df_m <- filter_excluded_rows(data, m)
+              robust_posthoc$perform_combined_posthoc(
+                df = df_m,
+                x_axis = x_cols,
+                measure_col = m,
+                tr_value = tr_val,
+                use_bootstrap = params$use_bootstrap,
+                boot_samples = params$boot_samples,
+                boot_sample_size = params$boot_sample_size,
+                p_adjust_method =
+                  params$p_val_cor_method,
+                filter_valid = isTRUE(
+                  params$filter_valid_comparisons
+                ),
+                is_rm = rm_active,
+                id_col = rm_id,
+                within_col = rm_within
+              )
+            })
+            names(ph) <- measures
+            ph
+          } else if (params$test_approach == "parametric") {
+            ph <- lapply(measures, function(m) {
+              df_m <- filter_excluded_rows(data, m)
+              parametric_posthoc$perform_combined_parametric_posthoc(
+                df = df_m,
+                x_axis = x_cols,
+                measure_col = m,
+                p_adjust_method =
+                  params$p_val_cor_method,
+                filter_valid = isTRUE(
+                  params$filter_valid_comparisons
+                ),
+                is_rm = rm_active,
+                id_col = rm_id,
+                within_col = rm_within
+              )
+            })
+            names(ph) <- measures
+            ph
+          } else if (params$test_approach == "nonparametric") {
+            ph <- lapply(measures, function(m) {
+              df_m <- filter_excluded_rows(data, m)
+              nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+                df = df_m,
+                x_axis = x_cols,
+                measure_col = m,
+                p_adjust_method =
+                  params$p_val_cor_method,
+                filter_valid = isTRUE(
+                  params$filter_valid_comparisons
+                ),
+                posthoc_method =
+                  params$np_posthoc_method,
+                is_rm = rm_active,
+                id_col = rm_id,
+                within_col = rm_within
+              )
+            })
+            names(ph) <- measures
+            ph
           } else {
-            error_handling$simple_error(
-              message = paste0(
-                n_ways,
-                "-way robust test is not supported."
-              ),
-              operation_name = "statistics_compute"
-            )
+            NULL
           }
-        } else if (params$test_approach == "parametric") {
-          if (n_ways == 1) {
-            parametric_tests$perform_anova1way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
+
+          # --- Parameter screening ranking (screening mode only) ---
+          ranking <- NULL
+          if (!plots_enabled) {
+            ranking_exec <- error_handling$safe_execute(
+              expr = {
+                parameter_ranking$rank_parameters_by_comparison(
+                  posthoc_results,
+                  top_n = 3, p_column = "raw"
+                )
+              },
+              operation_name = "parameter_ranking"
             )
-          } else if (n_ways == 2) {
-            parametric_tests$perform_anova2way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else if (n_ways == 3) {
-            parametric_tests$perform_anova3way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else {
-            error_handling$simple_error(
-              message = paste0(
-                n_ways,
-                "-way parametric test is not ",
-                "supported."
-              ),
-              operation_name = "statistics_compute"
-            )
+            ranking <- if (ranking_exec$success) {
+              ranking_exec$result
+            } else {
+              ranking_exec$error
+            }
           }
-        } else if (params$test_approach == "nonparametric") {
-          if (n_ways == 1) {
-            nonparametric_tests$perform_kruskal1way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else if (n_ways == 2) {
-            nonparametric_tests$perform_art2way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else if (n_ways == 3) {
-            nonparametric_tests$perform_art3way(
-              df = df_m,
-              x_axis = x_cols,
-              measure_col = m,
-              tr_value = tr_val,
-              is_rm = rm_active,
-              id_col = rm_id,
-              within_col = rm_within
-            )
-          } else {
-            error_handling$simple_error(
-              message = paste0(
-                n_ways,
-                "-way non-parametric test is not ",
-                "supported."
-              ),
-              operation_name = "statistics_compute"
-            )
-          }
-        } else {
-          error_handling$simple_error(
-            message = paste0(
-              "Unknown test approach: '",
-              params$test_approach, "'."
-            ),
-            operation_name = "statistics_compute"
-          )
-        }
-      })
-      names(omnibus_results) <- measures
 
-      shiny$incProgress(0.4, detail = "Running omnibus tests...")
+          shiny$incProgress(1, detail = "Finalizing results...")
 
-      # --- Count NAs per measure with per-group breakdown ---
-      na_details <- lapply(measures, function(m) {
-        df_m <- filter_excluded_rows(data, m)
-        na_mask <- is.na(df_m[[m]])
-        total_na <- sum(na_mask)
-        if (total_na == 0) {
-          return(list(total = 0L, groups = NULL))
-        }
-        # Build per-group NA counts
-        grp <- df_m[, x_cols, drop = FALSE]
-        grp$.na <- na_mask
-        agg <- stats$aggregate(
-          .na ~ .,
-          data = grp, FUN = sum
-        )
-        # Keep only groups that actually have NAs
-        agg <- agg[agg$.na > 0, , drop = FALSE]
-        list(total = total_na, groups = agg)
-      })
-      names(na_details) <- measures
-
-      shiny$incProgress(0.1, detail = "Running post-hoc tests...")
-
-      # --- Run post-hoc tests per measurement ---
-      posthoc_results <- if (
-        params$test_approach == "robust"
-      ) {
-        ph <- lapply(measures, function(m) {
-          df_m <- filter_excluded_rows(data, m)
-          robust_posthoc$perform_combined_posthoc(
-            df = df_m,
+          computation_results(list(
+            measures = measures,
             x_axis = x_cols,
-            measure_col = m,
-            tr_value = tr_val,
-            use_bootstrap = params$use_bootstrap,
-            boot_samples = params$boot_samples,
-            boot_sample_size = params$boot_sample_size,
-            p_adjust_method =
-              params$p_val_cor_method,
-            filter_valid = isTRUE(
-              params$filter_valid_comparisons
-            ),
-            is_rm = rm_active,
-            id_col = rm_id,
-            within_col = rm_within
-          )
-        })
-        names(ph) <- measures
-        ph
-      } else if (params$test_approach == "parametric") {
-        ph <- lapply(measures, function(m) {
-          df_m <- filter_excluded_rows(data, m)
-          parametric_posthoc$perform_combined_parametric_posthoc(
-            df = df_m,
-            x_axis = x_cols,
-            measure_col = m,
-            p_adjust_method =
-              params$p_val_cor_method,
-            filter_valid = isTRUE(
-              params$filter_valid_comparisons
-            ),
-            is_rm = rm_active,
-            id_col = rm_id,
-            within_col = rm_within
-          )
-        })
-        names(ph) <- measures
-        ph
-      } else if (params$test_approach == "nonparametric") {
-        ph <- lapply(measures, function(m) {
-          df_m <- filter_excluded_rows(data, m)
-          nonparametric_posthoc$perform_combined_nonparametric_posthoc(
-            df = df_m,
-            x_axis = x_cols,
-            measure_col = m,
-            p_adjust_method =
-              params$p_val_cor_method,
-            filter_valid = isTRUE(
-              params$filter_valid_comparisons
-            ),
-            posthoc_method =
-              params$np_posthoc_method,
-            is_rm = rm_active,
-            id_col = rm_id,
-            within_col = rm_within
-          )
-        })
-        names(ph) <- measures
-        ph
-      } else {
-        NULL
-      }
-
-      # --- Parameter screening ranking (screening mode only) ---
-      ranking <- NULL
-      if (!plots_enabled) {
-        ranking_exec <- error_handling$safe_execute(
-          expr = {
-            parameter_ranking$rank_parameters_by_comparison(
-              posthoc_results, top_n = 3, p_column = "raw"
-            )
-          },
-          operation_name = "parameter_ranking"
-        )
-        ranking <- if (ranking_exec$success) {
-          ranking_exec$result
-        } else {
-          ranking_exec$error
+            params = params,
+            trim_value = tr_val,
+            omnibus = omnibus_results,
+            posthoc = posthoc_results,
+            na_details = na_details,
+            no_plots_mode = !plots_enabled,
+            ranking = ranking,
+            timestamp = Sys.time()
+          ))
         }
-      }
-
-      shiny$incProgress(1, detail = "Finalizing results...")
-
-      computation_results(list(
-        measures = measures,
-        x_axis = x_cols,
-        params = params,
-        trim_value = tr_val,
-        omnibus = omnibus_results,
-        posthoc = posthoc_results,
-        na_details = na_details,
-        no_plots_mode = !plots_enabled,
-        ranking = ranking,
-        timestamp = Sys.time()
-      ))
-      }) # end withProgress
+      ) # end withProgress
 
       computation_status("done")
 
@@ -1045,79 +1055,25 @@ server <- function(id, input_data, data_version,
     })
 
     # --- Register ggiraph outputs when results arrive ---
-    shiny$observeEvent(snapshotted_plots(), {
-      plots <- snapshotted_plots()
-      shiny$req(plots)
+    shiny$observeEvent(snapshotted_plots(),
+      {
+        plots <- snapshotted_plots()
+        shiny$req(plots)
 
-      # Register outputs for raw plot keys
-      lapply(names(plots), function(measure) {
-        local({
-          local_measure <- measure
-          safe_id <- make.names(local_measure)
-          output_id <- paste0("stat_plot_", safe_id)
-
-          output[[output_id]] <- ggiraph$renderGirafe({
-            p <- snapshotted_plots()[[local_measure]]
-            shiny$req(p)
-
-            ws <- window_size()
-            w_svg <- max(4, ws$width / 100)
-            # ~35% of viewport height in inches (96 dpi)
-            h_svg <- max(3.5, (ws$height * 0.35) / 96)
-
-            ggiraph$girafe(
-              ggobj = p,
-              width_svg = w_svg,
-              height_svg = h_svg,
-              options = list(
-                ggiraph$opts_sizing(
-                  rescale = FALSE
-                ),
-                ggiraph$opts_hover(
-                  css = paste(
-                    "fill-opacity:1;",
-                    "stroke-width:2;"
-                  )
-                ),
-                ggiraph$opts_tooltip(
-                  css = paste(
-                    "background-color:white;",
-                    "padding:8px;",
-                    "border-radius:4px;",
-                    "border:1px solid #ccc;",
-                    "font-size:12px;"
-                  ),
-                  use_fill = FALSE
-                ),
-                ggiraph$opts_selection(
-                  type = "none"
-                )
-              )
-            )
-          })
-        })
-      })
-
-      # Also register under _normalized keys so the same
-      # ggiraph output is reachable by normalized measure name
-      results <- computation_results()
-      if (!is.null(results) && !is.null(results$measures)) {
-        norm_measures <- results$measures[
-          grepl("_normalized$", results$measures)
-        ]
-        for (nm in norm_measures) {
+        # Register outputs for raw plot keys
+        lapply(names(plots), function(measure) {
           local({
-            local_nm <- nm
-            raw_key <- resolve_plot_key(local_nm)
-            safe_id <- make.names(local_nm)
+            local_measure <- measure
+            safe_id <- make.names(local_measure)
             output_id <- paste0("stat_plot_", safe_id)
 
             output[[output_id]] <- ggiraph$renderGirafe({
-              p <- snapshotted_plots()[[raw_key]]
+              p <- snapshotted_plots()[[local_measure]]
               shiny$req(p)
 
               ws <- window_size()
               w_svg <- max(4, ws$width / 100)
+              # ~35% of viewport height in inches (96 dpi)
               h_svg <- max(3.5, (ws$height * 0.35) / 96)
 
               ggiraph$girafe(
@@ -1151,52 +1107,112 @@ server <- function(id, input_data, data_version,
               )
             })
           })
+        })
+
+        # Also register under _normalized keys so the same
+        # ggiraph output is reachable by normalized measure name
+        results <- computation_results()
+        if (!is.null(results) && !is.null(results$measures)) {
+          norm_measures <- results$measures[
+            grepl("_normalized$", results$measures)
+          ]
+          for (nm in norm_measures) {
+            local({
+              local_nm <- nm
+              raw_key <- resolve_plot_key(local_nm)
+              safe_id <- make.names(local_nm)
+              output_id <- paste0("stat_plot_", safe_id)
+
+              output[[output_id]] <- ggiraph$renderGirafe({
+                p <- snapshotted_plots()[[raw_key]]
+                shiny$req(p)
+
+                ws <- window_size()
+                w_svg <- max(4, ws$width / 100)
+                h_svg <- max(3.5, (ws$height * 0.35) / 96)
+
+                ggiraph$girafe(
+                  ggobj = p,
+                  width_svg = w_svg,
+                  height_svg = h_svg,
+                  options = list(
+                    ggiraph$opts_sizing(
+                      rescale = FALSE
+                    ),
+                    ggiraph$opts_hover(
+                      css = paste(
+                        "fill-opacity:1;",
+                        "stroke-width:2;"
+                      )
+                    ),
+                    ggiraph$opts_tooltip(
+                      css = paste(
+                        "background-color:white;",
+                        "padding:8px;",
+                        "border-radius:4px;",
+                        "border:1px solid #ccc;",
+                        "font-size:12px;"
+                      ),
+                      use_fill = FALSE
+                    ),
+                    ggiraph$opts_selection(
+                      type = "none"
+                    )
+                  )
+                )
+              })
+            })
+          }
         }
-      }
-    }, ignoreNULL = TRUE)
+      },
+      ignoreNULL = TRUE
+    )
 
     # --- Register download handlers when results arrive ---
-    shiny$observeEvent(computation_results(), {
-      results <- computation_results()
-      shiny$req(results, results$measures)
-      plots <- snapshotted_plots()
+    shiny$observeEvent(computation_results(),
+      {
+        results <- computation_results()
+        shiny$req(results, results$measures)
+        plots <- snapshotted_plots()
 
-      lapply(results$measures, function(measure) {
-        local({
-          local_m <- measure
-          safe_id <- make.names(local_m)
-          dl_id <- paste0("dl_report_", safe_id)
+        lapply(results$measures, function(measure) {
+          local({
+            local_m <- measure
+            safe_id <- make.names(local_m)
+            dl_id <- paste0("dl_report_", safe_id)
 
-          output[[dl_id]] <- shiny$downloadHandler(
-            filename = function() {
-              paste0(
-                "statistics_", local_m, "_",
-                format(Sys.time(), "%Y%m%d_%H%M%S"),
-                ".html"
-              )
-            },
-            content = function(file) {
-              res <- computation_results()
-              pl <- snapshotted_plots()
-              plot_key <- resolve_plot_key(local_m)
-              html <- report$generate_html_report(
-                measure = local_m,
-                plot_object = pl[[plot_key]],
-                omnibus_result = res$omnibus[[local_m]],
-                posthoc_result = res$posthoc[[local_m]],
-                params = res$params,
-                x_axis = res$x_axis,
-                timestamp = res$timestamp
-              )
-              writeLines(html, file)
-              rhino$log$info(
-                "Download: HTML report '{local_m}'"
-              )
-            }
-          )
+            output[[dl_id]] <- shiny$downloadHandler(
+              filename = function() {
+                paste0(
+                  "statistics_", local_m, "_",
+                  format(Sys.time(), "%Y%m%d_%H%M%S"),
+                  ".html"
+                )
+              },
+              content = function(file) {
+                res <- computation_results()
+                pl <- snapshotted_plots()
+                plot_key <- resolve_plot_key(local_m)
+                html <- report$generate_html_report(
+                  measure = local_m,
+                  plot_object = pl[[plot_key]],
+                  omnibus_result = res$omnibus[[local_m]],
+                  posthoc_result = res$posthoc[[local_m]],
+                  params = res$params,
+                  x_axis = res$x_axis,
+                  timestamp = res$timestamp
+                )
+                writeLines(html, file)
+                rhino$log$info(
+                  "Download: HTML report '{local_m}'"
+                )
+              }
+            )
+          })
         })
-      })
-    }, ignoreNULL = TRUE)
+      },
+      ignoreNULL = TRUE
+    )
 
     # --- Main content: placeholder, error, or results ---
     output$main_content <- shiny$renderUI({
@@ -1204,7 +1220,8 @@ server <- function(id, input_data, data_version,
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -1361,7 +1378,8 @@ server <- function(id, input_data, data_version,
                 ),
                 shiny$tags$span(
                   bsicons$bs_icon(
-                    "graph-up", class = "me-2"
+                    "graph-up",
+                    class = "me-2"
                   ),
                   m
                 ),
@@ -1396,13 +1414,13 @@ server <- function(id, input_data, data_version,
                 # NA removal hint (if any rows were dropped)
                 if (
                   !is.null(results$na_details) &&
-                  m %in% names(results$na_details) &&
-                  results$na_details[[m]]$total > 0
+                    m %in% names(results$na_details) &&
+                    results$na_details[[m]]$total > 0
                 ) {
                   na_info <- results$na_details[[m]]
                   grp_rows <- if (
                     !is.null(na_info$groups) &&
-                    nrow(na_info$groups) > 0
+                      nrow(na_info$groups) > 0
                   ) {
                     lapply(
                       seq_len(nrow(na_info$groups)),
@@ -1479,7 +1497,7 @@ server <- function(id, input_data, data_version,
                 # Post-hoc pairwise comparisons
                 if (
                   !is.null(results$posthoc) &&
-                  m %in% names(results$posthoc)
+                    m %in% names(results$posthoc)
                 ) {
                   render_posthoc_result(
                     results$posthoc[[m]],
@@ -1549,8 +1567,12 @@ server <- function(id, input_data, data_version,
     list(
       recommended_parameters = shiny$reactive({
         res <- computation_results()
-        if (is.null(res) || is.null(res$ranking)) return(character(0))
-        if (error_handling$is_app_error(res$ranking)) return(character(0))
+        if (is.null(res) || is.null(res$ranking)) {
+          return(character(0))
+        }
+        if (error_handling$is_app_error(res$ranking)) {
+          return(character(0))
+        }
         res$ranking$recommended
       })
     )

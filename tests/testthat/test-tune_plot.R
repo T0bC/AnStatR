@@ -1,6 +1,10 @@
 box::use(
   testthat[
-    describe, expect_equal, expect_null, expect_true, it
+    describe,
+    expect_equal,
+    expect_null,
+    expect_true,
+    it
   ],
 )
 

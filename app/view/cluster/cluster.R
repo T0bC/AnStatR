@@ -1,34 +1,33 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   ggiraph,
   ggplot2,
   openxlsx,
-  plotly,
   rhino,
-  shinycssloaders,
   shiny,
 )
 
 box::use(
   app/logic/cluster,
   app/logic/cluster/cluster_export[create_cluster_bundle],
-  app/logic/shared/error_handling,
-  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/pca[extract_pca_scores],
-  app/logic/pca/scaling[scale_data, residualize_data],
+  app/logic/pca/scaling[residualize_data, scale_data],
+  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
-    detect_skewness, transform_skewed
+    detect_skewness,
+    transform_skewed
   ],
+  app/logic/shared/error_handling,
   app/view/cluster/cluster_biplot,
   app/view/cluster/cluster_biplot3d,
   app/view/cluster/cluster_results,
   app/view/cluster/cluster_silhouette,
   app/view/cluster/clustering_settings,
   app/view/cluster/data_selection,
-  app/view/cluster/heatmap,
   app/view/cluster/display_options,
+  app/view/cluster/heatmap,
   app/view/cluster/hopkins,
   app/view/cluster/optimal_clusters,
   app/view/components/sidebar_tabs,
@@ -91,28 +90,31 @@ server <- function(id, input_data, data_version,
     cached_optimal <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
-    shiny$observeEvent(data_version(), {
-      result(NULL)
-      membership_data(NULL)
-      cluster_summary(NULL)
-      last_error(NULL)
-      hopkins_result(NULL)
-      optimal_result(NULL)
-      last_optimal_plot(NULL)
-      analysis_data_store(NULL)
-      cleaned_data_store(NULL)
-      measure_cols_store(NULL)
-      bundle_data(NULL)
-      na_info(NULL)
-      transform_info(NULL)
-      skewness_info(NULL)
-      user_modified_k(FALSE)
-      updating_k_programmatically(TRUE)
-      cached_fingerprint(NULL)
-      cached_hopkins(NULL)
-      cached_optimal(NULL)
-      rhino$log$info("Cluster: state reset for new data")
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        result(NULL)
+        membership_data(NULL)
+        cluster_summary(NULL)
+        last_error(NULL)
+        hopkins_result(NULL)
+        optimal_result(NULL)
+        last_optimal_plot(NULL)
+        analysis_data_store(NULL)
+        cleaned_data_store(NULL)
+        measure_cols_store(NULL)
+        bundle_data(NULL)
+        na_info(NULL)
+        transform_info(NULL)
+        skewness_info(NULL)
+        user_modified_k(FALSE)
+        updating_k_programmatically(TRUE)
+        cached_fingerprint(NULL)
+        cached_hopkins(NULL)
+        cached_optimal(NULL)
+        rhino$log$info("Cluster: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
 
     # Reactive: PCA scores as a flat data frame
     # (metadata cols + Dim.1, Dim.2, … columns)
@@ -126,11 +128,13 @@ server <- function(id, input_data, data_version,
     # detects them as measurement columns (uppercase-
     # only names are classified as descriptive).
     lda_scores_data <- shiny$reactive({
-      if (is.null(lda_result)) return(NULL)
+      if (is.null(lda_result)) {
+        return(NULL)
+      }
       lda_res <- lda_result()
       if (
         is.null(lda_res) ||
-        is.null(lda_res$scores)
+          is.null(lda_res$scores)
       ) {
         return(NULL)
       }
@@ -139,9 +143,9 @@ server <- function(id, input_data, data_version,
       meta <- lda_res$meta
       if (
         !is.null(meta) &&
-        nrow(meta) == nrow(scores) &&
-        !("Row" %in% names(meta) &&
-          ncol(meta) == 1)
+          nrow(meta) == nrow(scores) &&
+          !("Row" %in% names(meta) &&
+            ncol(meta) == 1)
       ) {
         cbind(meta, scores)
       } else {
@@ -173,13 +177,16 @@ server <- function(id, input_data, data_version,
     )
 
     # Track user vs programmatic changes to n_clusters
-    shiny$observeEvent(input$n_clusters, {
-      if (updating_k_programmatically()) {
-        updating_k_programmatically(FALSE)
-      } else {
-        user_modified_k(TRUE)
-      }
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(input$n_clusters,
+      {
+        if (updating_k_programmatically()) {
+          updating_k_programmatically(FALSE)
+        } else {
+          user_modified_k(TRUE)
+        }
+      },
+      ignoreInit = TRUE
+    )
 
     # Delegate Hopkins statistic rendering
     hopkins$render_output(
@@ -247,470 +254,474 @@ server <- function(id, input_data, data_version,
 
       shiny$withProgress(
         message = "Running Cluster Analysis",
-        value = 0, {
+        value = 0,
+        {
+          meta_cols <- input$metaData
+          if (is.null(meta_cols)) meta_cols <- character(0)
 
-        meta_cols <- input$metaData
-        if (is.null(meta_cols)) meta_cols <- character(0)
+          if (is_reduced) {
+            # PCA/LDA scores: skip NA cleaning, skewness,
+            # and scaling — data is already preprocessed
+            shiny$incProgress(
+              0.15,
+              detail = "Using preprocessed scores..."
+            )
+            rhino$log$info(
+              "Cluster: using {data_source} ",
+              "({length(measure_cols)} dimensions,",
+              " {nrow(data)} observations)"
+            )
+            cleaned_data <- data
+            cleaned_data_store(cleaned_data)
+            na_info(NULL)
+            analysis_data <- data
+          } else {
+            # Raw data: full preprocessing pipeline
+            # Step 1: Clean NAs
+            shiny$incProgress(
+              0.05,
+              detail = "Cleaning missing values..."
+            )
 
-        if (is_reduced) {
-          # PCA/LDA scores: skip NA cleaning, skewness,
-          # and scaling — data is already preprocessed
-          shiny$incProgress(
-            0.15,
-            detail = "Using preprocessed scores..."
-          )
-          rhino$log$info(
-            "Cluster: using {data_source} ",
-            "({length(measure_cols)} dimensions,",
-            " {nrow(data)} observations)"
-          )
-          cleaned_data <- data
-          cleaned_data_store(cleaned_data)
-          na_info(NULL)
-          analysis_data <- data
-        } else {
-          # Raw data: full preprocessing pipeline
-          # Step 1: Clean NAs
-          shiny$incProgress(
-            0.05,
-            detail = "Cleaning missing values..."
-          )
+            rhino$log$info(
+              "Cluster: cleaning NA rows",
+              " ({length(measure_cols)}",
+              " measurement columns)"
+            )
+            na_result <- clean_na_rows(
+              data, measure_cols, meta_cols
+            )
+            na_info(na_result)
+            cleaned_data <- na_result$data
+            cleaned_data_store(cleaned_data)
 
-          rhino$log$info(
-            "Cluster: cleaning NA rows",
-            " ({length(measure_cols)}",
-            " measurement columns)"
-          )
-          na_result <- clean_na_rows(
-            data, measure_cols, meta_cols
-          )
-          na_info(na_result)
-          cleaned_data <- na_result$data
-          cleaned_data_store(cleaned_data)
-
-          if (nrow(cleaned_data) < 2) {
-            last_error(error_handling$simple_error(
-              message = paste(
-                "After removing rows with missing",
-                "values, fewer than 2 rows remain.",
-                "Consider deselecting columns",
-                "with many NAs."
-              ),
-              operation_name = "Cluster Data Preparation",
-              context = list(
-                rows_before = na_result$rows_before,
-                rows_removed = na_result$rows_removed,
-                rows_after = na_result$rows_after
-              )
-            ))
-            return()
-          }
-
-          # Step 1b: Always detect skewness (for info banner)
-          skew_result <- detect_skewness(
-            cleaned_data, measure_cols
-          )
-          skewness_info(skew_result)
-
-          # Apply normalization only if enabled
-          if (isTRUE(input$correct_skewness)) {
-            if (any(skew_result$is_skewed)) {
-              transform_res <- transform_skewed(
-                cleaned_data, measure_cols,
-                skew_result
-              )
-              if (transform_res$success) {
-                cleaned_data <- transform_res$result$data
-                transform_info(transform_res$result)
-              } else {
-                rhino$log$warn(
-                  "Cluster: skewness correction",
-                  " failed, proceeding with",
-                  " untransformed data"
+            if (nrow(cleaned_data) < 2) {
+              last_error(error_handling$simple_error(
+                message = paste(
+                  "After removing rows with missing",
+                  "values, fewer than 2 rows remain.",
+                  "Consider deselecting columns",
+                  "with many NAs."
+                ),
+                operation_name = "Cluster Data Preparation",
+                context = list(
+                  rows_before = na_result$rows_before,
+                  rows_removed = na_result$rows_removed,
+                  rows_after = na_result$rows_after
                 )
+              ))
+              return()
+            }
+
+            # Step 1b: Always detect skewness (for info banner)
+            skew_result <- detect_skewness(
+              cleaned_data, measure_cols
+            )
+            skewness_info(skew_result)
+
+            # Apply normalization only if enabled
+            if (isTRUE(input$correct_skewness)) {
+              if (any(skew_result$is_skewed)) {
+                transform_res <- transform_skewed(
+                  cleaned_data, measure_cols,
+                  skew_result
+                )
+                if (transform_res$success) {
+                  cleaned_data <- transform_res$result$data
+                  transform_info(transform_res$result)
+                } else {
+                  rhino$log$warn(
+                    "Cluster: skewness correction",
+                    " failed, proceeding with",
+                    " untransformed data"
+                  )
+                }
               }
             }
-          }
 
-          # Step 1c: Residualize by a confound column, before scaling
-          if (!is.null(residualize_col) &&
+            # Step 1c: Residualize by a confound column, before scaling
+            if (!is.null(residualize_col) &&
               length(residualize_col) > 0 &&
               nzchar(residualize_col)) {
-            rhino$log$info(
-              "Cluster: residualizing by",
-              " '{residualize_col}'"
-            )
-            resid_res <- residualize_data(
-              cleaned_data, measure_cols, residualize_col
-            )
-            if (!resid_res$success) {
-              last_error(resid_res$error)
-              return()
-            }
-            cleaned_data <- resid_res$result
-          }
-
-          # Step 2: Scale data
-          shiny$incProgress(
-            0.10,
-            detail = "Scaling data..."
-          )
-          analysis_data <- cleaned_data
-          if (!is.null(scale_method) &&
-              scale_method != "none") {
-            do_center <- scale_method %in%
-              c("scale_center", "center_only")
-            do_scale <- scale_method == "scale_center"
-
-            rhino$log$info(
-              "Cluster: scaling data",
-              " (center={do_center},",
-              " scale={do_scale})"
-            )
-            scale_res <- scale_data(
-              cleaned_data, measure_cols,
-              center = do_center, scale = do_scale
-            )
-            if (!scale_res$success) {
-              last_error(scale_res$error)
-              return()
-            }
-            analysis_data <- scale_res$result
-          }
-        } # end raw data preprocessing
-
-        # Build fingerprint for data + scaling config
-        # to enable session-scoped caching of Hopkins
-        # and optimal clusters computations.
-        fp <- paste(
-          data_source %||% "raw",
-          paste(sort(measure_cols), collapse = ","),
-          nrow(analysis_data),
-          ncol(analysis_data),
-          scale_method %||% "none",
-          residualize_col %||% "none",
-          sep = "|"
-        )
-        use_cache <- identical(fp, cached_fingerprint())
-
-        # Step 3: Hopkins statistic
-        if (use_cache && !is.null(cached_hopkins())) {
-          shiny$incProgress(
-            0.10,
-            detail = paste(
-              "Hopkins statistic",
-              "(cached)..."
-            )
-          )
-          rhino$log$info(
-            "Cluster: Hopkins statistic (cached)"
-          )
-          h_res <- cached_hopkins()
-        } else {
-          shiny$incProgress(
-            0.10,
-            detail = "Computing Hopkins statistic..."
-          )
-          rhino$log$info(
-            "Cluster: computing Hopkins statistic",
-            " ({length(measure_cols)} columns,",
-            " {nrow(analysis_data)} samples)"
-          )
-          h_res <- cluster$compute_hopkins(
-            analysis_data, measure_cols
-          )
-          cached_hopkins(h_res)
-        }
-        hopkins_result(h_res)
-
-        if (!h_res$success) {
-          last_error(h_res$error)
-          return()
-        }
-
-        # Step 4: Optimal number of clusters
-        if (use_cache && !is.null(cached_optimal())) {
-          shiny$incProgress(
-            0.15,
-            detail = paste(
-              "Optimal clusters (cached)..."
-            )
-          )
-          rhino$log$info(
-            "Cluster: optimal clusters (cached)"
-          )
-          opt_res <- cached_optimal()
-        } else {
-          # This step involves bootstrapping and can
-          # take a long time. Show a persistent
-          # notification so the user sees activity
-          # even while the progress bar is frozen.
-          shiny$incProgress(
-            0.15,
-            detail = paste(
-              "Computing optimal number",
-              "of clusters (bootstrapping,",
-              "this may take a moment)..."
-            )
-          )
-          opt_note_id <- shiny$showNotification(
-            shiny$tagList(
-              shiny$tags$div(
-                class = paste(
-                  "d-flex align-items-center",
-                  "gap-2"
-                ),
-                shiny$tags$div(
-                  class = paste(
-                    "spinner-border",
-                    "spinner-border-sm",
-                    "text-primary"
-                  ),
-                  role = "status"
-                ),
-                shiny$tags$span(
-                  paste(
-                    "Computing optimal clusters",
-                    "(bootstrapping",
-                    nrow(analysis_data),
-                    "samples)...",
-                    "This may take a moment."
-                  )
-                )
+              rhino$log$info(
+                "Cluster: residualizing by",
+                " '{residualize_col}'"
               )
-            ),
-            duration = NULL,
-            closeButton = FALSE,
-            type = "message"
-          )
-          rhino$log$info(
-            "Cluster: computing optimal clusters",
-            " ({length(measure_cols)} columns,",
-            " {nrow(analysis_data)} samples)"
-          )
-          opt_res <- cluster$compute_optimal_clusters(
-            analysis_data, measure_cols
-          )
-          shiny$removeNotification(opt_note_id)
-          cached_optimal(opt_res)
-        }
+              resid_res <- residualize_data(
+                cleaned_data, measure_cols, residualize_col
+              )
+              if (!resid_res$success) {
+                last_error(resid_res$error)
+                return()
+              }
+              cleaned_data <- resid_res$result
+            }
 
-        # Store fingerprint after both computations
-        cached_fingerprint(fp)
-        optimal_result(opt_res)
-
-        if (
-          isTRUE(opt_res$success) &&
-          !user_modified_k()
-        ) {
-          median_k <- opt_res$result$summary$median_k
-          updating_k_programmatically(TRUE)
-          shiny$updateNumericInput(
-            session, "n_clusters",
-            value = median_k
-          )
-          n_clusters <- median_k
-          rhino$log$info(
-            "Cluster: auto-set",
-            " n_clusters={median_k}",
-            " from optimal median"
-          )
-        }
-
-        # Step 5: Run clustering
-        shiny$incProgress(
-          0.30,
-          detail = "Running clustering algorithm..."
-        )
-        cluster_method <- input$cluster_method
-        clustering_result <- cluster$run_clustering(
-          analysis_data, measure_cols, n_clusters,
-          algorithm = algorithm,
-          metric = cluster_metric,
-          method = cluster_method
-        )
-
-        if (clustering_result$success) {
-          # Step 6: Build results
-          shiny$incProgress(
-            0.20,
-            detail = "Building results..."
-          )
-          result(clustering_result$result)
-          analysis_data_store(analysis_data)
-          measure_cols_store(measure_cols)
-
-          # Store bundle data for RDS export — only
-          # supported for K-Means/PAM on raw data
-          if (
-            data_source == "raw" &&
-            algorithm == "kmeans"
-          ) {
-            s_params <- if (
-              !is.null(scale_method) &&
-              scale_method != "none"
-            ) {
+            # Step 2: Scale data
+            shiny$incProgress(
+              0.10,
+              detail = "Scaling data..."
+            )
+            analysis_data <- cleaned_data
+            if (!is.null(scale_method) &&
+              scale_method != "none") {
               do_center <- scale_method %in%
                 c("scale_center", "center_only")
               do_scale <- scale_method == "scale_center"
-              numeric_pre <- cleaned_data[
-                , measure_cols, drop = FALSE
-              ]
-              sc_center <- if (do_center) {
-                colMeans(numeric_pre, na.rm = TRUE)
-              } else {
-                NULL
-              }
-              sc_scale <- if (do_scale) {
-                vapply(
-                  numeric_pre,
-                  function(col) {
-                    stats::sd(col, na.rm = TRUE)
-                  },
-                  numeric(1)
-                )
-              } else {
-                NULL
-              }
-              list(center = sc_center, scale = sc_scale)
-            } else {
-              NULL
-            }
 
-            tf_info <- transform_info()
-            t_params <- if (
-              !is.null(tf_info) &&
-              !is.null(tf_info$transform_params)
-            ) {
-              tf_info$transform_params
-            } else {
-              list()
-            }
-
-            bundle_data(list(
-              raw_data = na_result$data,
-              used_data = analysis_data,
-              numeric_cols = measure_cols,
-              meta_cols = meta_cols,
-              transform_params = t_params,
-              scale_params = s_params,
-              settings = list(
-                algorithm = algorithm,
-                metric = cluster_metric,
-                # DBSCAN derives k from density, so the
-                # n_clusters input is hidden and unset there
-                n_clusters = n_clusters %||% NA,
-                skewness_correction = isTRUE(
-                  input$correct_skewness
-                ),
-                scale_method = scale_method %||% "none"
+              rhino$log$info(
+                "Cluster: scaling data",
+                " (center={do_center},",
+                " scale={do_scale})"
               )
-            ))
-          }
-
-          keep_cols <- c(meta_cols, measure_cols)
-          md <- cleaned_data[
-            , keep_cols, drop = FALSE
-          ]
-          md$Cluster <- clustering_result$result$clusters
-          membership_data(md)
-
-          raw_numeric <- as.matrix(
-            cleaned_data[
-              , measure_cols, drop = FALSE
-            ]
-          )
-          cluster_summary(
-            cluster$compute_cluster_summary(
-              raw_numeric,
-              clustering_result$result$clusters
-            )
-          )
-
-          # Update biplot dimension choices.
-          # For raw mode (or already-reduced sources)
-          # use actual column names; for PCA mode use
-          # Dim.* labels.
-          current_method <- input$reductionMethod
-          if (is_reduced) {
-            shiny$updateSelectInput(
-              session, "reductionMethod",
-              selected = "raw"
-            )
-            pca_dim_choices <- measure_cols
-            raw_dim_choices <- measure_cols
-          } else {
-            n_dims <- min(
-              length(measure_cols),
-              nrow(analysis_data) - 1
-            )
-            pca_dim_choices <- paste0(
-              "Dim.", seq_len(n_dims)
-            )
-            raw_dim_choices <- measure_cols
-          }
-
-          # Choose which set to apply based on method
-          use_raw <- is_reduced ||
-            (!is.null(current_method) &&
-             current_method == "raw")
-          dim_choices <- if (use_raw) {
-            raw_dim_choices
-          } else {
-            pca_dim_choices
-          }
-
-          # 2D dims
-          dim_2d_ids <- c("clusterBiplotDimX", "clusterBiplotDimY")
-          for (i in seq_along(dim_2d_ids)) {
-            dim_id <- dim_2d_ids[i]
-            current <- input[[dim_id]]
-            sel <- if (!is.null(current) &&
-                       current %in% dim_choices) {
-              current
-            } else {
-              dim_choices[min(i, length(dim_choices))]
+              scale_res <- scale_data(
+                cleaned_data, measure_cols,
+                center = do_center, scale = do_scale
+              )
+              if (!scale_res$success) {
+                last_error(scale_res$error)
+                return()
+              }
+              analysis_data <- scale_res$result
             }
-            shiny$updateSelectizeInput(
-              session, dim_id,
-              choices = dim_choices,
-              selected = sel
-            )
-          }
+          } # end raw data preprocessing
 
-          # 3D dims
-          dim_3d_ids <- c(
-            "clusterBiplot3dDimX",
-            "clusterBiplot3dDimY",
-            "clusterBiplot3dDimZ"
+          # Build fingerprint for data + scaling config
+          # to enable session-scoped caching of Hopkins
+          # and optimal clusters computations.
+          fp <- paste(
+            data_source %||% "raw",
+            paste(sort(measure_cols), collapse = ","),
+            nrow(analysis_data),
+            ncol(analysis_data),
+            scale_method %||% "none",
+            residualize_col %||% "none",
+            sep = "|"
           )
-          for (i in seq_along(dim_3d_ids)) {
-            dim_id <- dim_3d_ids[i]
-            current <- input[[dim_id]]
-            sel <- if (!is.null(current) &&
-                       current %in% dim_choices) {
-              current
-            } else {
-              dim_choices[min(i, length(dim_choices))]
-            }
-            shiny$updateSelectizeInput(
-              session, dim_id,
-              choices = dim_choices,
-              selected = sel
+          use_cache <- identical(fp, cached_fingerprint())
+
+          # Step 3: Hopkins statistic
+          if (use_cache && !is.null(cached_hopkins())) {
+            shiny$incProgress(
+              0.10,
+              detail = paste(
+                "Hopkins statistic",
+                "(cached)..."
+              )
+            )
+            rhino$log$info(
+              "Cluster: Hopkins statistic (cached)"
+            )
+            h_res <- cached_hopkins()
+          } else {
+            shiny$incProgress(
+              0.10,
+              detail = "Computing Hopkins statistic..."
+            )
+            rhino$log$info(
+              "Cluster: computing Hopkins statistic",
+              " ({length(measure_cols)} columns,",
+              " {nrow(analysis_data)} samples)"
+            )
+            h_res <- cluster$compute_hopkins(
+              analysis_data, measure_cols
+            )
+            cached_hopkins(h_res)
+          }
+          hopkins_result(h_res)
+
+          if (!h_res$success) {
+            last_error(h_res$error)
+            return()
+          }
+
+          # Step 4: Optimal number of clusters
+          if (use_cache && !is.null(cached_optimal())) {
+            shiny$incProgress(
+              0.15,
+              detail = paste(
+                "Optimal clusters (cached)..."
+              )
+            )
+            rhino$log$info(
+              "Cluster: optimal clusters (cached)"
+            )
+            opt_res <- cached_optimal()
+          } else {
+            # This step involves bootstrapping and can
+            # take a long time. Show a persistent
+            # notification so the user sees activity
+            # even while the progress bar is frozen.
+            shiny$incProgress(
+              0.15,
+              detail = paste(
+                "Computing optimal number",
+                "of clusters (bootstrapping,",
+                "this may take a moment)..."
+              )
+            )
+            opt_note_id <- shiny$showNotification(
+              shiny$tagList(
+                shiny$tags$div(
+                  class = paste(
+                    "d-flex align-items-center",
+                    "gap-2"
+                  ),
+                  shiny$tags$div(
+                    class = paste(
+                      "spinner-border",
+                      "spinner-border-sm",
+                      "text-primary"
+                    ),
+                    role = "status"
+                  ),
+                  shiny$tags$span(
+                    paste(
+                      "Computing optimal clusters",
+                      "(bootstrapping",
+                      nrow(analysis_data),
+                      "samples)...",
+                      "This may take a moment."
+                    )
+                  )
+                )
+              ),
+              duration = NULL,
+              closeButton = FALSE,
+              type = "message"
+            )
+            rhino$log$info(
+              "Cluster: computing optimal clusters",
+              " ({length(measure_cols)} columns,",
+              " {nrow(analysis_data)} samples)"
+            )
+            opt_res <- cluster$compute_optimal_clusters(
+              analysis_data, measure_cols
+            )
+            shiny$removeNotification(opt_note_id)
+            cached_optimal(opt_res)
+          }
+
+          # Store fingerprint after both computations
+          cached_fingerprint(fp)
+          optimal_result(opt_res)
+
+          if (
+            isTRUE(opt_res$success) &&
+              !user_modified_k()
+          ) {
+            median_k <- opt_res$result$summary$median_k
+            updating_k_programmatically(TRUE)
+            shiny$updateNumericInput(
+              session, "n_clusters",
+              value = median_k
+            )
+            n_clusters <- median_k
+            rhino$log$info(
+              "Cluster: auto-set",
+              " n_clusters={median_k}",
+              " from optimal median"
             )
           }
 
+          # Step 5: Run clustering
           shiny$incProgress(
-            0.10,
-            detail = "Done!"
+            0.30,
+            detail = "Running clustering algorithm..."
           )
-          rhino$log$info(
-            "Cluster: completed successfully"
+          cluster_method <- input$cluster_method
+          clustering_result <- cluster$run_clustering(
+            analysis_data, measure_cols, n_clusters,
+            algorithm = algorithm,
+            metric = cluster_metric,
+            method = cluster_method
           )
-        } else {
-          last_error(clustering_result$error)
+
+          if (clustering_result$success) {
+            # Step 6: Build results
+            shiny$incProgress(
+              0.20,
+              detail = "Building results..."
+            )
+            result(clustering_result$result)
+            analysis_data_store(analysis_data)
+            measure_cols_store(measure_cols)
+
+            # Store bundle data for RDS export — only
+            # supported for K-Means/PAM on raw data
+            if (
+              data_source == "raw" &&
+                algorithm == "kmeans"
+            ) {
+              s_params <- if (
+                !is.null(scale_method) &&
+                  scale_method != "none"
+              ) {
+                do_center <- scale_method %in%
+                  c("scale_center", "center_only")
+                do_scale <- scale_method == "scale_center"
+                numeric_pre <- cleaned_data[
+                  , measure_cols,
+                  drop = FALSE
+                ]
+                sc_center <- if (do_center) {
+                  colMeans(numeric_pre, na.rm = TRUE)
+                } else {
+                  NULL
+                }
+                sc_scale <- if (do_scale) {
+                  vapply(
+                    numeric_pre,
+                    function(col) {
+                      stats::sd(col, na.rm = TRUE)
+                    },
+                    numeric(1)
+                  )
+                } else {
+                  NULL
+                }
+                list(center = sc_center, scale = sc_scale)
+              } else {
+                NULL
+              }
+
+              tf_info <- transform_info()
+              t_params <- if (
+                !is.null(tf_info) &&
+                  !is.null(tf_info$transform_params)
+              ) {
+                tf_info$transform_params
+              } else {
+                list()
+              }
+
+              bundle_data(list(
+                raw_data = na_result$data,
+                used_data = analysis_data,
+                numeric_cols = measure_cols,
+                meta_cols = meta_cols,
+                transform_params = t_params,
+                scale_params = s_params,
+                settings = list(
+                  algorithm = algorithm,
+                  metric = cluster_metric,
+                  # DBSCAN derives k from density, so the
+                  # n_clusters input is hidden and unset there
+                  n_clusters = n_clusters %||% NA,
+                  skewness_correction = isTRUE(
+                    input$correct_skewness
+                  ),
+                  scale_method = scale_method %||% "none"
+                )
+              ))
+            }
+
+            keep_cols <- c(meta_cols, measure_cols)
+            md <- cleaned_data[
+              , keep_cols,
+              drop = FALSE
+            ]
+            md$Cluster <- clustering_result$result$clusters
+            membership_data(md)
+
+            raw_numeric <- as.matrix(
+              cleaned_data[
+                , measure_cols,
+                drop = FALSE
+              ]
+            )
+            cluster_summary(
+              cluster$compute_cluster_summary(
+                raw_numeric,
+                clustering_result$result$clusters
+              )
+            )
+
+            # Update biplot dimension choices.
+            # For raw mode (or already-reduced sources)
+            # use actual column names; for PCA mode use
+            # Dim.* labels.
+            current_method <- input$reductionMethod
+            if (is_reduced) {
+              shiny$updateSelectInput(
+                session, "reductionMethod",
+                selected = "raw"
+              )
+              pca_dim_choices <- measure_cols
+              raw_dim_choices <- measure_cols
+            } else {
+              n_dims <- min(
+                length(measure_cols),
+                nrow(analysis_data) - 1
+              )
+              pca_dim_choices <- paste0(
+                "Dim.", seq_len(n_dims)
+              )
+              raw_dim_choices <- measure_cols
+            }
+
+            # Choose which set to apply based on method
+            use_raw <- is_reduced ||
+              (!is.null(current_method) &&
+                current_method == "raw")
+            dim_choices <- if (use_raw) {
+              raw_dim_choices
+            } else {
+              pca_dim_choices
+            }
+
+            # 2D dims
+            dim_2d_ids <- c("clusterBiplotDimX", "clusterBiplotDimY")
+            for (i in seq_along(dim_2d_ids)) {
+              dim_id <- dim_2d_ids[i]
+              current <- input[[dim_id]]
+              sel <- if (!is.null(current) &&
+                current %in% dim_choices) {
+                current
+              } else {
+                dim_choices[min(i, length(dim_choices))]
+              }
+              shiny$updateSelectizeInput(
+                session, dim_id,
+                choices = dim_choices,
+                selected = sel
+              )
+            }
+
+            # 3D dims
+            dim_3d_ids <- c(
+              "clusterBiplot3dDimX",
+              "clusterBiplot3dDimY",
+              "clusterBiplot3dDimZ"
+            )
+            for (i in seq_along(dim_3d_ids)) {
+              dim_id <- dim_3d_ids[i]
+              current <- input[[dim_id]]
+              sel <- if (!is.null(current) &&
+                current %in% dim_choices) {
+                current
+              } else {
+                dim_choices[min(i, length(dim_choices))]
+              }
+              shiny$updateSelectizeInput(
+                session, dim_id,
+                choices = dim_choices,
+                selected = sel
+              )
+            }
+
+            shiny$incProgress(
+              0.10,
+              detail = "Done!"
+            )
+            rhino$log$info(
+              "Cluster: completed successfully"
+            )
+          } else {
+            last_error(clustering_result$error)
+          }
         }
-      }) # end withProgress
+      ) # end withProgress
     })
 
     # Main content: placeholder, error, or results
@@ -748,7 +759,7 @@ server <- function(id, input_data, data_version,
       # Skewness warning (when normalization disabled but skewed cols exist)
       skew_warning <- if (
         !isTRUE(input$correct_skewness) &&
-        !is.null(skewness_info())
+          !is.null(skewness_info())
       ) {
         preprocessing_summary$render_skewness_warning(
           skewness_info(),
@@ -761,8 +772,7 @@ server <- function(id, input_data, data_version,
       hopkins_panel <- if (!is.null(h_res)) {
         hopkins_title <- if (isTRUE(h_res$success)) {
           interp <- h_res$result$interpretation
-          badge_class <- switch(
-            interp$level,
+          badge_class <- switch(interp$level,
             success = "bg-success",
             warning = "bg-warning text-dark",
             danger  = "bg-danger",
@@ -770,7 +780,8 @@ server <- function(id, input_data, data_version,
           )
           shiny$tags$span(
             bsicons$bs_icon(
-              "clipboard-data", class = "me-1"
+              "clipboard-data",
+              class = "me-1"
             ),
             "Clusterability (Hopkins)",
             shiny$tags$span(
@@ -788,7 +799,8 @@ server <- function(id, input_data, data_version,
         } else {
           shiny$tags$span(
             bsicons$bs_icon(
-              "clipboard-data", class = "me-1"
+              "clipboard-data",
+              class = "me-1"
             ),
             "Clusterability (Hopkins)"
           )
@@ -806,7 +818,8 @@ server <- function(id, input_data, data_version,
         !is.null(opt_res) && !opt_res$success
       ) {
         error_display$error_alert_structured(
-          opt_res$error, type = "danger"
+          opt_res$error,
+          type = "danger"
         )
       } else if (!is.null(opt_res)) {
         optimal_clusters$render_optimal_clusters(
@@ -819,12 +832,13 @@ server <- function(id, input_data, data_version,
       opt_panel <- if (!is.null(opt_content)) {
         opt_title <- if (
           !is.null(opt_res) &&
-          isTRUE(opt_res$success) &&
-          !is.null(opt_res$result$summary$median_k)
+            isTRUE(opt_res$success) &&
+            !is.null(opt_res$result$summary$median_k)
         ) {
           shiny$tags$span(
             bsicons$bs_icon(
-              "sliders", class = "me-1"
+              "sliders",
+              class = "me-1"
             ),
             "Optimal Number of Clusters",
             shiny$tags$span(
@@ -838,7 +852,8 @@ server <- function(id, input_data, data_version,
         } else {
           shiny$tags$span(
             bsicons$bs_icon(
-              "sliders", class = "me-1"
+              "sliders",
+              class = "me-1"
             ),
             "Optimal Number of Clusters"
           )
@@ -854,8 +869,7 @@ server <- function(id, input_data, data_version,
       # Cluster results panel
       res <- result()
       cluster_results_panel <- if (!is.null(res)) {
-        algo_label <- switch(
-          res$details$variant,
+        algo_label <- switch(res$details$variant,
           kmeans = "K-Means",
           pam    = "K-Means (PAM)",
           hclust = "Hierarchical",
@@ -864,7 +878,8 @@ server <- function(id, input_data, data_version,
         )
         results_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "pie-chart", class = "me-1"
+            "pie-chart",
+            class = "me-1"
           ),
           "Cluster Results",
           shiny$tags$span(
@@ -894,7 +909,8 @@ server <- function(id, input_data, data_version,
       heatmap_panel <- if (!is.null(res)) {
         heatmap_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "grid-3x3-gap", class = "me-1"
+            "grid-3x3-gap",
+            class = "me-1"
           ),
           "Cluster Heatmap"
         )
@@ -913,7 +929,8 @@ server <- function(id, input_data, data_version,
       biplot_panel <- if (!is.null(res)) {
         biplot_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "diagram-2", class = "me-1"
+            "diagram-2",
+            class = "me-1"
           ),
           "Cluster Biplot (2D)"
         )
@@ -921,7 +938,8 @@ server <- function(id, input_data, data_version,
           error_handling$is_app_error(biplot_err)
         ) {
           error_display$error_alert_structured(
-            biplot_err, type = "danger"
+            biplot_err,
+            type = "danger"
           )
         } else {
           cluster_biplot$render_biplot_content(
@@ -941,7 +959,8 @@ server <- function(id, input_data, data_version,
       biplot3d_panel <- if (!is.null(res)) {
         biplot3d_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "box", class = "me-1"
+            "box",
+            class = "me-1"
           ),
           "Cluster 3D Plot"
         )
@@ -949,7 +968,8 @@ server <- function(id, input_data, data_version,
           error_handling$is_app_error(biplot3d_err)
         ) {
           error_display$error_alert_structured(
-            biplot3d_err, type = "danger"
+            biplot3d_err,
+            type = "danger"
           )
         } else {
           cluster_biplot3d$render_biplot3d_content(
@@ -969,7 +989,8 @@ server <- function(id, input_data, data_version,
       silhouette_panel <- if (!is.null(res)) {
         sil_title <- shiny$tags$span(
           bsicons$bs_icon(
-            "bar-chart-steps", class = "me-1"
+            "bar-chart-steps",
+            class = "me-1"
           ),
           "Cluster Silhouette"
         )
@@ -977,7 +998,8 @@ server <- function(id, input_data, data_version,
           error_handling$is_app_error(sil_err)
         ) {
           error_display$error_alert_structured(
-            sil_err, type = "danger"
+            sil_err,
+            type = "danger"
           )
         } else {
           cluster_silhouette$render_silhouette_content(
@@ -1013,8 +1035,12 @@ server <- function(id, input_data, data_version,
     # Render optimal clusters plot
     output$optimal_clusters_plot <- ggiraph$renderGirafe({
       opt_res <- optimal_result()
-      if (is.null(opt_res)) return(NULL)
-      if (!opt_res$success) return(NULL)
+      if (is.null(opt_res)) {
+        return(NULL)
+      }
+      if (!opt_res$success) {
+        return(NULL)
+      }
       last_optimal_plot(
         cluster$create_optimal_clusters_ggplot(
           opt_res$result
@@ -1217,7 +1243,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "svg",
+          file,
+          plot = p, device = "svg",
           width = w, height = h, units = "cm"
         )
         rhino$log$info(
@@ -1237,7 +1264,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "png",
+          file,
+          plot = p, device = "png",
           width = w, height = h,
           units = "cm", dpi = 600
         )

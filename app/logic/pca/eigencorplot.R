@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   rhino,
   stats,
 )
@@ -289,7 +289,8 @@ eigencor_error_parser <- function(error_msg,
                                     "Eigencorrelation") {
   if (grepl(
     "metadata|meta.*col|no valid",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -299,7 +300,8 @@ eigencor_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -308,7 +310,8 @@ eigencor_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "numeric|coerce|convert",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -349,10 +352,18 @@ validate_metadata <- function(meta) {
 #' @param p Numeric, p-value
 #' @return Character, significance stars
 significance_stars <- function(p) {
-  if (is.na(p)) return("")
-  if (p < 0.001) return("***")
-  if (p < 0.01) return("**")
-  if (p < 0.05) return("*")
+  if (is.na(p)) {
+    return("")
+  }
+  if (p < 0.001) {
+    return("***")
+  }
+  if (p < 0.01) {
+    return("**")
+  }
+  if (p < 0.05) {
+    return("*")
+  }
   ""
 }
 
@@ -362,8 +373,12 @@ significance_stars <- function(p) {
 #' @return Character vector of formatted p-values
 format_pval <- function(p) {
   vapply(p, function(pv) {
-    if (is.na(pv)) return("NA")
-    if (pv < 0.001) return("< 0.001")
+    if (is.na(pv)) {
+      return("NA")
+    }
+    if (pv < 0.001) {
+      return("< 0.001")
+    }
     sprintf("%.3f", pv)
   }, character(1))
 }

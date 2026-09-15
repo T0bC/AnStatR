@@ -23,7 +23,9 @@ box::use(
 #'   scaling is not available (CV mode, QDA without companion)
 #' @export
 lda_to_pca_var_structure <- function(lda_result) {
-  if (is.null(lda_result)) return(NULL)
+  if (is.null(lda_result)) {
+    return(NULL)
+  }
 
   analysis_type <- lda_result$analysis_type
 
@@ -64,7 +66,7 @@ lda_to_pca_var_structure <- function(lda_result) {
   colnames(var_coord) <- dim_names
 
   # --- Contribution: scaling^2 normalized to 100% per dim ---
-  scaling_sq <- scaling_mat^2
+  scaling_sq <- scaling_mat ^ 2
   col_sums <- colSums(scaling_sq)
   # Avoid division by zero
 

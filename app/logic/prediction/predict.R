@@ -4,8 +4,8 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/preprocessing/skewness_transform[apply_stored_transforms],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -46,7 +46,8 @@ preprocess_unknown <- function(unknown_data, bundle) {
   if (!is.null(bundle$scale_params)) {
     sp <- bundle$scale_params
     numeric_subset <- result[
-      , numeric_cols, drop = FALSE
+      , numeric_cols,
+      drop = FALSE
     ]
 
     if (!is.null(sp$center)) {
@@ -62,7 +63,7 @@ preprocess_unknown <- function(unknown_data, bundle) {
       for (col in numeric_cols) {
         if (
           col %in% names(sp$scale) &&
-          sp$scale[[col]] != 0
+            sp$scale[[col]] != 0
         ) {
           numeric_subset[[col]] <-
             numeric_subset[[col]] / sp$scale[[col]]
@@ -97,7 +98,8 @@ predict_unknown <- function(bundle, preprocessed_data) {
       model <- bundle$model
       numeric_cols <- bundle$numeric_cols
       numeric_data <- preprocessed_data[
-        , numeric_cols, drop = FALSE
+        , numeric_cols,
+        drop = FALSE
       ]
       analysis_type <- bundle$analysis_type
 
@@ -106,8 +108,7 @@ predict_unknown <- function(bundle, preprocessed_data) {
         " predict on {nrow(numeric_data)} unknowns"
       )
 
-      result <- switch(
-        analysis_type,
+      result <- switch(analysis_type,
         pca = predict_pca(model, numeric_data),
         spca = predict_spca(model, numeric_data),
         ipca = predict_ipca(model, numeric_data),
@@ -202,7 +203,8 @@ predict_spca <- function(model, numeric_data) {
   rotation <- model$rotation
   ncomp <- ncol(rotation)
   x_temp <- as.matrix(numeric_data)[
-    , rownames(rotation), drop = FALSE
+    , rownames(rotation),
+    drop = FALSE
   ]
   scores <- matrix(
     0, nrow(x_temp), ncomp,
@@ -258,7 +260,8 @@ predict_ipca <- function(model, numeric_data) {
   ncomp <- ncol(rotation)
   x_train <- model$X
   x_mat <- as.matrix(numeric_data)[
-    , rownames(rotation), drop = FALSE
+    , rownames(rotation),
+    drop = FALSE
   ]
   n <- nrow(x_mat)
   scores <- matrix(
@@ -270,7 +273,7 @@ predict_ipca <- function(model, numeric_data) {
   )
 
   raw1_train <- as.vector(x_train %*% rotation[, 1])
-  norm1 <- sqrt(sum(raw1_train^2))
+  norm1 <- sqrt(sum(raw1_train ^ 2))
   train_scores[, 1] <- raw1_train / norm1
   scores[, 1] <- as.vector(x_mat %*% rotation[, 1]) / norm1
 
@@ -282,7 +285,7 @@ predict_ipca <- function(model, numeric_data) {
         y = target_train, x = prior_train, intercept = FALSE
       )
       resid_train <- fit$residuals
-      norm_h <- sqrt(sum(resid_train^2))
+      norm_h <- sqrt(sum(resid_train ^ 2))
       train_scores[, h] <- resid_train / norm_h
 
       prior_new <- scores[, seq_len(h - 1), drop = FALSE]
@@ -318,10 +321,12 @@ predict_mda <- function(model, numeric_data) {
     model, numeric_data
   )
   pred_post <- stats$predict(
-    model, numeric_data, type = "posterior"
+    model, numeric_data,
+    type = "posterior"
   )
   pred_scores <- stats$predict(
-    model, numeric_data, type = "variates"
+    model, numeric_data,
+    type = "variates"
   )
 
   scores_df <- if (!is.null(pred_scores)) {
@@ -400,7 +405,7 @@ predict_cluster <- function(bundle, numeric_data) {
   dist_fun <- if (metric == "manhattan") {
     function(x, y) sum(abs(x - y))
   } else {
-    function(x, y) sqrt(sum((x - y)^2))
+    function(x, y) sqrt(sum((x - y) ^ 2))
   }
 
   nearest_idx <- apply(num_mat, 1, function(row) {
@@ -420,11 +425,13 @@ predict_cluster <- function(bundle, numeric_data) {
 }
 
 prediction_error_parser <- function(
-    error_msg,
-    operation_name = "Prediction") {
+  error_msg,
+  operation_name = "Prediction"
+) {
   if (grepl(
     "subscript|column|variable",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -434,7 +441,8 @@ prediction_error_parser <- function(
     )
   } else if (grepl(
     "singular|invertible|rank",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

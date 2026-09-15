@@ -1,6 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -28,7 +33,7 @@ describe("detect_skewness", {
     # Highly right-skewed data (skewness > 2)
     set.seed(42)
     data <- data.frame(
-      x = rexp(200, rate = 0.5)^2
+      x = rexp(200, rate = 0.5) ^ 2
     )
     result <- skewness_transform$detect_skewness(
       data, "x"
@@ -42,7 +47,7 @@ describe("detect_skewness", {
   it("flags left-skewed columns", {
     # Highly left-skewed data (skewness < -2)
     set.seed(42)
-    raw <- rexp(200, rate = 0.5)^2
+    raw <- rexp(200, rate = 0.5) ^ 2
     data <- data.frame(
       x = max(raw) + 1 - raw
     )
@@ -75,7 +80,8 @@ describe("detect_skewness", {
     )
     # With very high threshold, nothing should be flagged
     result <- skewness_transform$detect_skewness(
-      data, "x", threshold = 100
+      data, "x",
+      threshold = 100
     )
     expect_false(result$is_skewed[1])
     expect_equal(result$direction[1], "symmetric")
@@ -83,8 +89,8 @@ describe("detect_skewness", {
 
   it("handles multiple columns with mixed skewness", {
     set.seed(42)
-    right_raw <- rexp(200, rate = 0.5)^2
-    left_raw <- rexp(200, rate = 0.5)^2
+    right_raw <- rexp(200, rate = 0.5) ^ 2
+    left_raw <- rexp(200, rate = 0.5) ^ 2
     data <- data.frame(
       right_skew = right_raw,
       symmetric = rnorm(200),
@@ -145,7 +151,7 @@ describe("transform_skewed", {
   it("transforms right-skewed columns", {
     set.seed(42)
     data <- data.frame(
-      x = rexp(200, rate = 0.5)^2,
+      x = rexp(200, rate = 0.5) ^ 2,
       meta = letters[1:200]
     )
     skew_result <- skewness_transform$detect_skewness(
@@ -170,7 +176,7 @@ describe("transform_skewed", {
 
   it("transforms left-skewed columns", {
     set.seed(42)
-    raw <- rexp(200, rate = 0.5)^2
+    raw <- rexp(200, rate = 0.5) ^ 2
     data <- data.frame(
       x = max(raw) + 1 - raw
     )
@@ -193,12 +199,13 @@ describe("transform_skewed", {
 
   it("does nothing when method is 'none'", {
     set.seed(42)
-    data <- data.frame(x = rexp(200, rate = 0.5)^2)
+    data <- data.frame(x = rexp(200, rate = 0.5) ^ 2)
     skew_result <- skewness_transform$detect_skewness(
       data, "x"
     )
     result <- skewness_transform$transform_skewed(
-      data, "x", skew_result, method = "none"
+      data, "x", skew_result,
+      method = "none"
     )
     expect_true(result$success)
     expect_equal(nrow(result$result$transformed_cols), 0)
@@ -208,7 +215,7 @@ describe("transform_skewed", {
   it("preserves row count after transformation", {
     set.seed(42)
     data <- data.frame(
-      x = rexp(100, rate = 0.5)^2,
+      x = rexp(100, rate = 0.5) ^ 2,
       y = rnorm(100)
     )
     skew_result <- skewness_transform$detect_skewness(

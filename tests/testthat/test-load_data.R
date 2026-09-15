@@ -1,11 +1,17 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_null,
-           expect_true, it, test_that],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_null,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/load_data/load_data,
+  app/logic/shared/error_handling,
 )
 
 # Helper: resolve path to test fixture files

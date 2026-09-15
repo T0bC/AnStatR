@@ -22,7 +22,8 @@ tab_ui <- function(ns) {
         "Use bootstrap version ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Recommended when sample sizes are",

@@ -158,12 +158,14 @@ residualize_data <- function(data, measurement_cols, group_col) {
 #' @return Character, user-friendly error message
 #' @export
 residualize_error_parser <- function(
-    error_msg,
-    operation_name = "Residualize by Group") {
+  error_msg,
+  operation_name = "Residualize by Group"
+) {
   if (grepl("not found", error_msg, ignore.case = TRUE)) {
     paste0(operation_name, ": ", error_msg)
   } else if (grepl(
-    "fewer than 2 levels", error_msg, ignore.case = TRUE
+    "fewer than 2 levels", error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -171,7 +173,8 @@ residualize_error_parser <- function(
       " column with at least two distinct values."
     )
   } else if (grepl(
-    "missing values", error_msg, ignore.case = TRUE
+    "missing values", error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

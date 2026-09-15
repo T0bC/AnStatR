@@ -108,7 +108,7 @@ create_lda_excel <- function(lda_result, file,
   # ---------------------------------------------------------------
   if (
     lda_result$analysis_type %in% c("plsda", "splsda") &&
-    !is.null(lda_result$vip)
+      !is.null(lda_result$vip)
   ) {
     vip_df <- cbind(
       Variable = rownames(lda_result$vip),
@@ -126,7 +126,9 @@ create_lda_excel <- function(lda_result, file,
     sel <- lda_result$selected_variables
     rows <- lapply(names(sel), function(comp) {
       vars <- sel[[comp]]
-      if (length(vars) == 0) return(NULL)
+      if (length(vars) == 0) {
+        return(NULL)
+      }
       data.frame(
         Component = comp, Variable = vars,
         stringsAsFactors = FALSE
@@ -145,8 +147,8 @@ create_lda_excel <- function(lda_result, file,
   # ---------------------------------------------------------------
   if (
     is_sparse &&
-    !is.null(perf_result) &&
-    !is.null(perf_result$stability)
+      !is.null(perf_result) &&
+      !is.null(perf_result$stability)
   ) {
     add_sheet(wb, "Selected Variable Stability", perf_result$stability)
     sheet_count <- sheet_count + 1
@@ -156,7 +158,7 @@ create_lda_excel <- function(lda_result, file,
   # Sheet 4d: Prediction distance comparison (PLS-DA, if perf() run)
   # ---------------------------------------------------------------
   if (!is.null(perf_result) &&
-      !is.null(perf_result$dist_comparison)) {
+    !is.null(perf_result$dist_comparison)) {
     add_sheet(
       wb, "Distance Comparison", perf_result$dist_comparison
     )
@@ -167,7 +169,7 @@ create_lda_excel <- function(lda_result, file,
   # Sheet 4e: Per-group CV error rates (PLS-DA, if perf() run)
   # ---------------------------------------------------------------
   if (!is.null(perf_result) &&
-      !is.null(perf_result$class_errors)) {
+    !is.null(perf_result$class_errors)) {
     add_sheet(wb, "CV Error per Group", perf_result$class_errors)
     sheet_count <- sheet_count + 1
   }
@@ -227,7 +229,7 @@ create_lda_excel <- function(lda_result, file,
   # ---------------------------------------------------------------
   if (
     lda_result$analysis_type == "mda" &&
-    !is.null(lda_result$sub_prior)
+      !is.null(lda_result$sub_prior)
   ) {
     rows <- lapply(
       names(lda_result$sub_prior),
@@ -252,7 +254,7 @@ create_lda_excel <- function(lda_result, file,
   # ---------------------------------------------------------------
   if (
     !is.null(test_result) &&
-    !is.null(test_result$split_summary)
+      !is.null(test_result$split_summary)
   ) {
     add_sheet(
       wb, "Split Summary",
@@ -303,7 +305,7 @@ build_scores_sheet <- function(lda_result) {
 
 
 build_posterior_sheet <- function(lda_result,
-                                 test_result) {
+                                  test_result) {
   is_cv <- !is.null(lda_result$cv)
 
   posterior <- if (is_cv) {
@@ -313,7 +315,9 @@ build_posterior_sheet <- function(lda_result,
   } else {
     lda_result$posterior
   }
-  if (is.null(posterior)) return(NULL)
+  if (is.null(posterior)) {
+    return(NULL)
+  }
 
   pred_class <- if (is_cv) {
     lda_result$cv$predicted_class
@@ -325,7 +329,7 @@ build_posterior_sheet <- function(lda_result,
 
   meta <- if (
     !is.null(test_result) &&
-    !is.null(test_result$meta)
+      !is.null(test_result$meta)
   ) {
     test_result$meta
   } else {
@@ -367,7 +371,7 @@ get_best_confusion <- function(lda_result,
     lda_result$cv$confusion
   } else if (
     !is.null(test_result) &&
-    !is.null(test_result$confusion)
+      !is.null(test_result$confusion)
   ) {
     test_result$confusion
   } else {
@@ -491,7 +495,9 @@ create_lda_bundle <- function(lda_result, raw_data,
 #' @return Named list (one entry per group) of list($mean, $cov_inv), or
 #'   NULL if group_col is missing or every group's covariance is singular
 build_group_stats <- function(used_data, numeric_cols, group_col) {
-  if (is.null(group_col) || !(group_col %in% names(used_data))) return(NULL)
+  if (is.null(group_col) || !(group_col %in% names(used_data))) {
+    return(NULL)
+  }
   x <- as.matrix(used_data[, numeric_cols, drop = FALSE])
   groups <- used_data[[group_col]]
   group_names <- if (is.factor(groups)) levels(groups) else sort(unique(as.character(groups)))
@@ -499,15 +505,21 @@ build_group_stats <- function(used_data, numeric_cols, group_col) {
   stats_list <- lapply(group_names, function(g) {
     idx <- as.character(groups) == g
     xg <- x[idx, , drop = FALSE]
-    if (nrow(xg) < ncol(xg) + 1) return(NULL)
+    if (nrow(xg) < ncol(xg) + 1) {
+      return(NULL)
+    }
     cov_g <- stats$cov(xg)
     cov_inv <- tryCatch(solve(cov_g), error = function(e) NULL)
-    if (is.null(cov_inv)) return(NULL)
+    if (is.null(cov_inv)) {
+      return(NULL)
+    }
     list(mean = colMeans(xg), cov_inv = cov_inv)
   })
   names(stats_list) <- group_names
   stats_list <- stats_list[!vapply(stats_list, is.null, logical(1))]
-  if (length(stats_list) == 0) return(NULL)
+  if (length(stats_list) == 0) {
+    return(NULL)
+  }
   stats_list
 }
 
@@ -522,22 +534,30 @@ build_group_stats <- function(used_data, numeric_cols, group_col) {
 #' @return Named list (one entry per group) of list($mean, $cov_inv), or
 #'   NULL if scores are unavailable or every group's covariance is singular
 build_group_component_stats <- function(scores, groups) {
-  if (is.null(scores) || nrow(scores) == 0) return(NULL)
+  if (is.null(scores) || nrow(scores) == 0) {
+    return(NULL)
+  }
   x <- as.matrix(scores)
   group_names <- sort(unique(as.character(groups)))
 
   stats_list <- lapply(group_names, function(g) {
     idx <- as.character(groups) == g
     xg <- x[idx, , drop = FALSE]
-    if (nrow(xg) < ncol(xg) + 1) return(NULL)
+    if (nrow(xg) < ncol(xg) + 1) {
+      return(NULL)
+    }
     cov_g <- stats$cov(xg)
     cov_inv <- tryCatch(solve(cov_g), error = function(e) NULL)
-    if (is.null(cov_inv)) return(NULL)
+    if (is.null(cov_inv)) {
+      return(NULL)
+    }
     list(mean = colMeans(xg), cov_inv = cov_inv)
   })
   names(stats_list) <- group_names
   stats_list <- stats_list[!vapply(stats_list, is.null, logical(1))]
-  if (length(stats_list) == 0) return(NULL)
+  if (length(stats_list) == 0) {
+    return(NULL)
+  }
   stats_list
 }
 

@@ -1,7 +1,6 @@
 box::use(
   bsicons,
   bslib,
-  rhino,
   shiny,
 )
 
@@ -23,7 +22,8 @@ tab_ui <- function(ns) {
         shiny$tags$strong("Model bundle (.rds) "),
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Upload a .rds bundle exported from the",
@@ -45,7 +45,8 @@ tab_ui <- function(ns) {
         shiny$tags$strong("Unknown data "),
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Upload a CSV or Excel file containing",
@@ -72,10 +73,11 @@ tab_server <- function(input, output, session,
   # Bundle summary card
   output$bundle_summary <- shiny$renderUI({
     bundle <- bundle_reactive()
-    if (is.null(bundle)) return(NULL)
+    if (is.null(bundle)) {
+      return(NULL)
+    }
 
-    analysis_label <- switch(
-      bundle$analysis_type,
+    analysis_label <- switch(bundle$analysis_type,
       plsda = "PLS-DA",
       splsda = "sPLS-DA",
       toupper(bundle$analysis_type)
@@ -93,7 +95,8 @@ tab_server <- function(input, output, session,
     shiny$tags$div(
       class = "alert alert-success py-2 px-2 small mb-2",
       bsicons$bs_icon(
-        "check-circle-fill", class = "me-1"
+        "check-circle-fill",
+        class = "me-1"
       ),
       shiny$tags$strong(analysis_label),
       " bundle loaded",
@@ -117,7 +120,9 @@ tab_server <- function(input, output, session,
   # Unknown data summary
   output$unknown_summary <- shiny$renderUI({
     unknown <- unknown_data_reactive()
-    if (is.null(unknown)) return(NULL)
+    if (is.null(unknown)) {
+      return(NULL)
+    }
 
     val <- validation_reactive()
 
@@ -151,7 +156,8 @@ tab_server <- function(input, output, session,
       shiny$tags$div(
         class = "alert alert-info py-2 px-2 small mb-2",
         bsicons$bs_icon(
-          "file-earmark-spreadsheet", class = "me-1"
+          "file-earmark-spreadsheet",
+          class = "me-1"
         ),
         paste0(n_rows, " rows, ", n_cols, " columns "),
         badge
@@ -198,5 +204,4 @@ tab_server <- function(input, output, session,
 
     content
   })
-
 }

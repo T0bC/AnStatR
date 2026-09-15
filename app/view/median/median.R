@@ -1,5 +1,4 @@
 box::use(
-  bslib,
   DT,
   openxlsx,
   rhino,
@@ -7,11 +6,11 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/column_utils,
-  app/logic/shared/error_handling,
   app/logic/median/compute,
   app/logic/median/quality_analysis,
   app/logic/median/quality_filter,
+  app/logic/shared/column_utils,
+  app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
 )
@@ -97,85 +96,91 @@ server <- function(id, input_data, data_version) {
     cached_params <- shiny$reactiveVal(NULL)
 
     # --- Reset on new data ---
-    shiny$observeEvent(data_version(), {
-      filtered_data(NULL)
-      filter_message(NULL)
-      median_results(NULL)
-      removed_cols(NULL)
-      last_error(NULL)
-      quality_col_info(list(type = "none"))
-      cached_params(NULL)
+    shiny$observeEvent(data_version(),
+      {
+        filtered_data(NULL)
+        filter_message(NULL)
+        median_results(NULL)
+        removed_cols(NULL)
+        last_error(NULL)
+        quality_col_info(list(type = "none"))
+        cached_params(NULL)
 
-      data <- input_data()
-      if (!is.null(data)) {
-        new_cols <- column_utils$get_descriptive_cols(data)
+        data <- input_data()
+        if (!is.null(data)) {
+          new_cols <- column_utils$get_descriptive_cols(data)
 
-        # Smart retention: keep selections that still exist
-        current_grp <- shiny$isolate(
-          input$grouping_columns
-        )
-        retained_grp <- if (!is.null(current_grp)) {
-          intersect(current_grp, new_cols)
-        } else {
-          character(0)
-        }
+          # Smart retention: keep selections that still exist
+          current_grp <- shiny$isolate(
+            input$grouping_columns
+          )
+          retained_grp <- if (!is.null(current_grp)) {
+            intersect(current_grp, new_cols)
+          } else {
+            character(0)
+          }
 
-        current_qc <- shiny$isolate(input$quality_column)
-        retained_qc <- if (!is.null(current_qc) &&
+          current_qc <- shiny$isolate(input$quality_column)
+          retained_qc <- if (!is.null(current_qc) &&
             current_qc != "None" &&
             current_qc %in% new_cols) {
-          current_qc
-        } else {
-          "None"
-        }
+            current_qc
+          } else {
+            "None"
+          }
 
+          shiny$updateSelectizeInput(
+            session, "grouping_columns",
+            choices = new_cols,
+            selected = retained_grp
+          )
+          shiny$updateSelectizeInput(
+            session, "quality_column",
+            choices = c(
+              "None (no quality filtering)" = "None",
+              new_cols
+            ),
+            selected = retained_qc
+          )
+        } else {
+          shiny$updateSelectizeInput(
+            session, "grouping_columns",
+            choices = character(0),
+            selected = character(0)
+          )
+          shiny$updateSelectizeInput(
+            session, "quality_column",
+            choices = c(
+              "None (no quality filtering)" = "None"
+            ),
+            selected = "None"
+          )
+        }
+        rhino$log$info("Median: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
+
+    # --- Populate choices on first data load ---
+    shiny$observeEvent(input_data(),
+      {
+        data <- input_data()
+        shiny$req(data)
+        cols <- column_utils$get_descriptive_cols(data)
         shiny$updateSelectizeInput(
           session, "grouping_columns",
-          choices = new_cols,
-          selected = retained_grp
+          choices = cols, selected = character(0)
         )
         shiny$updateSelectizeInput(
           session, "quality_column",
           choices = c(
-            "None (no quality filtering)" = "None",
-            new_cols
-          ),
-          selected = retained_qc
-        )
-      } else {
-        shiny$updateSelectizeInput(
-          session, "grouping_columns",
-          choices = character(0),
-          selected = character(0)
-        )
-        shiny$updateSelectizeInput(
-          session, "quality_column",
-          choices = c(
-            "None (no quality filtering)" = "None"
+            "None (no quality filtering)" = "None", cols
           ),
           selected = "None"
         )
-      }
-      rhino$log$info("Median: state reset for new data")
-    }, ignoreInit = TRUE)
-
-    # --- Populate choices on first data load ---
-    shiny$observeEvent(input_data(), {
-      data <- input_data()
-      shiny$req(data)
-      cols <- column_utils$get_descriptive_cols(data)
-      shiny$updateSelectizeInput(
-        session, "grouping_columns",
-        choices = cols, selected = character(0)
-      )
-      shiny$updateSelectizeInput(
-        session, "quality_column",
-        choices = c(
-          "None (no quality filtering)" = "None", cols
-        ),
-        selected = "None"
-      )
-    }, once = TRUE)
+      },
+      once = TRUE
+    )
 
     # --- Grouping info ---
     output$grouping_info <- shiny$renderUI({
@@ -184,7 +189,7 @@ server <- function(id, input_data, data_version) {
       group_cols <- input$grouping_columns
 
       if (is.null(group_cols) ||
-          length(group_cols) == 0) {
+        length(group_cols) == 0) {
         return(shiny$tags$p(
           class = "text-muted small fst-italic",
           "No grouping selected.",
@@ -225,7 +230,9 @@ server <- function(id, input_data, data_version) {
     # --- Quality filter dynamic UI ---
     output$quality_filter_options <- shiny$renderUI({
       info <- quality_col_info()
-      if (info$type == "none") return(NULL)
+      if (info$type == "none") {
+        return(NULL)
+      }
 
       shiny$tagList(
         shiny$tags$p(
@@ -262,7 +269,11 @@ server <- function(id, input_data, data_version) {
             max = info$max,
             step = if (
               info$type == "percentage_decimal"
-            ) 0.05 else 1
+            ) {
+              0.05
+            } else {
+              1
+            }
           )
         }
       )
@@ -275,7 +286,7 @@ server <- function(id, input_data, data_version) {
     build_quality_settings <- function() {
       info <- quality_col_info()
       if (is.null(input$quality_column) ||
-          input$quality_column == "None") {
+        input$quality_column == "None") {
         list(
           enabled = FALSE, column = NULL, type = "none"
         )
@@ -342,50 +353,54 @@ server <- function(id, input_data, data_version) {
     })
 
     # --- Run computation when params change ---
-    shiny$observeEvent(cached_params(), {
-      params <- cached_params()
-      shiny$req(params)
-      data <- shiny$isolate(input_data())
-      shiny$req(data)
+    shiny$observeEvent(cached_params(),
+      {
+        params <- cached_params()
+        shiny$req(params)
+        data <- shiny$isolate(input_data())
+        shiny$req(data)
 
-      last_error(NULL)
-      grouping_cols <- params$grouping_cols
-      q_settings <- params$quality_settings
+        last_error(NULL)
+        grouping_cols <- params$grouping_cols
+        q_settings <- params$quality_settings
 
-      # Step 1: Apply quality filter
-      filter_result <- quality_filter$apply_quality_filter(
-        data, q_settings, grouping_cols
-      )
-      filtered_data(filter_result$data)
-      filter_message(filter_result$message)
+        # Step 1: Apply quality filter
+        filter_result <- quality_filter$apply_quality_filter(
+          data, q_settings, grouping_cols
+        )
+        filtered_data(filter_result$data)
+        filter_message(filter_result$message)
 
-      # Step 2: Compute medians
-      quality_col_name <- if (
-        q_settings$enabled &&
-          !is.null(q_settings$column)
-      ) {
-        q_settings$column
-      } else {
-        NULL
-      }
+        # Step 2: Compute medians
+        quality_col_name <- if (
+          q_settings$enabled &&
+            !is.null(q_settings$column)
+        ) {
+          q_settings$column
+        } else {
+          NULL
+        }
 
-      result <- compute$compute_medians(
-        filter_result$data,
-        grouping_cols,
-        quality_col = quality_col_name
-      )
+        result <- compute$compute_medians(
+          filter_result$data,
+          grouping_cols,
+          quality_col = quality_col_name
+        )
 
-      if (!result$success) {
-        last_error(result$error)
-        median_results(NULL)
-        removed_cols(NULL)
-        return()
-      }
+        if (!result$success) {
+          last_error(result$error)
+          median_results(NULL)
+          removed_cols(NULL)
+          return()
+        }
 
-      median_results(result$result)
-      removed_cols(result$removed_cols)
-      rhino$log$info("Median: calculation complete")
-    }, ignoreNULL = TRUE, ignoreInit = FALSE)
+        median_results(result$result)
+        removed_cols(result$removed_cols)
+        rhino$log$info("Median: calculation complete")
+      },
+      ignoreNULL = TRUE,
+      ignoreInit = FALSE
+    )
 
     # --- Main content ---
     output$main_content <- shiny$renderUI({
@@ -393,7 +408,8 @@ server <- function(id, input_data, data_version) {
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -511,9 +527,13 @@ server <- function(id, input_data, data_version) {
     # --- DT-filtered data reactive (used for download + return) ---
     dt_filtered_data <- shiny$reactive({
       data <- median_results()
-      if (is.null(data)) return(NULL)
+      if (is.null(data)) {
+        return(NULL)
+      }
       filtered_rows <- input$median_table_rows_all
-      if (is.null(filtered_rows)) return(data)
+      if (is.null(filtered_rows)) {
+        return(data)
+      }
       result <- data[filtered_rows, , drop = FALSE]
       # Drop unused factor levels after filtering to prevent
       # issues in downstream modules (LDA, PCA, etc.)
@@ -552,7 +572,7 @@ server <- function(id, input_data, data_version) {
 render_summary_ui <- function(filter_msg, grouping_cols,
                               removed) {
   grouping_info <- if (is.null(grouping_cols) ||
-      length(grouping_cols) == 0) {
+    length(grouping_cols) == 0) {
     shiny$tags$p(
       class = "mb-1",
       shiny$tags$em(
@@ -569,7 +589,7 @@ render_summary_ui <- function(filter_msg, grouping_cols,
   }
 
   removed_info <- if (!is.null(removed) &&
-      length(removed) > 0) {
+    length(removed) > 0) {
     shiny$tags$p(
       class = "mb-1 text-warning",
       shiny$tags$strong(

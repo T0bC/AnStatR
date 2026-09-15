@@ -1,6 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_error, expect_true,
-           expect_false, expect_length, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_error,
+    expect_false,
+    expect_length,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -32,7 +39,8 @@ describe("detect_outliers", {
 
   it("detects outliers with IQR method", {
     result <- data_processing$detect_outliers(
-      df, "value", grp, method = "IQR", factor = 1.5
+      df, "value", grp,
+      method = "IQR", factor = 1.5
     )
     expect_length(result, 20)
     expect_true(is.logical(result))
@@ -44,7 +52,8 @@ describe("detect_outliers", {
 
   it("detects outliers with zscore method", {
     result <- data_processing$detect_outliers(
-      df, "value", grp, method = "zscore", factor = 2.0
+      df, "value", grp,
+      method = "zscore", factor = 2.0
     )
     expect_true(is.logical(result))
     expect_true(result[10])
@@ -52,7 +61,8 @@ describe("detect_outliers", {
 
   it("detects outliers with modified_zscore method", {
     result <- data_processing$detect_outliers(
-      df, "value", grp, method = "modified_zscore", factor = 3.5
+      df, "value", grp,
+      method = "modified_zscore", factor = 3.5
     )
     expect_true(is.logical(result))
     expect_true(result[10])
@@ -62,7 +72,8 @@ describe("detect_outliers", {
     small_df <- data.frame(value = c(1, 2))
     grp_small <- factor(c("A", "A"))
     result <- data_processing$detect_outliers(
-      small_df, "value", grp_small, method = "IQR"
+      small_df, "value", grp_small,
+      method = "IQR"
     )
     expect_true(all(!result))
   })
@@ -73,7 +84,8 @@ describe("detect_outliers", {
     )
     grp_one <- factor(rep("A", 10))
     result <- data_processing$detect_outliers(
-      df_special, "value", grp_one, method = "IQR"
+      df_special, "value", grp_one,
+      method = "IQR"
     )
     expect_length(result, 10)
     expect_true(is.logical(result))
@@ -82,7 +94,8 @@ describe("detect_outliers", {
   it("errors on invalid method", {
     expect_error(
       data_processing$detect_outliers(
-        df, "value", grp, method = "invalid"
+        df, "value", grp,
+        method = "invalid"
       ),
       "Invalid method"
     )
@@ -91,7 +104,8 @@ describe("detect_outliers", {
   it("errors on missing column", {
     expect_error(
       data_processing$detect_outliers(
-        df, "nonexistent", grp, method = "IQR"
+        df, "nonexistent", grp,
+        method = "IQR"
       ),
       "not found"
     )
@@ -99,7 +113,8 @@ describe("detect_outliers", {
 
   it("detects outliers with kde method", {
     result <- data_processing$detect_outliers(
-      df, "value", grp, method = "kde", factor = 0.1
+      df, "value", grp,
+      method = "kde", factor = 0.1
     )
     expect_true(is.logical(result))
     expect_length(result, 20)

@@ -1,4 +1,5 @@
 box::use(
+  ARTool[art],
   rhino,
   stats,
 )
@@ -7,10 +8,6 @@ box::use(
   app/logic/shared/error_handling,
   app/logic/statistics/omnibus,
   app/logic/statistics/validation_utils,
-)
-
-box::use(
-  ARTool[art]
 )
 
 # =============================================================================
@@ -29,15 +26,12 @@ box::use(
 #' Defines all hooks for the Kruskal-Wallis rank-sum test.
 kruskal1way_config <- list(
   name = "kruskal1way",
-
   result_cols = c("Df", "H_statistic", "p_value"),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 1, "Kruskal-Wallis", "kruskal1way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -48,13 +42,11 @@ kruskal1way_config <- list(
       test_type = "nonparametric"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0("`", measure_col, "` ~ `", x_axis[1], "`")
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     # tr_value is ignored for non-parametric tests
     vars <- all.vars(formula_obj)[-1]
@@ -67,11 +59,9 @@ kruskal1way_config <- list(
       data = conversion$data
     )
   },
-
   extract_results = function(out) {
     c(out$parameter[["df"]], out$statistic[["Kruskal-Wallis chi-squared"]], out$p.value)
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     data.frame(
       Effect = x_axis[1],
@@ -169,19 +159,16 @@ run_art_anova <- function(formula_obj, data) {
 #' Returns main effects (A, B) and interaction (AB).
 art2way_config <- list(
   name = "art2way",
-
   result_cols = c(
     "Df_A", "Df.res_A", "F_A", "p_A",
     "Df_B", "Df.res_B", "F_B", "p_B",
     "Df_AB", "Df.res_AB", "F_AB", "p_AB"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 2, "Two-way ART", "art2way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -194,7 +181,6 @@ art2way_config <- list(
       test_type = "nonparametric"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -203,7 +189,6 @@ art2way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     # tr_value is ignored for non-parametric tests
     vars <- all.vars(formula_obj)[-1]
@@ -222,7 +207,7 @@ art2way_config <- list(
       )
       conversion$data <- conversion$data[!na_mask, , drop = FALSE]
     }
-    
+
     # Check for balanced design (ARTool requires balanced designs)
     factor_vars <- all.vars(formula_obj)[-1]
     cell_counts <- table(conversion$data[factor_vars])
@@ -242,10 +227,9 @@ art2way_config <- list(
         )
       )$message)
     }
-    
+
     run_art_anova(formula_obj, conversion$data)
   },
-
   extract_results = function(out) {
     # out is the anova table from ART
     # Rows: factor A, factor B, A:B
@@ -258,7 +242,6 @@ art2way_config <- list(
       out[3, "F value"], out[3, "Pr(>F)"]
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     effect_labels <- c(
       x_axis[1], x_axis[2],
@@ -350,7 +333,6 @@ perform_art2way <- function(df, x_axis, measure_col,
 #' and three-way interaction (ABC).
 art3way_config <- list(
   name = "art3way",
-
   result_cols = c(
     "Df_A", "Df.res_A", "F_A", "p_A",
     "Df_B", "Df.res_B", "F_B", "p_B",
@@ -360,13 +342,11 @@ art3way_config <- list(
     "Df_BC", "Df.res_BC", "F_BC", "p_BC",
     "Df_ABC", "Df.res_ABC", "F_ABC", "p_ABC"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 3, "Three-way ART", "art3way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -381,7 +361,6 @@ art3way_config <- list(
       test_type = "nonparametric"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -392,7 +371,6 @@ art3way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     # tr_value is ignored for non-parametric tests
     vars <- all.vars(formula_obj)[-1]
@@ -411,7 +389,7 @@ art3way_config <- list(
       )
       conversion$data <- conversion$data[!na_mask, , drop = FALSE]
     }
-    
+
     # Check for balanced design (ARTool requires balanced designs)
     factor_vars <- all.vars(formula_obj)[-1]
     cell_counts <- table(conversion$data[factor_vars])
@@ -431,10 +409,9 @@ art3way_config <- list(
         )
       )$message)
     }
-    
+
     run_art_anova(formula_obj, conversion$data)
   },
-
   extract_results = function(out) {
     # out is the anova table from ART
     # Rows: A, B, C, A:B, A:C, B:C, A:B:C
@@ -450,7 +427,6 @@ art3way_config <- list(
       extract_row(7)
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     effect_labels <- c(
       x_axis[1], x_axis[2], x_axis[3],
@@ -557,7 +533,7 @@ perform_art3way <- function(df, x_axis, measure_col,
 #' @return Data frame with test results, or structured app_error
 #' @export
 perform_rm_nonparametric <- function(df, x_axis, measure_col,
-                                      id_col, within_col) {
+                                     id_col, within_col) {
   rhino$log$info(
     "rm_nonparametric: starting for measure='{measure_col}',",
     " id='{id_col}', within='{within_col}'"
@@ -700,7 +676,9 @@ perform_rm_nonparametric <- function(df, x_axis, measure_col,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

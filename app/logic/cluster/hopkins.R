@@ -86,10 +86,11 @@ compute_hopkins <- function(data, measurement_cols) {
 #' @return Character, user-friendly error message
 #' @export
 hopkins_error_parser <- function(error_msg,
-                                  operation_name = "Hopkins Statistic") {
+                                 operation_name = "Hopkins Statistic") {
   if (grepl(
     "numeric|non-numeric",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -97,7 +98,8 @@ hopkins_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -106,7 +108,8 @@ hopkins_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "columns|measurement|at least",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -114,7 +117,8 @@ hopkins_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "constant|variance|zero",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -122,7 +126,8 @@ hopkins_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "observations|rows|sample",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

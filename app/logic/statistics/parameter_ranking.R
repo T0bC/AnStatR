@@ -93,7 +93,7 @@ rank_parameters_by_comparison <- function(posthoc_results, top_n = 3,
     schemas[[measure]] <- schema
 
     effect_vals <- if (!is.na(schema$effect_col) &&
-                        schema$effect_col %in% names(df)) {
+      schema$effect_col %in% names(df)) {
       df[[schema$effect_col]]
     } else {
       rep(NA_real_, nrow(df))
@@ -222,11 +222,13 @@ build_ranking_matrix <- function(ranking_result) {
   n_top_by_param <- n_top_by_param[ord]
 
   cell_text <- matrix(
-    NA_character_, nrow = length(parameters), ncol = length(comparisons),
+    NA_character_,
+    nrow = length(parameters), ncol = length(comparisons),
     dimnames = list(parameters, comparisons)
   )
   is_top_mat <- matrix(
-    FALSE, nrow = length(parameters), ncol = length(comparisons),
+    FALSE,
+    nrow = length(parameters), ncol = length(comparisons),
     dimnames = list(parameters, comparisons)
   )
 

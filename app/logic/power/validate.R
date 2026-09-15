@@ -14,8 +14,9 @@ box::use(
 #' @return Sanitized character string
 #' @export
 sanitize_name <- function(name) {
-
-  if (is.null(name) || !is.character(name)) return("")
+  if (is.null(name) || !is.character(name)) {
+    return("")
+  }
 
   sanitized <- trimws(name)
 
@@ -118,7 +119,9 @@ sanitize_factor_structure <- function(factors) {
 #' @return TRUE if name contains problematic characters
 #' @export
 needs_sanitization <- function(name) {
-  if (is.null(name) || !is.character(name)) return(TRUE)
+  if (is.null(name) || !is.character(name)) {
+    return(TRUE)
+  }
   sanitize_name(name) != trimws(name)
 }
 
@@ -159,7 +162,7 @@ validate_power_inputs <- function(params) {
 
   # --- Alpha ---
   if (is.null(params$alpha) || !is.numeric(params$alpha) ||
-      params$alpha <= 0 || params$alpha >= 1) {
+    params$alpha <= 0 || params$alpha >= 1) {
     return(error_handling$simple_error(
       message = "Alpha must be a number between 0 and 1 (exclusive).",
       operation_name = "power_validate"
@@ -169,7 +172,7 @@ validate_power_inputs <- function(params) {
   # --- Power target (required for sample_size and mde modes) ---
   if (params$solve_for %in% c("sample_size", "mde")) {
     if (is.null(params$power_target) || !is.numeric(params$power_target) ||
-        params$power_target <= 0 || params$power_target >= 1) {
+      params$power_target <= 0 || params$power_target >= 1) {
       return(error_handling$simple_error(
         message = "Target power must be a number between 0 and 1 (exclusive).",
         operation_name = "power_validate"
@@ -180,7 +183,7 @@ validate_power_inputs <- function(params) {
   # --- N per group (required for power and mde modes) ---
   if (params$solve_for %in% c("power", "mde")) {
     if (is.null(params$n_per_group) || !is.numeric(params$n_per_group) ||
-        params$n_per_group < 2) {
+      params$n_per_group < 2) {
       return(error_handling$simple_error(
         message = "Sample size per group must be at least 2.",
         operation_name = "power_validate"
@@ -201,8 +204,8 @@ validate_power_inputs <- function(params) {
   requires_simulation <- approach != "parametric" || distribution != "normal"
   if (requires_simulation) {
     if (is.null(params$n_sim) || !is.numeric(params$n_sim) ||
-        length(params$n_sim) != 1 || !is.finite(params$n_sim) ||
-        is.na(params$n_sim) || params$n_sim < 1) {
+      length(params$n_sim) != 1 || !is.finite(params$n_sim) ||
+      is.na(params$n_sim) || params$n_sim < 1) {
       return(error_handling$simple_error(
         message = "Number of simulations must be a finite number greater than or equal to 1.",
         operation_name = "power_validate"
@@ -213,7 +216,7 @@ validate_power_inputs <- function(params) {
   # --- Effect size validation ---
   if (params$effect_type == "standardized") {
     if (is.null(params$effect_size) || !is.numeric(params$effect_size) ||
-        params$effect_size <= 0) {
+      params$effect_size <= 0) {
       return(error_handling$simple_error(
         message = "Effect size must be a positive number.",
         operation_name = "power_validate"
@@ -229,7 +232,7 @@ validate_power_inputs <- function(params) {
         ))
       }
       if (is.null(params$group_sd) || !is.numeric(params$group_sd) ||
-          any(params$group_sd <= 0)) {
+        any(params$group_sd <= 0)) {
         return(error_handling$simple_error(
           message = "Standard deviation must be positive for all groups.",
           operation_name = "power_validate"
@@ -254,7 +257,7 @@ validate_power_inputs <- function(params) {
         ))
       }
       if (is.null(params$group_iqr) || !is.numeric(params$group_iqr) ||
-          any(params$group_iqr <= 0)) {
+        any(params$group_iqr <= 0)) {
         return(error_handling$simple_error(
           message = "IQR must be positive for all groups.",
           operation_name = "power_validate"

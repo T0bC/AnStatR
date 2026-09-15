@@ -310,89 +310,95 @@ tab_server <- function(input, output, session,
 
   # priority: must run before the output flush, so that output$ld_plot is
   # never scheduled against axes belonging to the previous result.
-  shiny$observeEvent(lda_result(), {
-    res <- lda_result()
-    if (is.null(res)) return()
-
-    score_based <- c("lda", "plsda", "splsda", "mda")
-
-    if (res$analysis_type %in% score_based) {
-      # LDA/MDA/PLS-DA/sPLS-DA: use LD/component/discriminant scores
-      if (
-        is.null(res$scores) ||
-        ncol(res$scores) == 0
-      ) {
+  shiny$observeEvent(lda_result(),
+    {
+      res <- lda_result()
+      if (is.null(res)) {
         return()
       }
-      ld_names <- colnames(res$scores)
-      n_ld <- length(ld_names)
 
-      rhino$log$info(
-        "plotting_controls: {toupper(res$analysis_type)} — ",
-        "{n_ld} axes available"
-      )
+      score_based <- c("lda", "plsda", "splsda", "mda")
 
-      set_axis_choices(
-        choices = ld_names,
-        valid = ld_names,
-        default_x = ld_names[1],
-        default_y = if (n_ld >= 2) {
-          ld_names[2]
-        } else {
-          ld_names[1]
-        },
-        default_z = if (n_ld >= 3) {
-          ld_names[3]
-        } else {
-          ld_names[min(n_ld, 2)]
+      if (res$analysis_type %in% score_based) {
+        # LDA/MDA/PLS-DA/sPLS-DA: use LD/component/discriminant scores
+        if (
+          is.null(res$scores) ||
+            ncol(res$scores) == 0
+        ) {
+          return()
         }
-      )
-    } else if (res$analysis_type == "qda") {
-      # QDA: offer LD axes (companion) + original vars
-      ld_names <- if (!is.null(res$lda_scores)) {
-        colnames(res$lda_scores)
-      } else {
-        character(0)
-      }
-      orig_names <- res$columns
+        ld_names <- colnames(res$scores)
+        n_ld <- length(ld_names)
 
-      # Build grouped choices list
-      choices <- list()
-      if (length(ld_names) > 0) {
-        choices[["LD Axes (LDA projection)"]] <-
-          ld_names
-      }
-      if (length(orig_names) > 0) {
-        choices[["Original Variables"]] <- orig_names
-      }
+        rhino$log$info(
+          "plotting_controls: {toupper(res$analysis_type)} — ",
+          "{n_ld} axes available"
+        )
 
-      n_ld <- length(ld_names)
-      default_x <- if (n_ld >= 1) {
-        ld_names[1]
-      } else {
-        orig_names[1]
-      }
-      default_y <- if (n_ld >= 2) {
-        ld_names[2]
-      } else if (length(orig_names) >= 2) {
-        orig_names[2]
-      } else {
-        default_x
-      }
+        set_axis_choices(
+          choices = ld_names,
+          valid = ld_names,
+          default_x = ld_names[1],
+          default_y = if (n_ld >= 2) {
+            ld_names[2]
+          } else {
+            ld_names[1]
+          },
+          default_z = if (n_ld >= 3) {
+            ld_names[3]
+          } else {
+            ld_names[min(n_ld, 2)]
+          }
+        )
+      } else if (res$analysis_type == "qda") {
+        # QDA: offer LD axes (companion) + original vars
+        ld_names <- if (!is.null(res$lda_scores)) {
+          colnames(res$lda_scores)
+        } else {
+          character(0)
+        }
+        orig_names <- res$columns
 
-      rhino$log$info(
-        "plotting_controls: QDA — ",
-        "{n_ld} LD axes + ",
-        "{length(orig_names)} original vars"
-      )
+        # Build grouped choices list
+        choices <- list()
+        if (length(ld_names) > 0) {
+          choices[["LD Axes (LDA projection)"]] <-
+            ld_names
+        }
+        if (length(orig_names) > 0) {
+          choices[["Original Variables"]] <- orig_names
+        }
 
-      set_axis_choices(
-        choices = choices,
-        valid = c(ld_names, orig_names),
-        default_x = default_x,
-        default_y = default_y,
-        default_z = default_y
-      )
-    }
-  }, ignoreNULL = TRUE, priority = 10)
+        n_ld <- length(ld_names)
+        default_x <- if (n_ld >= 1) {
+          ld_names[1]
+        } else {
+          orig_names[1]
+        }
+        default_y <- if (n_ld >= 2) {
+          ld_names[2]
+        } else if (length(orig_names) >= 2) {
+          orig_names[2]
+        } else {
+          default_x
+        }
+
+        rhino$log$info(
+          "plotting_controls: QDA — ",
+          "{n_ld} LD axes + ",
+          "{length(orig_names)} original vars"
+        )
+
+        set_axis_choices(
+          choices = choices,
+          valid = c(ld_names, orig_names),
+          default_x = default_x,
+          default_y = default_y,
+          default_z = default_y
+        )
+      }
+    },
+    ignoreNULL = TRUE,
+    priority = 10
+  )
 }

@@ -1,13 +1,13 @@
 box::use(
   ggiraph,
-  shinycssloaders,
   shiny,
+  shinycssloaders,
 )
 
 box::use(
   app/logic/cluster/silhouette[
     compute_silhouette_data,
-    create_silhouette_plot,
+    create_silhouette_plot
   ],
 )
 
@@ -22,7 +22,7 @@ box::use(
 #' @return Shiny tags object
 #' @export
 render_silhouette_content <- function(cluster_result,
-                                       ns) {
+                                      ns) {
   if (is.null(cluster_result)) {
     return(shiny$tags$div(
       class = "text-muted p-3",
@@ -64,10 +64,10 @@ render_silhouette_content <- function(cluster_result,
 #'   column names
 #' @export
 render_output <- function(input, output, session,
-                           cluster_result_rv,
-                           membership_data_rv,
-                           analysis_data_rv,
-                           measure_cols_rv) {
+                          cluster_result_rv,
+                          membership_data_rv,
+                          analysis_data_rv,
+                          measure_cols_rv) {
   last_plot <- shiny$reactiveVal(NULL)
   last_error <- shiny$reactiveVal(NULL)
 
@@ -106,17 +106,21 @@ render_output <- function(input, output, session,
     }
   })
 
-  sil_params <- shiny$reactive({ cached_params() })
+  sil_params <- shiny$reactive({
+    cached_params()
+  })
 
   output$cluster_silhouette_plot <-
     ggiraph$renderGirafe({
       res <- cluster_result_rv()
-      if (is.null(res)) return(NULL)
+      if (is.null(res)) {
+        return(NULL)
+      }
 
       analysis_data <- analysis_data_rv()
       measure_cols <- measure_cols_rv()
       if (is.null(analysis_data) ||
-          is.null(measure_cols)) {
+        is.null(measure_cols)) {
         return(NULL)
       }
 
@@ -156,7 +160,7 @@ render_output <- function(input, output, session,
       # Resolve group columns (exclude "CLUSTER")
       group_cols <- params$group_cols
       if (is.null(group_cols) ||
-          length(group_cols) == 0) {
+        length(group_cols) == 0) {
         group_cols <- NULL
       }
 

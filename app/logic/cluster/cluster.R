@@ -54,7 +54,9 @@ cluster_color <- function(cluster_id) {
 #' @export
 cluster_color_map <- function(labels) {
   n_cl <- length(labels)
-  if (n_cl == 0) return(stats$setNames(character(0), character(0)))
+  if (n_cl == 0) {
+    return(stats$setNames(character(0), character(0)))
+  }
   colors <- if (n_cl > length(CLUSTER_PALETTE)) {
     rep_len(CLUSTER_PALETTE, n_cl)
   } else {
@@ -152,8 +154,7 @@ run_clustering <- function(data, columns, n_clusters,
         num_data, n_clusters, algorithm
       )
 
-      res <- switch(
-        algorithm,
+      res <- switch(algorithm,
         kmeans = run_kmeans(
           num_data, n_clusters, metric
         ),
@@ -206,11 +207,13 @@ run_clustering <- function(data, columns, n_clusters,
 #' @return Character, user-friendly error message
 #' @export
 cluster_error_parser <- function(
-    error_msg,
-    operation_name = "Cluster Analysis") {
+  error_msg,
+  operation_name = "Cluster Analysis"
+) {
   if (grepl(
     "constant|variance|zero",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -219,7 +222,8 @@ cluster_error_parser <- function(
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -228,7 +232,8 @@ cluster_error_parser <- function(
     )
   } else if (grepl(
     "observations|rows|enough|too few|at least",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -237,7 +242,8 @@ cluster_error_parser <- function(
     )
   } else if (grepl(
     "numeric|non-numeric",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -245,14 +251,16 @@ cluster_error_parser <- function(
     )
   } else if (grepl(
     "algorithm|unknown",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name, ": ", error_msg
     )
   } else if (grepl(
     "eps|minPts|no clusters|noise",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -269,8 +277,8 @@ cluster_error_parser <- function(
 # =============================================================================
 
 validate_clustering_inputs <- function(num_data,
-                                        n_clusters,
-                                        algorithm) {
+                                       n_clusters,
+                                       algorithm) {
   if (is.null(num_data) || nrow(num_data) == 0) {
     stop("Data is NULL or empty")
   }
@@ -288,8 +296,8 @@ validate_clustering_inputs <- function(num_data,
   if (algorithm != "dbscan") {
     if (
       is.null(n_clusters) ||
-      !is.numeric(n_clusters) ||
-      n_clusters < 2
+        !is.numeric(n_clusters) ||
+        n_clusters < 2
     ) {
       stop("Number of clusters must be at least 2")
     }
@@ -321,7 +329,8 @@ compute_cluster_summary <- function(num_data, clusters) {
   cluster_ids <- sort(unique(valid_clusters))
   means_list <- lapply(cluster_ids, function(k) {
     members <- valid_data[
-      valid_clusters == k, , drop = FALSE
+      valid_clusters == k, ,
+      drop = FALSE
     ]
     colMeans(members)
   })
@@ -345,7 +354,7 @@ compute_cluster_summary <- function(num_data, clusters) {
 }
 
 compute_cluster_stats <- function(num_data, clusters,
-                                   metric) {
+                                  metric) {
   # Only use non-noise points for silhouette
   valid_mask <- clusters > 0
   valid_clusters <- clusters[valid_mask]
@@ -364,17 +373,18 @@ compute_cluster_stats <- function(num_data, clusters,
   # BSS / TSS and within-SS from data + assignments
   grand_center <- colMeans(valid_data)
   totss <- sum(
-    sweep(valid_data, 2, grand_center)^2
+    sweep(valid_data, 2, grand_center) ^ 2
   )
   withinss <- 0
   cluster_sizes <- integer(0)
   for (k in sort(unique(valid_clusters))) {
     members <- valid_data[
-      valid_clusters == k, , drop = FALSE
+      valid_clusters == k, ,
+      drop = FALSE
     ]
     center_k <- colMeans(members)
     withinss <- withinss + sum(
-      sweep(members, 2, center_k)^2
+      sweep(members, 2, center_k) ^ 2
     )
     cluster_sizes <- c(
       cluster_sizes,
@@ -434,7 +444,7 @@ run_kmeans <- function(num_data, n_clusters, metric) {
 }
 
 run_hierarchical <- function(num_data, n_clusters,
-                              metric, method) {
+                             metric, method) {
   # Ward's method requires squared euclidean distances
   hclust_method <- if (method == "ward") {
     "ward.D2"
@@ -475,7 +485,8 @@ run_dbscan <- function(num_data, metric) {
 
   k <- min_pts - 1
   knn_dists <- dbscan$kNNdist(
-    dist_matrix, k = k
+    dist_matrix,
+    k = k
   )
   # kNNdist returns a matrix when k > 1;
   # use only the k-th NN column (standard approach)
@@ -487,7 +498,8 @@ run_dbscan <- function(num_data, metric) {
   eps <- estimate_dbscan_eps(sorted_dists)
 
   db_res <- dbscan$dbscan(
-    dist_matrix, eps = eps, minPts = min_pts
+    dist_matrix,
+    eps = eps, minPts = min_pts
   )
   clusters <- db_res$cluster
   eps_source <- "knee"
@@ -505,7 +517,8 @@ run_dbscan <- function(num_data, metric) {
     ))
     if (fallback_eps > eps) {
       fallback_res <- dbscan$dbscan(
-        dist_matrix, eps = fallback_eps, minPts = min_pts
+        dist_matrix,
+        eps = fallback_eps, minPts = min_pts
       )
       fallback_clusters <- fallback_res$cluster
       fallback_noise <- mean(fallback_clusters == 0)
@@ -563,7 +576,9 @@ run_dbscan <- function(num_data, metric) {
 
 estimate_dbscan_eps <- function(sorted_dists) {
   n <- length(sorted_dists)
-  if (n < 3) return(stats$median(sorted_dists))
+  if (n < 3) {
+    return(stats$median(sorted_dists))
+  }
 
   # Kneedle-style detection: normalize the curve to
   # [0,1] x [0,1], subtract the diagonal, and find

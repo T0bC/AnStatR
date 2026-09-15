@@ -104,7 +104,8 @@ tab_ui <- function(ns) {
           "Linkage Method ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste0(
               "Linkage method for hierarchical ",
@@ -140,28 +141,31 @@ tab_ui <- function(ns) {
 tab_server <- function(input, output, session,
                        input_data, data_version) {
   # Reset clustering settings when new data is loaded
-  shiny$observeEvent(data_version(), {
-    rhino$log$info(
-      "Cluster clustering_settings: reset for new data"
-    )
-    # Reset to default values
-    shiny$updateNumericInput(
-      session, "n_clusters",
-      value = 3
-    )
-    shiny$updateSelectInput(
-      session, "algorithm",
-      selected = "hierarchical"
-    )
-    shiny$updateSelectInput(
-      session, "cluster_metric",
-      selected = "euclidean"
-    )
-    shiny$updateSelectInput(
-      session, "cluster_method",
-      selected = "ward"
-    )
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      rhino$log$info(
+        "Cluster clustering_settings: reset for new data"
+      )
+      # Reset to default values
+      shiny$updateNumericInput(
+        session, "n_clusters",
+        value = 3
+      )
+      shiny$updateSelectInput(
+        session, "algorithm",
+        selected = "hierarchical"
+      )
+      shiny$updateSelectInput(
+        session, "cluster_metric",
+        selected = "euclidean"
+      )
+      shiny$updateSelectInput(
+        session, "cluster_method",
+        selected = "ward"
+      )
+    },
+    ignoreInit = TRUE
+  )
 
   # Validate cluster count based on data size
   shiny$observe({
@@ -173,8 +177,8 @@ tab_server <- function(input, output, session,
       current_clusters <- input$n_clusters
 
       if (!is.null(current_clusters) &&
-          !is.na(current_clusters) &&
-          current_clusters > max_clusters) {
+        !is.na(current_clusters) &&
+        current_clusters > max_clusters) {
         shiny$updateNumericInput(
           session, "n_clusters",
           value = max_clusters,

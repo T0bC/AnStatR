@@ -1,15 +1,17 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   grDevices,
   rhino,
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/pca_stats[
-    compute_var_coord, compute_var_contrib, compute_ind_contrib
+    compute_ind_contrib,
+    compute_var_contrib,
+    compute_var_coord
   ],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -76,12 +78,14 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
 
       # Scale variable arrows in combined mode
       if (layer == "combined" && !is.null(ind_data) &&
-          !is.null(var_data)) {
+        !is.null(var_data)) {
         max_ind <- max(
-          abs(c(ind_data$x, ind_data$y)), na.rm = TRUE
+          abs(c(ind_data$x, ind_data$y)),
+          na.rm = TRUE
         )
         max_var <- max(
-          abs(c(var_data$xend, var_data$yend)), na.rm = TRUE
+          abs(c(var_data$xend, var_data$yend)),
+          na.rm = TRUE
         )
         if (max_var > 0) {
           scale_factor <- max_ind / max_var
@@ -100,8 +104,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
 
       # Title
       if (show_title) {
-        title_text <- switch(
-          layer,
+        title_text <- switch(layer,
           individuals = "PCA — Individuals",
           variables = "PCA — Variables (Loadings)",
           combined = "PCA — Biplot"
@@ -341,7 +344,8 @@ biplot_error_parser <- function(error_msg,
                                 operation_name = "Biplot") {
   if (grepl(
     "dimension|dim_x|dim_y|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -350,7 +354,8 @@ biplot_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -425,13 +430,13 @@ build_ind_plot_data <- function(pca_result, dim_x, dim_y,
 
   # Store normalised contribution for alpha/size mapping
   if (identical(point_alpha, "Contribution") ||
-      identical(point_size, "Contribution")) {
+    identical(point_size, "Contribution")) {
     df$contrib <- contrib_scaled
   }
 
   # Group column(s) — use interaction() for multi-level designs
   if (!is.null(group_cols) && length(group_cols) > 0 &&
-      !is.null(meta)) {
+    !is.null(meta)) {
     valid_cols <- intersect(group_cols, names(meta))
     if (length(valid_cols) == 1) {
       df$group <- as.factor(meta[[valid_cols]])
@@ -492,7 +497,9 @@ build_var_plot_data <- function(pca_result, dim_x, dim_y) {
 
 #' Build convex hull data for grouped individuals
 build_hull_data <- function(ind_data) {
-  if (!"group" %in% names(ind_data)) return(NULL)
+  if (!"group" %in% names(ind_data)) {
+    return(NULL)
+  }
 
   groups <- levels(ind_data$group)
   hull_list <- lapply(groups, function(g) {
@@ -502,7 +509,9 @@ build_hull_data <- function(ind_data) {
       is.finite(sub$x) & is.finite(sub$y), ,
       drop = FALSE
     ]
-    if (nrow(sub) < 3) return(NULL)
+    if (nrow(sub) < 3) {
+      return(NULL)
+    }
     hull_idx <- grDevices$chull(sub$x, sub$y)
     # Close the polygon
     hull_idx <- c(hull_idx, hull_idx[1])

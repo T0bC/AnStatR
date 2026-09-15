@@ -5,7 +5,6 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
-  app/logic/statistics/omnibus,
   app/logic/statistics/validation_utils,
 )
 
@@ -116,7 +115,8 @@ perform_tukey_hsd <- function(df, x_axis, measure_col) {
       # For multi-way designs, create combined interaction group
       if (length(x_axis) > 1) {
         df$interaction_group <- interaction(
-          df[x_axis], sep = "."
+          df[x_axis],
+          sep = "."
         )
         formula_obj <- stats$as.formula(
           paste0("`", measure_col, "` ~ interaction_group")
@@ -182,7 +182,9 @@ perform_tukey_hsd <- function(df, x_axis, measure_col) {
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }
@@ -226,7 +228,8 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
       # For multi-way designs, create interaction variable
       if (length(x_axis) > 1) {
         df$interaction_group <- interaction(
-          df[x_axis], sep = "."
+          df[x_axis],
+          sep = "."
         )
         group_var <- "interaction_group"
       } else {
@@ -265,7 +268,7 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 
           # Pooled standard deviation
           pooled_sd <- sqrt(
-            ((n1 - 1) * sd1^2 + (n2 - 1) * sd2^2) /
+            ((n1 - 1) * sd1 ^ 2 + (n2 - 1) * sd2 ^ 2) /
               (n1 + n2 - 2)
           )
 
@@ -274,7 +277,7 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 
           # Standard error of d
           se_d <- sqrt(
-            (n1 + n2) / (n1 * n2) + d^2 / (2 * (n1 + n2))
+            (n1 + n2) / (n1 * n2) + d ^ 2 / (2 * (n1 + n2))
           )
 
           # 95% CI for d
@@ -283,7 +286,8 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 
           # Raw t-test p-value (two-sample, equal variance)
           t_test <- stats$t.test(
-            group1_data, group2_data, var.equal = TRUE
+            group1_data, group2_data,
+            var.equal = TRUE
           )
 
           results[[length(results) + 1]] <- data.frame(
@@ -307,7 +311,9 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }
@@ -330,12 +336,13 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 #' @return Data frame with combined results or app_error
 #' @export
 perform_combined_parametric_posthoc <- function(
-    df, x_axis, measure_col,
-    p_adjust_method = "bonferroni",
-    filter_valid = FALSE,
-    is_rm = FALSE,
-    id_col = NULL,
-    within_col = NULL) {
+  df, x_axis, measure_col,
+  p_adjust_method = "bonferroni",
+  filter_valid = FALSE,
+  is_rm = FALSE,
+  id_col = NULL,
+  within_col = NULL
+) {
   rhino$log$info(
     "combined_parametric_posthoc: starting for",
     " measure='{measure_col}', rm={is_rm}"
@@ -371,11 +378,15 @@ perform_combined_parametric_posthoc <- function(
     ))
   }
 
-  if (tukey_err) return(tukey_result)
-  if (cohen_err) return(cohen_result)
+  if (tukey_err) {
+    return(tukey_result)
+  }
+  if (cohen_err) {
+    return(cohen_result)
+  }
 
   if (!is.data.frame(tukey_result) ||
-      !is.data.frame(cohen_result)) {
+    !is.data.frame(cohen_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_parametric_posthoc"
@@ -402,7 +413,8 @@ perform_combined_parametric_posthoc <- function(
   )
   tukey_selected <- tukey_norm
   cohen_selected <- cohen_norm[
-    , c("InteractionKey", cohen_cols), drop = FALSE
+    , c("InteractionKey", cohen_cols),
+    drop = FALSE
   ]
 
   merged <- merge(
@@ -437,15 +449,17 @@ perform_combined_parametric_posthoc <- function(
 
   # Apply p-value adjustment
   if ("Tukey.p.value" %in% names(merged) &&
-      is.numeric(merged$Tukey.p.value)) {
+    is.numeric(merged$Tukey.p.value)) {
     merged$Tukey.p.adjusted <- stats$p.adjust(
-      merged$Tukey.p.value, method = p_adjust_method
+      merged$Tukey.p.value,
+      method = p_adjust_method
     )
   }
   if ("Cohen.p.value" %in% names(merged) &&
-      is.numeric(merged$Cohen.p.value)) {
+    is.numeric(merged$Cohen.p.value)) {
     merged$Cohen.p.adjusted <- stats$p.adjust(
-      merged$Cohen.p.value, method = p_adjust_method
+      merged$Cohen.p.value,
+      method = p_adjust_method
     )
   }
 
@@ -489,7 +503,9 @@ compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
   g2_data <- df[df$interaction_group == g2_label, c(id_col, measure_col), drop = FALSE]
 
   paired <- merge(g1_data, g2_data, by = id_col, suffixes = c(".1", ".2"))
-  if (nrow(paired) < 2) return(NULL)
+  if (nrow(paired) < 2) {
+    return(NULL)
+  }
 
   vals1 <- paired[[paste0(measure_col, ".1")]]
   vals2 <- paired[[paste0(measure_col, ".2")]]
@@ -510,7 +526,7 @@ compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
   # Cohen's dz (paired effect size) = mean_diff / sd_diff
   # Direction: g1 - g2 to match Cohen's d convention (mean1 - mean2)
   d_z <- mean_diff / sd_diff
-  se_d <- sqrt(1 / n_pairs + d_z^2 / (2 * n_pairs))
+  se_d <- sqrt(1 / n_pairs + d_z ^ 2 / (2 * n_pairs))
 
   # Tukey.diff uses opposite convention (g2 - g1) based on observed unpaired output
   tukey_diff <- -mean_diff
@@ -557,9 +573,10 @@ compute_paired_stats <- function(df, g1_label, g2_label, id_col, measure_col) {
 #' @return Data frame with combined results or app_error
 #' @export
 perform_rm_parametric_posthoc <- function(
-    df, x_axis, measure_col,
-    id_col, within_col,
-    p_adjust_method = "bonferroni") {
+  df, x_axis, measure_col,
+  id_col, within_col,
+  p_adjust_method = "bonferroni"
+) {
   rhino$log$info(
     "rm_parametric_posthoc: starting for",
     " measure='{measure_col}'"
@@ -669,12 +686,14 @@ perform_rm_parametric_posthoc <- function(
 
       if ("Tukey.p.value" %in% names(unpaired_base)) {
         unpaired_base$Tukey.p.adjusted <- stats$p.adjust(
-          unpaired_base$Tukey.p.value, method = p_adjust_method
+          unpaired_base$Tukey.p.value,
+          method = p_adjust_method
         )
       }
       if ("Cohen.p.value" %in% names(unpaired_base)) {
         unpaired_base$Cohen.p.adjusted <- stats$p.adjust(
-          unpaired_base$Cohen.p.value, method = p_adjust_method
+          unpaired_base$Cohen.p.value,
+          method = p_adjust_method
         )
       }
 
@@ -707,7 +726,9 @@ perform_rm_parametric_posthoc <- function(
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

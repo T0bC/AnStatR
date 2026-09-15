@@ -26,15 +26,12 @@ box::use(
 #' Returns an ANOVA table with Effect, Df, SS, MS, F, p.value.
 anova1way_config <- list(
   name = "anova1way",
-
   result_cols = c("Df", "SS", "MS", "F_statistic", "p_value"),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 1, "One-way ANOVA", "anova1way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -45,13 +42,11 @@ anova1way_config <- list(
       test_type = "parametric_anova"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0("`", measure_col, "` ~ `", x_axis[1], "`")
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     # tr_value is ignored for parametric tests
     vars <- all.vars(formula_obj)[-1]
@@ -64,7 +59,6 @@ anova1way_config <- list(
     # Return the full summary table — extract_results picks the row
     anova_table
   },
-
   extract_results = function(out) {
     # out is the summary(aov()) table
     # First row is the factor effect, last row is Residuals
@@ -78,7 +72,6 @@ anova1way_config <- list(
       factor_row[["Pr(>F)"]]
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     # Parametric tests do not support bootstrap —
     # always format as a single-row table
@@ -111,13 +104,13 @@ anova1way_config <- list(
 #' @return Data frame with ANOVA results, or structured app_error
 #' @export
 perform_anova1way <- function(df, x_axis, measure_col,
-                               tr_value = 0,
-                               use_bootstrap = FALSE,
-                               boot_samples = 599,
-                               boot_sample_size = NULL,
-                               is_rm = FALSE,
-                               id_col = NULL,
-                               within_col = NULL) {
+                              tr_value = 0,
+                              use_bootstrap = FALSE,
+                              boot_samples = 599,
+                              boot_sample_size = NULL,
+                              is_rm = FALSE,
+                              id_col = NULL,
+                              within_col = NULL) {
   rhino$log$info(
     "anova1way: starting for measure='{measure_col}',",
     " grouping='{x_axis[1]}', rm={is_rm}"
@@ -156,19 +149,16 @@ perform_anova1way <- function(df, x_axis, measure_col,
 #' and interaction (A:B).
 anova2way_config <- list(
   name = "anova2way",
-
   result_cols = c(
     "Df_A", "SS_A", "MS_A", "F_A", "p_A",
     "Df_B", "SS_B", "MS_B", "F_B", "p_B",
     "Df_AB", "SS_AB", "MS_AB", "F_AB", "p_AB"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 2, "Two-way ANOVA", "anova2way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -181,7 +171,6 @@ anova2way_config <- list(
       test_type = "parametric_anova"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -190,7 +179,6 @@ anova2way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     vars <- all.vars(formula_obj)[-1]
     conversion <- omnibus$safe_factor_conversion(data, vars)
@@ -200,7 +188,6 @@ anova2way_config <- list(
     model <- stats$aov(formula_obj, data = conversion$data)
     summary(model)[[1]]
   },
-
   extract_results = function(out) {
     # Rows: factor A, factor B, A:B, Residuals
     # Extract first 3 rows (all except Residuals)
@@ -216,7 +203,6 @@ anova2way_config <- list(
       row_ab[["F value"]], row_ab[["Pr(>F)"]]
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     effect_labels <- c(
       x_axis[1], x_axis[2],
@@ -267,13 +253,13 @@ anova2way_config <- list(
 #' @return Data frame with ANOVA results, or structured app_error
 #' @export
 perform_anova2way <- function(df, x_axis, measure_col,
-                               tr_value = 0,
-                               use_bootstrap = FALSE,
-                               boot_samples = 599,
-                               boot_sample_size = NULL,
-                               is_rm = FALSE,
-                               id_col = NULL,
-                               within_col = NULL) {
+                              tr_value = 0,
+                              use_bootstrap = FALSE,
+                              boot_samples = 599,
+                              boot_sample_size = NULL,
+                              is_rm = FALSE,
+                              id_col = NULL,
+                              within_col = NULL) {
   rhino$log$info(
     "anova2way: starting for measure='{measure_col}',",
     " factors='{x_axis[1]}' * '{x_axis[2]}', rm={is_rm}"
@@ -312,7 +298,6 @@ perform_anova2way <- function(df, x_axis, measure_col,
 #' interaction (A:B:C).
 anova3way_config <- list(
   name = "anova3way",
-
   result_cols = c(
     "Df_A", "SS_A", "MS_A", "F_A", "p_A",
     "Df_B", "SS_B", "MS_B", "F_B", "p_B",
@@ -322,13 +307,11 @@ anova3way_config <- list(
     "Df_BC", "SS_BC", "MS_BC", "F_BC", "p_BC",
     "Df_ABC", "SS_ABC", "MS_ABC", "F_ABC", "p_ABC"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 3, "Three-way ANOVA", "anova3way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -343,7 +326,6 @@ anova3way_config <- list(
       test_type = "parametric_anova"
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -354,7 +336,6 @@ anova3way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     vars <- all.vars(formula_obj)[-1]
     conversion <- omnibus$safe_factor_conversion(data, vars)
@@ -364,7 +345,6 @@ anova3way_config <- list(
     model <- stats$aov(formula_obj, data = conversion$data)
     summary(model)[[1]]
   },
-
   extract_results = function(out) {
     # Rows: A, B, C, A:B, A:C, B:C, A:B:C, Residuals
     # Extract first 7 rows (all except Residuals)
@@ -385,7 +365,6 @@ anova3way_config <- list(
       extract_row(out[7, ])
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     effect_labels <- c(
       x_axis[1], x_axis[2], x_axis[3],
@@ -444,13 +423,13 @@ anova3way_config <- list(
 #' @return Data frame with ANOVA results, or structured app_error
 #' @export
 perform_anova3way <- function(df, x_axis, measure_col,
-                               tr_value = 0,
-                               use_bootstrap = FALSE,
-                               boot_samples = 599,
-                               boot_sample_size = NULL,
-                               is_rm = FALSE,
-                               id_col = NULL,
-                               within_col = NULL) {
+                              tr_value = 0,
+                              use_bootstrap = FALSE,
+                              boot_samples = 599,
+                              boot_sample_size = NULL,
+                              is_rm = FALSE,
+                              id_col = NULL,
+                              within_col = NULL) {
   rhino$log$info(
     "anova3way: starting for measure='{measure_col}',",
     " factors='{x_axis[1]}' * '{x_axis[2]}'",
@@ -495,7 +474,7 @@ perform_anova3way <- function(df, x_axis, measure_col,
 #' @return Data frame with RM ANOVA results, or structured app_error
 #' @export
 perform_rm_anova <- function(df, x_axis, measure_col,
-                              id_col, within_col) {
+                             id_col, within_col) {
   rhino$log$info(
     "rm_anova: starting for measure='{measure_col}',",
     " id='{id_col}', within='{within_col}'"
@@ -607,7 +586,9 @@ perform_rm_anova <- function(df, x_axis, measure_col,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

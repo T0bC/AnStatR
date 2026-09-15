@@ -1,27 +1,27 @@
 box::use(
   bsicons,
   bslib,
-  ggplot2,
   ggiraph,
+  ggplot2,
   openxlsx,
   rhino,
   shiny,
 )
 
 box::use(
-  app/logic/shared/data_utils,
-  app/logic/shared/error_handling,
   app/logic/plotting/assumption_checks,
   app/logic/plotting/data_processing,
-  app/logic/preprocessing/normalize,
   app/logic/plotting/plot_factory,
+  app/logic/preprocessing/normalize,
+  app/logic/shared/data_utils,
+  app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/shared/error_display,
   app/view/plotting/data_selection,
   app/view/plotting/diagnostics_ui,
   app/view/plotting/filter,
   app/view/plotting/processing,
   app/view/plotting/style,
+  app/view/shared/error_display,
 )
 
 #' @export
@@ -29,58 +29,58 @@ ui <- function(id) {
   ns <- shiny$NS(id)
 
   shiny$tagList(
-  shiny$tags$script(shiny$HTML(paste0(
-    "(function(){",
-    "  var unlockTimer = null;",
-    "  function lockSidebar(){",
-    "    if(unlockTimer){ clearTimeout(unlockTimer); unlockTimer=null; }",
-    "    var sb = $('.anstatr-sidebar');",
-    "    sb.find('input,select,button').not('.selectize-input input')",
-    "      .addClass('anstatr-busy-lock')",
-    "      .css('pointer-events','none');",
-    "    sb.find('.selectize-input').each(function(){",
-    "      var $si = $(this);",
-    "      var isOpen = $si.closest('.selectize-control')",
-    "                       .hasClass('dropdown-active');",
-    "      if(!isOpen){",
-    "        $si.addClass('anstatr-busy-lock')",
-    "          .css({'pointer-events':'none','opacity':'0.6'});",
-    "      }",
-    "    });",
-    "  }",
-    "  function unlockSidebar(){",
-    "    $('.anstatr-sidebar').find('.anstatr-busy-lock')",
-    "      .removeClass('anstatr-busy-lock')",
-    "      .css({'pointer-events':'','opacity':''});",
-    "  }",
-    "  $(document).on('shiny:busy', function(){ lockSidebar(); });",
-    "  $(document).on('shiny:idle', function(){",
-    "    if(unlockTimer) clearTimeout(unlockTimer);",
-    "    unlockTimer = setTimeout(unlockSidebar, 150);",
-    "  });",
-    "})();"
-  ))),
-  sidebar_tabs$tab_layout(
-    ns = ns,
-    sidebar_id = "sidebar_tabs",
-    tabs = list(
-      data_selection$tab_ui(ns),
-      filter$tab_ui(ns),
-      processing$tab_ui(ns),
-      style$tab_ui(ns)
-    ),
-    main_content = shiny$tags$div(
-      class = "scrollable-content",
-      shiny$uiOutput(ns("main_content"))
-    ),
-    action_button = shiny$downloadButton(
-      outputId = ns("downloadData"),
-      label = "Download Filtered Data",
-      class = "btn-primary btn-sm w-100"
-    ),
-    enable_responsive_plots = TRUE,
-    results_id = "main_content"
-  )
+    shiny$tags$script(shiny$HTML(paste0(
+      "(function(){",
+      "  var unlockTimer = null;",
+      "  function lockSidebar(){",
+      "    if(unlockTimer){ clearTimeout(unlockTimer); unlockTimer=null; }",
+      "    var sb = $('.anstatr-sidebar');",
+      "    sb.find('input,select,button').not('.selectize-input input')",
+      "      .addClass('anstatr-busy-lock')",
+      "      .css('pointer-events','none');",
+      "    sb.find('.selectize-input').each(function(){",
+      "      var $si = $(this);",
+      "      var isOpen = $si.closest('.selectize-control')",
+      "                       .hasClass('dropdown-active');",
+      "      if(!isOpen){",
+      "        $si.addClass('anstatr-busy-lock')",
+      "          .css({'pointer-events':'none','opacity':'0.6'});",
+      "      }",
+      "    });",
+      "  }",
+      "  function unlockSidebar(){",
+      "    $('.anstatr-sidebar').find('.anstatr-busy-lock')",
+      "      .removeClass('anstatr-busy-lock')",
+      "      .css({'pointer-events':'','opacity':''});",
+      "  }",
+      "  $(document).on('shiny:busy', function(){ lockSidebar(); });",
+      "  $(document).on('shiny:idle', function(){",
+      "    if(unlockTimer) clearTimeout(unlockTimer);",
+      "    unlockTimer = setTimeout(unlockSidebar, 150);",
+      "  });",
+      "})();"
+    ))),
+    sidebar_tabs$tab_layout(
+      ns = ns,
+      sidebar_id = "sidebar_tabs",
+      tabs = list(
+        data_selection$tab_ui(ns),
+        filter$tab_ui(ns),
+        processing$tab_ui(ns),
+        style$tab_ui(ns)
+      ),
+      main_content = shiny$tags$div(
+        class = "scrollable-content",
+        shiny$uiOutput(ns("main_content"))
+      ),
+      action_button = shiny$downloadButton(
+        outputId = ns("downloadData"),
+        label = "Download Filtered Data",
+        class = "btn-primary btn-sm w-100"
+      ),
+      enable_responsive_plots = TRUE,
+      results_id = "main_content"
+    )
   )
 }
 
@@ -109,30 +109,37 @@ server <- function(id, input_data, data_version) {
     })
 
     # Reset state when new data is loaded
-    shiny$observeEvent(data_version(), {
-      rhino$log$info("Plotting: state reset for new data")
-      last_error(NULL)
-      plot_cache(list())
-      cached_plot_params(NULL)
-      cached_filtered_data(NULL)
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        rhino$log$info("Plotting: state reset for new data")
+        last_error(NULL)
+        plot_cache(list())
+        cached_plot_params(NULL)
+        cached_filtered_data(NULL)
+      },
+      ignoreInit = TRUE
+    )
 
     # Screening mode: disabling plots clears the plot cache so
     # re-enabling doesn't serve plots built under a stale fingerprint,
     # and auto-enables normalization (non-normal 3D-ST parameters need
     # it to justify classical ANOVA in the Statistics tab).
-    shiny$observeEvent(input$disablePlots, {
-      if (isTRUE(input$disablePlots)) {
-        plot_cache(list())
-        shiny$updateCheckboxInput(
-          session, "enableNormalize", value = TRUE
-        )
-        rhino$log$info(
-          "Plotting: screening mode enabled, ",
-          "auto-normalization turned on"
-        )
-      }
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(input$disablePlots,
+      {
+        if (isTRUE(input$disablePlots)) {
+          plot_cache(list())
+          shiny$updateCheckboxInput(
+            session, "enableNormalize",
+            value = TRUE
+          )
+          rhino$log$info(
+            "Plotting: screening mode enabled, ",
+            "auto-normalization turned on"
+          )
+        }
+      },
+      ignoreInit = TRUE
+    )
 
     # Delegate to sub-module servers
     data_selection$tab_server(
@@ -170,40 +177,40 @@ server <- function(id, input_data, data_version) {
       stat_opts <- input$statOptions
 
       list(
-        plot_type     = plot_type,
-        x_cols        = x_axis,
-        measure_cols  = measure,
-        tooltip_cols  = input$tooltip,
-        color_cols    = input$pointColor,
-        color_map     = cmap,
-        shape_map     = smap,
-        factor_order  = fo,
-        point_style   = list(
-          size       = input$pointSize   %||% 4,
-          spread     = input$pointSpread %||% 0.15,
-          alpha      = if (plot_type %in% c("boxplot_points", "violin_points")) {
+        plot_type = plot_type,
+        x_cols = x_axis,
+        measure_cols = measure,
+        tooltip_cols = input$tooltip,
+        color_cols = input$pointColor,
+        color_map = cmap,
+        shape_map = smap,
+        factor_order = fo,
+        point_style = list(
+          size = input$pointSize %||% 4,
+          spread = input$pointSpread %||% 0.15,
+          alpha = if (plot_type %in% c("boxplot_points", "violin_points")) {
             input$transparencyPoints %||% 0.6
           } else {
             input$transparency %||% 0.6
           },
           shape_cols = input$pointShape
         ),
-        processing    = list(
-          trim_percent      = input$trim_slider %||% 0,
-          outlier_enabled   = input$enableOutlierDetection %||% FALSE,
-          outlier_method    = input$detectOutlier %||% "IQR",
-          outlier_factor    = if ((input$detectOutlier %||% "IQR") %in%
+        processing = list(
+          trim_percent = input$trim_slider %||% 0,
+          outlier_enabled = input$enableOutlierDetection %||% FALSE,
+          outlier_method = input$detectOutlier %||% "IQR",
+          outlier_factor = if ((input$detectOutlier %||% "IQR") %in%
             c("kde", "isolation_forest", "lof")) {
             input$probabilityFactor %||% 0.05
           } else {
             input$standardFactor %||% 1.5
           },
           bootstrap_samples = input$bootstrapSamples %||% 1000,
-          normalize_enabled   = input$enableNormalize %||% FALSE,
+          normalize_enabled = input$enableNormalize %||% FALSE,
           normalize_threshold = (input$normalizeThreshold %||% 50) / 100,
-          show_transformed    = input$showTransformed %||% FALSE
+          show_transformed = input$showTransformed %||% FALSE
         ),
-        grid_legend   = list(
+        grid_legend = list(
           legend_position   = input$legendPosition %||% "none",
           h_grid            = "hGrid" %in% grid_opts,
           v_grid            = "vGrid" %in% grid_opts,
@@ -216,28 +223,28 @@ server <- function(id, input_data, data_version) {
         ),
         stat_line_style = list(
           median_thickness = input$medianThickness %||% 0.5,
-          median_width     = input$medianWidth     %||% 0.15,
-          sd_thickness     = input$sdThickness     %||% 0.5,
-          sd_width         = input$sdWidth         %||% 0.15
+          median_width     = input$medianWidth %||% 0.15,
+          sd_thickness     = input$sdThickness %||% 0.5,
+          sd_width         = input$sdWidth %||% 0.15
         ),
-        axis_style    = list(
-          tick_length    = input$axisTickLength      %||% 0.15,
-          line_thickness = input$axisLineThickness   %||% 0.5
+        axis_style = list(
+          tick_length    = input$axisTickLength %||% 0.15,
+          line_thickness = input$axisLineThickness %||% 0.5
         ),
         boxplot_style = list(
-          box_width     = input$boxWidth       %||% 0.7,
+          box_width     = input$boxWidth %||% 0.7,
           show_outliers = input$showBoxOutliers %||% FALSE,
-          notch         = input$boxNotch        %||% FALSE,
+          notch         = input$boxNotch %||% FALSE,
           alpha         = input$transparencyBox %||% 0.6
         ),
-        violin_style  = list(
+        violin_style = list(
           violin_width  = input$violinWidth %||% 0.9,
-          trim          = input$violinTrim  %||% TRUE,
+          trim          = input$violinTrim %||% TRUE,
           scale         = input$violinScale %||% "width",
           alpha         = input$transparencyBox %||% 0.6,
           show_outliers = input$showViolinOutliers %||% FALSE
         ),
-        black_points  = input$blackPoints %||% FALSE
+        black_points = input$blackPoints %||% FALSE
       )
     })
 
@@ -258,7 +265,7 @@ server <- function(id, input_data, data_version) {
     make_style_fingerprint <- function(params, data_nrow, data_ncol) {
       # Convert factor_order to string for fingerprint
       fo_str <- if (is.null(params$factor_order) ||
-                    length(params$factor_order) == 0) {
+        length(params$factor_order) == 0) {
         "NULL"
       } else {
         paste(
@@ -296,7 +303,7 @@ server <- function(id, input_data, data_version) {
         params$grid_legend$show_sd,
         params$grid_legend$aspect_ratio,
         params$grid_legend$show_median_point %||% FALSE,
-        params$grid_legend$show_mean_point   %||% FALSE,
+        params$grid_legend$show_mean_point %||% FALSE,
         params$stat_line_style$median_thickness,
         params$stat_line_style$median_width,
         params$stat_line_style$sd_thickness,
@@ -358,8 +365,12 @@ server <- function(id, input_data, data_version) {
     })
 
     # Debounced accessors used by all downstream reactives
-    plot_params <- shiny$reactive({ cached_plot_params() })
-    debounced_filtered_data <- shiny$reactive({ cached_filtered_data() })
+    plot_params <- shiny$reactive({
+      cached_plot_params()
+    })
+    debounced_filtered_data <- shiny$reactive({
+      cached_filtered_data()
+    })
 
     # --- Build plots (one per measurement column) ---
     # All sidebar inputs are locked client-side via shiny:busy/idle
@@ -369,7 +380,9 @@ server <- function(id, input_data, data_version) {
     # so Statistics still gets processed data), only the actual plot
     # rendering, which is the expensive part with 40+ measure columns.
     plots <- shiny$reactive({
-      if (isTRUE(input$disablePlots)) return(NULL)
+      if (isTRUE(input$disablePlots)) {
+        return(NULL)
+      }
 
       params <- plot_params()
       show_transformed <- isTRUE(params$processing$show_transformed) &&
@@ -465,7 +478,9 @@ server <- function(id, input_data, data_version) {
 
     # --- Assumption diagnostics (per measurement column) ---
     diagnostics <- shiny$reactive({
-      if (isTRUE(input$disablePlots)) return(NULL)
+      if (isTRUE(input$disablePlots)) {
+        return(NULL)
+      }
 
       pd <- processed_data()
       shiny$req(pd)
@@ -544,19 +559,19 @@ server <- function(id, input_data, data_version) {
         }
 
         list(
-          col             = col,
-          normality_raw   = norm_raw,
-          residuals_raw   = resid_raw,
-          levene_raw      = levene_raw,
-          recommendation  = rec_raw,
-          banner          = banner_raw,
-          normality_post  = norm_post,
-          residuals_post  = resid_post,
-          levene_post     = levene_post,
+          col = col,
+          normality_raw = norm_raw,
+          residuals_raw = resid_raw,
+          levene_raw = levene_raw,
+          recommendation = rec_raw,
+          banner = banner_raw,
+          normality_post = norm_post,
+          residuals_post = resid_post,
+          levene_post = levene_post,
           recommendation_post = rec_post,
-          banner_post     = banner_post,
+          banner_post = banner_post,
           transform_label = transform_label,
-          has_normalized  = has_normalized
+          has_normalized = has_normalized
         )
       })
     })
@@ -566,7 +581,8 @@ server <- function(id, input_data, data_version) {
       err <- last_error()
       if (error_handling$is_app_error(err)) {
         return(error_display$error_alert_structured(
-          err, type = "danger"
+          err,
+          type = "danger"
         ))
       }
 
@@ -645,7 +661,8 @@ server <- function(id, input_data, data_version) {
                 download = NA,
                 title = "Download SVG",
                 bsicons$bs_icon(
-                  "filetype-svg", size = "1.2em"
+                  "filetype-svg",
+                  size = "1.2em"
                 )
               ),
               shiny$tags$a(
@@ -655,7 +672,8 @@ server <- function(id, input_data, data_version) {
                 download = NA,
                 title = "Download PNG",
                 bsicons$bs_icon(
-                  "filetype-png", size = "1.2em"
+                  "filetype-png",
+                  size = "1.2em"
                 )
               )
             )
@@ -697,7 +715,9 @@ server <- function(id, input_data, data_version) {
           # Helper: get the ggplot object for this measurement
           get_plot <- function() {
             res <- local_item$result
-            if (!res$success) return(NULL)
+            if (!res$success) {
+              return(NULL)
+            }
             res$result
           }
 
@@ -764,7 +784,8 @@ server <- function(id, input_data, data_version) {
               w <- (input$exportWidth %||% 16) / 2.54
               h <- (input$exportHeight %||% 10) / 2.54
               ggplot2$ggsave(
-                file, plot = p, device = "svg",
+                file,
+                plot = p, device = "svg",
                 width = w, height = h
               )
               rhino$log$info(
@@ -784,7 +805,8 @@ server <- function(id, input_data, data_version) {
               w <- (input$exportWidth %||% 16) / 2.54
               h <- (input$exportHeight %||% 10) / 2.54
               ggplot2$ggsave(
-                file, plot = p, device = "png",
+                file,
+                plot = p, device = "png",
                 width = w, height = h, dpi = 300
               )
               rhino$log$info(
@@ -824,9 +846,9 @@ server <- function(id, input_data, data_version) {
       shiny$req(params$measure_cols, length(params$measure_cols) > 0)
 
       data_processing$process_data(
-        data         = data,
+        data = data,
         measure_cols = params$measure_cols,
-        x_cols       = params$x_cols,
+        x_cols = params$x_cols,
         trim_percent = params$processing$trim_percent,
         outlier_options = list(
           enabled           = params$processing$outlier_enabled,
@@ -872,12 +894,16 @@ server <- function(id, input_data, data_version) {
 
     # Return selections for downstream modules (e.g. Summary, Statistics)
     list(
-      x_axis = shiny$reactive({ input$xAxis }),
+      x_axis = shiny$reactive({
+        input$xAxis
+      }),
       measure_cols = shiny$reactive({
         p <- plot_params()
         if (is.null(p)) character(0) else p$measure_cols
       }),
-      trim_percent = shiny$reactive({ input$trim_slider %||% 0 }),
+      trim_percent = shiny$reactive({
+        input$trim_slider %||% 0
+      }),
       processed_data = processed_data,
       normalize_enabled = shiny$reactive({
         isTRUE(input$enableNormalize) &&
@@ -885,12 +911,16 @@ server <- function(id, input_data, data_version) {
       }),
       transform_info = shiny$reactive({
         pd <- processed_data()
-        if (is.null(pd)) return(NULL)
+        if (is.null(pd)) {
+          return(NULL)
+        }
         attr(pd, "transform_info")
       }),
       plot_objects = shiny$reactive({
         pl <- plots()
-        if (is.null(pl)) return(NULL)
+        if (is.null(pl)) {
+          return(NULL)
+        }
         # Named list: measure_col -> ggplot object
         result <- list()
         for (item in pl) {
@@ -906,4 +936,3 @@ server <- function(id, input_data, data_version) {
     )
   })
 }
-

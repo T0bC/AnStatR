@@ -1,32 +1,32 @@
 #' @export
 box::use(
-  app/logic/shared/error_handling[
-    is_app_error,
-    create_app_error,
-    safe_execute,
-    default_error_parser,
-    stat_error_parser,
-    simple_error,
-  ],
   app/logic/shared/column_utils[
-    get_measurement_cols,
     get_descriptive_cols,
-    validate_column_naming,
+    get_measurement_cols,
+    validate_column_naming
   ],
   app/logic/shared/data_utils[
     create_interaction,
-    get_filter_choices,
-    filter_data,
     default_palette,
+    filter_data,
+    get_filter_choices
+  ],
+  app/logic/shared/error_handling[
+    create_app_error,
+    default_error_parser,
+    is_app_error,
+    safe_execute,
+    simple_error,
+    stat_error_parser
   ],
   app/logic/shared/logging[
-    configure_session_logging,
+    configure_session_logging
   ],
   app/logic/shared/settings[
-    get_version_info,
-    get_version_string,
-    get_changelog_markdown,
     app_version,
+    get_changelog_markdown,
     get_default_theme,
+    get_version_info,
+    get_version_string
   ],
 )

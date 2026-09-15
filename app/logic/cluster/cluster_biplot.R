@@ -9,11 +9,11 @@ box::use(
 box::use(
   app/logic/cluster/cluster[
     cluster_color,
-    cluster_color_map,
+    cluster_color_map
   ],
-  app/logic/shared/error_handling,
   app/logic/pca/biplot[create_biplot],
   app/logic/pca/pca[run_pca],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -43,24 +43,25 @@ box::use(
 #'   or $error
 #' @export
 create_cluster_biplot <- function(data, measure_cols,
-                                   clusters,
-                                   meta_cols = character(0),
-                                   dim_x = "Dim.1",
-                                   dim_y = "Dim.2",
-                                   group_cols = NULL,
-                                   show_convex_hull = FALSE,
-                                   show_group_shapes = FALSE,
-                                   point_alpha = 1,
-                                   point_size = 3,
-                                   reduction_method = "pca",
-                                   show_title = TRUE) {
+                                  clusters,
+                                  meta_cols = character(0),
+                                  dim_x = "Dim.1",
+                                  dim_y = "Dim.2",
+                                  group_cols = NULL,
+                                  show_convex_hull = FALSE,
+                                  show_group_shapes = FALSE,
+                                  point_alpha = 1,
+                                  point_size = 3,
+                                  reduction_method = "pca",
+                                  show_title = TRUE) {
   error_context <- list(
     dim_x = dim_x,
     dim_y = dim_y,
     reduction_method = reduction_method,
     n_clusters = length(unique(clusters[clusters > 0])),
     group_cols = paste(
-      group_cols %||% "none", collapse = ", "
+      group_cols %||% "none",
+      collapse = ", "
     )
   )
 
@@ -120,11 +121,13 @@ create_cluster_biplot <- function(data, measure_cols,
 #' @return Character, user-friendly error message
 #' @export
 cluster_biplot_error_parser <- function(
-    error_msg,
-    operation_name = "Cluster Biplot") {
+  error_msg,
+  operation_name = "Cluster Biplot"
+) {
   if (grepl(
     "dimension|dim_x|dim_y|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -133,7 +136,8 @@ cluster_biplot_error_parser <- function(
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -142,7 +146,8 @@ cluster_biplot_error_parser <- function(
     )
   } else if (grepl(
     "not implemented",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -160,13 +165,13 @@ cluster_biplot_error_parser <- function(
 
 #' Build the PCA-based biplot with cluster overlays
 build_pca_biplot <- function(data, measure_cols,
-                              meta_cols, clusters,
-                              dim_x, dim_y,
-                              group_cols,
-                              show_convex_hull,
-                              show_group_shapes,
-                              point_alpha, point_size,
-                              show_title) {
+                             meta_cols, clusters,
+                             dim_x, dim_y,
+                             group_cols,
+                             show_convex_hull,
+                             show_group_shapes,
+                             point_alpha, point_size,
+                             show_title) {
   pca_res <- run_pca(
     data, measure_cols,
     meta_cols = meta_cols
@@ -208,13 +213,13 @@ build_pca_biplot <- function(data, measure_cols,
 
 #' Build the raw-data scatter plot with cluster overlays
 build_raw_biplot <- function(data, measure_cols,
-                              meta_cols, clusters,
-                              dim_x, dim_y,
-                              group_cols,
-                              show_convex_hull,
-                              show_group_shapes,
-                              point_alpha, point_size,
-                              show_title) {
+                             meta_cols, clusters,
+                             dim_x, dim_y,
+                             group_cols,
+                             show_convex_hull,
+                             show_group_shapes,
+                             point_alpha, point_size,
+                             show_title) {
   # Validate that dim_x and dim_y are actual columns
   if (!dim_x %in% names(data)) {
     stop(paste0(
@@ -274,13 +279,13 @@ build_raw_biplot <- function(data, measure_cols,
 
   # Resolve alpha and size
   alpha_val <- if (is.character(point_alpha) &&
-      point_alpha == "Contribution") {
+    point_alpha == "Contribution") {
     0.7
   } else {
     as.numeric(point_alpha)
   }
   size_val <- if (is.character(point_size) &&
-      point_size == "Contribution") {
+    point_size == "Contribution") {
     3
   } else {
     as.numeric(point_size)
@@ -313,7 +318,7 @@ build_raw_biplot <- function(data, measure_cols,
           plot_df, "group"
         )
         if (!is.null(hull_grp) &&
-            nrow(hull_grp) > 0) {
+          nrow(hull_grp) > 0) {
           p <- p + ggplot2$geom_polygon(
             data = hull_grp,
             ggplot2$aes(
@@ -409,11 +414,13 @@ build_raw_biplot <- function(data, measure_cols,
 #'   scale is aligned with the hull colour scale so both use
 #'   CLUSTER_PALETTE for the same cluster.
 add_cluster_overlays <- function(p, ind_coord,
-                                  clusters,
-                                  dim_x, dim_y,
-                                  group_is_cluster = FALSE) {
+                                 clusters,
+                                 dim_x, dim_y,
+                                 group_is_cluster = FALSE) {
   cluster_ids <- sort(unique(clusters[clusters > 0]))
-  if (length(cluster_ids) == 0) return(p)
+  if (length(cluster_ids) == 0) {
+    return(p)
+  }
 
   cluster_levels <- paste("Cluster", cluster_ids)
   cl_colors <- cluster_color_map(cluster_levels)
@@ -441,7 +448,7 @@ add_cluster_overlays <- function(p, ind_coord,
     ind_coord, clusters, dim_x, dim_y
   )
   if (!is.null(centroid_data) &&
-      nrow(centroid_data) > 0) {
+    nrow(centroid_data) > 0) {
     p <- p + ggplot2$geom_label(
       data = centroid_data,
       ggplot2$aes(
@@ -493,7 +500,7 @@ add_cluster_overlays <- function(p, ind_coord,
 #' Build convex hull data for group coloring
 #' (used in raw data mode)
 build_group_hull_data <- function(plot_df,
-                                   group_col) {
+                                  group_col) {
   groups <- unique(plot_df[[group_col]])
   hull_list <- lapply(groups, function(g) {
     sub <- plot_df[plot_df[[group_col]] == g, ]
@@ -501,7 +508,9 @@ build_group_hull_data <- function(plot_df,
       is.finite(sub$x) & is.finite(sub$y), ,
       drop = FALSE
     ]
-    if (nrow(sub) < 3) return(NULL)
+    if (nrow(sub) < 3) {
+      return(NULL)
+    }
     hull_idx <- grDevices$chull(sub$x, sub$y)
     hull_idx <- c(hull_idx, hull_idx[1])
     data.frame(
@@ -530,7 +539,7 @@ build_group_hull_data <- function(plot_df,
 #' @return Data frame with x, y, cluster_label columns
 #'   or NULL if insufficient data
 build_cluster_hull_data <- function(ind_coord, clusters,
-                                     dim_x, dim_y) {
+                                    dim_x, dim_y) {
   # Only use non-noise points (cluster > 0)
   valid_mask <- clusters > 0
   valid_clusters <- clusters[valid_mask]
@@ -547,7 +556,9 @@ build_cluster_hull_data <- function(ind_coord, clusters,
       is.finite(sub_y)
     sub_x <- sub_x[finite_mask]
     sub_y <- sub_y[finite_mask]
-    if (length(sub_x) < 3) return(NULL)
+    if (length(sub_x) < 3) {
+      return(NULL)
+    }
 
     hull_idx <- grDevices$chull(sub_x, sub_y)
     # Close the polygon
@@ -577,7 +588,7 @@ build_cluster_hull_data <- function(ind_coord, clusters,
 #' @param dim_y Character, y dimension name
 #' @return Data frame with x, y, cluster_label columns
 build_cluster_centroids <- function(ind_coord, clusters,
-                                     dim_x, dim_y) {
+                                    dim_x, dim_y) {
   valid_mask <- clusters > 0
   valid_clusters <- clusters[valid_mask]
   valid_coord <- ind_coord[valid_mask, , drop = FALSE]

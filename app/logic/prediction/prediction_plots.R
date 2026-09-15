@@ -6,14 +6,15 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
+  app/logic/cluster/cluster_biplot[create_cluster_biplot],
   app/logic/lda/ld_plot[
-    create_ld_plot, create_qda_plot,
     axis_label,
+    create_ld_plot,
+    create_qda_plot
   ],
   app/logic/pca/biplot[create_biplot],
-  app/logic/pca/pca[build_pca_result, build_ind_meta, apply_row_labels],
-  app/logic/cluster/cluster_biplot[create_cluster_biplot],
+  app/logic/pca/pca[apply_row_labels, build_ind_meta, build_pca_result],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -52,21 +53,21 @@ box::use(
 #' @return List with $success, $result (ggplot) or $error
 #' @export
 create_prediction_overlay_plot <- function(
-    bundle, prediction_result, unknown_data,
-    dim_x, dim_y, meta_col = NULL,
-    group_cols = NULL,
-    show_convex_hull = FALSE,
-    point_alpha = 0.5,
-    point_size = 2.5,
-    layer = "individuals",
-    show_diagnostics = FALSE,
-    show_boundaries = FALSE) {
+  bundle, prediction_result, unknown_data,
+  dim_x, dim_y, meta_col = NULL,
+  group_cols = NULL,
+  show_convex_hull = FALSE,
+  point_alpha = 0.5,
+  point_size = 2.5,
+  layer = "individuals",
+  show_diagnostics = FALSE,
+  show_boundaries = FALSE
+) {
   error_handling$safe_execute(
     expr = {
       analysis_type <- bundle$analysis_type
 
-      p <- switch(
-        analysis_type,
+      p <- switch(analysis_type,
         pca = ,
         spca = ,
         ipca = build_pca_overlay(
@@ -173,7 +174,7 @@ build_pca_overlay <- function(bundle, pred_result,
   # Labels from metadata
   if (
     !is.null(meta_col) &&
-    meta_col %in% names(unknown_data)
+      meta_col %in% names(unknown_data)
   ) {
     unknown_df$label <- as.character(
       unknown_data[[meta_col]]
@@ -269,7 +270,7 @@ build_ld_overlay <- function(bundle, pred_result,
   if (!plot_res$success) {
     stop(
       plot_res$error$message %||%
-      "LD plot failed"
+        "LD plot failed"
     )
   }
 
@@ -323,8 +324,7 @@ build_ld_overlay <- function(bundle, pred_result,
   x_label <- axis_label(dim_x, prop_trace)
   y_label <- axis_label(dim_y, prop_trace)
 
-  title_prefix <- switch(
-    bundle$analysis_type,
+  title_prefix <- switch(bundle$analysis_type,
     mda = "MDA Prediction",
     plsda = "PLS-DA Prediction",
     splsda = "sPLS-DA Prediction",
@@ -368,7 +368,7 @@ build_qda_overlay <- function(bundle, pred_result,
   if (!plot_res$success) {
     stop(
       plot_res$error$message %||%
-      "QDA plot failed"
+        "QDA plot failed"
     )
   }
 
@@ -459,7 +459,7 @@ build_cluster_overlay <- function(bundle, pred_result,
   if (!biplot_res$success) {
     stop(
       biplot_res$error$message %||%
-      "Cluster biplot failed"
+        "Cluster biplot failed"
     )
   }
 
@@ -492,7 +492,8 @@ build_cluster_overlay <- function(bundle, pred_result,
   # Add unknown labels
   train_y <- bundle$used_data[[dim_y]]
   y_range <- diff(range(
-    c(unknown_df$y, train_y), na.rm = TRUE
+    c(unknown_df$y, train_y),
+    na.rm = TRUE
   ))
   p <- p +
     ggplot2$geom_text(
@@ -566,7 +567,8 @@ reconstruct_lda_result <- function(bundle) {
   is_plsda <- bundle$analysis_type %in% c("plsda", "splsda")
 
   train_numeric <- used_data[
-    , numeric_cols, drop = FALSE
+    , numeric_cols,
+    drop = FALSE
   ]
 
   # Compute training LD/component scores + predicted classes
@@ -590,7 +592,8 @@ reconstruct_lda_result <- function(bundle) {
     }
   } else if (is_mda) {
     scores_raw <- stats$predict(
-      model, train_numeric, type = "variates"
+      model, train_numeric,
+      type = "variates"
     )
     scores <- as.data.frame(scores_raw)
     if (ncol(scores) > 0) {
@@ -638,7 +641,7 @@ reconstruct_lda_result <- function(bundle) {
     )
   } else if (!is_mda) {
     n_ld <- length(model$svd)
-    prop_vals <- model$svd^2 / sum(model$svd^2)
+    prop_vals <- model$svd ^ 2 / sum(model$svd ^ 2)
     proportion_of_trace <- data.frame(
       LD = paste0("LD", seq_len(n_ld)),
       `Singular Value` = round(model$svd, 4),
@@ -728,7 +731,8 @@ reconstruct_qda_result <- function(bundle) {
     lda_model = bundle$lda_model,
     lda_proportion_of_trace = lda_prop,
     numeric_data = used_data[
-      , numeric_cols, drop = FALSE
+      , numeric_cols,
+      drop = FALSE
     ]
   )
 }
@@ -738,8 +742,9 @@ reconstruct_qda_result <- function(bundle) {
 #' Creates the data frame used to layer unknown
 #' predictions on top of the training base plot.
 build_unknown_overlay_df <- function(
-    unknown_scores, pred_result, unknown_data,
-    dim_x, dim_y, meta_col) {
+  unknown_scores, pred_result, unknown_data,
+  dim_x, dim_y, meta_col
+) {
   unknown_df <- data.frame(
     x = unknown_scores[[dim_x]],
     y = unknown_scores[[dim_y]],
@@ -752,7 +757,7 @@ build_unknown_overlay_df <- function(
   # Labels
   if (
     !is.null(meta_col) &&
-    meta_col %in% names(unknown_data)
+      meta_col %in% names(unknown_data)
   ) {
     unknown_df$label <- as.character(
       unknown_data[[meta_col]]

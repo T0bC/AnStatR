@@ -21,12 +21,16 @@ box::use(
 #' @return Numeric scalar, skewness value
 compute_skewness <- function(x) {
   n <- length(x)
-  if (n < 3) return(NA_real_)
+  if (n < 3) {
+    return(NA_real_)
+  }
   m <- mean(x)
   s <- stats$sd(x)
-  if (s == 0) return(NA_real_)
+  if (s == 0) {
+    return(NA_real_)
+  }
   adjusted <- (n / ((n - 1) * (n - 2))) *
-    sum(((x - m) / s)^3)
+    sum(((x - m) / s) ^ 3)
   adjusted
 }
 
@@ -184,7 +188,8 @@ transform_skewed <- function(data, measurement_cols,
 
       transformed_df <- if (length(transformed) > 0) {
         do.call(rbind, lapply(transformed, as.data.frame,
-                              stringsAsFactors = FALSE))
+          stringsAsFactors = FALSE
+        ))
       } else {
         data.frame(
           column = character(0),
@@ -240,15 +245,18 @@ apply_stored_transform <- function(x, params) {
   # Use predict() on the stored bestNormalize object
   # This applies the exact same transformation learned
   # during training
-  tryCatch({
-    transformed <- stats::predict(bn_object, newdata = x)
-    as.numeric(transformed)
-  }, error = function(e) {
-    stop(paste0(
-      "Failed to apply stored transform for '",
-      params$column, "': ", conditionMessage(e)
-    ))
-  })
+  tryCatch(
+    {
+      transformed <- stats::predict(bn_object, newdata = x)
+      as.numeric(transformed)
+    },
+    error = function(e) {
+      stop(paste0(
+        "Failed to apply stored transform for '",
+        params$column, "': ", conditionMessage(e)
+      ))
+    }
+  )
 }
 
 #' Apply stored transforms to a data frame
@@ -264,7 +272,9 @@ apply_stored_transform <- function(x, params) {
 #' @export
 apply_stored_transforms <- function(data,
                                     transform_params) {
-  if (length(transform_params) == 0) return(data)
+  if (length(transform_params) == 0) {
+    return(data)
+  }
 
   result <- data
   for (params in transform_params) {
@@ -290,11 +300,13 @@ apply_stored_transforms <- function(data,
 #' @return Character, user-friendly error message
 #' @export
 skewness_error_parser <- function(
-    error_msg,
-    operation_name = "Skewness Correction") {
+  error_msg,
+  operation_name = "Skewness Correction"
+) {
   if (grepl(
     "constant|zero variance",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -303,7 +315,8 @@ skewness_error_parser <- function(
     )
   } else if (grepl(
     "non-numeric|not numeric",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -344,23 +357,24 @@ fit_bestnormalize_column <- function(x) {
   }
 
   tryCatch(
-    withCallingHandlers({
-      bn_result <- bestNormalize::bestNormalize(clean_values, quiet = TRUE)
+    withCallingHandlers(
+      {
+        bn_result <- bestNormalize::bestNormalize(clean_values, quiet = TRUE)
 
-      # Get the chosen transformation method name
-      method_name <- class(bn_result$chosen_transform)[1]
+        # Get the chosen transformation method name
+        method_name <- class(bn_result$chosen_transform)[1]
 
-      # Transform all values (including original positions)
-      transformed <- rep(NA_real_, length(x))
-      transformed[clean_idx] <- as.numeric(stats::predict(bn_result))
+        # Transform all values (including original positions)
+        transformed <- rep(NA_real_, length(x))
+        transformed[clean_idx] <- as.numeric(stats::predict(bn_result))
 
-      list(
-        values = transformed,
-        method_used = method_name,
-        bn_object = bn_result
-      )
-    },
-    warning = function(w) invokeRestart("muffleWarning")
+        list(
+          values = transformed,
+          method_used = method_name,
+          bn_object = bn_result
+        )
+      },
+      warning = function(w) invokeRestart("muffleWarning")
     ),
     error = function(e) {
       rhino$log$warn(

@@ -1,11 +1,11 @@
 box::use(
   pwr,
-  stats[aov, kruskal.test, lm, oneway.test, pf, qnorm, rnorm, rlnorm, rexp, var],
+  stats[aov, kruskal.test, oneway.test, qnorm, rexp, rlnorm, rnorm],
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/power/validate,
+  app/logic/shared/error_handling,
 )
 
 # Constants
@@ -41,16 +41,17 @@ make_scaled_progress <- function(progress_cb, start, end, default_detail = NULL)
 }
 
 simulate_power_with_step_progress <- function(
-    dist_params,
-    n,
-    n_sim,
-    alpha,
-    approach,
-    progress_cb,
-    step_idx,
-    max_steps,
-    step_label,
-    progress_detail) {
+  dist_params,
+  n,
+  n_sim,
+  alpha,
+  approach,
+  progress_cb,
+  step_idx,
+  max_steps,
+  step_label,
+  progress_detail
+) {
   step_start <- min((step_idx - 1) / max_steps, 1)
   step_end <- min(step_idx / max_steps, 1)
   step_progress <- make_scaled_progress(progress_cb, step_start, step_end, step_label)
@@ -126,7 +127,6 @@ build_effect_size_dist_params <- function(effect_size_f, pooled_sd, k, distribut
 #' @return List with: result, power_curve_df, design_table_df, messages
 #' @export
 perform_power_analysis <- function(params, progress_cb = NULL) {
-
   # Validate inputs
   validation_error <- validate$validate_power_inputs(params)
   if (!is.null(validation_error)) {
@@ -150,7 +150,8 @@ perform_power_analysis <- function(params, progress_cb = NULL) {
 
   # Info message for exponential + median_iqr (IQR is ignored)
   if (distribution == "exponential" && input_mode == "median_iqr") {
-    messages <- c(messages,
+    messages <- c(
+      messages,
       "For exponential distribution, IQR values are not used. SD equals mean by definition."
     )
   }
@@ -220,15 +221,18 @@ generate_power_curve <- function(params, n_range = NULL) {
   k <- params$n_groups
 
   power_values <- sapply(n_range, function(n) {
-    tryCatch({
-      res <- pwr$pwr.anova.test(
-        k = k,
-        n = n,
-        f = effect_f,
-        sig.level = params$alpha
-      )
-      res$power
-    }, error = function(e) NA_real_)
+    tryCatch(
+      {
+        res <- pwr$pwr.anova.test(
+          k = k,
+          n = n,
+          f = effect_f,
+          sig.level = params$alpha
+        )
+        res$power
+      },
+      error = function(e) NA_real_
+    )
   })
 
   data.frame(
@@ -300,7 +304,7 @@ normalize_distribution_params <- function(params) {
   }
 
   pooled_sd <- if (length(group_sds) > 1) {
-    sqrt(mean(group_sds^2))
+    sqrt(mean(group_sds ^ 2))
   } else {
     group_sds[1]
   }
@@ -346,7 +350,6 @@ convert_median_iqr_to_mean_sd <- function(medians, iqrs, distribution) {
 
       if (med <= 0) {
         return(error_handling$simple_error(
-
           message = "Log-normal distribution requires positive median values.",
           operation_name = "convert_median_iqr"
         ))
@@ -359,8 +362,8 @@ convert_median_iqr_to_mean_sd <- function(medians, iqrs, distribution) {
       mu <- log(med)
 
       # Convert to observed-scale mean and sd
-      means[i] <- exp(mu + sigma^2 / 2)
-      sds[i] <- sqrt((exp(sigma^2) - 1) * exp(2 * mu + sigma^2))
+      means[i] <- exp(mu + sigma ^ 2 / 2)
+      sds[i] <- sqrt((exp(sigma ^ 2) - 1) * exp(2 * mu + sigma ^ 2))
     }
     return(list(means = means, sds = sds))
   }
@@ -397,8 +400,8 @@ build_dist_params <- function(means, sds, distribution) {
     } else if (distribution == "lognormal") {
       # Convert observed mean/sd to log-scale parameters
       if (mu <= 0) mu <- 0.01
-      log_mu <- log(mu^2 / sqrt(sigma^2 + mu^2))
-      log_sigma <- sqrt(log(1 + (sigma^2 / mu^2)))
+      log_mu <- log(mu ^ 2 / sqrt(sigma ^ 2 + mu ^ 2))
+      log_sigma <- sqrt(log(1 + (sigma ^ 2 / mu ^ 2)))
       list(type = "lognormal", meanlog = log_mu, sdlog = log_sigma)
     } else if (distribution == "exponential") {
       # Exponential: rate = 1/mean
@@ -417,7 +420,7 @@ build_dist_params <- function(means, sds, distribution) {
 #' @return Cohen's f effect size
 raw_to_cohens_f <- function(group_means, pooled_sd) {
   grand_mean <- mean(group_means)
-  ss_between <- sum((group_means - grand_mean)^2)
+  ss_between <- sum((group_means - grand_mean) ^ 2)
   k <- length(group_means)
 
   # Cohen's f = sqrt(variance of means / pooled variance)
@@ -432,76 +435,85 @@ raw_to_cohens_f <- function(group_means, pooled_sd) {
 parametric_power <- function(params, effect_f) {
   k <- params$n_groups
 
-  result <- tryCatch({
-    if (params$solve_for == "sample_size") {
-      res <- tryCatch({
-        pwr$pwr.anova.test(
+  result <- tryCatch(
+    {
+      if (params$solve_for == "sample_size") {
+        res <- tryCatch(
+          {
+            pwr$pwr.anova.test(
+              k = k,
+              f = effect_f,
+              sig.level = params$alpha,
+              power = params$power_target
+            )
+          },
+          error = function(e) {
+            # Fallback for very large effects where required n is below 2
+            power_at_n2 <- tryCatch(
+              {
+                pwr$pwr.anova.test(
+                  k = k,
+                  n = 2,
+                  f = effect_f,
+                  sig.level = params$alpha
+                )$power
+              },
+              error = function(e2) NA_real_
+            )
+
+            if (is.finite(power_at_n2) && power_at_n2 >= params$power_target) {
+              return(list(n = 2))
+            }
+
+            stop(e)
+          }
+        )
+
+        list(
+          value = ceiling(res$n),
+          type = "sample_size",
+          description = paste0(
+            "Required sample size per group: ", ceiling(res$n),
+            " (total N = ", ceiling(res$n) * k, ")"
+          )
+        )
+      } else if (params$solve_for == "power") {
+        res <- pwr$pwr.anova.test(
           k = k,
+          n = params$n_per_group,
           f = effect_f,
+          sig.level = params$alpha
+        )
+        list(
+          value = round(res$power, 4),
+          type = "power",
+          description = paste0(
+            "Achieved power: ", round(res$power * 100, 1), "%"
+          )
+        )
+      } else if (params$solve_for == "mde") {
+        res <- pwr$pwr.anova.test(
+          k = k,
+          n = params$n_per_group,
           sig.level = params$alpha,
           power = params$power_target
         )
-      }, error = function(e) {
-        # Fallback for very large effects where required n is below 2
-        power_at_n2 <- tryCatch({
-          pwr$pwr.anova.test(
-            k = k,
-            n = 2,
-            f = effect_f,
-            sig.level = params$alpha
-          )$power
-        }, error = function(e2) NA_real_)
-
-        if (is.finite(power_at_n2) && power_at_n2 >= params$power_target) {
-          return(list(n = 2))
-        }
-
-        stop(e)
-      })
-
-      list(
-        value = ceiling(res$n),
-        type = "sample_size",
-        description = paste0(
-          "Required sample size per group: ", ceiling(res$n),
-          " (total N = ", ceiling(res$n) * k, ")"
+        list(
+          value = round(res$f, 4),
+          type = "mde",
+          description = paste0(
+            "Minimum detectable effect (Cohen's f): ", round(res$f, 4)
+          )
         )
-      )
-    } else if (params$solve_for == "power") {
-      res <- pwr$pwr.anova.test(
-        k = k,
-        n = params$n_per_group,
-        f = effect_f,
-        sig.level = params$alpha
-      )
-      list(
-        value = round(res$power, 4),
-        type = "power",
-        description = paste0(
-          "Achieved power: ", round(res$power * 100, 1), "%"
-        )
-      )
-    } else if (params$solve_for == "mde") {
-      res <- pwr$pwr.anova.test(
-        k = k,
-        n = params$n_per_group,
-        sig.level = params$alpha,
-        power = params$power_target
-      )
-      list(
-        value = round(res$f, 4),
-        type = "mde",
-        description = paste0(
-          "Minimum detectable effect (Cohen's f): ", round(res$f, 4)
-        )
+      }
+    },
+    error = function(e) {
+      error_handling$simple_error(
+        message = paste0("Power calculation failed: ", e$message),
+        operation_name = "parametric_power"
       )
     }
-  }, error = function(e) {
-    error_handling$simple_error(
-      message = paste0("Power calculation failed: ", e$message),
-      operation_name = "parametric_power"
-    )
-  })
+  )
 
   if (error_handling$is_app_error(result)) {
     return(result)
@@ -551,7 +563,7 @@ simulation_power <- function(params, effect_f, dist_params, progress_cb = NULL) 
   messages <- character(0)
 
   if (!is.numeric(n_sim) || length(n_sim) != 1 ||
-      is.na(n_sim) || !is.finite(n_sim) || n_sim < 1) {
+    is.na(n_sim) || !is.finite(n_sim) || n_sim < 1) {
     return(error_handling$simple_error(
       message = "Number of simulations must be a finite number greater than or equal to 1.",
       operation_name = "simulation_power",
@@ -682,7 +694,7 @@ simulate_power <- function(dist_params, n, n_sim, alpha, approach,
                            progress_cb = NULL, progress_detail = NULL) {
   k <- length(dist_params)
   if (!is.numeric(n_sim) || length(n_sim) != 1 ||
-      is.na(n_sim) || !is.finite(n_sim)) {
+    is.na(n_sim) || !is.finite(n_sim)) {
     n_sim <- 1L
   } else {
     n_sim <- as.integer(n_sim)
@@ -704,16 +716,19 @@ simulate_power <- function(dist_params, n, n_sim, alpha, approach,
     df <- do.call(rbind, data_list)
     df$group <- factor(df$group)
 
-    p_value <- tryCatch({
-      if (approach == "nonparametric") {
-        kruskal.test(value ~ group, data = df)$p.value
-      } else if (approach == "robust") {
-        oneway.test(value ~ group, data = df, var.equal = FALSE)$p.value
-      } else {
-        # Parametric: standard ANOVA F-test
-        summary(aov(value ~ group, data = df))[[1]][["Pr(>F)"]][1]
-      }
-    }, error = function(e) 1)
+    p_value <- tryCatch(
+      {
+        if (approach == "nonparametric") {
+          kruskal.test(value ~ group, data = df)$p.value
+        } else if (approach == "robust") {
+          oneway.test(value ~ group, data = df, var.equal = FALSE)$p.value
+        } else {
+          # Parametric: standard ANOVA F-test
+          summary(aov(value ~ group, data = df))[[1]][["Pr(>F)"]][1]
+        }
+      },
+      error = function(e) 1
+    )
 
     significant[i] <- p_value < alpha
 
@@ -738,8 +753,10 @@ find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
   n_high <- MAX_SEARCH_N
   max_steps <- ceiling(log2(MAX_SEARCH_N - n_low)) + 1
 
-  run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
-                             progress_cb, max_steps)
+  run_sim <- make_sim_runner(
+    dist_params, n_sim, alpha, approach,
+    progress_cb, max_steps
+  )
   step_idx <- 0
 
   while (n_high - n_low > 1) {
@@ -795,8 +812,10 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
     f_mid <- (f_low + f_high) / 2
     dist_params <- build_effect_size_dist_params(f_mid, pooled_sd, k, distribution)
 
-    run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
-                               progress_cb, max_steps)
+    run_sim <- make_sim_runner(
+      dist_params, n_sim, alpha, approach,
+      progress_cb, max_steps
+    )
     power_est <- run_sim(
       n = n,
       step_idx = step_idx,
@@ -816,8 +835,10 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
   if (abs(f_high - MDE_SEARCH_RANGE[2]) < 0.02) {
     step_idx <- step_idx + 1
     dist_params <- build_effect_size_dist_params(f_high, pooled_sd, k, distribution)
-    run_sim <- make_sim_runner(dist_params, n_sim, alpha, approach,
-                               progress_cb, max_steps)
+    run_sim <- make_sim_runner(
+      dist_params, n_sim, alpha, approach,
+      progress_cb, max_steps
+    )
     power_at_max <- run_sim(
       n = n,
       step_idx = step_idx,

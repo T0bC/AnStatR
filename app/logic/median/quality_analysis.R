@@ -22,7 +22,8 @@ analyze_quality_column <- function(data, col_name) {
     min_val <- min(col_data, na.rm = TRUE)
     max_val <- max(col_data, na.rm = TRUE)
     all_integers <- all(
-      col_data == floor(col_data), na.rm = TRUE
+      col_data == floor(col_data),
+      na.rm = TRUE
     )
 
     if (all_integers && n_unique <= 10) {

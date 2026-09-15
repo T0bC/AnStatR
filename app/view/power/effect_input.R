@@ -2,7 +2,7 @@ box::use(
   bsicons,
   bslib,
   shiny,
-  stats[qnorm, shapiro.test, sd],
+  stats[sd, shapiro.test],
 )
 
 box::use(
@@ -36,20 +36,28 @@ tab_server <- function(input, output, session,
   # --- Detected distribution from data ---
   detected_distribution <- shiny$reactive({
     mode <- current_mode()
-    if (mode != "import") return(NULL)
+    if (mode != "import") {
+      return(NULL)
+    }
 
     data <- if (!is.null(input_data)) input_data() else NULL
     design <- if (!is.null(design_reactive)) design_reactive() else NULL
 
-    if (is.null(data) || is.null(design)) return("normal")
+    if (is.null(data) || is.null(design)) {
+      return("normal")
+    }
 
     measure_col <- design$measure_name
-    if (is.null(measure_col) || !measure_col %in% names(data)) return("normal")
+    if (is.null(measure_col) || !measure_col %in% names(data)) {
+      return("normal")
+    }
 
     values <- data[[measure_col]]
     values <- values[!is.na(values) & is.finite(values)]
 
-    if (length(values) < 3) return("normal")
+    if (length(values) < 3) {
+      return("normal")
+    }
 
     # Auto-detect distribution using Shapiro-Wilk test
     detect_distribution(values)
@@ -58,18 +66,26 @@ tab_server <- function(input, output, session,
   # --- Computed group statistics from data ---
   computed_stats <- shiny$reactive({
     mode <- current_mode()
-    if (mode != "import") return(NULL)
+    if (mode != "import") {
+      return(NULL)
+    }
 
     data <- if (!is.null(input_data)) input_data() else NULL
     design <- if (!is.null(design_reactive)) design_reactive() else NULL
 
-    if (is.null(data) || is.null(design)) return(NULL)
+    if (is.null(data) || is.null(design)) {
+      return(NULL)
+    }
 
     measure_col <- design$measure_name
     grouping_cols <- sapply(design$factors, function(f) f$name)
 
-    if (is.null(measure_col) || !measure_col %in% names(data)) return(NULL)
-    if (length(grouping_cols) == 0) return(NULL)
+    if (is.null(measure_col) || !measure_col %in% names(data)) {
+      return(NULL)
+    }
+    if (length(grouping_cols) == 0) {
+      return(NULL)
+    }
 
     # Compute statistics per group
     compute_group_statistics(data, grouping_cols, measure_col)
@@ -222,7 +238,7 @@ tab_server <- function(input, output, session,
     distribution <- input$distribution %||% "normal"
 
     if (is.null(design) || is.null(design$factors) ||
-        length(design$factors) == 0) {
+      length(design$factors) == 0) {
       return(shiny$tags$div(
         class = "text-muted small",
         "Define factors and levels in the Design tab first."
@@ -362,7 +378,7 @@ tab_server <- function(input, output, session,
         }
       } else {
         if (is.null(design) || is.null(design$factors) ||
-            length(design$factors) == 0) {
+          length(design$factors) == 0) {
           return(list(
             effect_type = "raw",
             input_mode = input_mode,
@@ -458,8 +474,7 @@ render_import_mode_effect_ui <- function(ns, input, detected_dist, stats) {
   detected_dist <- detected_dist %||% "normal"
 
   # Build distribution info message
-  dist_label <- switch(
-    detected_dist,
+  dist_label <- switch(detected_dist,
     "normal" = "Normal (Gaussian)",
     "lognormal" = "Log-normal (right-skewed)",
     "exponential" = "Exponential",
@@ -540,7 +555,9 @@ render_import_mode_effect_ui <- function(ns, input, detected_dist, stats) {
 
 # --- Helper: Detect distribution from data ---
 detect_distribution <- function(values) {
-  if (length(values) < 3) return("normal")
+  if (length(values) < 3) {
+    return("normal")
+  }
 
   # Check for all positive values (required for lognormal/exponential)
   all_positive <- all(values > 0)
@@ -583,8 +600,12 @@ detect_distribution <- function(values) {
 
 # --- Helper: Compute group statistics from data ---
 compute_group_statistics <- function(data, grouping_cols, measure_col) {
-  if (!measure_col %in% names(data)) return(NULL)
-  if (!all(grouping_cols %in% names(data))) return(NULL)
+  if (!measure_col %in% names(data)) {
+    return(NULL)
+  }
+  if (!all(grouping_cols %in% names(data))) {
+    return(NULL)
+  }
 
   # Create group identifier
   if (length(grouping_cols) == 1) {
@@ -592,7 +613,8 @@ compute_group_statistics <- function(data, grouping_cols, measure_col) {
   } else {
     data$`.group` <- apply(
       data[, grouping_cols, drop = FALSE], 1,
-      paste, collapse = ":::"
+      paste,
+      collapse = ":::"
     )
   }
 
@@ -619,10 +641,10 @@ compute_group_statistics <- function(data, grouping_cols, measure_col) {
 
   # Compute Cohen's f
   grand_mean <- mean(means, na.rm = TRUE)
-  pooled_var <- sum((ns - 1) * sds^2, na.rm = TRUE) / sum(ns - 1, na.rm = TRUE)
+  pooled_var <- sum((ns - 1) * sds ^ 2, na.rm = TRUE) / sum(ns - 1, na.rm = TRUE)
   pooled_sd <- sqrt(pooled_var)
 
-  between_var <- sum(ns * (means - grand_mean)^2, na.rm = TRUE) / sum(ns, na.rm = TRUE)
+  between_var <- sum(ns * (means - grand_mean) ^ 2, na.rm = TRUE) / sum(ns, na.rm = TRUE)
   cohens_f <- sqrt(between_var) / pooled_sd
 
   names(means) <- groups
@@ -640,7 +662,9 @@ compute_group_statistics <- function(data, grouping_cols, measure_col) {
 
 # --- Helper: generate effect terms for factorial designs ---
 generate_effect_terms <- function(factors) {
-  if (is.null(factors) || length(factors) == 0) return(character(0))
+  if (is.null(factors) || length(factors) == 0) {
+    return(character(0))
+  }
 
   factor_names <- sapply(factors, function(f) f$name)
   n <- length(factor_names)
@@ -667,7 +691,9 @@ GROUP_SEP <- ":::"
 
 # --- Helper: generate all group combinations ---
 generate_group_combinations <- function(factors) {
-  if (is.null(factors) || length(factors) == 0) return(character(0))
+  if (is.null(factors) || length(factors) == 0) {
+    return(character(0))
+  }
 
   if (length(factors) == 1) {
     return(factors[[1]]$levels)

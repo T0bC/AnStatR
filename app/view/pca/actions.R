@@ -35,7 +35,8 @@ tab_ui <- function(ns) {
         "Show Additional Output ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Display additional PCA statistics",

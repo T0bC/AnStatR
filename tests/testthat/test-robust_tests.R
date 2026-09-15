@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, expect_false, it],
+  testthat[describe, expect_equal, expect_true, it],
 )
 
 box::use(
@@ -313,8 +313,10 @@ describe("perform_t3way", {
     )
     expect_equal(
       result$Effect,
-      c("f1", "f2", "f3", "f1:f2", "f1:f3",
-        "f2:f3", "f1:f2:f3")
+      c(
+        "f1", "f2", "f3", "f1:f2", "f1:f3",
+        "f2:f3", "f1:f2:f3"
+      )
     )
   })
 

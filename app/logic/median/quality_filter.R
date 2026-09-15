@@ -3,10 +3,6 @@ box::use(
   stats,
 )
 
-box::use(
-  app/logic/shared/error_handling,
-)
-
 # =============================================================================
 # Quality filter logic for median calculation
 # Applies quality filtering with awareness of grouping structure.
@@ -29,7 +25,7 @@ box::use(
 apply_quality_filter <- function(data, quality_settings,
                                  grouping_cols) {
   if (!quality_settings$enabled ||
-      is.null(quality_settings$column)) {
+    is.null(quality_settings$column)) {
     return(list(
       data = data,
       message = "No quality filtering applied."

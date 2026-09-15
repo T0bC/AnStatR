@@ -138,19 +138,22 @@ bundle_error_parser <- function(error_msg,
                                 operation_name =
                                   "Load Bundle") {
   if (grepl("does not exist", error_msg,
-            ignore.case = TRUE)) {
+    ignore.case = TRUE
+  )) {
     paste0(
       operation_name,
       ": The selected file was not found."
     )
   } else if (grepl("rds", error_msg,
-                    ignore.case = TRUE)) {
+    ignore.case = TRUE
+  )) {
     paste0(
       operation_name,
       ": Please upload a valid .rds bundle file."
     )
   } else if (grepl("missing required", error_msg,
-                    ignore.case = TRUE)) {
+    ignore.case = TRUE
+  )) {
     paste0(operation_name, ": ", error_msg)
   } else {
     paste0(operation_name, " failed: ", error_msg)

@@ -1,15 +1,15 @@
 box::use(
-  ggplot2,
   ggiraph,
-  ggrepel,
-  rhino,
+  ggplot2,
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/pca_stats[
-    compute_var_coord, compute_var_contrib, compute_var_cos2
+    compute_var_contrib,
+    compute_var_coord,
+    compute_var_cos2
   ],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -107,7 +107,8 @@ create_var_contrib_jitter_plot <- function(pca_result,
           if (sum(above) <= 2) {
             # Soft pad: include next-best by cos2
             rank_order <- order(
-              sub_cos2, decreasing = TRUE
+              sub_cos2,
+              decreasing = TRUE
             )
             n_keep <- min(
               min_vars_per_dim, length(rank_order)
@@ -151,13 +152,15 @@ create_var_contrib_jitter_plot <- function(pca_result,
       )
       df$dim_label <- dim_label_map[df$dim]
       df$dim_label <- factor(
-        df$dim_label, levels = dim_labels
+        df$dim_label,
+        levels = dim_labels
       )
 
       # Pre-compute jittered x position (fixed seed)
       set.seed(42)
       df$x <- stats::runif(
-        nrow(df), min = -0.25, max = 0.25
+        nrow(df),
+        min = -0.25, max = 0.25
       )
 
       # Smart filtering: decide which points get labels
@@ -241,9 +244,9 @@ create_var_contrib_jitter_plot <- function(pca_result,
           segment.color = "grey30",
           segment.size = 0.4,
           min.segment.length = 0.2,
-          #segment.curvature = 0.1,
-          #segment.ncp = 2,
-          #segment.angle = 130,
+          # segment.curvature = 0.1,
+          # segment.ncp = 2,
+          # segment.angle = 130,
           box.padding = 0.5,
           point.padding = 0.3,
           direction = "y",
@@ -252,7 +255,7 @@ create_var_contrib_jitter_plot <- function(pca_result,
           show.legend = FALSE
         ) +
         ggplot2$facet_wrap(
-          ~ dim_label,
+          ~dim_label,
           nrow = 1,
           scales = "free_y"
         ) +
@@ -344,11 +347,13 @@ var_contrib_jitter_girafe_opts <- function() {
 #' @return Character, user-friendly error message
 #' @export
 var_contrib_jitter_error_parser <- function(
-    error_msg,
-    operation_name = "Variable Contribution Jitter Plot") {
+  error_msg,
+  operation_name = "Variable Contribution Jitter Plot"
+) {
   if (grepl(
     "dimension|dim|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -357,7 +362,8 @@ var_contrib_jitter_error_parser <- function(
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -409,7 +415,8 @@ select_label_vars <- function(df, n_vars, n_dims) {
     # Cap at 10 labels per dim to avoid clutter
     if (sum(above) > 10) {
       top_idx <- order(
-        sub$contrib[above], decreasing = TRUE
+        sub$contrib[above],
+        decreasing = TRUE
       )
       keep <- which(above)[top_idx[seq_len(10)]]
       above <- logical(length(above))

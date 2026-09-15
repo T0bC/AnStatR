@@ -90,17 +90,17 @@ compute_base_stats <- function(filtered) {
   s <- if (n > 1) stats::sd(filtered, na.rm = TRUE) else NA_real_
 
   list(
-    n      = n,
-    mean   = m,
+    n = n,
+    mean = m,
     median = if (n > 0) {
       stats::median(filtered, na.rm = TRUE)
     } else {
       NA_real_
     },
-    var    = if (n > 1) stats::var(filtered, na.rm = TRUE) else NA_real_,
-    sd     = s,
-    sem    = if (n > 1) s / sqrt(n) else NA_real_,
-    cv     = if (n > 1 && !is.na(m) && m != 0) s / m else NA_real_
+    var = if (n > 1) stats::var(filtered, na.rm = TRUE) else NA_real_,
+    sd = s,
+    sem = if (n > 1) s / sqrt(n) else NA_real_,
+    cv = if (n > 1 && !is.na(m) && m != 0) s / m else NA_real_
   )
 }
 
@@ -130,8 +130,9 @@ count_exclusions <- function(data, col_name) {
 
   list(
     n_outliers = sum(outliers & !is.na(values), na.rm = TRUE),
-    n_trimmed  = sum(
-      trimmed & !outliers & !is.na(values), na.rm = TRUE
+    n_trimmed = sum(
+      trimmed & !outliers & !is.na(values),
+      na.rm = TRUE
     )
   )
 }
@@ -215,13 +216,13 @@ summarize_data <- function(data, grouping_vars, measure_vars,
       row <- data.frame(
         Measurement = col,
         grp_vals,
-        n       = base$n,
-        mean    = base$mean,
-        median  = base$median,
-        var     = base$var,
-        sd      = base$sd,
-        sem     = base$sem,
-        cv      = base$cv,
+        n = base$n,
+        mean = base$mean,
+        median = base$median,
+        var = base$var,
+        sd = base$sd,
+        sem = base$sem,
+        cv = base$cv,
         stringsAsFactors = FALSE,
         check.names = FALSE
       )
@@ -230,11 +231,11 @@ summarize_data <- function(data, grouping_vars, measure_vars,
         shap <- compute_shapiro(filtered)
         row$shapiro_p <- shap$shapiro_p
         row$shapiro_W <- shap$shapiro_W
-        row$normal    <- shap$normal
+        row$normal <- shap$normal
       }
 
       row$n_outliers <- excl$n_outliers
-      row$n_trimmed  <- excl$n_trimmed
+      row$n_trimmed <- excl$n_trimmed
       row
     })
   })
@@ -267,13 +268,13 @@ split_by_measurement <- function(summary_df) {
 
     # Drop n_outliers if all zeros
     if ("n_outliers" %in% names(df) &&
-        all(df$n_outliers == 0, na.rm = TRUE)) {
+      all(df$n_outliers == 0, na.rm = TRUE)) {
       df$n_outliers <- NULL
     }
 
     # Drop n_trimmed if all zeros
     if ("n_trimmed" %in% names(df) &&
-        all(df$n_trimmed == 0, na.rm = TRUE)) {
+      all(df$n_trimmed == 0, na.rm = TRUE)) {
       df$n_trimmed <- NULL
     }
 

@@ -32,7 +32,8 @@ tab_ui <- function(ns) {
         "Descriptive (metadata) columns ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select columns that describe the",
@@ -59,7 +60,8 @@ tab_ui <- function(ns) {
           "Measurement columns ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Select columns that contain the",
@@ -91,7 +93,8 @@ tab_ui <- function(ns) {
       "Data Scaling ",
       bslib$tooltip(
         bsicons$bs_icon(
-          "info-circle", class = "text-muted"
+          "info-circle",
+          class = "text-muted"
         ),
         paste(
           "Choose how to preprocess the data",
@@ -117,7 +120,8 @@ tab_ui <- function(ns) {
       shiny$tags$div(
         class = "alert alert-secondary py-2 small mb-2",
         bsicons$bs_icon(
-          "info-circle-fill", class = "me-1"
+          "info-circle-fill",
+          class = "me-1"
         ),
         paste(
           "IPCA always centers data internally",
@@ -172,7 +176,8 @@ tab_ui <- function(ns) {
       "Residualize by (optional) ",
       bslib$tooltip(
         bsicons$bs_icon(
-          "info-circle", class = "text-muted"
+          "info-circle",
+          class = "text-muted"
         ),
         paste(
           "Remove a known confound before PCA by subtracting",
@@ -205,7 +210,8 @@ tab_ui <- function(ns) {
         "Normalize skewed variables ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Transform highly skewed variables",
@@ -243,9 +249,13 @@ tab_server <- function(input, output, session,
                        recommended_parameters = NULL) {
   # --- Recommended-parameters hint + apply button ---
   output$recommended_hint <- shiny$renderUI({
-    if (is.null(recommended_parameters)) return(NULL)
+    if (is.null(recommended_parameters)) {
+      return(NULL)
+    }
     rec <- recommended_parameters()
-    if (length(rec) == 0) return(NULL)
+    if (length(rec) == 0) {
+      return(NULL)
+    }
     recommendation_banner$render_recommendation_banner(
       rec, session$ns, "apply_recommended"
     )
@@ -253,7 +263,9 @@ tab_server <- function(input, output, session,
 
   shiny$observeEvent(input$apply_recommended, {
     data <- input_data()
-    if (is.null(data) || is.null(recommended_parameters)) return()
+    if (is.null(data) || is.null(recommended_parameters)) {
+      return()
+    }
     rec <- recommended_parameters()
     cols <- column_utils$get_measurement_cols(data)
     sel <- intersect(rec, cols)
@@ -280,76 +292,81 @@ tab_server <- function(input, output, session,
 
   # Smart retention on new data: keep selections that
   # still exist in the new dataset
-  shiny$observeEvent(data_version(), {
-    data <- input_data()
-    if (is.null(data)) {
+  shiny$observeEvent(data_version(),
+    {
+      data <- input_data()
+      if (is.null(data)) {
+        rhino$log$info(
+          "PCA data_selection: reset (no data)"
+        )
+        shiny$updateSelectizeInput(
+          session, "metaData",
+          choices = character(0),
+          selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "measureVar",
+          choices = character(0),
+          selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "GroupBiplot",
+          choices = character(0),
+          selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "residualizeCol",
+          choices = character(0),
+          selected = character(0)
+        )
+        return()
+      }
+
+      desc_cols <- column_utils$get_descriptive_cols(data)
+      meas_cols <- column_utils$get_measurement_cols(data)
+
+      cur_meta <- shiny$isolate(input$metaData)
+      cur_meas <- shiny$isolate(input$measureVar)
+      cur_grp <- shiny$isolate(input$GroupBiplot)
+      cur_resid <- shiny$isolate(input$residualizeCol)
+
+      ret_meta <- intersect(cur_meta, desc_cols)
+      ret_meas <- intersect(cur_meas, meas_cols)
+      ret_grp <- intersect(cur_grp, ret_meta)
+      ret_resid <- intersect(cur_resid, ret_meta)
+
       rhino$log$info(
-        "PCA data_selection: reset (no data)"
+        "PCA data_selection: ",
+        "{length(desc_cols)} descriptive, ",
+        "{length(meas_cols)} measurement cols"
       )
+
       shiny$updateSelectizeInput(
         session, "metaData",
-        choices = character(0),
-        selected = character(0)
+        choices = desc_cols, selected = ret_meta
       )
       shiny$updateSelectizeInput(
         session, "measureVar",
-        choices = character(0),
-        selected = character(0)
+        choices = meas_cols, selected = ret_meas
       )
       shiny$updateSelectizeInput(
         session, "GroupBiplot",
-        choices = character(0),
-        selected = character(0)
+        choices = ret_meta, selected = ret_grp
       )
       shiny$updateSelectizeInput(
         session, "residualizeCol",
-        choices = character(0),
-        selected = character(0)
+        choices = ret_meta, selected = ret_resid
       )
-      return()
-    }
-
-    desc_cols <- column_utils$get_descriptive_cols(data)
-    meas_cols <- column_utils$get_measurement_cols(data)
-
-    cur_meta <- shiny$isolate(input$metaData)
-    cur_meas <- shiny$isolate(input$measureVar)
-    cur_grp  <- shiny$isolate(input$GroupBiplot)
-    cur_resid <- shiny$isolate(input$residualizeCol)
-
-    ret_meta <- intersect(cur_meta, desc_cols)
-    ret_meas <- intersect(cur_meas, meas_cols)
-    ret_grp  <- intersect(cur_grp, ret_meta)
-    ret_resid <- intersect(cur_resid, ret_meta)
-
-    rhino$log$info(
-      "PCA data_selection: ",
-      "{length(desc_cols)} descriptive, ",
-      "{length(meas_cols)} measurement cols"
-    )
-
-    shiny$updateSelectizeInput(
-      session, "metaData",
-      choices = desc_cols, selected = ret_meta
-    )
-    shiny$updateSelectizeInput(
-      session, "measureVar",
-      choices = meas_cols, selected = ret_meas
-    )
-    shiny$updateSelectizeInput(
-      session, "GroupBiplot",
-      choices = ret_meta, selected = ret_grp
-    )
-    shiny$updateSelectizeInput(
-      session, "residualizeCol",
-      choices = ret_meta, selected = ret_resid
-    )
-  }, ignoreInit = TRUE)
+    },
+    ignoreInit = TRUE
+  )
 
   # Select all measurement columns on link click
   shiny$observeEvent(input$select_all_measure, {
     data <- input_data()
-    if (is.null(data)) return()
+    if (is.null(data)) {
+      return()
+    }
     cols <- column_utils$get_measurement_cols(data)
     shiny$updateSelectizeInput(
       session, "measureVar",

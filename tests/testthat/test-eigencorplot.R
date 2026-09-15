@@ -38,7 +38,8 @@ describe("compute_eigencor_data", {
   it("returns success with valid PCA result and metadata", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 3L
+      pca_res$result,
+      display_ncp = 3L
     )
     expect_true(res$success)
   })
@@ -46,7 +47,8 @@ describe("compute_eigencor_data", {
   it("returns correct matrix dimensions", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 3L
+      pca_res$result,
+      display_ncp = 3L
     )
     r <- res$result
     # 3 dims x 2 metadata columns
@@ -59,7 +61,8 @@ describe("compute_eigencor_data", {
   it("correlations are in [-1, 1]", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 4L
+      pca_res$result,
+      display_ncp = 4L
     )
     r <- res$result
     expect_true(all(r$cor_matrix >= -1 & r$cor_matrix <= 1))
@@ -68,7 +71,8 @@ describe("compute_eigencor_data", {
   it("p-values are in [0, 1]", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 4L
+      pca_res$result,
+      display_ncp = 4L
     )
     r <- res$result
     non_na <- r$pval_matrix[!is.na(r$pval_matrix)]
@@ -78,7 +82,8 @@ describe("compute_eigencor_data", {
   it("reports coerced columns for non-numeric metadata", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 2L
+      pca_res$result,
+      display_ncp = 2L
     )
     r <- res$result
     # GROUP and SITE are character -> should be coerced
@@ -89,7 +94,8 @@ describe("compute_eigencor_data", {
   it("dim_labels contain variance percentages", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 2L
+      pca_res$result,
+      display_ncp = 2L
     )
     r <- res$result
     expect_true(all(grepl("%", r$dim_labels)))
@@ -98,7 +104,8 @@ describe("compute_eigencor_data", {
   it("respects display_ncp limit", {
     pca_res <- build_test_pca()
     res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 2L
+      pca_res$result,
+      display_ncp = 2L
     )
     expect_equal(nrow(res$result$cor_matrix), 2)
   })
@@ -127,7 +134,8 @@ describe("create_eigencor_plot", {
   it("returns success with a ggplot object", {
     pca_res <- build_test_pca()
     eigencor_res <- eigencorplot$compute_eigencor_data(
-      pca_res$result, display_ncp = 3L
+      pca_res$result,
+      display_ncp = 3L
     )
     plot_res <- eigencorplot$create_eigencor_plot(
       eigencor_res$result

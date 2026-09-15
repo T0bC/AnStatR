@@ -25,7 +25,8 @@ tab_ui <- function(ns) {
         "Additional Output ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Show additional output like",
@@ -70,7 +71,8 @@ tab_ui <- function(ns) {
         "Repeated Measures ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Enable for within-subject / repeated",
@@ -91,7 +93,8 @@ tab_ui <- function(ns) {
         "Show only significant p-values ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Filter results for p-values < 0.07.",
@@ -124,13 +127,17 @@ tab_server <- function(input, output, session,
     if (is.null(plots_available)) TRUE else isTRUE(plots_available())
   })
 
-  shiny$observeEvent(plots_available_safe(), {
-    if (!plots_available_safe()) {
-      shiny$updateRadioButtons(
-        session, "test_approach", selected = "parametric"
-      )
-    }
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(plots_available_safe(),
+    {
+      if (!plots_available_safe()) {
+        shiny$updateRadioButtons(
+          session, "test_approach",
+          selected = "parametric"
+        )
+      }
+    },
+    ignoreInit = TRUE
+  )
 
   output$screening_mode_hint <- shiny$renderUI({
     if (plots_available_safe()) {
@@ -171,7 +178,9 @@ tab_server <- function(input, output, session,
 
   # --- Repeated measures options (conditional) ---
   output$rm_options_ui <- shiny$renderUI({
-    if (!isTRUE(input$is_repeated_measures)) return(NULL)
+    if (!isTRUE(input$is_repeated_measures)) {
+      return(NULL)
+    }
 
     # Derive descriptive column choices from data
     data <- if (!is.null(input_data)) input_data() else NULL
@@ -199,7 +208,8 @@ tab_server <- function(input, output, session,
           "ID Column (Subject) ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Select the column that uniquely",
@@ -218,7 +228,8 @@ tab_server <- function(input, output, session,
           "Within-Subject Factor ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Select which X-axis factor is the",
@@ -248,7 +259,9 @@ tab_server <- function(input, output, session,
   # --- Non-parametric post-hoc method radio (conditional) ---
   output$np_posthoc_method_ui <- shiny$renderUI({
     approach <- input$test_approach %||% "robust"
-    if (approach != "nonparametric") return(NULL)
+    if (approach != "nonparametric") {
+      return(NULL)
+    }
 
     shiny$tags$div(
       class = "mt-2 mb-2",
@@ -258,7 +271,8 @@ tab_server <- function(input, output, session,
           "1-Way Post-Hoc Method ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Dunn's test uses rank sums from the",
@@ -344,7 +358,8 @@ tab_server <- function(input, output, session,
           "Only valid comparisons ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "For multi-way designs, keep only",

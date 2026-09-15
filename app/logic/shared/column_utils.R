@@ -1,7 +1,3 @@
-box::use(
-  rhino,
-)
-
 # =============================================================================
 # Column classification utilities (app-wide)
 #

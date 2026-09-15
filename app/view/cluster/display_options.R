@@ -27,7 +27,8 @@ tab_ui <- function(ns) {
         "Reduction Method ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Dimensionality reduction method",
@@ -174,7 +175,8 @@ tab_ui <- function(ns) {
         "Group Biplot ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select columns that potentially",
@@ -199,7 +201,8 @@ tab_ui <- function(ns) {
         "Show Ellipses / Hulls ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Show 95% confidence ellipses or",
@@ -220,7 +223,8 @@ tab_ui <- function(ns) {
           "Use Convex Hull ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Use convex hull instead of the",
@@ -303,7 +307,8 @@ tab_ui <- function(ns) {
         "Show Labels ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           "Show row labels on the heatmap."
         )
@@ -344,7 +349,8 @@ tab_ui <- function(ns) {
         "Seriation (leaf ordering) ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Controls how dendrogram leaves are",
@@ -367,7 +373,8 @@ tab_ui <- function(ns) {
         "Row Side Colors ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select metadata columns to display",
@@ -396,7 +403,8 @@ tab_ui <- function(ns) {
         "Sort Bars By ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Sort observation bars within each",
@@ -418,7 +426,8 @@ tab_ui <- function(ns) {
         "Show Average Line ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Show a dashed horizontal line at",
@@ -504,83 +513,86 @@ tab_ui <- function(ns) {
 tab_server <- function(input, output, session,
                        input_data, data_version) {
   # Reset display options when new data is loaded
-  shiny$observeEvent(data_version(), {
-    rhino$log$info(
-      "Cluster display_options: reset for new data"
-    )
-    # Reset to default values
-    shiny$updateCheckboxInput(
-      session, "showLabels",
-      value = FALSE
-    )
-    shiny$updateSelectizeInput(
-      session, "labelColumn",
-      choices = character(0),
-      selected = character(0)
-    )
-    shiny$updateSelectInput(
-      session, "seriation",
-      selected = "OLO"
-    )
-    shiny$updateSelectizeInput(
-      session, "rowSideColors",
-      choices = character(0),
-      selected = character(0)
-    )
-    shiny$updateNumericInput(
-      session, "width",
-      value = 16
-    )
-    shiny$updateNumericInput(
-      session, "height",
-      value = 10
-    )
-    shiny$updateCheckboxInput(
-      session, "showGroupShapes",
-      value = FALSE
-    )
-    shiny$updateCheckboxInput(
-      session, "showConvexHull",
-      value = FALSE
-    )
-    shiny$updateSelectInput(
-      session, "pointAlpha",
-      selected = "1"
-    )
-    shiny$updateSelectInput(
-      session, "pointSize",
-      selected = "3"
-    )
-    shiny$updateSelectInput(
-      session, "reductionMethod",
-      selected = "pca"
-    )
-    shiny$updateSelectizeInput(
-      session, "clusterBiplotDimX",
-      choices = c("Dim.1", "Dim.2", "Dim.3"),
-      selected = "Dim.1"
-    )
-    shiny$updateSelectizeInput(
-      session, "clusterBiplotDimY",
-      choices = c("Dim.1", "Dim.2", "Dim.3"),
-      selected = "Dim.2"
-    )
-    shiny$updateSelectizeInput(
-      session, "clusterBiplot3dDimX",
-      choices = c("Dim.1", "Dim.2", "Dim.3"),
-      selected = "Dim.1"
-    )
-    shiny$updateSelectizeInput(
-      session, "clusterBiplot3dDimY",
-      choices = c("Dim.1", "Dim.2", "Dim.3"),
-      selected = "Dim.2"
-    )
-    shiny$updateSelectizeInput(
-      session, "clusterBiplot3dDimZ",
-      choices = c("Dim.1", "Dim.2", "Dim.3"),
-      selected = "Dim.3"
-    )
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      rhino$log$info(
+        "Cluster display_options: reset for new data"
+      )
+      # Reset to default values
+      shiny$updateCheckboxInput(
+        session, "showLabels",
+        value = FALSE
+      )
+      shiny$updateSelectizeInput(
+        session, "labelColumn",
+        choices = character(0),
+        selected = character(0)
+      )
+      shiny$updateSelectInput(
+        session, "seriation",
+        selected = "OLO"
+      )
+      shiny$updateSelectizeInput(
+        session, "rowSideColors",
+        choices = character(0),
+        selected = character(0)
+      )
+      shiny$updateNumericInput(
+        session, "width",
+        value = 16
+      )
+      shiny$updateNumericInput(
+        session, "height",
+        value = 10
+      )
+      shiny$updateCheckboxInput(
+        session, "showGroupShapes",
+        value = FALSE
+      )
+      shiny$updateCheckboxInput(
+        session, "showConvexHull",
+        value = FALSE
+      )
+      shiny$updateSelectInput(
+        session, "pointAlpha",
+        selected = "1"
+      )
+      shiny$updateSelectInput(
+        session, "pointSize",
+        selected = "3"
+      )
+      shiny$updateSelectInput(
+        session, "reductionMethod",
+        selected = "pca"
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplotDimX",
+        choices = c("Dim.1", "Dim.2", "Dim.3"),
+        selected = "Dim.1"
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplotDimY",
+        choices = c("Dim.1", "Dim.2", "Dim.3"),
+        selected = "Dim.2"
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimX",
+        choices = c("Dim.1", "Dim.2", "Dim.3"),
+        selected = "Dim.1"
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimY",
+        choices = c("Dim.1", "Dim.2", "Dim.3"),
+        selected = "Dim.2"
+      )
+      shiny$updateSelectizeInput(
+        session, "clusterBiplot3dDimZ",
+        choices = c("Dim.1", "Dim.2", "Dim.3"),
+        selected = "Dim.3"
+      )
+    },
+    ignoreInit = TRUE
+  )
 
   # Update labelColumn choices from selected metaData
   shiny$observe({
@@ -618,13 +630,15 @@ tab_server <- function(input, output, session,
   # or measurement columns change
   shiny$observe({
     method <- input$reductionMethod
-    if (is.null(method)) return()
+    if (is.null(method)) {
+      return()
+    }
 
     if (method == "raw") {
       # Use measurement column names as choices
       measure_cols <- input$measureVar
       if (is.null(measure_cols) ||
-          length(measure_cols) == 0) {
+        length(measure_cols) == 0) {
         return()
       }
       cur_x <- shiny$isolate(
@@ -634,13 +648,13 @@ tab_server <- function(input, output, session,
         input$clusterBiplotDimY
       )
       sel_x <- if (!is.null(cur_x) &&
-                    cur_x %in% measure_cols) {
+        cur_x %in% measure_cols) {
         cur_x
       } else {
         measure_cols[1]
       }
       sel_y <- if (!is.null(cur_y) &&
-                    cur_y %in% measure_cols) {
+        cur_y %in% measure_cols) {
         cur_y
       } else {
         measure_cols[min(2, length(measure_cols))]
@@ -660,19 +674,19 @@ tab_server <- function(input, output, session,
       cur_3d_y <- shiny$isolate(input$clusterBiplot3dDimY)
       cur_3d_z <- shiny$isolate(input$clusterBiplot3dDimZ)
       sel_3d_x <- if (!is.null(cur_3d_x) &&
-                      cur_3d_x %in% measure_cols) {
+        cur_3d_x %in% measure_cols) {
         cur_3d_x
       } else {
         measure_cols[1]
       }
       sel_3d_y <- if (!is.null(cur_3d_y) &&
-                      cur_3d_y %in% measure_cols) {
+        cur_3d_y %in% measure_cols) {
         cur_3d_y
       } else {
         measure_cols[min(2, length(measure_cols))]
       }
       sel_3d_z <- if (!is.null(cur_3d_z) &&
-                      cur_3d_z %in% measure_cols) {
+        cur_3d_z %in% measure_cols) {
         cur_3d_z
       } else {
         measure_cols[min(3, length(measure_cols))]
@@ -701,7 +715,7 @@ tab_server <- function(input, output, session,
         input$clusterBiplotDimX
       )
       if (!is.null(cur_x) &&
-          !grepl("^Dim\\.", cur_x)) {
+        !grepl("^Dim\\.", cur_x)) {
         dim_choices <- paste0(
           "Dim.", seq_len(3)
         )
@@ -740,7 +754,9 @@ tab_server <- function(input, output, session,
   # to avoid running PCA on already-reduced data.
   shiny$observe({
     src <- input$data_source
-    if (is.null(src)) return()
+    if (is.null(src)) {
+      return()
+    }
 
     if (src %in% c("pca_scores", "lda_scores")) {
       shiny$updateSelectInput(
@@ -753,90 +769,97 @@ tab_server <- function(input, output, session,
   # Guard: reset reduction method if not-implemented
   # option is selected, or if user tries to select PCA
   # while using already-reduced data
-  shiny$observeEvent(input$reductionMethod, {
-    method <- input$reductionMethod
-    if (is.null(method)) return()
-
-    src <- input$data_source
-    is_reduced <- !is.null(src) &&
-      src %in% c("pca_scores", "lda_scores")
-
-    if (is_reduced && method == "pca") {
-      src_label <- if (src == "pca_scores") {
-        "PCA"
-      } else {
-        "LDA"
+  shiny$observeEvent(input$reductionMethod,
+    {
+      method <- input$reductionMethod
+      if (is.null(method)) {
+        return()
       }
-      shiny$showNotification(
-        paste0(
-          "Data is already ",
-          src_label, "-reduced. ",
-          "Using direct axis plotting ",
-          "instead of running PCA again."
-        ),
-        type = "message",
-        duration = 4
-      )
-      shiny$updateSelectInput(
-        session, "reductionMethod",
-        selected = "raw"
-      )
-      return()
-    }
 
-    if (method %in% c("tsne", "umap")) {
-      label <- switch(
-        method,
-        tsne = "t-SNE",
-        umap = "UMAP"
-      )
-      shiny$showNotification(
-        paste0(
-          label,
-          " is not implemented yet. ",
-          "Reverting to PCA."
-        ),
-        type = "warning",
-        duration = 4
-      )
-      shiny$updateSelectInput(
-        session, "reductionMethod",
-        selected = if (is_reduced) "raw" else "pca"
-      )
-    }
-  }, ignoreInit = TRUE)
+      src <- input$data_source
+      is_reduced <- !is.null(src) &&
+        src %in% c("pca_scores", "lda_scores")
+
+      if (is_reduced && method == "pca") {
+        src_label <- if (src == "pca_scores") {
+          "PCA"
+        } else {
+          "LDA"
+        }
+        shiny$showNotification(
+          paste0(
+            "Data is already ",
+            src_label, "-reduced. ",
+            "Using direct axis plotting ",
+            "instead of running PCA again."
+          ),
+          type = "message",
+          duration = 4
+        )
+        shiny$updateSelectInput(
+          session, "reductionMethod",
+          selected = "raw"
+        )
+        return()
+      }
+
+      if (method %in% c("tsne", "umap")) {
+        label <- switch(method,
+          tsne = "t-SNE",
+          umap = "UMAP"
+        )
+        shiny$showNotification(
+          paste0(
+            label,
+            " is not implemented yet. ",
+            "Reverting to PCA."
+          ),
+          type = "warning",
+          duration = 4
+        )
+        shiny$updateSelectInput(
+          session, "reductionMethod",
+          selected = if (is_reduced) "raw" else "pca"
+        )
+      }
+    },
+    ignoreInit = TRUE
+  )
 
   # Auto-switch between PCA and Raw based on number of measurement columns.
   # Triggers ONLY when measureVar changes (not reductionMethod) so it does
   # not fight with manual user selections or other observers.
   # If > 4 columns: default to PCA; If <= 4 columns: default to Raw.
-  shiny$observeEvent(input$measureVar, {
-    measure_cols <- input$measureVar
-    if (is.null(measure_cols) || length(measure_cols) == 0) {
-      return()
-    }
+  shiny$observeEvent(input$measureVar,
+    {
+      measure_cols <- input$measureVar
+      if (is.null(measure_cols) || length(measure_cols) == 0) {
+        return()
+      }
 
-    src <- input$data_source
-    is_reduced <- !is.null(src) &&
-      src %in% c("pca_scores", "lda_scores")
+      src <- input$data_source
+      is_reduced <- !is.null(src) &&
+        src %in% c("pca_scores", "lda_scores")
 
-    # For already-reduced data, always use raw mode
-    if (is_reduced) {
-      return()
-    }
+      # For already-reduced data, always use raw mode
+      if (is_reduced) {
+        return()
+      }
 
-    n_cols <- length(measure_cols)
+      n_cols <- length(measure_cols)
 
-    if (n_cols > 4) {
-      shiny$updateSelectInput(
-        session, "reductionMethod",
-        selected = "pca"
-      )
-    } else {
-      shiny$updateSelectInput(
-        session, "reductionMethod",
-        selected = "raw"
-      )
-    }
-  }, ignoreInit = FALSE)
+      if (n_cols > 4) {
+        shiny$updateSelectInput(
+          session, "reductionMethod",
+          selected = "pca"
+        )
+      } else {
+        shiny$updateSelectInput(
+          session, "reductionMethod",
+          selected = "raw"
+        )
+      }
+    },
+    ignoreInit = FALSE
+  )
 }

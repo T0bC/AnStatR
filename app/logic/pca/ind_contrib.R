@@ -1,12 +1,12 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   rhino,
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/pca_stats[compute_ind_contrib, compute_ind_cos2],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -25,7 +25,8 @@ ind_contrib_error_parser <- function(error_msg,
                                        "Individual Contributions") {
   if (grepl(
     "dimension|dim|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -34,7 +35,8 @@ ind_contrib_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -70,7 +72,8 @@ create_ind_contrib_plot <- function(pca_result,
   error_context <- list(
     display_ncp = display_ncp,
     group_cols = paste(
-      group_cols %||% "none", collapse = ", "
+      group_cols %||% "none",
+      collapse = ", "
     )
   )
 
@@ -122,7 +125,8 @@ create_ind_contrib_plot <- function(pca_result,
 
       # Preserve dimension order
       df$dim_label <- factor(
-        df$dim_label, levels = dim_labels
+        df$dim_label,
+        levels = dim_labels
       )
 
       # Grouping
@@ -204,7 +208,7 @@ create_ind_contrib_plot <- function(pca_result,
           inherit.aes = FALSE
         ) +
         ggplot2$facet_wrap(
-          ~ dim_label,
+          ~dim_label,
           nrow = 1,
           scales = "free_y"
         ) +
@@ -255,13 +259,15 @@ create_ind_contrib_plot <- function(pca_result,
 add_group_column <- function(df, meta, group_cols,
                              n_obs, n_dims) {
   if (is.null(group_cols) ||
-      length(group_cols) == 0 ||
-      is.null(meta)) {
+    length(group_cols) == 0 ||
+    is.null(meta)) {
     return(df)
   }
 
   valid_cols <- intersect(group_cols, names(meta))
-  if (length(valid_cols) == 0) return(df)
+  if (length(valid_cols) == 0) {
+    return(df)
+  }
 
   # Build group vector for one copy of individuals
   if (length(valid_cols) == 1) {

@@ -185,7 +185,8 @@ describe("run_clustering dbscan", {
   it("returns success on well-separated data", {
     data <- make_cluster_data(n = 50)
     result <- cluster$run_clustering(
-      data, c("a", "b"), n_clusters = 2,
+      data, c("a", "b"),
+      n_clusters = 2,
       algorithm = "dbscan", metric = "euclidean"
     )
     expect_true(result$success)
@@ -199,11 +200,13 @@ describe("run_clustering dbscan", {
   it("ignores n_clusters parameter", {
     data <- make_cluster_data(n = 50)
     r1 <- cluster$run_clustering(
-      data, c("a", "b"), n_clusters = 2,
+      data, c("a", "b"),
+      n_clusters = 2,
       algorithm = "dbscan"
     )
     r2 <- cluster$run_clustering(
-      data, c("a", "b"), n_clusters = 5,
+      data, c("a", "b"),
+      n_clusters = 5,
       algorithm = "dbscan"
     )
     expect_true(r1$success)

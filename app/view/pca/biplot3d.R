@@ -31,8 +31,6 @@ box::use(
 #' @export
 render_output <- function(input, output, session,
                           pca_result) {
-  ns <- session$ns
-
   last_error <- shiny$reactiveVal(NULL)
 
   # Unified debounced params: bundle sidebar inputs
@@ -81,11 +79,17 @@ render_output <- function(input, output, session,
     last_error(NULL)
 
     pca_res <- pca_result()
-    if (is.null(pca_res)) return(NULL)
-    if (!pca_res$success) return(NULL)
+    if (is.null(pca_res)) {
+      return(NULL)
+    }
+    if (!pca_res$success) {
+      return(NULL)
+    }
 
     params <- biplot3d_params()
-    if (is.null(params)) return(NULL)
+    if (is.null(params)) {
+      return(NULL)
+    }
 
     # Extract params with defaults
     dim_x <- params$dim_x
@@ -97,11 +101,13 @@ render_output <- function(input, output, session,
 
     # Need at least 3 distinct dims
     available <- colnames(pca_res$result$loadings)
-    if (length(available) < 3) return(NULL)
+    if (length(available) < 3) {
+      return(NULL)
+    }
 
     group_cols <- params$group_cols
     if (is.null(group_cols) ||
-        length(group_cols) == 0) {
+      length(group_cols) == 0) {
       group_cols <- NULL
     }
 

@@ -66,7 +66,9 @@ build_matrix_table <- function(mat, comparisons, is_top_mat, value_fn) {
 #' @return Shiny tags object
 #' @export
 render_ranking_section <- function(ranking_result, ns) {
-  if (is.null(ranking_result)) return(NULL)
+  if (is.null(ranking_result)) {
+    return(NULL)
+  }
 
   if (error_handling$is_app_error(ranking_result)) {
     return(bslib$card(
@@ -74,7 +76,8 @@ render_ranking_section <- function(ranking_result, ns) {
       bslib$card_header("Parameter Screening — Separation Ranking"),
       bslib$card_body(
         error_display$error_alert_structured(
-          ranking_result, type = "warning"
+          ranking_result,
+          type = "warning"
         )
       )
     ))
@@ -196,7 +199,8 @@ build_effect_table <- function(ranking_result, comparisons, is_top_mat) {
   parameters <- unique(ranking$parameter)
 
   effect_mat <- matrix(
-    NA_character_, nrow = length(parameters), ncol = length(comparisons),
+    NA_character_,
+    nrow = length(parameters), ncol = length(comparisons),
     dimnames = list(parameters, comparisons)
   )
   for (i in seq_len(nrow(ranking))) {

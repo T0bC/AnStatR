@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
 )
 
 box::use(
@@ -26,8 +26,8 @@ add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
   is_trimmed <- data[[".is_trimmed"]]
   is_outlier <- data[[".is_outlier"]]
   retained_idx <- which(!is_trimmed & !is_outlier)
-  trimmed_idx  <- which(is_trimmed & !is_outlier)
-  outlier_idx  <- which(is_outlier)
+  trimmed_idx <- which(is_trimmed & !is_outlier)
+  outlier_idx <- which(is_outlier)
 
   # Layer 1: Retained points (colored, optionally shaped)
   if (length(retained_idx) > 0) {
@@ -217,7 +217,9 @@ add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
 #' @export
 add_stat_overlays <- function(p, data, gl, sls) {
   retained_idx <- which(!data[[".is_trimmed"]] & !data[[".is_outlier"]])
-  if (length(retained_idx) == 0) return(p)
+  if (length(retained_idx) == 0) {
+    return(p)
+  }
 
   rd <- data[retained_idx, , drop = FALSE]
 
@@ -257,7 +259,9 @@ add_stat_overlays <- function(p, data, gl, sls) {
 #' @export
 add_stat_point_overlays <- function(p, data, gl) {
   retained_idx <- which(!data[[".is_trimmed"]] & !data[[".is_outlier"]])
-  if (length(retained_idx) == 0) return(p)
+  if (length(retained_idx) == 0) {
+    return(p)
+  }
 
   rd <- data[retained_idx, , drop = FALSE]
 

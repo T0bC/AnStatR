@@ -126,7 +126,8 @@ kmo_error_parser <- function(error_msg,
                              operation_name = "KMO") {
   if (grepl(
     "singular|invertible",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -135,7 +136,8 @@ kmo_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -160,13 +162,22 @@ kmo_error_parser <- function(error_msg,
 #' @return Character interpretation label
 #' @export
 kmo_interpretation <- function(kmo) {
-  if (is.na(kmo) || is.nan(kmo)) return("N/A")
-  if (kmo >= 0.9) "Marvelous"
-  else if (kmo >= 0.8) "Meritorious"
-  else if (kmo >= 0.7) "Middling"
-  else if (kmo >= 0.6) "Mediocre"
-  else if (kmo >= 0.5) "Miserable"
-  else "Unacceptable"
+  if (is.na(kmo) || is.nan(kmo)) {
+    return("N/A")
+  }
+  if (kmo >= 0.9) {
+    "Marvelous"
+  } else if (kmo >= 0.8) {
+    "Meritorious"
+  } else if (kmo >= 0.7) {
+    "Middling"
+  } else if (kmo >= 0.6) {
+    "Mediocre"
+  } else if (kmo >= 0.5) {
+    "Miserable"
+  } else {
+    "Unacceptable"
+  }
 }
 
 #' Get Bootstrap badge CSS class for a KMO value
@@ -175,10 +186,16 @@ kmo_interpretation <- function(kmo) {
 #' @return Character CSS class string
 #' @export
 kmo_badge_class <- function(kmo) {
-  if (is.na(kmo) || is.nan(kmo)) return("bg-secondary")
-  if (kmo >= 0.8) "bg-success"
-  else if (kmo >= 0.6) "bg-warning text-dark"
-  else "bg-danger"
+  if (is.na(kmo) || is.nan(kmo)) {
+    return("bg-secondary")
+  }
+  if (kmo >= 0.8) {
+    "bg-success"
+  } else if (kmo >= 0.6) {
+    "bg-warning text-dark"
+  } else {
+    "bg-danger"
+  }
 }
 
 # =============================================================================

@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   rhino,
 )
 
@@ -32,7 +32,9 @@ suggest_ncomp <- function(ber, tol = 0.01) {
   }
   best <- min(ber, na.rm = TRUE)
   within <- which(!is.na(ber) & ber <= best + tol)
-  if (length(within) == 0) return(NA_integer_)
+  if (length(within) == 0) {
+    return(NA_integer_)
+  }
   as.integer(min(within))
 }
 
@@ -96,7 +98,8 @@ create_perf_error_plot <- function(errors_df) {
       p <- p +
         # group by metric so a single-component fit does not warn
         ggplot2$geom_line(
-          ggplot2$aes(group = Metric), linewidth = 0.7
+          ggplot2$aes(group = Metric),
+          linewidth = 0.7
         ) +
         ggiraph$geom_point_interactive(
           ggplot2$aes(

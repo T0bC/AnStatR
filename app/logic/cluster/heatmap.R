@@ -1,5 +1,4 @@
 box::use(
-  grDevices,
   heatmaply,
   plotly,
   rhino,
@@ -7,7 +6,6 @@ box::use(
 )
 
 box::use(
-  app/logic/cluster/cluster[CLUSTER_PALETTE],
   app/logic/shared/error_handling,
 )
 
@@ -45,14 +43,15 @@ SERIATION_CHOICES <- c(
 #' @return List with $success, $result (plotly) or $error
 #' @export
 create_cluster_heatmap <- function(
-    cluster_result,
-    data,
-    measure_cols,
-    show_labels = FALSE,
-    custom_labels = NULL,
-    seriation = "OLO",
-    row_side_colors_df = NULL,
-    scale_heatmap = "none") {
+  cluster_result,
+  data,
+  measure_cols,
+  show_labels = FALSE,
+  custom_labels = NULL,
+  seriation = "OLO",
+  row_side_colors_df = NULL,
+  scale_heatmap = "none"
+) {
   if (is.null(cluster_result)) {
     return(list(
       success = FALSE,
@@ -90,9 +89,9 @@ create_cluster_heatmap <- function(
         method = dist_method
       )
       hc <- if (variant == "hclust" &&
-                !is.null(
-                  cluster_result$details$hclust_obj
-                )) {
+        !is.null(
+          cluster_result$details$hclust_obj
+        )) {
         cluster_result$details$hclust_obj
       } else {
         stats$hclust(dist_mat_rows, method = hclust_method)
@@ -105,7 +104,7 @@ create_cluster_heatmap <- function(
 
       # Apply custom row labels
       if (!is.null(custom_labels) &&
-          length(custom_labels) == nrow(num_mat)) {
+        length(custom_labels) == nrow(num_mat)) {
         rownames(num_mat) <- custom_labels
       } else if (!show_labels) {
         rownames(num_mat) <- NULL
@@ -120,10 +119,7 @@ create_cluster_heatmap <- function(
         "OLO"
       }
 
-      # Build color palette
       n_clusters <- cluster_result$n_clusters
-      n_colors <- min(n_clusters, length(CLUSTER_PALETTE))
-      side_colors <- CLUSTER_PALETTE[seq_len(n_colors)]
 
       # Row side colors: always include Cluster assignment
       cluster_vec <- factor(
@@ -135,7 +131,7 @@ create_cluster_heatmap <- function(
       rsc <- data.frame(Cluster = cluster_vec)
 
       if (!is.null(row_side_colors_df) &&
-          ncol(row_side_colors_df) > 0) {
+        ncol(row_side_colors_df) > 0) {
         for (col_name in names(row_side_colors_df)) {
           rsc[[col_name]] <- factor(
             row_side_colors_df[[col_name]]
@@ -145,10 +141,12 @@ create_cluster_heatmap <- function(
 
       # Build hclust for columns (use same method)
       col_dist <- stats$dist(
-        t(num_mat), method = dist_method
+        t(num_mat),
+        method = dist_method
       )
       col_hc <- stats$hclust(
-        col_dist, method = hclust_method
+        col_dist,
+        method = hclust_method
       )
 
       # heatmaply arguments
@@ -212,11 +210,13 @@ create_cluster_heatmap <- function(
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
 heatmap_error_parser <- function(
-    error_msg,
-    operation_name = "Cluster Heatmap") {
+  error_msg,
+  operation_name = "Cluster Heatmap"
+) {
   if (grepl(
     "heatmaply|plotly",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -225,7 +225,8 @@ heatmap_error_parser <- function(
     )
   } else if (grepl(
     "dendrogram|hclust|as\\.dendrogram",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -235,7 +236,8 @@ heatmap_error_parser <- function(
     )
   } else if (grepl(
     "color|colour|palette|side",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -245,7 +247,8 @@ heatmap_error_parser <- function(
     )
   } else if (grepl(
     "seriat|OLO|GW",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -254,7 +257,8 @@ heatmap_error_parser <- function(
     )
   } else if (grepl(
     "dist|distance|matrix",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

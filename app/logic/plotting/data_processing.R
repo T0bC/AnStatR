@@ -3,9 +3,9 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/data_utils,
   app/logic/plotting/assumption_checks,
   app/logic/preprocessing/normalize,
+  app/logic/shared/data_utils,
 )
 
 # =============================================================================
@@ -93,7 +93,9 @@ detect_outliers <- function(data, value_col, group_col,
 mark_trimmed <- function(values, group_col, trim_percent = 0) {
   n <- length(values)
   result <- rep(FALSE, n)
-  if (trim_percent <= 0) return(result)
+  if (trim_percent <= 0) {
+    return(result)
+  }
 
   trim_prop <- min(trim_percent / 100, 0.5)
   groups <- levels(group_col)
@@ -151,7 +153,7 @@ process_data <- function(data, measure_cols, x_cols,
 
   # Build interaction term for grouping
   if (!is.null(x_cols) && length(x_cols) > 0 &&
-      all(x_cols %in% names(data))) {
+    all(x_cols %in% names(data))) {
     interaction_term <- data_utils$create_interaction(
       data, x_cols
     )
@@ -237,7 +239,9 @@ process_data <- function(data, measure_cols, x_cols,
 detect_iqr <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 4) return(result)
+  if (sum(valid) < 4) {
+    return(result)
+  }
 
   q1 <- stats::quantile(x[valid], 0.25)
   q3 <- stats::quantile(x[valid], 0.75)
@@ -251,7 +255,9 @@ detect_iqr <- function(x, fac) {
 detect_zscore <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 3) return(result)
+  if (sum(valid) < 3) {
+    return(result)
+  }
 
   z <- (x - mean(x[valid])) / stats::sd(x[valid])
   result[valid] <- abs(z[valid]) > fac
@@ -261,13 +267,17 @@ detect_zscore <- function(x, fac) {
 detect_modified_zscore <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 3) return(result)
+  if (sum(valid) < 3) {
+    return(result)
+  }
 
   med <- stats::median(x[valid])
   # Use raw MAD (constant=1) with 0.6745 scaling per Iglewicz & Hoaglin (1993)
   # Formula: M_i = 0.6745 * (x_i - median) / MAD
   mad_val <- stats::mad(x[valid], constant = 1)
-  if (mad_val == 0) return(result)
+  if (mad_val == 0) {
+    return(result)
+  }
 
   mod_z <- 0.6745 * (x - med) / mad_val
   result[valid] <- abs(mod_z[valid]) > fac
@@ -277,7 +287,9 @@ detect_modified_zscore <- function(x, fac) {
 detect_adjusted_boxplot <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 4) return(result)
+  if (sum(valid) < 4) {
+    return(result)
+  }
 
   if (!requireNamespace("robustbase", quietly = TRUE)) {
     warning(paste(
@@ -310,12 +322,15 @@ detect_adjusted_boxplot <- function(x, fac) {
 detect_kde <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 4) return(result)
+  if (sum(valid) < 4) {
+    return(result)
+  }
 
   xv <- x[valid]
   dens <- stats::density(xv)
   point_dens <- stats::approx(
-    dens$x, dens$y, xout = xv
+    dens$x, dens$y,
+    xout = xv
   )$y
   threshold <- stats::quantile(point_dens, fac, na.rm = TRUE)
   result[valid] <- point_dens < threshold
@@ -325,7 +340,9 @@ detect_kde <- function(x, fac) {
 detect_isolation_forest <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 10) return(result)
+  if (sum(valid) < 10) {
+    return(result)
+  }
 
   if (!requireNamespace("isotree", quietly = TRUE)) {
     warning(paste(
@@ -337,7 +354,8 @@ detect_isolation_forest <- function(x, fac) {
 
   xv <- x[valid]
   iso <- isotree::isolation.forest(
-    matrix(xv, ncol = 1), ntrees = 100, nthreads = 1
+    matrix(xv, ncol = 1),
+    ntrees = 100, nthreads = 1
   )
   scores <- stats::predict(iso, matrix(xv, ncol = 1))
   threshold <- stats::quantile(scores, 1 - fac)
@@ -348,7 +366,9 @@ detect_isolation_forest <- function(x, fac) {
 detect_lof <- function(x, fac) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 10) return(result)
+  if (sum(valid) < 10) {
+    return(result)
+  }
 
   if (!requireNamespace("dbscan", quietly = TRUE)) {
     warning(paste(
@@ -360,13 +380,17 @@ detect_lof <- function(x, fac) {
 
   xv <- x[valid]
   k <- min(5, length(xv) - 1)
-  if (k < 1) return(result)
+  if (k < 1) {
+    return(result)
+  }
 
   lof_scores <- dbscan::lof(
-    matrix(xv, ncol = 1), minPts = k
+    matrix(xv, ncol = 1),
+    minPts = k
   )
   threshold <- stats::quantile(
-    lof_scores, 1 - fac, na.rm = TRUE
+    lof_scores, 1 - fac,
+    na.rm = TRUE
   )
   result[valid] <- lof_scores > threshold
   result
@@ -375,14 +399,18 @@ detect_lof <- function(x, fac) {
 detect_bootstrap <- function(x, fac, n_samples) {
   result <- rep(FALSE, length(x))
   valid <- is.finite(x)
-  if (sum(valid) < 4) return(result)
+  if (sum(valid) < 4) {
+    return(result)
+  }
 
   xv <- x[valid]
   boot_means <- replicate(
     n_samples, mean(sample(xv, replace = TRUE))
   )
   boot_sd <- stats::sd(boot_means)
-  if (boot_sd == 0) return(result)
+  if (boot_sd == 0) {
+    return(result)
+  }
 
   x_centered <- abs(xv - stats::median(xv))
   result[valid] <- x_centered > (fac * boot_sd)

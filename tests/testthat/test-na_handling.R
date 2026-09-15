@@ -1,6 +1,10 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -147,7 +151,8 @@ describe("clean_na_rows", {
       a = c(1, 2, 3, 4, 5)
     )
     result <- na_handling$clean_na_rows(
-      data, "a", meta_cols = c("sex", "site")
+      data, "a",
+      meta_cols = c("sex", "site")
     )
     expect_equal(result$rows_removed, 0)
     expect_equal(nrow(result$meta_na_summary), 2)
@@ -161,7 +166,8 @@ describe("clean_na_rows", {
       a = c(1, 2, 3)
     )
     result <- na_handling$clean_na_rows(
-      data, "a", meta_cols = "sex"
+      data, "a",
+      meta_cols = "sex"
     )
     expect_equal(result$rows_removed, 0)
     expect_equal(nrow(result$data), 3)

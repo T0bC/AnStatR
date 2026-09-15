@@ -30,7 +30,8 @@ tab_ui <- function(ns) {
         "Trim % ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Percentage trimmed from each end for",
@@ -53,7 +54,8 @@ tab_ui <- function(ns) {
         "Enable ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Univariate outlier detection - removes",
@@ -126,7 +128,8 @@ tab_ui <- function(ns) {
         "Normalize data ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Applies bestNormalize to measurement",
@@ -151,7 +154,8 @@ tab_ui <- function(ns) {
           "Threshold (%) ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Transform when more than this",
@@ -168,7 +172,8 @@ tab_ui <- function(ns) {
           "Show transformed values in plots ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "When enabled, plots display normalized",
@@ -208,36 +213,48 @@ tab_ui <- function(ns) {
 #' @export
 tab_server <- function(input, output, session, data_version) {
   # Reset inputs on new data
-  shiny$observeEvent(data_version(), {
-    shiny$updateSliderInput(
-      session, "trim_slider", value = 0
-    )
-    shiny$updateCheckboxInput(
-      session, "enableOutlierDetection", value = FALSE
-    )
-    shiny$updateRadioButtons(
-      session, "detectOutlier", selected = "IQR"
-    )
-    shiny$updateSliderInput(
-      session, "standardFactor", value = 1.5
-    )
-    shiny$updateSliderInput(
-      session, "probabilityFactor", value = 0.05
-    )
-    shiny$updateNumericInput(
-      session, "bootstrapSamples", value = 1000
-    )
-    shiny$updateCheckboxInput(
-      session, "enableNormalize", value = FALSE
-    )
-    shiny$updateSliderInput(
-      session, "normalizeThreshold", value = 50
-    )
-    shiny$updateCheckboxInput(
-      session, "showTransformed", value = FALSE
-    )
-    rhino$log$info("Plotting processing: reset for new data")
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      shiny$updateSliderInput(
+        session, "trim_slider",
+        value = 0
+      )
+      shiny$updateCheckboxInput(
+        session, "enableOutlierDetection",
+        value = FALSE
+      )
+      shiny$updateRadioButtons(
+        session, "detectOutlier",
+        selected = "IQR"
+      )
+      shiny$updateSliderInput(
+        session, "standardFactor",
+        value = 1.5
+      )
+      shiny$updateSliderInput(
+        session, "probabilityFactor",
+        value = 0.05
+      )
+      shiny$updateNumericInput(
+        session, "bootstrapSamples",
+        value = 1000
+      )
+      shiny$updateCheckboxInput(
+        session, "enableNormalize",
+        value = FALSE
+      )
+      shiny$updateSliderInput(
+        session, "normalizeThreshold",
+        value = 50
+      )
+      shiny$updateCheckboxInput(
+        session, "showTransformed",
+        value = FALSE
+      )
+      rhino$log$info("Plotting processing: reset for new data")
+    },
+    ignoreInit = TRUE
+  )
 }
 
 # --- Helper: outlier method radio buttons with tooltips ---

@@ -1,13 +1,19 @@
 box::use(
   testthat[
-    describe, expect_equal, expect_false, expect_null,
-    expect_true, it
+    describe,
+    expect_equal,
+    expect_false,
+    expect_null,
+    expect_true,
+    it
   ],
 )
 
 box::use(
   app/view/shared/tuning_controls[
-    check_cv_settings, estimate_cv_runtime, parse_keepx_grid
+    check_cv_settings,
+    estimate_cv_runtime,
+    parse_keepx_grid
   ],
 )
 

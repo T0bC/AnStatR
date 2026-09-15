@@ -1,7 +1,3 @@
-box::use(
-  rhino,
-)
-
 # =============================================================================
 # Shared derived-statistics helpers for PCA / sPCA results
 # No Shiny dependencies allowed in this file.
@@ -31,7 +27,7 @@ box::use(
 #' @export
 compute_var_coord <- function(loadings, scores) {
   n <- nrow(scores)
-  sdev <- sqrt(colSums(scores^2) / (n - 1))
+  sdev <- sqrt(colSums(scores ^ 2) / (n - 1))
   sweep(loadings, 2, sdev, FUN = "*")
 }
 
@@ -46,7 +42,7 @@ compute_var_coord <- function(loadings, scores) {
 #' @export
 compute_var_contrib <- function(loadings) {
   ncomp <- ncol(loadings)
-  sweep(loadings^2, 2, rep(100, ncomp), FUN = "*")
+  sweep(loadings ^ 2, 2, rep(100, ncomp), FUN = "*")
 }
 
 #' Variable cos2 (squared coordinates, quality of representation)
@@ -55,7 +51,7 @@ compute_var_contrib <- function(loadings) {
 #' @return Matrix, variables x components
 #' @export
 compute_var_cos2 <- function(var_coord) {
-  var_coord^2
+  var_coord ^ 2
 }
 
 #' Individual (sample) contributions per component
@@ -71,7 +67,8 @@ compute_var_cos2 <- function(var_coord) {
 #' @export
 compute_ind_contrib <- function(scores) {
   sweep(
-    scores^2, 2, colSums(scores^2), FUN = "/"
+    scores ^ 2, 2, colSums(scores ^ 2),
+    FUN = "/"
   ) * 100
 }
 
@@ -85,7 +82,7 @@ compute_ind_contrib <- function(scores) {
 #' @return Matrix, samples x ncol(scores_display)
 #' @export
 compute_ind_cos2 <- function(scores, scores_display) {
-  total_dist2 <- rowSums(scores^2)
+  total_dist2 <- rowSums(scores ^ 2)
   total_dist2[total_dist2 == 0] <- 1
-  sweep(scores_display^2, 1, total_dist2, FUN = "/")
+  sweep(scores_display ^ 2, 1, total_dist2, FUN = "/")
 }

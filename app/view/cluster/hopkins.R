@@ -3,8 +3,6 @@ box::use(
 )
 
 box::use(
-  app/logic/cluster/hopkins[compute_hopkins],
-  app/logic/shared/error_handling,
   app/view/shared/error_display,
 )
 
@@ -23,16 +21,17 @@ box::use(
 #' @export
 render_output <- function(input, output, session,
                           hopkins_result) {
-  ns <- session$ns
-
   output$hopkins_panel <- shiny$renderUI({
     result <- hopkins_result()
-    if (is.null(result)) return(NULL)
+    if (is.null(result)) {
+      return(NULL)
+    }
 
     if (!result$success) {
       return(
         error_display$error_alert_structured(
-          result$error, type = "danger"
+          result$error,
+          type = "danger"
         )
       )
     }
@@ -51,8 +50,7 @@ render_hopkins_card <- function(res) {
   interp <- res$interpretation
   warnings <- res$warnings
 
-  badge_class <- switch(
-    interp$level,
+  badge_class <- switch(interp$level,
     success = "bg-success",
     warning = "bg-warning text-dark",
     danger  = "bg-danger",

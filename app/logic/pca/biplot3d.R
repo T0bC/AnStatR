@@ -5,8 +5,8 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/pca_stats[compute_var_coord],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -39,7 +39,8 @@ create_biplot3d <- function(pca_result,
     dim_y = dim_y,
     dim_z = dim_z,
     group_cols = paste(
-      group_cols %||% "none", collapse = ", "
+      group_cols %||% "none",
+      collapse = ", "
     )
   )
 
@@ -87,9 +88,9 @@ create_biplot3d <- function(pca_result,
       fig <- fig |>
         plotly$add_trace(
           data = ind_data,
-          x = ~get(dim_x),
-          y = ~get(dim_y),
-          z = ~get(dim_z),
+          x = ~ get(dim_x),
+          y = ~ get(dim_y),
+          z = ~ get(dim_z),
           type = "scatter3d",
           mode = "markers",
           opacity = 0.8,
@@ -179,7 +180,8 @@ biplot3d_error_parser <- function(error_msg,
                                     "3D Biplot") {
   if (grepl(
     "at least 3",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -188,7 +190,8 @@ biplot3d_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "dimension|dim_|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -197,7 +200,8 @@ biplot3d_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "NULL|missing|pca_result",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -253,8 +257,8 @@ build_ind_data <- function(pca_result, dims,
 
   # Group column
   if (!is.null(group_cols) &&
-      length(group_cols) > 0 &&
-      !is.null(meta)) {
+    length(group_cols) > 0 &&
+    !is.null(meta)) {
     valid_cols <- intersect(group_cols, names(meta))
     if (length(valid_cols) == 1) {
       df$group <- as.factor(meta[[valid_cols]])
@@ -290,10 +294,12 @@ build_var_data <- function(pca_result, dims,
 
   # Scale: max_ind / max_var so arrows fit the data
   max_ind <- max(
-    abs(unlist(ind_data[, dims])), na.rm = TRUE
+    abs(unlist(ind_data[, dims])),
+    na.rm = TRUE
   )
   max_var <- max(
-    abs(unlist(df)), na.rm = TRUE
+    abs(unlist(df)),
+    na.rm = TRUE
   )
   if (max_var > 0) {
     scale_factor <- max_ind / max_var
@@ -311,8 +317,10 @@ compute_axis_ranges <- function(ind_data, var_data,
     all_vals <- c(ind_data[[d]], var_data[[d]], 0)
     r <- range(all_vals, na.rm = TRUE)
     span <- r[2] - r[1]
-    c(min = r[1] - span * buffer,
-      max = r[2] + span * buffer)
+    c(
+      min = r[1] - span * buffer,
+      max = r[2] + span * buffer
+    )
   })
   names(ranges) <- dims
   ranges
@@ -323,8 +331,8 @@ build_hover_text <- function(pca_result, ind_data,
                              dims) {
   meta <- pca_result$ind_meta
   meta_cols <- if (!is.null(meta) &&
-      !("Row" %in% names(meta) &&
-        ncol(meta) == 1)) {
+    !("Row" %in% names(meta) &&
+      ncol(meta) == 1)) {
     names(meta)
   } else {
     character(0)

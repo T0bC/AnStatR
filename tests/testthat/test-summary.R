@@ -15,9 +15,9 @@ impl <- attr(summary, "namespace")
 make_test_data <- function() {
   data.frame(
     SPECIES = rep(c("A", "B"), each = 10),
-    SITE    = rep(c("X", "Y"), times = 10),
-    Asfc    = c(rnorm(10, 5, 1), rnorm(10, 8, 2)),
-    epLsar  = c(rnorm(10, 0.01, 0.002), rnorm(10, 0.02, 0.003)),
+    SITE = rep(c("X", "Y"), times = 10),
+    Asfc = c(rnorm(10, 5, 1), rnorm(10, 8, 2)),
+    epLsar = c(rnorm(10, 0.01, 0.002), rnorm(10, 0.02, 0.003)),
     stringsAsFactors = FALSE
   )
 }
@@ -25,7 +25,7 @@ make_test_data <- function() {
 make_flagged_data <- function() {
   df <- data.frame(
     SPECIES = rep("A", 10),
-    Asfc    = 1:10,
+    Asfc = 1:10,
     Asfc_outlier = c(rep(FALSE, 8), TRUE, TRUE),
     Asfc_trimmed = c(rep(FALSE, 7), TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
@@ -152,7 +152,8 @@ describe("summarize_data", {
   it("includes shapiro columns when requested", {
     data <- make_test_data()
     result <- summary$summarize_data(
-      data, "SPECIES", c("Asfc"), shapiro_test = TRUE
+      data, "SPECIES", c("Asfc"),
+      shapiro_test = TRUE
     )
     expect_true("shapiro_p" %in% names(result))
     expect_true("normal" %in% names(result))

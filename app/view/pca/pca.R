@@ -9,35 +9,38 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/correlation_plot[compute_correlation_data],
   app/logic/pca/kmo[calculate_kmo, kmo_badge_class, kmo_interpretation],
-  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/optimal_components[calculate_optimal_components],
   app/logic/pca/pca[
-    validate_inputs, run_pca, extract_variance_explained
+    extract_variance_explained,
+    run_pca,
+    validate_inputs
   ],
+  app/logic/pca/pca_export[create_pca_bundle, create_pca_excel],
   app/logic/pca/scaling[residualize_data],
   app/logic/pca/tune_plot[create_tune_spca_plot],
-  app/logic/pca/pca_export[create_pca_excel, create_pca_bundle],
+  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
-    detect_skewness, transform_skewed
+    detect_skewness,
+    transform_skewed
   ],
+  app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/shared/error_display,
   app/view/pca/analysis_settings,
   app/view/pca/biplot,
   app/view/pca/biplot3d,
   app/view/pca/correlation_plot[render_output],
+  app/view/pca/data_selection,
   app/view/pca/eigencorplot,
   app/view/pca/ind_contrib,
-  app/view/pca/var_contrib_jitter,
-  app/view/pca/data_selection,
   app/view/pca/kmo_results,
-  app/view/shared/preprocessing_summary,
   app/view/pca/optimal_components,
   app/view/pca/pca_results,
   app/view/pca/plotting_controls,
+  app/view/pca/var_contrib_jitter,
+  app/view/shared/error_display,
+  app/view/shared/preprocessing_summary,
 )
 
 #' @export
@@ -82,19 +85,22 @@ server <- function(id, input_data, data_version,
     bundle_data <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
-    shiny$observeEvent(data_version(), {
-      result(NULL)
-      last_error(NULL)
-      correlation_result(NULL)
-      kmo_result(NULL)
-      optimal_result(NULL)
-      pca_result(NULL)
-      na_info(NULL)
-      transform_info(NULL)
-      skewness_info(NULL)
-      bundle_data(NULL)
-      rhino$log$info("PCA: state reset for new data")
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        result(NULL)
+        last_error(NULL)
+        correlation_result(NULL)
+        kmo_result(NULL)
+        optimal_result(NULL)
+        pca_result(NULL)
+        na_info(NULL)
+        transform_info(NULL)
+        skewness_info(NULL)
+        bundle_data(NULL)
+        rhino$log$info("PCA: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
 
     # Delegate to sub-module servers
     data_selection$tab_server(
@@ -254,8 +260,8 @@ server <- function(id, input_data, data_version,
       # Residualize by a confound column, before scaling
       residualize_col <- input$residualizeCol
       if (!is.null(residualize_col) &&
-          length(residualize_col) > 0 &&
-          nzchar(residualize_col)) {
+        length(residualize_col) > 0 &&
+        nzchar(residualize_col)) {
         rhino$log$info(
           "PCA: residualizing by '{residualize_col}'"
         )
@@ -300,7 +306,8 @@ server <- function(id, input_data, data_version,
         " ({length(measure_cols)} columns)"
       )
       numeric_subset <- analysis_data[
-        , measure_cols, drop = FALSE
+        , measure_cols,
+        drop = FALSE
       ]
       kmo_res <- calculate_kmo(numeric_subset)
       kmo_result(kmo_res)
@@ -313,15 +320,15 @@ server <- function(id, input_data, data_version,
       is_scaled <- !is.null(scale_method) &&
         scale_method == "scale_center"
       opt_res <- calculate_optimal_components(
-        numeric_subset, scale = is_scaled
+        numeric_subset,
+        scale = is_scaled
       )
       optimal_result(opt_res)
 
       # Run PCA / sPCA / IPCA depending on the Analysis
       # Settings tab's selection
       analysis_type <- input$analysis_type %||% "pca"
-      ncp <- switch(
-        analysis_type,
+      ncp <- switch(analysis_type,
         spca = input$spca_ncomp %||% 2,
         ipca = input$ipca_ncomp %||% 2,
         NULL
@@ -375,7 +382,7 @@ server <- function(id, input_data, data_version,
         tf_info <- transform_info()
         t_params <- if (
           !is.null(tf_info) &&
-          !is.null(tf_info$transform_params)
+            !is.null(tf_info$transform_params)
         ) {
           tf_info$transform_params
         } else {
@@ -410,8 +417,8 @@ server <- function(id, input_data, data_version,
           # choice AND not already claimed by an earlier axis,
           # so dimX/dimY/dimZ never collide on the same value.
           sel <- if (!is.null(current) &&
-                     current %in% dim_choices &&
-                     !(current %in% used)) {
+            current %in% dim_choices &&
+            !(current %in% used)) {
             current
           } else {
             remaining <- setdiff(dim_choices, used)
@@ -435,8 +442,8 @@ server <- function(id, input_data, data_version,
         # Update GroupBiplot choices from metadata
         meta <- pca_res$result$ind_meta
         if (!is.null(meta) &&
-            !("Row" %in% names(meta) &&
-              ncol(meta) == 1)) {
+          !("Row" %in% names(meta) &&
+            ncol(meta) == 1)) {
           shiny$updateSelectizeInput(
             session, "GroupBiplot",
             choices = names(meta),
@@ -455,7 +462,8 @@ server <- function(id, input_data, data_version,
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -503,7 +511,7 @@ server <- function(id, input_data, data_version,
       # Skewness warning (when normalization disabled but skewed cols exist)
       skew_warning <- if (
         !isTRUE(input$correct_skewness) &&
-        !is.null(skewness_info())
+          !is.null(skewness_info())
       ) {
         preprocessing_summary$render_skewness_warning(
           skewness_info(),
@@ -516,11 +524,13 @@ server <- function(id, input_data, data_version,
         !is.null(corr_res) && !corr_res$success
       ) {
         error_display$error_alert_structured(
-          corr_res$error, type = "danger"
+          corr_res$error,
+          type = "danger"
         )
       } else {
         ggiraph$girafeOutput(
-          ns("correlation_plot"), height = "500px"
+          ns("correlation_plot"),
+          height = "500px"
         )
       }
 
@@ -530,7 +540,8 @@ server <- function(id, input_data, data_version,
         !is.null(kmo_res) && !kmo_res$success
       ) {
         error_display$error_alert_structured(
-          kmo_res$error, type = "danger"
+          kmo_res$error,
+          type = "danger"
         )
       } else if (!is.null(kmo_res)) {
         kmo_results$render_kmo_results(kmo_res$result)
@@ -545,7 +556,8 @@ server <- function(id, input_data, data_version,
           overall <- kmo_res$result$overall
           shiny$tags$span(
             bsicons$bs_icon(
-              "speedometer2", class = "me-1"
+              "speedometer2",
+              class = "me-1"
             ),
             "KMO Measure",
             shiny$tags$span(class = "mx-1", "\u2014"),
@@ -563,7 +575,8 @@ server <- function(id, input_data, data_version,
         } else {
           shiny$tags$span(
             bsicons$bs_icon(
-              "speedometer2", class = "me-1"
+              "speedometer2",
+              class = "me-1"
             ),
             "KMO Measure"
           )
@@ -581,7 +594,8 @@ server <- function(id, input_data, data_version,
         !is.null(opt_res) && !opt_res$success
       ) {
         error_display$error_alert_structured(
-          opt_res$error, type = "danger"
+          opt_res$error,
+          type = "danger"
         )
       } else if (!is.null(opt_res)) {
         optimal_components$render_optimal_components(
@@ -596,11 +610,12 @@ server <- function(id, input_data, data_version,
       opt_panel <- if (!is.null(opt_content)) {
         opt_title <- if (
           !is.null(opt_res) && isTRUE(opt_res$success) &&
-          !is.null(opt_res$result$summary$median_ncp)
+            !is.null(opt_res$result$summary$median_ncp)
         ) {
           shiny$tags$span(
             bsicons$bs_icon(
-              "sliders", class = "me-1"
+              "sliders",
+              class = "me-1"
             ),
             "Optimal Number of Components",
             shiny$tags$span(class = "mx-1", "\u2014"),
@@ -612,7 +627,8 @@ server <- function(id, input_data, data_version,
         } else {
           shiny$tags$span(
             bsicons$bs_icon(
-              "sliders", class = "me-1"
+              "sliders",
+              class = "me-1"
             ),
             "Optimal Number of Components"
           )
@@ -636,7 +652,8 @@ server <- function(id, input_data, data_version,
         !is.null(pca_res) && !pca_res$success
       ) {
         error_display$error_alert_structured(
-          pca_res$error, type = "danger"
+          pca_res$error,
+          type = "danger"
         )
       } else if (
         !is.null(pca_res) && pca_res$success
@@ -653,7 +670,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "bar-chart-line", class = "me-1"
+              "bar-chart-line",
+              class = "me-1"
             ),
             "PCA Results"
           ),
@@ -667,7 +685,8 @@ server <- function(id, input_data, data_version,
         !is.null(pca_res) && isTRUE(pca_res$success)
       ) {
         ggiraph$girafeOutput(
-          ns("biplot"), height = "500px"
+          ns("biplot"),
+          height = "500px"
         )
       }
 
@@ -675,7 +694,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "diagram-2", class = "me-1"
+              "diagram-2",
+              class = "me-1"
             ),
             "Biplot"
           ),
@@ -691,15 +711,17 @@ server <- function(id, input_data, data_version,
         error_handling$is_app_error(biplot3d_err)
       ) {
         error_display$error_alert_structured(
-          biplot3d_err, type = "danger"
+          biplot3d_err,
+          type = "danger"
         )
       } else if (
         !is.null(pca_res) &&
-        isTRUE(pca_res$success) &&
-        ncol(pca_res$result$loadings) >= 3
+          isTRUE(pca_res$success) &&
+          ncol(pca_res$result$loadings) >= 3
       ) {
         plotly$plotlyOutput(
-          ns("biplot3d"), height = "600px"
+          ns("biplot3d"),
+          height = "600px"
         )
       }
 
@@ -709,7 +731,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "badge-3d", class = "me-1"
+              "badge-3d",
+              class = "me-1"
             ),
             "3D Biplot"
           ),
@@ -726,7 +749,8 @@ server <- function(id, input_data, data_version,
       not_applicable_ipca <- shiny$tags$div(
         class = "alert alert-secondary mb-2 py-2",
         bsicons$bs_icon(
-          "info-circle-fill", class = "me-2"
+          "info-circle-fill",
+          class = "me-2"
         ),
         paste(
           "Contribution % and cos2 are not applicable to",
@@ -743,7 +767,8 @@ server <- function(id, input_data, data_version,
       ) {
         shiny$tagList(
           ggiraph$girafeOutput(
-            ns("var_contrib_jitter"), height = "auto"
+            ns("var_contrib_jitter"),
+            height = "auto"
           ),
           shiny$uiOutput(ns("var_contrib_jitter_caption"))
         )
@@ -755,7 +780,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "diagram-3", class = "me-1"
+              "diagram-3",
+              class = "me-1"
             ),
             "Variable Contributions"
           ),
@@ -780,7 +806,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "people-fill", class = "me-1"
+              "people-fill",
+              class = "me-1"
             ),
             "Individual Contributions"
           ),
@@ -803,8 +830,8 @@ server <- function(id, input_data, data_version,
 
       eigencor_content <- if (
         !is.null(pca_res) &&
-        isTRUE(pca_res$success) &&
-        has_real_meta
+          isTRUE(pca_res$success) &&
+          has_real_meta
       ) {
         shiny$uiOutput(ns("eigencorplot_container"))
       }
@@ -815,7 +842,8 @@ server <- function(id, input_data, data_version,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "grid-1x2-fill", class = "me-1"
+              "grid-1x2-fill",
+              class = "me-1"
             ),
             "Dimension\u2013Metadata Correlation"
           ),
@@ -830,8 +858,8 @@ server <- function(id, input_data, data_version,
       tune_details <- analysis_settings_state$tune_details()
       tune_panel <- if (
         !is.null(tune_details) &&
-        !is.null(tune_details$cor_comp) &&
-        identical(input$analysis_type, "spca")
+          !is.null(tune_details$cor_comp) &&
+          identical(input$analysis_type, "spca")
       ) {
         bslib$accordion_panel(
           title = shiny$tags$span(
@@ -840,7 +868,8 @@ server <- function(id, input_data, data_version,
           ),
           value = "tune_panel",
           ggiraph$girafeOutput(
-            ns("tune_spca_plot"), height = "400px"
+            ns("tune_spca_plot"),
+            height = "400px"
           ),
           render_tune_settings_note(tune_details$settings)
         )
@@ -856,7 +885,8 @@ server <- function(id, input_data, data_version,
           bslib$accordion_panel(
             title = shiny$tags$span(
               bsicons$bs_icon(
-                "grid-3x3", class = "me-1"
+                "grid-3x3",
+                class = "me-1"
               ),
               "Correlation Matrix"
             ),
@@ -893,8 +923,12 @@ server <- function(id, input_data, data_version,
     # Render optimal components scree plot
     output$optimal_scree_plot <- ggiraph$renderGirafe({
       opt_res <- optimal_result()
-      if (is.null(opt_res)) return(NULL)
-      if (!opt_res$success) return(NULL)
+      if (is.null(opt_res)) {
+        return(NULL)
+      }
+      if (!opt_res$success) {
+        return(NULL)
+      }
       optimal_components$render_scree_girafe(
         opt_res$result
       )
@@ -964,7 +998,9 @@ server <- function(id, input_data, data_version,
 #' @param settings List with $folds, $repeats, $grid, or NULL
 #' @return Shiny tag, or NULL
 render_tune_settings_note <- function(settings) {
-  if (is.null(settings)) return(NULL)
+  if (is.null(settings)) {
+    return(NULL)
+  }
   shiny$tags$small(
     class = "text-muted d-block mt-2",
     paste0(
@@ -997,7 +1033,7 @@ compute_display_ncp <- function(opt_res, pca_res) {
   # Get median recommendation from optimal result
   recommended <- if (
     !is.null(opt_res) && isTRUE(opt_res$success) &&
-    !is.null(opt_res$result$summary$median_ncp)
+      !is.null(opt_res$result$summary$median_ncp)
   ) {
     opt_res$result$summary$median_ncp
   } else {
@@ -1068,7 +1104,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "svg",
+          file,
+          plot = p, device = "svg",
           width = w, height = h, units = "cm"
         )
         rhino$log$info(
@@ -1088,7 +1125,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "png",
+          file,
+          plot = p, device = "png",
           width = w, height = h,
           units = "cm", dpi = 600
         )

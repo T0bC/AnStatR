@@ -40,8 +40,8 @@ normalize_columns <- function(data, measure_cols, normality_results,
                               outlier_col_suffix = "_outlier",
                               trimmed_col_suffix = "_trimmed") {
   transform_info <- data.frame(
-    column        = character(0),
-    method        = character(0),
+    column = character(0),
+    method = character(0),
     n_transformed = integer(0),
     stringsAsFactors = FALSE
   )
@@ -102,8 +102,8 @@ normalize_columns <- function(data, measure_cols, normality_results,
     )
 
     transform_info <- rbind(transform_info, data.frame(
-      column        = col,
-      method        = method_name,
+      column = col,
+      method = method_name,
       n_transformed = length(clean_values),
       stringsAsFactors = FALSE
     ))
@@ -127,7 +127,9 @@ get_transform_label <- function(transform_info, col) {
     return(NULL)
   }
   row <- transform_info[transform_info$column == col, ]
-  if (nrow(row) == 0) return(NULL)
+  if (nrow(row) == 0) {
+    return(NULL)
+  }
   row$method[1]
 }
 
@@ -142,8 +144,10 @@ get_transform_label <- function(transform_info, col) {
 #' @return Logical
 needs_transformation <- function(normality_df, threshold) {
   valid <- normality_df[!is.na(normality_df$normal) &
-                          normality_df$normal != "identical values", ]
-  if (nrow(valid) == 0) return(FALSE)
+    normality_df$normal != "identical values", ]
+  if (nrow(valid) == 0) {
+    return(FALSE)
+  }
   n_non_normal <- sum(valid$normal == "no")
   proportion <- n_non_normal / nrow(valid)
   proportion > threshold

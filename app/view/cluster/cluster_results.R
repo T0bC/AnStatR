@@ -1,6 +1,6 @@
 box::use(
-  bsicons,
   DT,
+  bsicons,
   shiny,
 )
 
@@ -50,10 +50,9 @@ render_cluster_results <- function(cluster_result, ns,
 # =============================================================================
 
 render_summary_banner <- function(res) {
-  algo_label <- switch(
-    res$details$variant,
+  algo_label <- switch(res$details$variant,
     kmeans = "K-Means",
-    pam    = "K-Means (PAM)",
+    pam = "K-Means (PAM)",
     hclust = paste0(
       "Hierarchical (",
       format_method_label(res$details$method),
@@ -120,7 +119,8 @@ render_cluster_sizes <- function(res) {
       shiny$tags$span(
         class = "text-warning",
         bsicons$bs_icon(
-          "exclamation-triangle", class = "me-1"
+          "exclamation-triangle",
+          class = "me-1"
         ),
         "Noise"
       )
@@ -191,8 +191,7 @@ render_algorithm_details <- function(res) {
   shared_items <- render_shared_quality_metrics(d)
 
   # Algorithm-specific extras
-  extra_items <- switch(
-    d$variant,
+  extra_items <- switch(d$variant,
     kmeans = NULL,
     pam    = render_pam_extras(d),
     hclust = render_hclust_extras(d),
@@ -217,7 +216,7 @@ render_shared_quality_metrics <- function(d) {
   # Silhouette
   if (
     !is.null(d$silhouette_avg) &&
-    !is.na(d$silhouette_avg)
+      !is.na(d$silhouette_avg)
   ) {
     sil_val <- round(d$silhouette_avg, 4)
     sil_interp <- interpret_silhouette(sil_val)
@@ -293,13 +292,16 @@ render_pam_extras <- function(d) {
       detail_row(
         "Objective (build, swap)",
         paste(
-          round(d$objective, 2), collapse = ", "
+          round(d$objective, 2),
+          collapse = ", "
         ),
         "PAM optimization objective values."
       )
     ))
   }
-  if (length(items) == 0) return(NULL)
+  if (length(items) == 0) {
+    return(NULL)
+  }
 
   # Medoids table
   medoids_ui <- NULL
@@ -477,7 +479,9 @@ render_dbscan_extras <- function(d) {
       )
     ))
   }
-  if (length(items) == 0) return(NULL)
+  if (length(items) == 0) {
+    return(NULL)
+  }
 
   shiny$tags$div(
     class = "mt-3",
@@ -499,7 +503,9 @@ detail_row <- function(label, value, description) {
 }
 
 render_detail_card <- function(items) {
-  if (length(items) == 0) return(NULL)
+  if (length(items) == 0) {
+    return(NULL)
+  }
 
   rows <- lapply(items, function(item) {
     desc_td <- if (!is.null(item$description)) {
@@ -531,7 +537,9 @@ render_detail_card <- function(items) {
 }
 
 render_cluster_profile <- function(cs) {
-  if (is.null(cs)) return(NULL)
+  if (is.null(cs)) {
+    return(NULL)
+  }
 
   means_df <- as.data.frame(round(cs$means, 3))
   col_names <- colnames(cs$means)
@@ -660,7 +668,9 @@ render_membership_placeholder <- function(ns) {
 #' @return DT datatable object
 #' @export
 render_membership_dt <- function(md) {
-  if (is.null(md)) return(NULL)
+  if (is.null(md)) {
+    return(NULL)
+  }
 
   display_df <- md
 
@@ -679,9 +689,6 @@ render_membership_dt <- function(md) {
   display_df$Cluster <- cluster_badge_html(
     cluster_vals
   )
-
-  n_rows <- nrow(display_df)
-  n_cols <- ncol(display_df)
 
   # Find index of numeric columns (0-based for DT)
   num_targets <- which(num_cols) - 1L
@@ -729,7 +736,8 @@ render_download_section <- function(ns,
         target = "_blank",
         download = NA,
         bsicons$bs_icon(
-          "file-earmark-code", class = "me-1"
+          "file-earmark-code",
+          class = "me-1"
         ),
         "Download RDS (for Prediction)"
       ),
@@ -757,7 +765,8 @@ render_download_section <- function(ns,
         ns("cluster_dl_excel"),
         label = shiny$tags$span(
           bsicons$bs_icon(
-            "file-earmark-excel", class = "me-1"
+            "file-earmark-excel",
+            class = "me-1"
           ),
           "Download Excel"
         ),
@@ -823,15 +832,14 @@ cluster_badge_tag <- function(cluster_id) {
 }
 
 format_method_label <- function(method) {
-  switch(
-    method,
+  switch(method,
     "ward.D2" = "Ward's D2",
-    "ward.D"  = "Ward's D",
-    "single"  = "Single Linkage",
+    "ward.D" = "Ward's D",
+    "single" = "Single Linkage",
     "complete" = "Complete Linkage",
     "average" = "Average (UPGMA)",
     "mcquitty" = "McQuitty (WPGMA)",
-    "median"  = "Median (WPGMC)",
+    "median" = "Median (WPGMC)",
     "centroid" = "Centroid (UPGMC)",
     method
   )

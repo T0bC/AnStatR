@@ -1,6 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -48,7 +53,8 @@ describe("create_biplot", {
 
   it("returns a ggplot for layer = 'individuals'", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals"
+      pca_res,
+      layer = "individuals"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
@@ -56,7 +62,8 @@ describe("create_biplot", {
 
   it("returns a ggplot for layer = 'variables'", {
     res <- biplot$create_biplot(
-      pca_res, layer = "variables"
+      pca_res,
+      layer = "variables"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
@@ -64,7 +71,8 @@ describe("create_biplot", {
 
   it("returns a ggplot for layer = 'combined'", {
     res <- biplot$create_biplot(
-      pca_res, layer = "combined"
+      pca_res,
+      layer = "combined"
     )
     expect_true(res$success)
     expect_true(inherits(res$result, "ggplot"))
@@ -80,7 +88,8 @@ describe("create_biplot with grouping", {
 
   it("handles group_cols for individuals layer", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = "group"
     )
     expect_true(res$success)
@@ -89,7 +98,8 @@ describe("create_biplot with grouping", {
 
   it("handles group_cols for combined layer", {
     res <- biplot$create_biplot(
-      pca_res, layer = "combined",
+      pca_res,
+      layer = "combined",
       group_cols = "group"
     )
     expect_true(res$success)
@@ -98,7 +108,8 @@ describe("create_biplot with grouping", {
 
   it("handles missing group_cols gracefully", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = NULL
     )
     expect_true(res$success)
@@ -107,7 +118,8 @@ describe("create_biplot with grouping", {
 
   it("handles non-existent group_cols gracefully", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = "nonexistent"
     )
     expect_true(res$success)
@@ -124,7 +136,8 @@ describe("create_biplot hull/ellipse toggle", {
 
   it("renders with convex hull when toggled", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = "group",
       show_convex_hull = TRUE
     )
@@ -134,7 +147,8 @@ describe("create_biplot hull/ellipse toggle", {
 
   it("renders with ellipse (default)", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = "group",
       show_convex_hull = FALSE
     )
@@ -152,7 +166,8 @@ describe("create_biplot contribution mapping", {
 
   it("maps alpha to contribution", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       point_alpha = "Contribution",
       point_size = 3
     )
@@ -162,7 +177,8 @@ describe("create_biplot contribution mapping", {
 
   it("maps size to contribution", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       point_alpha = 0.7,
       point_size = "Contribution"
     )
@@ -172,7 +188,8 @@ describe("create_biplot contribution mapping", {
 
   it("uses fixed alpha and size", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       point_alpha = 0.5,
       point_size = 4
     )
@@ -192,7 +209,8 @@ describe("create_biplot with multi-column grouping", {
 
   it("combines two group columns via interaction", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = c("group", "treatment")
     )
     expect_true(res$success)
@@ -201,7 +219,8 @@ describe("create_biplot with multi-column grouping", {
 
   it("combined mode with multi-column grouping", {
     res <- biplot$create_biplot(
-      pca_res, layer = "combined",
+      pca_res,
+      layer = "combined",
       group_cols = c("group", "treatment")
     )
     expect_true(res$success)
@@ -210,7 +229,8 @@ describe("create_biplot with multi-column grouping", {
 
   it("convex hull with multi-column grouping", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = c("group", "treatment"),
       show_convex_hull = TRUE
     )
@@ -220,7 +240,8 @@ describe("create_biplot with multi-column grouping", {
 
   it("ignores invalid columns in multi-select", {
     res <- biplot$create_biplot(
-      pca_res, layer = "individuals",
+      pca_res,
+      layer = "individuals",
       group_cols = c("group", "nonexistent")
     )
     expect_true(res$success)
@@ -237,7 +258,8 @@ describe("create_biplot error cases", {
 
   it("returns error for NULL pca_result", {
     res <- biplot$create_biplot(
-      NULL, layer = "individuals"
+      NULL,
+      layer = "individuals"
     )
     expect_false(res$success)
     expect_true(res$error$is_error)
@@ -245,7 +267,8 @@ describe("create_biplot error cases", {
 
   it("returns error for invalid dimension name", {
     res <- biplot$create_biplot(
-      pca_res, dim_x = "Dim.99", layer = "individuals"
+      pca_res,
+      dim_x = "Dim.99", layer = "individuals"
     )
     expect_false(res$success)
     expect_true(res$error$is_error)
@@ -253,7 +276,8 @@ describe("create_biplot error cases", {
 
   it("returns error for invalid layer", {
     res <- biplot$create_biplot(
-      pca_res, layer = "invalid_layer"
+      pca_res,
+      layer = "invalid_layer"
     )
     expect_false(res$success)
     expect_true(res$error$is_error)
@@ -269,7 +293,8 @@ describe("create_biplot title toggle", {
 
   it("includes title when show_title = TRUE", {
     res <- biplot$create_biplot(
-      pca_res, layer = "combined", show_title = TRUE
+      pca_res,
+      layer = "combined", show_title = TRUE
     )
     expect_true(res$success)
     expect_true(!is.null(res$result$labels$title))
@@ -277,7 +302,8 @@ describe("create_biplot title toggle", {
 
   it("omits title when show_title = FALSE", {
     res <- biplot$create_biplot(
-      pca_res, layer = "combined", show_title = FALSE
+      pca_res,
+      layer = "combined", show_title = FALSE
     )
     expect_true(res$success)
     expect_true(is.null(res$result$labels$title))

@@ -52,14 +52,15 @@ build_diagnostics_ui <- function(diag) {
     )
   detail_elements[[length(detail_elements) + 1]] <-
     build_residuals_line(
-      diag$residuals_raw, label_prefix = "Residuals"
+      diag$residuals_raw,
+      label_prefix = "Residuals"
     )
   detail_elements[[length(detail_elements) + 1]] <-
     build_levene_line(diag$levene_raw)
 
   # Post-transformation tables (if applicable)
   if (isTRUE(diag$has_normalized) &&
-      !is.null(diag$normality_post)) {
+    !is.null(diag$normality_post)) {
     label <- if (!is.null(diag$transform_label)) {
       paste0("After Transformation (", diag$transform_label, ")")
     } else {
@@ -71,7 +72,8 @@ build_diagnostics_ui <- function(diag) {
       build_shapiro_table(diag$normality_post, label)
     detail_elements[[length(detail_elements) + 1]] <-
       build_residuals_line(
-        diag$residuals_post, label_prefix = "Residuals"
+        diag$residuals_post,
+        label_prefix = "Residuals"
       )
     detail_elements[[length(detail_elements) + 1]] <-
       build_levene_line(diag$levene_post)
@@ -108,11 +110,11 @@ build_diagnostics_ui <- function(diag) {
 #' @return shiny tag
 build_comparison_banner <- function(diag) {
   n_bad_before <- diag$recommendation$n_non_normal
-  n_bad_after  <- diag$recommendation_post$n_non_normal
-  n_groups     <- diag$recommendation_post$n_groups
+  n_bad_after <- diag$recommendation_post$n_non_normal
+  n_groups <- diag$recommendation_post$n_groups
 
   resid_before <- diag$residuals_raw
-  resid_after  <- diag$residuals_post
+  resid_after <- diag$residuals_post
 
   resid_normal_before <- !is.na(resid_before$normal) &&
     resid_before$normal == "yes"
@@ -326,15 +328,18 @@ build_shapiro_table <- function(norm_df, title) {
     lapply(norm_df$normal, function(v) {
       if (is.na(v) || v == "identical values") {
         icon <- bsicons$bs_icon(
-          "dash-circle", class = "text-muted"
+          "dash-circle",
+          class = "text-muted"
         )
       } else if (v == "yes") {
         icon <- bsicons$bs_icon(
-          "check-circle-fill", class = "text-success"
+          "check-circle-fill",
+          class = "text-success"
         )
       } else {
         icon <- bsicons$bs_icon(
-          "x-circle-fill", class = "text-danger"
+          "x-circle-fill",
+          class = "text-danger"
         )
       }
       shiny$tags$td(class = "text-center px-2", icon)
@@ -376,11 +381,13 @@ build_levene_line <- function(levene) {
 
   icon <- if (levene$equal_variances == "yes") {
     bsicons$bs_icon(
-      "check-circle-fill", class = "text-success me-1"
+      "check-circle-fill",
+      class = "text-success me-1"
     )
   } else {
     bsicons$bs_icon(
-      "x-circle-fill", class = "text-danger me-1"
+      "x-circle-fill",
+      class = "text-danger me-1"
     )
   }
 
@@ -419,11 +426,13 @@ build_residuals_line <- function(resid_result,
 
   icon <- if (resid_result$normal == "yes") {
     bsicons$bs_icon(
-      "check-circle-fill", class = "text-success me-1"
+      "check-circle-fill",
+      class = "text-success me-1"
     )
   } else {
     bsicons$bs_icon(
-      "x-circle-fill", class = "text-danger me-1"
+      "x-circle-fill",
+      class = "text-danger me-1"
     )
   }
 

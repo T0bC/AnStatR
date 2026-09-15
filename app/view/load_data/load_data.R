@@ -1,8 +1,8 @@
 box::use(
+  DT,
+  DataExplorer,
   bsicons,
   bslib,
-  DataExplorer,
-  DT,
   ggplot2,
   rhino,
   shiny,
@@ -10,10 +10,10 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/column_utils,
-  app/logic/shared/error_handling,
   app/logic/load_data/example_data,
   app/logic/load_data/load_data,
+  app/logic/shared/column_utils,
+  app/logic/shared/error_handling,
   app/view/components/column_validation_modal,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
@@ -374,8 +374,12 @@ server <- function(id) {
 
     # Return for downstream modules
     list(
-      data = shiny$reactive({ loaded_data() }),
-      version = shiny$reactive({ data_version() })
+      data = shiny$reactive({
+        loaded_data()
+      }),
+      version = shiny$reactive({
+        data_version()
+      })
     )
   })
 }

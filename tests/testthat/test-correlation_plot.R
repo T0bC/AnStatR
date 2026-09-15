@@ -1,6 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -78,7 +83,8 @@ describe("compute_correlation_data", {
     )
     expect_false(result$success)
     expect_true(grepl(
-      "numeric", result$error$message, ignore.case = TRUE
+      "numeric", result$error$message,
+      ignore.case = TRUE
     ))
   })
 
@@ -89,7 +95,8 @@ describe("compute_correlation_data", {
     )
     expect_false(result$success)
     expect_true(grepl(
-      "constant", result$error$message, ignore.case = TRUE
+      "constant", result$error$message,
+      ignore.case = TRUE
     ))
   })
 
@@ -213,7 +220,8 @@ describe("validate_correlation_inputs", {
 describe("cor_matrix_to_long", {
   it("converts matrix to long format correctly", {
     mat <- matrix(
-      c(1, 0.5, 0.5, 1), nrow = 2,
+      c(1, 0.5, 0.5, 1),
+      nrow = 2,
       dimnames = list(c("a", "b"), c("a", "b"))
     )
     result <- impl$cor_matrix_to_long(mat, c("a", "b"))

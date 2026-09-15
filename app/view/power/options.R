@@ -54,10 +54,14 @@ tab_server <- function(input, output, session,
   # --- Get observed N from effect params (import mode) ---
   observed_n <- shiny$reactive({
     mode <- current_mode()
-    if (mode != "import") return(NULL)
+    if (mode != "import") {
+      return(NULL)
+    }
 
     effect <- if (!is.null(effect_params_reactive)) effect_params_reactive() else NULL
-    if (is.null(effect) || is.null(effect$n_per_group)) return(NULL)
+    if (is.null(effect) || is.null(effect$n_per_group)) {
+      return(NULL)
+    }
 
     # Return minimum N per group (for unbalanced designs)
     min(effect$n_per_group, na.rm = TRUE)

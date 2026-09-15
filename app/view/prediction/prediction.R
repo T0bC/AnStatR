@@ -1,25 +1,25 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   ggiraph,
   ggplot2,
   openxlsx,
   rhino,
   shiny,
-  tools[file_ext],
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/load_data/load_data[
-    read_data_file, validate_data,
+    read_data_file,
+    validate_data,
     validate_file_extension
   ],
   app/logic/prediction/bundle_io[load_bundle],
   app/logic/prediction/diagnostics[compute_diagnostics],
   app/logic/prediction/predict[
-    preprocess_unknown, predict_unknown
+    predict_unknown,
+    preprocess_unknown
   ],
   app/logic/prediction/prediction_plots[
     create_prediction_overlay_plot
@@ -27,14 +27,16 @@ box::use(
   app/logic/prediction/validation[
     validate_unknown_data
   ],
+  app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/shared/error_display,
-  app/view/prediction/results_display[
-    render_prediction_results, build_results_table,
-    render_confusion_summary
-  ],
   app/view/prediction/plotting_controls,
+  app/view/prediction/results_display[
+    build_results_table,
+    render_confusion_summary,
+    render_prediction_results
+  ],
   app/view/prediction/upload,
+  app/view/shared/error_display,
 )
 
 #' @export
@@ -280,7 +282,8 @@ server <- function(id) {
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -298,7 +301,7 @@ server <- function(id) {
       warn_banner <- NULL
       if (
         !is.null(val) &&
-        length(val$warnings) > 0
+          length(val$warnings) > 0
       ) {
         warn_banner <- shiny$tags$div(
           class = "alert alert-warning",
@@ -316,7 +319,8 @@ server <- function(id) {
       results_panel <- bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "table", class = "me-1"
+            "table",
+            class = "me-1"
           ),
           "Prediction Results"
         ),
@@ -363,13 +367,15 @@ server <- function(id) {
         plot_panel <- bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "graph-up", class = "me-1"
+              "graph-up",
+              class = "me-1"
             ),
             "Overlay Plot"
           ),
           value = "plot_panel",
           ggiraph$girafeOutput(
-            ns("overlay_plot"), height = "500px"
+            ns("overlay_plot"),
+            height = "500px"
           ),
           shiny$tags$div(
             class = "d-flex gap-2 mt-2",
@@ -377,7 +383,8 @@ server <- function(id) {
               ns("plot_dl_svg"),
               label = shiny$tags$span(
                 bsicons$bs_icon(
-                  "filetype-svg", class = "me-1"
+                  "filetype-svg",
+                  class = "me-1"
                 ),
                 "SVG"
               ),
@@ -389,7 +396,8 @@ server <- function(id) {
               ns("plot_dl_png"),
               label = shiny$tags$span(
                 bsicons$bs_icon(
-                  "filetype-png", class = "me-1"
+                  "filetype-png",
+                  class = "me-1"
                 ),
                 "PNG"
               ),
@@ -580,7 +588,7 @@ server <- function(id) {
       group_cols <- input$group_col
       if (
         is.null(group_cols) ||
-        length(group_cols) == 0
+          length(group_cols) == 0
       ) {
         group_cols <- NULL
       }
@@ -606,7 +614,9 @@ server <- function(id) {
         show_boundaries = show_bound
       )
 
-      if (!plot_res$success) return(NULL)
+      if (!plot_res$success) {
+        return(NULL)
+      }
 
       last_plot(plot_res$result)
 
@@ -652,7 +662,8 @@ server <- function(id) {
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "svg",
+          file,
+          plot = p, device = "svg",
           width = w, height = h, units = "cm"
         )
       }
@@ -670,7 +681,8 @@ server <- function(id) {
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "png",
+          file,
+          plot = p, device = "png",
           width = w, height = h,
           units = "cm", dpi = 600
         )
@@ -750,7 +762,8 @@ server <- function(id) {
           }
 
           openxlsx$saveWorkbook(
-            wb, file, overwrite = TRUE
+            wb, file,
+            overwrite = TRUE
           )
 
           rhino$log$info(

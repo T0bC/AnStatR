@@ -1,7 +1,6 @@
 box::use(
-  bsicons,
-  bslib,
   DT,
+  bsicons,
   shiny,
 )
 
@@ -22,7 +21,8 @@ box::use(
 #' @return shiny tagList
 #' @export
 render_prediction_results <- function(
-    prediction_result, bundle, unknown_data, ns) {
+  prediction_result, bundle, unknown_data, ns
+) {
   analysis_type <- prediction_result$analysis_type
 
   if (analysis_type %in% c("pca", "spca", "ipca")) {
@@ -73,7 +73,8 @@ render_pca_results <- function(pred_result,
         ns("download_results_excel"),
         label = shiny$tags$span(
           bsicons$bs_icon(
-            "file-earmark-excel", class = "me-1"
+            "file-earmark-excel",
+            class = "me-1"
           ),
           "Excel"
         ),
@@ -84,7 +85,8 @@ render_pca_results <- function(pred_result,
 }
 
 render_classification_results <- function(
-    pred_result, bundle, unknown_data, ns) {
+  pred_result, bundle, unknown_data, ns
+) {
   # Build classification table
   pred_class <- pred_result$predicted_class
   posterior <- pred_result$posterior
@@ -96,8 +98,7 @@ render_classification_results <- function(
     ))
   }
 
-  type_label <- switch(
-    pred_result$analysis_type,
+  type_label <- switch(pred_result$analysis_type,
     plsda = "PLS-DA",
     splsda = "sPLS-DA",
     toupper(pred_result$analysis_type)
@@ -122,7 +123,8 @@ render_classification_results <- function(
         ns("download_results_excel"),
         label = shiny$tags$span(
           bsicons$bs_icon(
-            "file-earmark-excel", class = "me-1"
+            "file-earmark-excel",
+            class = "me-1"
           ),
           "Excel"
         ),
@@ -142,8 +144,7 @@ render_classification_results <- function(
 #' @return shiny tagList
 #' @export
 render_confusion_summary <- function(confusion, confusion_source, ns) {
-  source_label <- switch(
-    confusion_source,
+  source_label <- switch(confusion_source,
     cv = "cross-validated (leave-one-out)",
     held_out_test = "held-out test set",
     resubstitution = "resubstitution (same data used for training -- optimistic)",
@@ -179,8 +180,8 @@ build_results_table <- function(prediction_result,
   # Row labels
   if (
     !is.null(meta_col) &&
-    nchar(meta_col) > 0 &&
-    meta_col %in% names(unknown_data)
+      nchar(meta_col) > 0 &&
+      meta_col %in% names(unknown_data)
   ) {
     labels <- as.character(unknown_data[[meta_col]])
   } else {

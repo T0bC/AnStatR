@@ -1,6 +1,5 @@
 box::use(
   bsicons,
-  bslib,
   shiny,
 )
 

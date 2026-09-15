@@ -24,19 +24,21 @@ box::use(
 #' @export
 render_output <- function(input, output, session,
                           lda_result) {
-  ns <- session$ns
-
   last_plot <- shiny$reactiveVal(NULL)
   last_meta <- shiny$reactiveVal(NULL)
   last_analysis_type <- shiny$reactiveVal(NULL)
 
   output$var_contrib_jitter <- ggiraph$renderGirafe({
     res <- lda_result()
-    if (is.null(res)) return(NULL)
+    if (is.null(res)) {
+      return(NULL)
+    }
 
     # Convert LDA scaling to PCA-like structure
     pca_like <- lda_to_pca_var_structure(res)
-    if (is.null(pca_like)) return(NULL)
+    if (is.null(pca_like)) {
+      return(NULL)
+    }
 
     n_dims <- ncol(pca_like$contrib)
 
@@ -46,7 +48,9 @@ render_output <- function(input, output, session,
       show_title = TRUE
     )
 
-    if (!plot_res$success) return(NULL)
+    if (!plot_res$success) {
+      return(NULL)
+    }
 
     plot_data <- plot_res$result
     last_plot(plot_data$plot)
@@ -75,7 +79,9 @@ render_output <- function(input, output, session,
   # Figure caption explaining filtering
   output$var_contrib_jitter_caption <- shiny$renderUI({
     meta <- last_meta()
-    if (is.null(meta)) return(NULL)
+    if (is.null(meta)) {
+      return(NULL)
+    }
 
     build_caption(meta, last_analysis_type())
   })

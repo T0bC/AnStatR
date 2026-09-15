@@ -1,7 +1,7 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   openxlsx,
   rhino,
   shiny,
@@ -44,7 +44,8 @@ ui <- function(id) {
             "Test for Normality ",
             bslib$tooltip(
               bsicons$bs_icon(
-                "question-circle", class = "text-muted"
+                "question-circle",
+                class = "text-muted"
               ),
               paste(
                 "Performs the Shapiro-Wilk normality",
@@ -87,22 +88,27 @@ server <- function(id, input_data, data_version,
     summary_dfs <- shiny$reactiveVal(NULL)
 
     # --- Reset state on new data ---
-    shiny$observeEvent(data_version(), {
-      summary_dfs(NULL)
-      last_error(NULL)
-      shiny$updateCheckboxInput(
-        session, "shapiro", value = FALSE
-      )
-      shiny$updateCheckboxInput(
-        session, "show_transformed", value = FALSE
-      )
-      shiny$updateSelectizeInput(
-        session, "filter_options_select",
-        choices = character(0),
-        selected = character(0)
-      )
-      rhino$log$info("Summary: state reset for new data")
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        summary_dfs(NULL)
+        last_error(NULL)
+        shiny$updateCheckboxInput(
+          session, "shapiro",
+          value = FALSE
+        )
+        shiny$updateCheckboxInput(
+          session, "show_transformed",
+          value = FALSE
+        )
+        shiny$updateSelectizeInput(
+          session, "filter_options_select",
+          choices = character(0),
+          selected = character(0)
+        )
+        rhino$log$info("Summary: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
 
     # --- Descriptive columns reactive ---
     descriptive_cols <- shiny$reactive({
@@ -157,19 +163,22 @@ server <- function(id, input_data, data_version,
 
     # --- Sync from plotting tab when selections change ---
     if (!is.null(plotting_x_axis)) {
-      shiny$observeEvent(plotting_x_axis(), {
-        desc_cols <- descriptive_cols()
-        x <- plotting_x_axis()
-        if (!is.null(x) && length(x) > 0) {
-          valid <- x[x %in% desc_cols]
-          if (length(valid) > 0) {
-            shiny$updateSelectizeInput(
-              session, "filter_options_select",
-              selected = valid
-            )
+      shiny$observeEvent(plotting_x_axis(),
+        {
+          desc_cols <- descriptive_cols()
+          x <- plotting_x_axis()
+          if (!is.null(x) && length(x) > 0) {
+            valid <- x[x %in% desc_cols]
+            if (length(valid) > 0) {
+              shiny$updateSelectizeInput(
+                session, "filter_options_select",
+                selected = valid
+              )
+            }
           }
-        }
-      }, ignoreInit = TRUE)
+        },
+        ignoreInit = TRUE
+      )
     }
 
     # --- Resolve measurement columns ---
@@ -177,11 +186,15 @@ server <- function(id, input_data, data_version,
     active_measures <- shiny$reactive({
       if (!is.null(plotting_measures)) {
         m <- plotting_measures()
-        if (!is.null(m) && length(m) > 0) return(m)
+        if (!is.null(m) && length(m) > 0) {
+          return(m)
+        }
       }
       # Fallback: auto-detect from data
       data <- input_data()
-      if (is.null(data)) return(NULL)
+      if (is.null(data)) {
+        return(NULL)
+      }
       cols <- column_utils$get_measurement_cols(data)
       cols[!grepl("_outlier|_trimmed|_normalized", cols)]
     })
@@ -206,7 +219,9 @@ server <- function(id, input_data, data_version,
       } else {
         FALSE
       }
-      if (!norm_active) return(NULL)
+      if (!norm_active) {
+        return(NULL)
+      }
 
       shiny$tagList(
         shiny$checkboxInput(
@@ -215,7 +230,8 @@ server <- function(id, input_data, data_version,
             "Show transformed summary ",
             bslib$tooltip(
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               ),
               paste(
                 "When enabled, summary statistics are",
@@ -239,38 +255,42 @@ server <- function(id, input_data, data_version,
     })
 
     # --- Run computation when inputs change ---
-    shiny$observeEvent(debounced_inputs(), {
-      params <- debounced_inputs()
-      shiny$req(params)
-      data <- shiny$isolate(input_data())
-      shiny$req(data)
+    shiny$observeEvent(debounced_inputs(),
+      {
+        params <- debounced_inputs()
+        shiny$req(params)
+        data <- shiny$isolate(input_data())
+        shiny$req(data)
 
-      last_error(NULL)
+        last_error(NULL)
 
-      # If show_transformed is checked, swap to _normalized cols
-      measure_vars <- params$measure_vars
-      if (isTRUE(params$show_transformed)) {
-        measure_vars <- vapply(measure_vars, function(col) {
-          norm_col <- paste0(col, "_normalized")
-          if (norm_col %in% names(data)) norm_col else col
-        }, character(1), USE.NAMES = FALSE)
-      }
+        # If show_transformed is checked, swap to _normalized cols
+        measure_vars <- params$measure_vars
+        if (isTRUE(params$show_transformed)) {
+          measure_vars <- vapply(measure_vars, function(col) {
+            norm_col <- paste0(col, "_normalized")
+            if (norm_col %in% names(data)) norm_col else col
+          }, character(1), USE.NAMES = FALSE)
+        }
 
-      result <- summary$run_summary(
-        data          = data,
-        grouping_vars = params$grouping_vars,
-        measure_vars  = measure_vars,
-        shapiro_test  = params$shapiro
-      )
+        result <- summary$run_summary(
+          data          = data,
+          grouping_vars = params$grouping_vars,
+          measure_vars  = measure_vars,
+          shapiro_test  = params$shapiro
+        )
 
-      if (!result$success) {
-        last_error(result$error)
-        summary_dfs(NULL)
-        return()
-      }
+        if (!result$success) {
+          last_error(result$error)
+          summary_dfs(NULL)
+          return()
+        }
 
-      summary_dfs(result$result)
-    }, ignoreNULL = TRUE, ignoreInit = FALSE)
+        summary_dfs(result$result)
+      },
+      ignoreNULL = TRUE,
+      ignoreInit = FALSE
+    )
 
     # --- Dynamic DT table outputs + per-table downloads ---
     shiny$observe({
@@ -317,7 +337,8 @@ server <- function(id, input_data, data_version,
             },
             content = function(file) {
               openxlsx$write.xlsx(
-                local_item$df, file, rowNames = FALSE
+                local_item$df, file,
+                rowNames = FALSE
               )
               rhino$log$info(
                 "Summary: downloaded table '{local_item$col}'"
@@ -359,7 +380,8 @@ server <- function(id, input_data, data_version,
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -374,7 +396,8 @@ server <- function(id, input_data, data_version,
               shiny$tags$div(
                 class = "text-center text-muted py-5",
                 bsicons$bs_icon(
-                  "hourglass-split", size = "3rem"
+                  "hourglass-split",
+                  size = "3rem"
                 ),
                 shiny$tags$h5(
                   class = "mt-3", "Waiting for input"

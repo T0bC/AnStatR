@@ -1,7 +1,6 @@
 box::use(
   bsicons,
   bslib,
-  rhino,
   shiny,
 )
 
@@ -120,44 +119,53 @@ tab_server <- function(input, output, session,
 
   # Toggle which control panel is visible and update
   # dimension choices when the bundle changes
-  shiny$observeEvent(bundle_reactive(), {
-    bundle <- bundle_reactive()
-    if (is.null(bundle)) {
-      # Hide both panels
-      shiny$updateTextInput(
-        session, "plot_mode", value = "none"
-      )
-      return()
-    }
+  shiny$observeEvent(bundle_reactive(),
+    {
+      bundle <- bundle_reactive()
+      if (is.null(bundle)) {
+        # Hide both panels
+        shiny$updateTextInput(
+          session, "plot_mode",
+          value = "none"
+        )
+        return()
+      }
 
-    analysis_type <- bundle$analysis_type
+      analysis_type <- bundle$analysis_type
 
-    if (analysis_type %in% c("pca", "spca", "ipca")) {
-      shiny$updateTextInput(
-        session, "plot_mode", value = "pca"
-      )
-      update_pca_choices(session, bundle)
-    } else if (
-      analysis_type %in%
-        c("lda", "mda", "qda", "plsda", "splsda")
-    ) {
-      shiny$updateTextInput(
-        session, "plot_mode", value = "lda"
-      )
-      update_lda_choices(session, bundle)
-    } else if (analysis_type == "cluster") {
-      shiny$updateTextInput(
-        session, "plot_mode", value = "cluster"
-      )
-      update_cluster_choices(session, bundle)
-    }
-  }, ignoreNULL = TRUE)
+      if (analysis_type %in% c("pca", "spca", "ipca")) {
+        shiny$updateTextInput(
+          session, "plot_mode",
+          value = "pca"
+        )
+        update_pca_choices(session, bundle)
+      } else if (
+        analysis_type %in%
+          c("lda", "mda", "qda", "plsda", "splsda")
+      ) {
+        shiny$updateTextInput(
+          session, "plot_mode",
+          value = "lda"
+        )
+        update_lda_choices(session, bundle)
+      } else if (analysis_type == "cluster") {
+        shiny$updateTextInput(
+          session, "plot_mode",
+          value = "cluster"
+        )
+        update_cluster_choices(session, bundle)
+      }
+    },
+    ignoreNULL = TRUE
+  )
 
   # Label column selector (renderUI is fine here —
   # not on the critical path for plot rendering)
   output$label_selector <- shiny$renderUI({
     unknown <- unknown_data_reactive()
-    if (is.null(unknown)) return(NULL)
+    if (is.null(unknown)) {
+      return(NULL)
+    }
 
     cols <- names(unknown)
     char_cols <- cols[vapply(
@@ -167,7 +175,9 @@ tab_server <- function(input, output, session,
       logical(1)
     )]
 
-    if (length(char_cols) == 0) return(NULL)
+    if (length(char_cols) == 0) {
+      return(NULL)
+    }
 
     shiny$selectInput(
       inputId = ns("label_col"),
@@ -175,7 +185,8 @@ tab_server <- function(input, output, session,
         "Label column ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select a column to use as labels",
@@ -302,7 +313,8 @@ build_pca_controls_ui <- function(ns) {
         "Biplot Layer ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select which layers to display:",
@@ -327,7 +339,8 @@ build_pca_controls_ui <- function(ns) {
         "Group training data ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select metadata column(s) to group",
@@ -349,7 +362,8 @@ build_pca_controls_ui <- function(ns) {
         "Use Convex Hull ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Show convex hull instead of 95%",
@@ -434,7 +448,8 @@ build_cluster_controls_ui <- function(ns) {
             "X Axis ",
             bslib$tooltip(
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               ),
               paste(
                 "Select the measurement column",
@@ -453,7 +468,8 @@ build_cluster_controls_ui <- function(ns) {
             "Y Axis ",
             bslib$tooltip(
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               ),
               paste(
                 "Select the measurement column",
@@ -541,8 +557,7 @@ update_lda_choices <- function(session, bundle) {
   }
 
   # Update title dynamically
-  title_label <- switch(
-    analysis_type,
+  title_label <- switch(analysis_type,
     qda = "QDA Plotting Controls",
     mda = "MDA Plotting Controls",
     plsda = "PLS-DA Plotting Controls",
@@ -572,7 +587,7 @@ update_pca_choices <- function(session, bundle) {
   meta_cols <- bundle$meta_cols
   if (
     !is.null(meta_cols) &&
-    length(meta_cols) > 0
+      length(meta_cols) > 0
   ) {
     available <- intersect(
       meta_cols, names(bundle$used_data)

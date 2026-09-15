@@ -1,6 +1,7 @@
 box::use(
   app/logic/prediction/bundle_io[
-    load_bundle, validate_bundle
+    load_bundle,
+    validate_bundle
   ],
 )
 
@@ -10,8 +11,9 @@ box::use(
 
 # Helper: create a minimal valid bundle
 make_test_bundle <- function(
-    analysis_type = "lda",
-    with_model = TRUE) {
+  analysis_type = "lda",
+  with_model = TRUE
+) {
   bundle <- list(
     analysis_type = analysis_type,
     model = if (with_model) list(dummy = TRUE) else NULL,

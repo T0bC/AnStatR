@@ -1,14 +1,13 @@
 box::use(
+  WRS2,
   rhino,
   stats,
-  WRS2,
 )
 
 box::use(
   app/logic/shared/error_handling,
-  app/logic/statistics/omnibus,
   app/logic/statistics/customWRS,
-  app/logic/statistics/cliff_delta[cidmulv2_labelled],
+  app/logic/statistics/omnibus,
   app/logic/statistics/validation_utils,
 )
 
@@ -22,29 +21,6 @@ box::use(
 # =============================================================================
 # Private helpers
 # =============================================================================
-
-#' Extract interaction labels from mcp2atm_TM / mcp3atm_TM contrast matrix
-#'
-#' Each contrast column has +1 and -1 entries. The row names of the
-#' contrast matrix are the group labels (from dataWide column names).
-#' For each contrast, we find the groups with positive vs negative
-#' coefficients and build "GroupA vs. GroupB" labels.
-#'
-#' @param contrasts Data frame with contrast matrix (rows = groups, cols = contrasts)
-#' @return Character vector of interaction labels
-extract_contrast_labels <- function(contrasts) {
-  group_names <- rownames(contrasts)
-  vapply(seq_len(ncol(contrasts)), function(i) {
-    col <- contrasts[, i]
-    pos_groups <- group_names[col > 0]
-    neg_groups <- group_names[col < 0]
-    paste(
-      paste(pos_groups, collapse = "."),
-      "vs.",
-      paste(neg_groups, collapse = ".")
-    )
-  }, character(1))
-}
 
 #' Flatten mcp result effects into a data frame with interaction labels
 #'
@@ -215,7 +191,9 @@ format_posthoc_bootstrap <- function(results_list, value_cols) {
     subset_dfs <- subset_dfs[!vapply(
       subset_dfs, is.null, logical(1)
     )]
-    if (length(subset_dfs) == 0) return(NULL)
+    if (length(subset_dfs) == 0) {
+      return(NULL)
+    }
 
     combined <- do.call(rbind, subset_dfs)
 
@@ -269,7 +247,7 @@ format_posthoc_bootstrap <- function(results_list, value_cols) {
 #' @param tr_value Trim proportion
 #' @return Data frame with lincon results
 run_lincon_combined <- function(sample_data, x_axis, measure_col,
-                                 tr_value) {
+                                tr_value) {
   if (length(x_axis) > 1) {
     sample_data$combinedGroups <- do.call(
       paste, c(sample_data[x_axis], sep = ".")
@@ -320,10 +298,10 @@ run_lincon_combined <- function(sample_data, x_axis, measure_col,
 #' @param boot_sample_size Integer or NULL
 #' @return Data frame with lincon results or app_error
 perform_lincon_combined <- function(df, x_axis, measure_col,
-                                     tr_value,
-                                     use_bootstrap = FALSE,
-                                     boot_samples = 599,
-                                     boot_sample_size = NULL) {
+                                    tr_value,
+                                    use_bootstrap = FALSE,
+                                    boot_samples = 599,
+                                    boot_sample_size = NULL) {
   rhino$log$info(
     "lincon_combined: starting for measure='{measure_col}',",
     " factors='{paste(x_axis, collapse=\", \")}'"
@@ -360,7 +338,9 @@ perform_lincon_combined <- function(df, x_axis, measure_col,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   if (use_bootstrap) {
     format_posthoc_bootstrap(
@@ -462,7 +442,9 @@ perform_lincon <- function(df, x_axis, measure_col, tr_value,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   if (use_bootstrap) {
     format_posthoc_bootstrap(
@@ -541,7 +523,9 @@ perform_cliff <- function(df, x_axis, measure_col,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   if (use_bootstrap) {
     format_posthoc_bootstrap(
@@ -662,11 +646,15 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
     ))
   }
 
-  if (lincon_err) return(lincon_result)
-  if (cliff_err) return(cliff_result)
+  if (lincon_err) {
+    return(lincon_result)
+  }
+  if (cliff_err) {
+    return(cliff_result)
+  }
 
   if (!is.data.frame(lincon_result) ||
-      !is.data.frame(cliff_result)) {
+    !is.data.frame(cliff_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_posthoc"
@@ -729,15 +717,17 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
 
   if (!use_bootstrap) {
     if ("Lincon.p.value" %in% names(merged) &&
-        is.numeric(merged$Lincon.p.value)) {
+      is.numeric(merged$Lincon.p.value)) {
       merged$Lincon.p.adjusted <- stats$p.adjust(
-        merged$Lincon.p.value, method = p_adjust_method
+        merged$Lincon.p.value,
+        method = p_adjust_method
       )
     }
     if ("Cliff.p.value" %in% names(merged) &&
-        is.numeric(merged$Cliff.p.value)) {
+      is.numeric(merged$Cliff.p.value)) {
       merged$Cliff.p.adjusted <- stats$p.adjust(
-        merged$Cliff.p.value, method = p_adjust_method
+        merged$Cliff.p.value,
+        method = p_adjust_method
       )
     }
   }
@@ -792,18 +782,24 @@ compute_paired_pxy <- function(vals1, vals2) {
   complete <- !is.na(vals1) & !is.na(vals2)
   vals1 <- vals1[complete]
   vals2 <- vals2[complete]
-  if (length(vals1) < 1) return(na_out)
+  if (length(vals1) < 1) {
+    return(na_out)
+  }
 
   n_lt <- sum(vals1 < vals2)
   n_gt <- sum(vals1 > vals2)
   n_eff <- n_lt + n_gt
-  if (n_eff < 1) return(na_out)
+  if (n_eff < 1) {
+    return(na_out)
+  }
 
   bt <- tryCatch(
     stats$binom.test(n_lt, n_eff, p = 0.5),
     error = function(e) NULL
   )
-  if (is.null(bt)) return(na_out)
+  if (is.null(bt)) {
+    return(na_out)
+  }
 
   c(
     est = unname(bt$estimate),
@@ -841,7 +837,9 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
   complete <- !is.na(vals1) & !is.na(vals2)
   vals1 <- vals1[complete]
   vals2 <- vals2[complete]
-  if (length(vals1) < 2) return(NULL)
+  if (length(vals1) < 2) {
+    return(NULL)
+  }
 
   # Yuen's paired test for trimmed means (location + p-value)
   yuen_res <- WRS2$yuend(x = vals1, y = vals2, tr = tr_value)
@@ -901,10 +899,11 @@ compute_paired_yuen_stats <- function(df, g1_label, g2_label, id_col, measure_co
 #' @return Data frame with combined results or app_error
 #' @export
 perform_rm_robust_posthoc <- function(
-    df, x_axis, measure_col,
-    id_col, within_col,
-    tr_value = 0.2,
-    p_adjust_method = "bonferroni") {
+  df, x_axis, measure_col,
+  id_col, within_col,
+  tr_value = 0.2,
+  p_adjust_method = "bonferroni"
+) {
   rhino$log$info(
     "rm_robust_posthoc: starting for",
     " measure='{measure_col}'"
@@ -1018,12 +1017,14 @@ perform_rm_robust_posthoc <- function(
 
       if ("Lincon.p.value" %in% names(unpaired_base)) {
         unpaired_base$Lincon.p.adjusted <- stats$p.adjust(
-          unpaired_base$Lincon.p.value, method = p_adjust_method
+          unpaired_base$Lincon.p.value,
+          method = p_adjust_method
         )
       }
       if ("Cliff.p.value" %in% names(unpaired_base)) {
         unpaired_base$Cliff.p.adjusted <- stats$p.adjust(
-          unpaired_base$Cliff.p.value, method = p_adjust_method
+          unpaired_base$Cliff.p.value,
+          method = p_adjust_method
         )
       }
 
@@ -1056,7 +1057,9 @@ perform_rm_robust_posthoc <- function(
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

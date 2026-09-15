@@ -1,12 +1,12 @@
 box::use(
-  testthat[describe, expect_false, expect_true, it],
   shiny[NS],
+  testthat[describe, expect_false, expect_true, it],
 )
 
 box::use(
-  app/view/lda/results_display,
-  app/logic/lda/lda[run_lda, run_mda, run_predict, run_qda],
   app/logic/lda/data_splitting[create_stratified_split],
+  app/logic/lda/lda[run_lda, run_mda, run_predict, run_qda],
+  app/view/lda/results_display,
 )
 
 # =============================================================================
@@ -49,7 +49,8 @@ measure_cols <- paste0("m", 1:4)
 
 render <- function(result, test_result = NULL) {
   as.character(results_display$render_lda_results(
-    result, ns, test_result = test_result
+    result, ns,
+    test_result = test_result
   ))
 }
 
@@ -57,7 +58,8 @@ render <- function(result, test_result = NULL) {
 describe("unvalidated results", {
   it("warns that the accuracy is not a performance estimate", {
     res <- run_lda(
-      separable_data(), measure_cols, "CLASS", meta_cols = "CLASS"
+      separable_data(), measure_cols, "CLASS",
+      meta_cols = "CLASS"
     )
     expect_true(res$success)
     html <- render(res$result)
@@ -67,7 +69,8 @@ describe("unvalidated results", {
 
   it("points LDA users at leave-one-out CV", {
     lda_html <- render(run_lda(
-      separable_data(), measure_cols, "CLASS", meta_cols = "CLASS"
+      separable_data(), measure_cols, "CLASS",
+      meta_cols = "CLASS"
     )$result)
     expect_true(grepl("Leave-one-out CV", lda_html, fixed = TRUE))
   })
@@ -87,7 +90,8 @@ describe("validated results", {
     expect_false(grepl("Not validated", html, fixed = TRUE))
     expect_true(grepl("Validated:", html, fixed = TRUE))
     expect_true(grepl(
-      "Resubstitution (on all data)", html, fixed = TRUE
+      "Resubstitution (on all data)", html,
+      fixed = TRUE
     ))
   })
 
@@ -134,7 +138,8 @@ describe("validated results", {
   it("shows the training-set figure in split mode", {
     d <- separable_data()
     split <- create_stratified_split(
-      d, "CLASS", train_fraction = 0.7, seed = 42
+      d, "CLASS",
+      train_fraction = 0.7, seed = 42
     )
     expect_true(split$success)
     train <- split$result$train_data
@@ -151,7 +156,8 @@ describe("validated results", {
     html <- render(fit$result, test_result = pred$result)
     expect_false(grepl("Not validated", html, fixed = TRUE))
     expect_true(grepl(
-      "Resubstitution (on the training set)", html, fixed = TRUE
+      "Resubstitution (on the training set)", html,
+      fixed = TRUE
     ))
   })
 })

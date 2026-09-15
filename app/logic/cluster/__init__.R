@@ -7,21 +7,21 @@ box::use(
     cluster_error_parser,
     compute_cluster_summary,
     run_clustering,
-    validate_inputs,
+    validate_inputs
   ],
   app/logic/cluster/cluster_biplot[
-    create_cluster_biplot,
+    create_cluster_biplot
   ],
   app/logic/cluster/heatmap[
-    create_cluster_heatmap,
+    create_cluster_heatmap
   ],
   app/logic/cluster/hopkins[compute_hopkins],
   app/logic/cluster/optimal_clusters[
     compute_optimal_clusters,
-    create_optimal_clusters_ggplot,
+    create_optimal_clusters_ggplot
   ],
   app/logic/cluster/silhouette[
     compute_silhouette_data,
-    create_silhouette_plot,
+    create_silhouette_plot
   ],
 )

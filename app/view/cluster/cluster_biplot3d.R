@@ -1,7 +1,7 @@
 box::use(
   plotly,
-  shinycssloaders,
   shiny,
+  shinycssloaders,
 )
 
 box::use(
@@ -104,24 +104,30 @@ render_output <- function(input, output, session,
     }
   })
 
-  biplot3d_params <- shiny$reactive({ cached_params() })
+  biplot3d_params <- shiny$reactive({
+    cached_params()
+  })
 
   output$cluster_biplot3d_plot <- plotly$renderPlotly({
     last_error(NULL)
 
     res <- cluster_result_rv()
-    if (is.null(res)) return(NULL)
+    if (is.null(res)) {
+      return(NULL)
+    }
 
     analysis_data <- analysis_data_rv()
     raw_data <- cleaned_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
-        is.null(measure_cols)) {
+      is.null(measure_cols)) {
       return(NULL)
     }
 
     params <- biplot3d_params()
-    if (is.null(params)) return(NULL)
+    if (is.null(params)) {
+      return(NULL)
+    }
 
     # Extract params with defaults
     dim_x <- params$dim_x %||% "Dim.1"
@@ -137,18 +143,18 @@ render_output <- function(input, output, session,
 
     if (!is_reduced_source) {
       if (reduction_method == "pca" &&
-          !grepl("^Dim\\.", dim_x)) {
+        !grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
       if (reduction_method == "raw" &&
-          grepl("^Dim\\.", dim_x)) {
+        grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
     }
 
     # Choose data source
     base_data <- if (reduction_method == "raw" &&
-        !is.null(raw_data)) {
+      !is.null(raw_data)) {
       raw_data
     } else {
       analysis_data
@@ -167,7 +173,7 @@ render_output <- function(input, output, session,
             plot_data$CLUSTER <- as.factor(res$clusters)
             meta_cols <- c(meta_cols, "CLUSTER")
           } else if (gc %in% names(md) &&
-                     !gc %in% names(plot_data)) {
+            !gc %in% names(plot_data)) {
             plot_data[[gc]] <- md[[gc]]
             meta_cols <- c(meta_cols, gc)
           } else if (gc %in% names(plot_data)) {

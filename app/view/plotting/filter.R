@@ -26,7 +26,8 @@ tab_ui <- function(ns) {
         "Hide columns ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Hide selected descriptive columns from",
@@ -65,22 +66,26 @@ tab_server <- function(input, output, session, input_data,
   saved_filter_state <- shiny$reactiveVal(list())
 
   # Smart retention on new data: keep hideCols that still exist
-  shiny$observeEvent(data_version(), {
-    cur_hide <- shiny$isolate(input$hideCols)
-    cur_meta <- shiny$isolate(input$metaData)
-    # hideCols choices come from metaData; retain valid ones
-    if (!is.null(cur_hide) && !is.null(cur_meta)) {
-      retained <- intersect(cur_hide, cur_meta)
-    } else {
-      retained <- character(0)
-    }
-    shiny$updateSelectizeInput(
-      session, "hideCols", selected = retained
-    )
-    # Clear saved filter state — checkbox values may differ
-    saved_filter_state(list())
-    rhino$log$info("Plotting filter: reset for new data")
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      cur_hide <- shiny$isolate(input$hideCols)
+      cur_meta <- shiny$isolate(input$metaData)
+      # hideCols choices come from metaData; retain valid ones
+      if (!is.null(cur_hide) && !is.null(cur_meta)) {
+        retained <- intersect(cur_hide, cur_meta)
+      } else {
+        retained <- character(0)
+      }
+      shiny$updateSelectizeInput(
+        session, "hideCols",
+        selected = retained
+      )
+      # Clear saved filter state — checkbox values may differ
+      saved_filter_state(list())
+      rhino$log$info("Plotting filter: reset for new data")
+    },
+    ignoreInit = TRUE
+  )
 
   # Update hideCols choices from selected metaData
   shiny$observe({
@@ -99,19 +104,25 @@ tab_server <- function(input, output, session, input_data,
   filter_cols <- shiny$reactive({
     selected <- input$metaData
     hidden <- input$hideCols
-    if (is.null(selected)) return(character(0))
+    if (is.null(selected)) {
+      return(character(0))
+    }
     selected[!selected %in% hidden]
   })
 
   # Save filter state before data changes (for persistence)
-  shiny$observeEvent(input_data(), {
-    cols <- shiny$isolate(filter_cols())
-    if (length(cols) > 0) {
-      state <- lapply(cols, function(col) input[[col]])
-      names(state) <- cols
-      saved_filter_state(state)
-    }
-  }, priority = 100, ignoreInit = TRUE)
+  shiny$observeEvent(input_data(),
+    {
+      cols <- shiny$isolate(filter_cols())
+      if (length(cols) > 0) {
+        state <- lapply(cols, function(col) input[[col]])
+        names(state) <- cols
+        saved_filter_state(state)
+      }
+    },
+    priority = 100,
+    ignoreInit = TRUE
+  )
 
   # Render dynamic filter checkboxes
   output$checkboxes <- shiny$renderUI({
@@ -134,7 +145,9 @@ tab_server <- function(input, output, session, input_data,
     get_selected <- function(col, choices) {
       if (!is.null(saved_state[[col]])) {
         valid <- intersect(saved_state[[col]], choices)
-        if (length(valid) > 0) return(valid)
+        if (length(valid) > 0) {
+          return(valid)
+        }
       }
       choices
     }
@@ -183,7 +196,9 @@ tab_server <- function(input, output, session, input_data,
           input[[paste0("toggle_all_", local_col)]],
           {
             data <- shiny$isolate(input_data())
-            if (is.null(data)) return()
+            if (is.null(data)) {
+              return()
+            }
             ch <- data_utils$get_filter_choices(data[[local_col]])
             cur <- input[[local_col]]
             new_sel <- if (length(cur) == length(ch)) character(0) else ch
@@ -204,7 +219,9 @@ tab_server <- function(input, output, session, input_data,
     shiny$req(data)
 
     cols <- filter_cols()
-    if (length(cols) == 0) return(data)
+    if (length(cols) == 0) {
+      return(data)
+    }
 
     # Build filters list from checkbox inputs
     filters <- lapply(cols, function(col) input[[col]])

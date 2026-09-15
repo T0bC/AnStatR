@@ -91,7 +91,8 @@ test_that("validate_unknown_data no range warning for in-range data", {
   result <- validate_unknown_data(unknown, bundle)
   expect_true(result$valid)
   range_warnings <- grep(
-    "extends beyond", result$warnings, value = TRUE
+    "extends beyond", result$warnings,
+    value = TRUE
   )
   expect_length(range_warnings, 0)
 })

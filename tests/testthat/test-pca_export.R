@@ -1,11 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
   openxlsx,
+  testthat[describe, expect_equal, expect_false, expect_true, it],
 )
 
 box::use(
-  app/logic/pca/pca_export,
   app/logic/pca/pca[run_pca],
+  app/logic/pca/pca_export,
 )
 
 # =============================================================================

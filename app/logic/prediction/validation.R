@@ -2,10 +2,6 @@ box::use(
   rhino,
 )
 
-box::use(
-  app/logic/shared/error_handling,
-)
-
 # =============================================================================
 # Validation logic for unknown data against a bundle
 # No Shiny dependencies allowed in this file.
@@ -58,7 +54,7 @@ validate_unknown_data <- function(unknown_data, bundle) {
   # Warn on missing metadata columns (non-blocking)
   if (
     !is.null(bundle$meta_cols) &&
-    length(bundle$meta_cols) > 0
+      length(bundle$meta_cols) > 0
   ) {
     missing_meta <- setdiff(
       bundle$meta_cols, names(unknown_data)
@@ -74,8 +70,8 @@ validate_unknown_data <- function(unknown_data, bundle) {
   # Check value ranges for plausibility
   if (
     length(errors) == 0 &&
-    !is.null(bundle$raw_data) &&
-    length(present_cols) > 0
+      !is.null(bundle$raw_data) &&
+      length(present_cols) > 0
   ) {
     range_warnings <- check_value_ranges(
       unknown_data, bundle$raw_data, present_cols
@@ -126,8 +122,10 @@ check_value_ranges <- function(unknown_data, raw_data,
 
     if (
       !is.numeric(train_vals) ||
-      !is.numeric(unknown_vals)
-    ) next
+        !is.numeric(unknown_vals)
+    ) {
+      next
+    }
 
     train_range <- range(train_vals, na.rm = TRUE)
     unknown_range <- range(unknown_vals, na.rm = TRUE)

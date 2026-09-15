@@ -27,7 +27,6 @@ tab_ui <- function(ns) {
 
 #' @export
 tab_server <- function(input, output, session, input_data = NULL) {
-
   ns <- session$ns
 
   # Track last shown warnings to avoid repeated notifications
@@ -60,7 +59,9 @@ tab_server <- function(input, output, session, input_data = NULL) {
   # --- Current mode reactive ---
   current_mode <- shiny$reactive({
     has_data <- !is.null(input_data) && !is.null(input_data())
-    if (!has_data) return("manual")
+    if (!has_data) {
+      return("manual")
+    }
     input$input_mode %||% "manual"
   })
 
@@ -78,10 +79,14 @@ tab_server <- function(input, output, session, input_data = NULL) {
   # --- Import mode: detected factor structure display ---
   output$detected_structure_ui <- shiny$renderUI({
     mode <- current_mode()
-    if (mode != "import") return(NULL)
+    if (mode != "import") {
+      return(NULL)
+    }
 
     data <- if (!is.null(input_data)) input_data() else NULL
-    if (is.null(data)) return(NULL)
+    if (is.null(data)) {
+      return(NULL)
+    }
 
     grouping_cols <- input$grouping_cols
     if (is.null(grouping_cols) || length(grouping_cols) == 0) {
@@ -243,15 +248,13 @@ render_manual_mode_ui <- function(ns, input) {
     factor_id <- paste0("factor_", i)
     levels_id <- paste0("levels_", i)
 
-    default_name <- switch(
-      as.character(i),
+    default_name <- switch(as.character(i),
       "1" = "Material",
       "2" = "Treatment",
       "3" = "Condition"
     )
 
-    default_levels <- switch(
-      as.character(i),
+    default_levels <- switch(as.character(i),
       "1" = "MatA, MatB",
       "2" = "TreatX, TreatY",
       "3" = "Cond1, Cond2"

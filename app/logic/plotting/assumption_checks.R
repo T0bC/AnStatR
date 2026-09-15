@@ -1,7 +1,3 @@
-box::use(
-  rhino,
-)
-
 # =============================================================================
 # Pure logic functions for assumption checks (normality + homogeneity)
 # No Shiny dependencies allowed in this file.
@@ -51,11 +47,11 @@ check_normality <- function(data, measure_col, group_col,
     shapiro <- compute_shapiro(values)
 
     data.frame(
-      group   = grp,
-      n       = n,
-      W       = shapiro$W,
+      group = grp,
+      n = n,
+      W = shapiro$W,
       p_value = shapiro$p_value,
-      normal  = shapiro$normal,
+      normal = shapiro$normal,
       stringsAsFactors = FALSE
     )
   })
@@ -198,10 +194,10 @@ check_homogeneity <- function(data, measure_col, group_col,
   levene_result <- compute_oneway_anova(abs_dev, factor(grp))
 
   list(
-    F_statistic     = levene_result$F_statistic,
-    df1             = levene_result$df1,
-    df2             = levene_result$df2,
-    p_value         = levene_result$p_value,
+    F_statistic = levene_result$F_statistic,
+    df1 = levene_result$df1,
+    df2 = levene_result$df2,
+    p_value = levene_result$p_value,
     equal_variances = if (is.na(levene_result$p_value)) {
       NA_character_
     } else if (levene_result$p_value > 0.05) {
@@ -226,7 +222,7 @@ check_homogeneity <- function(data, measure_col, group_col,
 recommend_transformation <- function(normality_df, threshold = 0.5) {
   # Only consider groups with valid Shapiro results
   valid <- normality_df[!is.na(normality_df$normal) &
-                          normality_df$normal != "identical values", ]
+    normality_df$normal != "identical values", ]
   n_groups <- nrow(valid)
 
   if (n_groups == 0) {
@@ -317,8 +313,8 @@ build_recommendation_banner <- function(recommendation, levene_result) {
 
   # Overall class: worst of normality and variance
   overall_class <- if (norm_class == "danger" ||
-                       (!is.na(levene_result$p_value) &&
-                        levene_result$equal_variances == "no")) {
+    (!is.na(levene_result$p_value) &&
+      levene_result$equal_variances == "no")) {
     "danger"
   } else if (norm_class == "warning") {
     "warning"
@@ -327,10 +323,10 @@ build_recommendation_banner <- function(recommendation, levene_result) {
   }
 
   list(
-    css_class     = overall_class,
-    icon          = norm_icon,
+    css_class = overall_class,
+    icon = norm_icon,
     normality_text = norm_text,
-    variance_text  = var_text
+    variance_text = var_text
   )
 }
 
@@ -382,12 +378,12 @@ compute_oneway_anova <- function(values, groups) {
   n_total <- sum(group_ns)
 
   # Between-group sum of squares
-  ss_between <- sum(group_ns * (group_means - grand_mean)^2)
+  ss_between <- sum(group_ns * (group_means - grand_mean) ^ 2)
   df_between <- k - 1L
 
   # Within-group sum of squares
   ss_within <- sum(
-    (values - group_means[as.character(groups)])^2,
+    (values - group_means[as.character(groups)]) ^ 2,
     na.rm = TRUE
   )
   df_within <- n_total - k
@@ -425,7 +421,11 @@ compute_oneway_anova <- function(values, groups) {
 #' @return Character string
 #' @export
 format_p <- function(p) {
-  if (is.na(p)) return("NA")
-  if (p < 0.001) return("< 0.001")
+  if (is.na(p)) {
+    return("NA")
+  }
+  if (p < 0.001) {
+    return("< 0.001")
+  }
   format(round(p, 3), nsmall = 3)
 }

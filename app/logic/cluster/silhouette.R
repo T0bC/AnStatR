@@ -32,7 +32,7 @@ box::use(
 #'   per_cluster_avg, n_noise
 #' @export
 compute_silhouette_data <- function(data, clusters,
-                                     metric = "euclidean") {
+                                    metric = "euclidean") {
   error_context <- list(
     n_obs = length(clusters),
     n_clusters = length(unique(clusters[clusters > 0])),
@@ -63,7 +63,8 @@ compute_silhouette_data <- function(data, clusters,
       }
 
       dist_mat <- stats$dist(
-        valid_data, method = metric
+        valid_data,
+        method = metric
       )
       sil <- cluster$silhouette(
         valid_clusters, dist_mat
@@ -136,10 +137,10 @@ compute_silhouette_data <- function(data, clusters,
 #'   or $error
 #' @export
 create_silhouette_plot <- function(sil_data,
-                                    membership_data = NULL,
-                                    group_cols = NULL,
-                                    sort_by = "width",
-                                    show_avg_line = TRUE) {
+                                   membership_data = NULL,
+                                   group_cols = NULL,
+                                   sort_by = "width",
+                                   show_avg_line = TRUE) {
   error_context <- list(
     n_obs = nrow(sil_data$sil_df),
     sort_by = sort_by,
@@ -235,11 +236,13 @@ create_silhouette_plot <- function(sil_data,
 #' @return Character, user-friendly error message
 #' @export
 silhouette_error_parser <- function(
-    error_msg,
-    operation_name = "Silhouette") {
+  error_msg,
+  operation_name = "Silhouette"
+) {
   if (grepl(
     "at least 2 clusters",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -248,7 +251,8 @@ silhouette_error_parser <- function(
     )
   } else if (grepl(
     "at least 2 observations",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -257,7 +261,8 @@ silhouette_error_parser <- function(
     )
   } else if (grepl(
     "NA|NaN|missing",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -276,8 +281,8 @@ silhouette_error_parser <- function(
 
 #' Resolve metadata groups and add to sil_df
 resolve_metadata_groups <- function(sil_df,
-                                     membership_data,
-                                     meta_group_cols) {
+                                    membership_data,
+                                    meta_group_cols) {
   # membership_data rows correspond to original
   # observations; use original_index to map back
   group_vals <- lapply(meta_group_cols, function(gc) {
@@ -304,7 +309,7 @@ resolve_metadata_groups <- function(sil_df,
 
 #' Build tooltip HTML for silhouette bars
 build_silhouette_tooltip <- function(sil_df,
-                                      has_group) {
+                                     has_group) {
   tt <- paste0(
     "<b>Cluster ", sil_df$cluster, "</b><br>",
     "Silhouette width: ",
@@ -322,18 +327,11 @@ build_silhouette_tooltip <- function(sil_df,
 
 #' Build the silhouette ggplot object
 build_silhouette_ggplot <- function(sil_df, cl_colors,
-                                     sil_avg, n_noise,
-                                     has_group,
-                                     show_avg_line) {
+                                    sil_avg, n_noise,
+                                    has_group,
+                                    show_avg_line) {
   # Cluster separator positions
   cluster_breaks <- compute_cluster_breaks(sil_df)
-
-  # Per-cluster average labels
-  per_cl_avg <- stats$aggregate(
-    sil_width ~ cluster_label,
-    data = sil_df,
-    FUN = mean
-  )
 
   if (has_group) {
     p <- ggplot2$ggplot(

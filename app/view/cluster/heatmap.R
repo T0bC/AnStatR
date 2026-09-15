@@ -1,14 +1,12 @@
 box::use(
   bsicons,
   plotly,
-  shinycssloaders,
   shiny,
+  shinycssloaders,
 )
 
 box::use(
   app/logic/cluster/heatmap[create_cluster_heatmap],
-  app/logic/shared/error_handling,
-  app/view/shared/error_display,
 )
 
 #' Render heatmap panel content
@@ -74,12 +72,14 @@ render_output <- function(input, output, session,
                           measure_cols_rv) {
   output$heatmap_plot <- plotly$renderPlotly({
     res <- cluster_result_rv()
-    if (is.null(res)) return(NULL)
+    if (is.null(res)) {
+      return(NULL)
+    }
 
     analysis_data <- analysis_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
-        is.null(measure_cols)) {
+      is.null(measure_cols)) {
       return(NULL)
     }
 
@@ -90,7 +90,7 @@ render_output <- function(input, output, session,
     custom_labels <- NULL
     label_col <- input$labelColumn
     if (show_labels && !is.null(label_col) &&
-        nzchar(label_col)) {
+      nzchar(label_col)) {
       md <- membership_data_rv()
       if (!is.null(md) && label_col %in% names(md)) {
         custom_labels <- as.character(
@@ -108,7 +108,8 @@ render_output <- function(input, output, session,
         valid_cols <- intersect(side_cols, names(md))
         if (length(valid_cols) > 0) {
           row_side_colors_df <- md[
-            , valid_cols, drop = FALSE
+            , valid_cols,
+            drop = FALSE
           ]
         }
       }
@@ -142,8 +143,7 @@ render_output <- function(input, output, session,
 # =============================================================================
 
 render_non_hierarchical_note <- function(variant) {
-  algo_label <- switch(
-    variant,
+  algo_label <- switch(variant,
     kmeans = "K-Means",
     pam    = "K-Means (PAM)",
     dbscan = "DBSCAN",

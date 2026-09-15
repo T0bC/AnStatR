@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   rhino,
   stats,
 )
@@ -107,16 +107,17 @@ create_correlation_ggplot <- function(cor_data) {
       midpoint = 0,
       limits = c(-1, 1),
       name = "Correlation"
-    ) +
-    { if (show_labels) {
-      ggplot2$geom_text(
-        ggplot2$aes(label = sprintf("%.2f", correlation)),
-        color = ifelse(
-          abs(cor_long$correlation) > 0.5, "white", "black"
-        ),
-        size = cell_text_size
-      )
-    } } +
+    ) + {
+      if (show_labels) {
+        ggplot2$geom_text(
+          ggplot2$aes(label = sprintf("%.2f", correlation)),
+          color = ifelse(
+            abs(cor_long$correlation) > 0.5, "white", "black"
+          ),
+          size = cell_text_size
+        )
+      }
+    } +
     ggplot2$theme_minimal() +
     ggplot2$theme(
       axis.text.x = ggplot2$element_text(
@@ -189,7 +190,8 @@ correlation_error_parser <- function(error_msg,
                                      operation_name = "Correlation Plot") {
   if (grepl(
     "constant|singular|invertible",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -203,7 +205,8 @@ correlation_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -212,7 +215,8 @@ correlation_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "columns|measurement|at least 2",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -281,14 +285,16 @@ validate_correlation_inputs <- function(data, measurement_cols) {
 
 compute_cor_matrix <- function(cor_data) {
   cor_matrix <- stats$cor(
-    cor_data, use = "pairwise.complete.obs"
+    cor_data,
+    use = "pairwise.complete.obs"
   )
 
   if (any(is.na(cor_matrix))) {
     complete_rows <- stats$complete.cases(cor_data)
     if (sum(complete_rows) >= 2) {
       cor_matrix <- stats$cor(
-        cor_data[complete_rows, ], use = "everything"
+        cor_data[complete_rows, ],
+        use = "everything"
       )
     }
     if (any(is.na(cor_matrix))) {

@@ -1,14 +1,8 @@
 box::use(
   bsicons,
-  bslib,
   ggiraph,
   ggplot2,
   shiny,
-)
-
-box::use(
-  app/logic/shared/error_handling,
-  app/view/shared/error_display,
 )
 
 #' Render optimal components panel content
@@ -44,7 +38,8 @@ render_optimal_components <- function(optimal_result, ns,
     shiny$tags$div(
       class = "mt-3",
       ggiraph$girafeOutput(
-        ns("optimal_scree_plot"), height = "400px"
+        ns("optimal_scree_plot"),
+        height = "400px"
       )
     ),
     shiny$tags$div(
@@ -142,12 +137,13 @@ render_optimal_summary <- function(optimal_result) {
 
   if (
     is.null(summary_data) ||
-    summary_data$methods_computed == 0
+      summary_data$methods_computed == 0
   ) {
     return(shiny$tags$div(
       class = "alert alert-warning",
       bsicons$bs_icon(
-        "exclamation-triangle-fill", class = "me-2"
+        "exclamation-triangle-fill",
+        class = "me-2"
       ),
       "Could not compute optimal component estimates."
     ))
@@ -310,7 +306,7 @@ create_scree_plot <- function(optimal_result) {
   # Parallel analysis line
   if (
     !is.null(methods$parallel) &&
-    !is.null(methods$parallel$random_eigenvalues)
+      !is.null(methods$parallel$random_eigenvalues)
   ) {
     random_eigs <- methods$parallel$random_eigenvalues
     pa_df <- data.frame(
@@ -341,8 +337,8 @@ create_scree_plot <- function(optimal_result) {
   # Elbow vertical marker
   if (
     !is.null(methods$elbow) &&
-    !is.null(methods$elbow$ncp) &&
-    !is.na(methods$elbow$ncp)
+      !is.null(methods$elbow$ncp) &&
+      !is.na(methods$elbow$ncp)
   ) {
     p <- p +
       ggplot2$geom_vline(

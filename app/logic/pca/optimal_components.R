@@ -193,23 +193,27 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
 
   for (i in seq_len(n_iter)) {
     random_data <- matrix(
-      stats$rnorm(n * p), nrow = n, ncol = p
+      stats$rnorm(n * p),
+      nrow = n, ncol = p
     )
     cor_matrix <- stats$cor(random_data)
     random_eigs[i, ] <- eigen(
-      cor_matrix, symmetric = TRUE, only.values = TRUE
+      cor_matrix,
+      symmetric = TRUE, only.values = TRUE
     )$values
   }
 
   # 95th percentile of random eigenvalues
   random_95 <- apply(
-    random_eigs, 2, stats$quantile, probs = 0.95
+    random_eigs, 2, stats$quantile,
+    probs = 0.95
   )
 
   # Compute actual eigenvalues from correlation matrix
   actual_cor <- stats$cor(data)
   actual_eigs <- eigen(
-    actual_cor, symmetric = TRUE, only.values = TRUE
+    actual_cor,
+    symmetric = TRUE, only.values = TRUE
   )$values
 
   # Count components exceeding random threshold
@@ -231,11 +235,13 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
 #' @return Character, user-friendly error message
 #' @export
 optimal_components_error_parser <- function(
-    error_msg,
-    operation_name = "Optimal Components") {
+  error_msg,
+  operation_name = "Optimal Components"
+) {
   if (grepl(
     "singular|invertible",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -245,7 +251,8 @@ optimal_components_error_parser <- function(
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -253,7 +260,8 @@ optimal_components_error_parser <- function(
     )
   } else if (grepl(
     "dimension|ncp",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

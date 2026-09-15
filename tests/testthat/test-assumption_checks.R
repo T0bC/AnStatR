@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, expect_false, it],
+  testthat[describe, expect_equal, expect_false, expect_true, it],
 )
 
 box::use(
@@ -14,7 +14,7 @@ make_normal_data <- function() {
   set.seed(42)
   data.frame(
     SPECIES = rep(c("A", "B", "C"), each = 50),
-    value   = c(rnorm(50, 10, 2), rnorm(50, 12, 2), rnorm(50, 11, 2)),
+    value = c(rnorm(50, 10, 2), rnorm(50, 12, 2), rnorm(50, 11, 2)),
     value_outlier = FALSE,
     value_trimmed = FALSE,
     stringsAsFactors = FALSE
@@ -25,7 +25,7 @@ make_nonnormal_data <- function() {
   set.seed(42)
   data.frame(
     SPECIES = rep(c("A", "B", "C"), each = 50),
-    value   = c(rexp(50, 0.5), rexp(50, 0.3), rexp(50, 0.1)),
+    value = c(rexp(50, 0.5), rexp(50, 0.3), rexp(50, 0.1)),
     value_outlier = FALSE,
     value_trimmed = FALSE,
     stringsAsFactors = FALSE
@@ -36,7 +36,7 @@ make_mixed_data <- function() {
   set.seed(42)
   data.frame(
     SPECIES = rep(c("A", "B", "C"), each = 50),
-    value   = c(rnorm(50, 10, 2), rnorm(50, 12, 2), rexp(50, 0.1)),
+    value = c(rnorm(50, 10, 2), rnorm(50, 12, 2), rexp(50, 0.1)),
     value_outlier = FALSE,
     value_trimmed = FALSE,
     stringsAsFactors = FALSE

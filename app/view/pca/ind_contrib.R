@@ -63,12 +63,18 @@ render_output <- function(input, output, session,
     }
   })
 
-  ic_params <- shiny$reactive({ cached_params() })
+  ic_params <- shiny$reactive({
+    cached_params()
+  })
 
   output$ind_contrib_plot <- ggiraph$renderGirafe({
     pca_res <- pca_result()
-    if (is.null(pca_res)) return(NULL)
-    if (!pca_res$success) return(NULL)
+    if (is.null(pca_res)) {
+      return(NULL)
+    }
+    if (!pca_res$success) {
+      return(NULL)
+    }
 
     ncp <- if (!is.null(display_ncp)) {
       display_ncp()
@@ -78,11 +84,13 @@ render_output <- function(input, output, session,
     if (is.null(ncp)) ncp <- 5L
 
     params <- ic_params()
-    if (is.null(params)) return(NULL)
+    if (is.null(params)) {
+      return(NULL)
+    }
 
     group_cols <- params$group_cols
     if (is.null(group_cols) ||
-        length(group_cols) == 0) {
+      length(group_cols) == 0) {
       group_cols <- NULL
     }
     show_title <- isTRUE(params$show_title)
@@ -94,7 +102,9 @@ render_output <- function(input, output, session,
       show_title = show_title
     )
 
-    if (!plot_res$success) return(NULL)
+    if (!plot_res$success) {
+      return(NULL)
+    }
 
     last_plot(plot_res$result)
 

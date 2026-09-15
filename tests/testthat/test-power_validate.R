@@ -1,10 +1,10 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, expect_false, expect_null, it],
+  testthat[describe, expect_equal, expect_false, expect_null, expect_true, it],
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/power/validate,
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================

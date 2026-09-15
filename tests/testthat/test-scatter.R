@@ -1,6 +1,12 @@
 box::use(
-  testthat[describe, expect_equal, expect_s3_class, expect_true,
-           expect_type, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_s3_class,
+    expect_true,
+    expect_type,
+    it
+  ],
 )
 
 box::use(
@@ -16,9 +22,9 @@ make_test_data <- function(n = 30) {
   set.seed(42)
   data.frame(
     Treatment = rep(c("A", "B", "C"), each = n / 3),
-    Site      = rep(c("X", "Y"), times = n / 2),
-    Value1    = rnorm(n, mean = 10, sd = 2),
-    Value2    = rnorm(n, mean = 5, sd = 1),
+    Site = rep(c("X", "Y"), times = n / 2),
+    Value1 = rnorm(n, mean = 10, sd = 2),
+    Value2 = rnorm(n, mean = 5, sd = 1),
     stringsAsFactors = FALSE
   )
 }

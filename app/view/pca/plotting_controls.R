@@ -25,7 +25,8 @@ tab_ui <- function(ns) {
         "Biplot Layer ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select which layers to display",
@@ -50,7 +51,8 @@ tab_ui <- function(ns) {
         "Group Biplot ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select columns that potentially",
@@ -74,7 +76,8 @@ tab_ui <- function(ns) {
         "Use Convex Hull ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Select if you want to show the",

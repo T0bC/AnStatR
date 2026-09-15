@@ -59,7 +59,9 @@ estimate_cv_runtime <- function(n_samples = NULL, n_vars = NULL,
       as.numeric(v)
     )) && as.numeric(v) > 0
   }, logical(1))
-  if (!all(ok)) return(NULL)
+  if (!all(ok)) {
+    return(NULL)
+  }
 
   vals <- lapply(vals, as.numeric)
   constant <- CV_COST_CONSTANTS[[method]]
@@ -114,7 +116,9 @@ humanise_seconds <- function(seconds) {
 #' @return Shiny tag, or NULL when no estimate is available
 #' @export
 render_runtime_estimate <- function(est) {
-  if (is.null(est)) return(NULL)
+  if (is.null(est)) {
+    return(NULL)
+  }
 
   if (identical(est$tier, "slow")) {
     return(shiny$tags$div(
@@ -203,7 +207,9 @@ check_cv_settings <- function(n_samples = NULL, folds = NULL,
 #' @return Shiny tag, or NULL when there is nothing to say
 #' @export
 render_cv_advice <- function(msgs) {
-  if (length(msgs) == 0) return(NULL)
+  if (length(msgs) == 0) {
+    return(NULL)
+  }
   shiny$tags$small(
     class = "text-muted d-block mt-1",
     bsicons$bs_icon("info-circle", class = "me-1"),

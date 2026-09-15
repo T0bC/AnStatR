@@ -4,11 +4,11 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/data_utils,
+  app/logic/plotting/boxplot_builder,
   app/logic/plotting/plot_helpers,
   app/logic/plotting/scatter_builder,
-  app/logic/plotting/boxplot_builder,
   app/logic/plotting/violin_builder,
+  app/logic/shared/data_utils,
 )
 
 # =============================================================================
@@ -29,7 +29,7 @@ PLOT_TYPES <- list(
 #' @return Named character vector for selectInput choices
 #' @export
 get_plot_type_choices <- function() {
- c(
+  c(
     "Scatter"          = PLOT_TYPES$SCATTER,
     "Boxplot"          = PLOT_TYPES$BOXPLOT,
     "Boxplot + Points" = PLOT_TYPES$BOXPLOT_POINTS,
@@ -128,7 +128,9 @@ create_plot <- function(plot_type = "scatter",
                         black_points = FALSE) {
   # --- Validate inputs ---
   validation <- plot_helpers$validate_plot_inputs(data, x_cols, y_col)
-  if (!is.null(validation)) return(validation)
+  if (!is.null(validation)) {
+    return(validation)
+  }
 
   rhino$log$info(
     "Plot ({plot_type}): {y_col} by {paste(x_cols, collapse = ' | ')} ",
@@ -197,8 +199,7 @@ create_plot <- function(plot_type = "scatter",
   )
 
   # --- Dispatch to appropriate builder ---
-  p <- switch(
-    plot_type,
+  p <- switch(plot_type,
     "scatter" = scatter_builder$build_scatter_layers(
       p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
     ),

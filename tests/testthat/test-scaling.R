@@ -1,6 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
@@ -55,13 +60,15 @@ describe("scale_data", {
     expect_false(result$success)
     expect_true(result$error$is_error)
     expect_true(grepl("zero variance", result$error$message,
-                       ignore.case = TRUE))
+      ignore.case = TRUE
+    ))
   })
 
   it("centers only when scale = FALSE", {
     data <- data.frame(x = c(10, 20, 30))
     result <- scaling$scale_data(
-      data, "x", center = TRUE, scale = FALSE
+      data, "x",
+      center = TRUE, scale = FALSE
     )
     expect_true(result$success)
     expect_equal(
@@ -73,7 +80,8 @@ describe("scale_data", {
   it("scales only when center = FALSE", {
     data <- data.frame(x = c(10, 20, 30))
     result <- scaling$scale_data(
-      data, "x", center = FALSE, scale = TRUE
+      data, "x",
+      center = FALSE, scale = TRUE
     )
     expect_true(result$success)
     expect_true(mean(result$result$x) != 0)
@@ -90,7 +98,8 @@ describe("scaling_error_parser", {
       "zero variance columns found"
     )
     expect_true(grepl("zero variance", msg,
-                       ignore.case = TRUE))
+      ignore.case = TRUE
+    ))
   })
 
   it("returns generic message for unknown errors", {
@@ -166,7 +175,8 @@ describe("residualize_data", {
     expect_false(result$success)
     expect_true(result$error$is_error)
     expect_true(grepl("not found", result$error$message,
-                       ignore.case = TRUE))
+      ignore.case = TRUE
+    ))
   })
 
   it("returns error when grouping column has fewer than 2 levels", {
@@ -177,7 +187,8 @@ describe("residualize_data", {
     result <- scaling$residualize_data(data, "x", "site")
     expect_false(result$success)
     expect_true(grepl("only one group", result$error$message,
-                       ignore.case = TRUE))
+      ignore.case = TRUE
+    ))
   })
 
   it("returns error when grouping column has missing values", {
@@ -192,7 +203,8 @@ describe("residualize_data", {
     result <- scaling$residualize_data(data, "x", "site")
     expect_false(result$success)
     expect_true(grepl("missing values", result$error$message,
-                       ignore.case = TRUE))
+      ignore.case = TRUE
+    ))
   })
 })
 

@@ -9,8 +9,11 @@ box::use(
 box::use(
   app/view/components/sidebar_tabs,
   app/view/shared/tuning_controls[
-    check_cv_settings, estimate_cv_runtime, parse_keepx_grid,
-    render_cv_advice, render_runtime_estimate
+    check_cv_settings,
+    estimate_cv_runtime,
+    parse_keepx_grid,
+    render_cv_advice,
+    render_runtime_estimate
   ],
 )
 
@@ -31,7 +34,8 @@ tab_ui <- function(ns) {
         "Analysis Type ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "LDA assumes equal covariance matrices",
@@ -70,7 +74,8 @@ tab_ui <- function(ns) {
           "Estimation Method ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "'moment': standard estimators of",
@@ -104,7 +109,8 @@ tab_ui <- function(ns) {
           "Estimation Method ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "'moment': standard estimators of",
@@ -138,7 +144,8 @@ tab_ui <- function(ns) {
           "Subclasses per group ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "MDA models each group as a mixture",
@@ -167,7 +174,8 @@ tab_ui <- function(ns) {
           "Max EM iterations ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Maximum iterations of the",
@@ -199,7 +207,8 @@ tab_ui <- function(ns) {
           "Number of components ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Number of latent components to",
@@ -227,7 +236,8 @@ tab_ui <- function(ns) {
           "Variables to keep per component ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "How many measurement variables each",
@@ -283,7 +293,8 @@ tab_ui <- function(ns) {
           "Prior Probabilities ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Proportional: uses class proportions",
@@ -307,7 +318,8 @@ tab_ui <- function(ns) {
         "Validation ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "Decides whether the reported accuracy",
@@ -495,7 +507,8 @@ tab_ui <- function(ns) {
                 "keepX values to test ",
                 bslib$tooltip(
                   bsicons$bs_icon(
-                    "info-circle", class = "text-muted"
+                    "info-circle",
+                    class = "text-muted"
                   ),
                   paste(
                     "The candidate variable counts",
@@ -517,7 +530,8 @@ tab_ui <- function(ns) {
             inputId = ns("run_perf_button"),
             label = shiny$tags$span(
               bsicons$bs_icon(
-                "clipboard-data", class = "me-1"
+                "clipboard-data",
+                class = "me-1"
               ),
               "Check component count (recommended)"
             ),
@@ -570,8 +584,8 @@ tab_server <- function(input, output, session,
   active_data <- shiny$reactive({
     if (
       !is.null(input$data_source) &&
-      input$data_source == "pca_scores" &&
-      !is.null(pca_scores_data)
+        input$data_source == "pca_scores" &&
+        !is.null(pca_scores_data)
     ) {
       pca_scores_data()
     } else if (!is.null(input_data)) {
@@ -585,7 +599,9 @@ tab_server <- function(input, output, session,
   output$tune_keepx_runtime <- shiny$renderUI({
     data <- active_data()
     measure_cols <- input$measureVar
-    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+    if (is.null(data) || length(measure_cols) == 0) {
+      return(NULL)
+    }
 
     grid <- parse_keepx_grid(
       input$tune_keepx_grid, length(measure_cols)
@@ -607,7 +623,9 @@ tab_server <- function(input, output, session,
   output$perf_runtime <- shiny$renderUI({
     data <- active_data()
     measure_cols <- input$measureVar
-    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+    if (is.null(data) || length(measure_cols) == 0) {
+      return(NULL)
+    }
 
     folds <- input$perf_folds %||% 5
     repeats <- input$perf_repeats %||% 10
@@ -632,53 +650,70 @@ tab_server <- function(input, output, session,
     )
   })
 
-  shiny$observeEvent(data_version(), {
-    rhino$log$info(
-      "LDA analysis_settings: reset for new data"
-    )
-    shiny$updateRadioButtons(
-      session, "analysis_type", selected = "lda"
-    )
-    shiny$updateSelectInput(
-      session, "method", selected = "moment"
-    )
-    shiny$updateSelectInput(
-      session, "qda_method", selected = "moment"
-    )
-    shiny$updateRadioButtons(
-      session, "prior", selected = "proportional"
-    )
-    shiny$updateRadioButtons(
-      session, "validation_method", selected = "none"
-    )
-    shiny$updateSliderInput(
-      session, "train_fraction", value = 0.7
-    )
-    shiny$updateNumericInput(
-      session, "split_seed", value = 42
-    )
-    shiny$updateNumericInput(
-      session, "tol", value = 1.0e-4
-    )
-    shiny$updateNumericInput(
-      session, "nu", value = 5
-    )
-    shiny$updateNumericInput(
-      session, "mda_subclasses", value = 3
-    )
-    shiny$updateNumericInput(
-      session, "mda_iter", value = 5
-    )
-    shiny$updateNumericInput(
-      session, "plsda_ncomp", value = 2
-    )
-    shiny$updateNumericInput(
-      session, "perf_folds", value = 5
-    )
-    shiny$updateNumericInput(
-      session, "perf_repeats", value = 10
-    )
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      rhino$log$info(
+        "LDA analysis_settings: reset for new data"
+      )
+      shiny$updateRadioButtons(
+        session, "analysis_type",
+        selected = "lda"
+      )
+      shiny$updateSelectInput(
+        session, "method",
+        selected = "moment"
+      )
+      shiny$updateSelectInput(
+        session, "qda_method",
+        selected = "moment"
+      )
+      shiny$updateRadioButtons(
+        session, "prior",
+        selected = "proportional"
+      )
+      shiny$updateRadioButtons(
+        session, "validation_method",
+        selected = "none"
+      )
+      shiny$updateSliderInput(
+        session, "train_fraction",
+        value = 0.7
+      )
+      shiny$updateNumericInput(
+        session, "split_seed",
+        value = 42
+      )
+      shiny$updateNumericInput(
+        session, "tol",
+        value = 1.0e-4
+      )
+      shiny$updateNumericInput(
+        session, "nu",
+        value = 5
+      )
+      shiny$updateNumericInput(
+        session, "mda_subclasses",
+        value = 3
+      )
+      shiny$updateNumericInput(
+        session, "mda_iter",
+        value = 5
+      )
+      shiny$updateNumericInput(
+        session, "plsda_ncomp",
+        value = 2
+      )
+      shiny$updateNumericInput(
+        session, "perf_folds",
+        value = 5
+      )
+      shiny$updateNumericInput(
+        session, "perf_repeats",
+        value = 10
+      )
+    },
+    ignoreInit = TRUE
+  )
 
   # Default ncomp to (n_groups - 1) when the grouping
   # column changes, mirroring LDA's LD axis count.
@@ -687,61 +722,79 @@ tab_server <- function(input, output, session,
   # manual edits to plsda_ncomp are never overwritten here.
   ncomp_auto_set <- shiny$reactiveVal(FALSE)
 
-  shiny$observeEvent(data_version(), {
-    ncomp_auto_set(FALSE)
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      ncomp_auto_set(FALSE)
+    },
+    ignoreInit = TRUE
+  )
 
-  shiny$observeEvent(input$groupingCol, {
-    grp <- input$groupingCol
-    if (is.null(grp) || grp == "") return()
-    if (isTRUE(ncomp_auto_set())) return()
+  shiny$observeEvent(input$groupingCol,
+    {
+      grp <- input$groupingCol
+      if (is.null(grp) || grp == "") {
+        return()
+      }
+      if (isTRUE(ncomp_auto_set())) {
+        return()
+      }
 
-    data <- active_data()
-    if (is.null(data) || !grp %in% names(data)) return()
+      data <- active_data()
+      if (is.null(data) || !grp %in% names(data)) {
+        return()
+      }
 
-    n_groups <- length(unique(stats$na.omit(data[[grp]])))
-    default_ncomp <- max(1, n_groups - 1)
+      n_groups <- length(unique(stats$na.omit(data[[grp]])))
+      default_ncomp <- max(1, n_groups - 1)
 
-    shiny$updateNumericInput(
-      session, "plsda_ncomp", value = default_ncomp
-    )
-    ncomp_auto_set(TRUE)
-  }, ignoreInit = TRUE)
+      shiny$updateNumericInput(
+        session, "plsda_ncomp",
+        value = default_ncomp
+      )
+      ncomp_auto_set(TRUE)
+    },
+    ignoreInit = TRUE
+  )
 
   # PLS-DA/sPLS-DA have no native LOO-CV fitting mode.
   # Component-count/error diagnostics are instead available
   # via the dedicated perf() panel, so hide the LOO-CV choice
   # and fall back to "None" if it was previously selected.
-  shiny$observeEvent(input$analysis_type, {
-    is_plsda <- input$analysis_type %in% c("plsda", "splsda")
-    choices <- if (is_plsda) {
-      list(
-        "None (fit only)" = "none",
-        "Train / Test Split" = "split"
+  shiny$observeEvent(input$analysis_type,
+    {
+      is_plsda <- input$analysis_type %in% c("plsda", "splsda")
+      choices <- if (is_plsda) {
+        list(
+          "None (fit only)" = "none",
+          "Train / Test Split" = "split"
+        )
+      } else {
+        list(
+          "None (fit only)" = "none",
+          "Leave-one-out CV" = "loo_cv",
+          "Train / Test Split" = "split"
+        )
+      }
+      current <- input$validation_method
+      selected <- if (is_plsda && identical(current, "loo_cv")) {
+        "none"
+      } else {
+        current %||% "none"
+      }
+      shiny$updateRadioButtons(
+        session, "validation_method",
+        choices = choices, selected = selected
       )
-    } else {
-      list(
-        "None (fit only)" = "none",
-        "Leave-one-out CV" = "loo_cv",
-        "Train / Test Split" = "split"
-      )
-    }
-    current <- input$validation_method
-    selected <- if (is_plsda && identical(current, "loo_cv")) {
-      "none"
-    } else {
-      current %||% "none"
-    }
-    shiny$updateRadioButtons(
-      session, "validation_method",
-      choices = choices, selected = selected
-    )
-  }, ignoreInit = TRUE)
+    },
+    ignoreInit = TRUE
+  )
 
   # Dynamic per-component keepX numeric inputs (sPLS-DA)
   output$plsda_keepx_inputs <- shiny$renderUI({
     ncomp <- input_num(input$plsda_ncomp, 2)
-    if (ncomp < 1) return(NULL)
+    if (ncomp < 1) {
+      return(NULL)
+    }
     n_vars <- length(input$measureVar)
     default_keep <- if (n_vars > 0) min(10, n_vars) else 10
 

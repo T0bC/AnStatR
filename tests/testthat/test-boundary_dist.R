@@ -3,8 +3,8 @@ box::use(
 )
 
 box::use(
-  app/logic/lda/lda[run_plsda],
   app/logic/lda/ld_plot[create_ld_plot],
+  app/logic/lda/lda[run_plsda],
 )
 
 # =============================================================================
@@ -50,7 +50,7 @@ boundary_grid <- function(result, dist,
   for (layer in plot_res$result$layers) {
     dat <- tryCatch(layer$data, error = function(e) NULL)
     if (is.data.frame(dat) && "class" %in% names(dat) &&
-          nrow(dat) > 1000) {
+      nrow(dat) > 1000) {
       return(dat)
     }
   }
@@ -86,14 +86,15 @@ describe("decision boundary distance rules", {
     result <- fit()
     default_grid <- boundary_grid(result, "max.dist")
     plot_res <- create_ld_plot(
-      result, "Comp1", "Comp2", show_boundaries = TRUE
+      result, "Comp1", "Comp2",
+      show_boundaries = TRUE
     )
     expect_true(plot_res$success)
     explicit <- NULL
     for (layer in plot_res$result$layers) {
       dat <- tryCatch(layer$data, error = function(e) NULL)
       if (is.data.frame(dat) && "class" %in% names(dat) &&
-            nrow(dat) > 1000) {
+        nrow(dat) > 1000) {
         explicit <- dat
         break
       }

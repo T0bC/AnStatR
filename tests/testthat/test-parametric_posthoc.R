@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, expect_false, it],
+  testthat[describe, expect_equal, expect_false, expect_true, it],
 )
 
 box::use(
@@ -14,7 +14,8 @@ box::use(
 make_oneway_data <- function(n_per_group = 20, n_groups = 3) {
   set.seed(42)
   groups <- rep(
-    paste0("G", seq_len(n_groups)), each = n_per_group
+    paste0("G", seq_len(n_groups)),
+    each = n_per_group
   )
   values <- rnorm(
     n_per_group * n_groups,
@@ -341,7 +342,7 @@ describe("perform_combined_parametric_posthoc filter_valid", {
       filter_valid = TRUE
     )
     if (is.data.frame(result_all) &&
-        is.data.frame(result_filtered)) {
+      is.data.frame(result_filtered)) {
       expect_true(
         nrow(result_filtered) <= nrow(result_all)
       )

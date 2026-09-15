@@ -1,13 +1,13 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   legendry,
   rhino,
 )
 
 box::use(
-  app/logic/shared/data_utils,
   app/logic/plotting/data_processing,
+  app/logic/shared/data_utils,
 )
 
 # =============================================================================
@@ -54,7 +54,8 @@ validate_plot_inputs <- function(data, x_cols, y_col) {
 create_empty_plot <- function(message = "No data to display") {
   ggplot2$ggplot() +
     ggplot2$annotate(
-      "text", x = 0.5, y = 0.5,
+      "text",
+      x = 0.5, y = 0.5,
       label = message, size = 4, color = "gray50"
     ) +
     ggplot2$theme_void() +
@@ -73,9 +74,9 @@ create_empty_plot <- function(message = "No data to display") {
 #' @export
 resolve_point_style <- function(ps) {
   list(
-    size       = ps$size       %||% 4,
-    spread     = ps$spread     %||% 0.15,
-    alpha      = ps$alpha      %||% 0.6,
+    size       = ps$size %||% 4,
+    spread     = ps$spread %||% 0.15,
+    alpha      = ps$alpha %||% 0.6,
     shape_cols = ps$shape_cols
   )
 }
@@ -86,11 +87,11 @@ resolve_point_style <- function(ps) {
 #' @export
 resolve_processing <- function(proc) {
   list(
-    trim_percent      = proc$trim_percent      %||% 0,
-    outlier_enabled   = proc$outlier_enabled    %||% FALSE,
-    outlier_method    = proc$outlier_method     %||% "IQR",
-    outlier_factor    = proc$outlier_factor     %||% 1.5,
-    bootstrap_samples = proc$bootstrap_samples  %||% 1000
+    trim_percent      = proc$trim_percent %||% 0,
+    outlier_enabled   = proc$outlier_enabled %||% FALSE,
+    outlier_method    = proc$outlier_method %||% "IQR",
+    outlier_factor    = proc$outlier_factor %||% 1.5,
+    bootstrap_samples = proc$bootstrap_samples %||% 1000
   )
 }
 
@@ -100,15 +101,15 @@ resolve_processing <- function(proc) {
 #' @export
 resolve_grid_legend <- function(gl) {
   list(
-    legend_position    = gl$legend_position    %||% "none",
-    h_grid             = gl$h_grid             %||% TRUE,
-    v_grid             = gl$v_grid             %||% TRUE,
-    top_right_borders  = gl$top_right_borders  %||% TRUE,
-    show_median        = gl$show_median        %||% TRUE,
-    show_sd            = gl$show_sd            %||% TRUE,
-    aspect_ratio       = gl$aspect_ratio       %||% FALSE,
-    show_median_point  = gl$show_median_point  %||% FALSE,
-    show_mean_point    = gl$show_mean_point    %||% FALSE
+    legend_position    = gl$legend_position %||% "none",
+    h_grid             = gl$h_grid %||% TRUE,
+    v_grid             = gl$v_grid %||% TRUE,
+    top_right_borders  = gl$top_right_borders %||% TRUE,
+    show_median        = gl$show_median %||% TRUE,
+    show_sd            = gl$show_sd %||% TRUE,
+    aspect_ratio       = gl$aspect_ratio %||% FALSE,
+    show_median_point  = gl$show_median_point %||% FALSE,
+    show_mean_point    = gl$show_mean_point %||% FALSE
   )
 }
 
@@ -119,9 +120,9 @@ resolve_grid_legend <- function(gl) {
 resolve_stat_line_style <- function(sls) {
   list(
     median_thickness = sls$median_thickness %||% 0.5,
-    median_width     = sls$median_width     %||% 0.15,
-    sd_thickness     = sls$sd_thickness     %||% 0.5,
-    sd_width         = sls$sd_width         %||% 0.15
+    median_width     = sls$median_width %||% 0.15,
+    sd_thickness     = sls$sd_thickness %||% 0.5,
+    sd_width         = sls$sd_width %||% 0.15
   )
 }
 
@@ -131,7 +132,7 @@ resolve_stat_line_style <- function(sls) {
 #' @export
 resolve_axis_style <- function(ax) {
   list(
-    tick_length    = ax$tick_length    %||% 0.15,
+    tick_length    = ax$tick_length %||% 0.15,
     line_thickness = ax$line_thickness %||% 0.5
   )
 }
@@ -142,10 +143,10 @@ resolve_axis_style <- function(ax) {
 #' @export
 resolve_boxplot_style <- function(bp) {
   list(
-    box_width     = bp$box_width     %||% 0.7,
+    box_width     = bp$box_width %||% 0.7,
     show_outliers = bp$show_outliers %||% FALSE,
-    notch         = bp$notch         %||% FALSE,
-    alpha         = bp$alpha         %||% 0.6
+    notch         = bp$notch %||% FALSE,
+    alpha         = bp$alpha %||% 0.6
   )
 }
 
@@ -155,10 +156,10 @@ resolve_boxplot_style <- function(bp) {
 #' @export
 resolve_violin_style <- function(vp) {
   list(
-    violin_width  = vp$violin_width  %||% 0.9,
-    trim          = vp$trim          %||% TRUE,
-    scale         = vp$scale         %||% "width",
-    alpha         = vp$alpha         %||% 0.6,
+    violin_width  = vp$violin_width %||% 0.9,
+    trim          = vp$trim %||% TRUE,
+    scale         = vp$scale %||% "width",
+    alpha         = vp$alpha %||% 0.6,
     show_outliers = vp$show_outliers %||% FALSE
   )
 }
@@ -352,12 +353,16 @@ build_tooltip_text <- function(data, x_var, x_label, y_col,
   status <- vapply(base::seq_len(nrow(data)), function(i) {
     flags <- character(0)
     if (isTRUE(is_trimmed[i])) {
-      flags <- c(flags,
-        "<span style='color:#dc3545;'>Trimmed</span>")
+      flags <- c(
+        flags,
+        "<span style='color:#dc3545;'>Trimmed</span>"
+      )
     }
     if (isTRUE(is_outlier[i])) {
-      flags <- c(flags,
-        "<span style='color:#fd7e14;'>Outlier</span>")
+      flags <- c(
+        flags,
+        "<span style='color:#fd7e14;'>Outlier</span>"
+      )
     }
     if (length(flags) > 0) {
       paste0("<br/><em>", paste(flags, collapse = ", "), "</em>")
@@ -476,9 +481,13 @@ is_fillable_shape <- function(shapes) {
 #' @return TRUE only if every shape is fillable
 #' @export
 all_fillable_shapes <- function(shapes) {
-  if (is.null(shapes) || length(shapes) == 0) return(FALSE)
+  if (is.null(shapes) || length(shapes) == 0) {
+    return(FALSE)
+  }
   shapes <- shapes[!is.na(shapes)]
-  if (length(shapes) == 0) return(FALSE)
+  if (length(shapes) == 0) {
+    return(FALSE)
+  }
   all(shapes %in% c(21, 22, 23, 24, 25))
 }
 
@@ -517,7 +526,9 @@ apply_shape_scale <- function(p, data, shape_legend_title) {
 #' @return ggplot object with stats legend added (or unchanged if none active)
 #' @export
 add_stats_legend <- function(p, gl, plot_type, use_shape = FALSE) {
-  if (gl$legend_position == "none") return(p)
+  if (gl$legend_position == "none") {
+    return(p)
+  }
 
   shows_lines <- plot_type %in% c(
     "scatter", "boxplot_points", "violin_points"
@@ -526,19 +537,21 @@ add_stats_legend <- function(p, gl, plot_type, use_shape = FALSE) {
   active <- list()
 
   if (shows_lines && isTRUE(gl$show_median)) {
-    active[["Median line"]] <- list(shape = 95L,  size = 5)
+    active[["Median line"]] <- list(shape = 95L, size = 5)
   }
   if (shows_lines && isTRUE(gl$show_sd)) {
-    active[["SD"]]          <- list(shape = 124L, size = 5)
+    active[["SD"]] <- list(shape = 124L, size = 5)
   }
   if (isTRUE(gl$show_median_point)) {
-    active[["Median"]]      <- list(shape = 18L,  size = 3)
+    active[["Median"]] <- list(shape = 18L, size = 3)
   }
   if (isTRUE(gl$show_mean_point)) {
-    active[["Mean"]]        <- list(shape = 13L,  size = 3)
+    active[["Mean"]] <- list(shape = 13L, size = 3)
   }
 
-  if (length(active) == 0) return(p)
+  if (length(active) == 0) {
+    return(p)
+  }
 
   labels <- names(active)
   shape_values <- stats::setNames(
@@ -564,15 +577,15 @@ add_stats_legend <- function(p, gl, plot_type, use_shape = FALSE) {
     na.rm = TRUE,
     inherit.aes = FALSE,
     color = "black",
-    fill  = "black",
-    size  = 3
+    fill = "black",
+    size = 3
   )
 
   if (!use_shape) {
     p <- p + ggplot2$scale_shape_manual(
-      name   = "Stats",
+      name = "Stats",
       values = shape_values,
-      guide  = ggplot2$guide_legend(
+      guide = ggplot2$guide_legend(
         override.aes = list(
           color = "black",
           fill  = "black",
@@ -613,7 +626,9 @@ add_outlier_points_layer <- function(p, data, ps) {
   is_outlier <- data[[".is_outlier"]]
   outlier_idx <- which(is_outlier)
 
-  if (length(outlier_idx) == 0) return(p)
+  if (length(outlier_idx) == 0) {
+    return(p)
+  }
 
   od <- data[outlier_idx, , drop = FALSE]
 
@@ -627,7 +642,7 @@ add_outlier_points_layer <- function(p, data, ps) {
     height = 0,
     size = ps$size %||% 4,
     alpha = 0.9,
-    shape = 4,  # X mark
+    shape = 4, # X mark
     color = "gray40",
     stroke = 1.5
   )
@@ -645,7 +660,9 @@ add_trimmed_points_layer <- function(p, data, ps) {
   is_trimmed <- data[[".is_trimmed"]]
   trimmed_idx <- which(is_trimmed)
 
-  if (length(trimmed_idx) == 0) return(p)
+  if (length(trimmed_idx) == 0) {
+    return(p)
+  }
 
   td <- data[trimmed_idx, , drop = FALSE]
 
@@ -659,7 +676,7 @@ add_trimmed_points_layer <- function(p, data, ps) {
     height = 0,
     size = ps$size %||% 4,
     alpha = 0.7,
-    shape = 21,  # Circle with fillable center
+    shape = 21, # Circle with fillable center
     color = "gray40",
     fill = "white",
     stroke = 1

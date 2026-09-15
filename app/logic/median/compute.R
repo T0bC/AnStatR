@@ -32,8 +32,8 @@ compute_medians <- function(data, grouping_cols,
 
   # Remove quality column from descriptive columns
   if (!is.null(quality_col) &&
-      quality_col != "None" &&
-      quality_col %in% descriptive_col_names) {
+    quality_col != "None" &&
+    quality_col %in% descriptive_col_names) {
     descriptive_col_names <- setdiff(
       descriptive_col_names, quality_col
     )
@@ -61,11 +61,11 @@ compute_medians <- function(data, grouping_cols,
 
   # NO GROUPING: return filtered data as-is
   if (is.null(grouping_cols) ||
-      length(grouping_cols) == 0) {
+    length(grouping_cols) == 0) {
     result <- data
     if (!is.null(quality_col) &&
-        quality_col != "None" &&
-        quality_col %in% names(result)) {
+      quality_col != "None" &&
+      quality_col %in% names(result)) {
       result <- result[
         , setdiff(names(result), quality_col),
         drop = FALSE
@@ -100,7 +100,8 @@ compute_medians <- function(data, grouping_cols,
             base::tapply(
               data[[col]],
               base::interaction(
-                data[grouping_cols], drop = TRUE
+                data[grouping_cols],
+                drop = TRUE
               ),
               function(x) length(unique(x)) > 1
             )

@@ -1,6 +1,5 @@
 box::use(
   bsicons,
-  bslib,
   shiny,
 )
 
@@ -40,7 +39,9 @@ render_na_summary <- function(na_result,
     length(transform_result$skipped_cols) > 0
   has_transform <- has_transformed || has_skipped
 
-  if (!has_na && !has_transform) return(NULL)
+  if (!has_na && !has_transform) {
+    return(NULL)
+  }
 
   # ==========================================================================
   # NA section
@@ -59,7 +60,8 @@ render_na_summary <- function(na_result,
       shiny$tags$div(
         class = "d-flex align-items-center mb-1",
         bsicons$bs_icon(
-          "info-circle-fill", class = "me-2"
+          "info-circle-fill",
+          class = "me-2"
         ),
         shiny$tags$strong(
           paste0(
@@ -80,7 +82,8 @@ render_na_summary <- function(na_result,
       shiny$tags$div(
         class = "d-flex align-items-center mb-1",
         bsicons$bs_icon(
-          "info-circle-fill", class = "me-2"
+          "info-circle-fill",
+          class = "me-2"
         ),
         shiny$tags$strong("No rows removed"),
         shiny$tags$span(
@@ -158,7 +161,8 @@ render_na_summary <- function(na_result,
     transform_header <- shiny$tags$div(
       class = "d-flex align-items-center mb-1",
       bsicons$bs_icon(
-        "arrow-left-right", class = "me-2"
+        "arrow-left-right",
+        class = "me-2"
       ),
       shiny$tags$strong(
         paste0(
@@ -257,10 +261,14 @@ render_na_summary <- function(na_result,
 #' @export
 render_skewness_warning <- function(skew_result,
                                     n_measure_cols = NULL) {
-  if (is.null(skew_result)) return(NULL)
+  if (is.null(skew_result)) {
+    return(NULL)
+  }
 
   skewed <- skew_result[skew_result$is_skewed, , drop = FALSE]
-  if (nrow(skewed) == 0) return(NULL)
+  if (nrow(skewed) == 0) {
+    return(NULL)
+  }
 
   n_skewed <- nrow(skewed)
   n_total <- n_measure_cols %||% nrow(skew_result)
@@ -268,7 +276,8 @@ render_skewness_warning <- function(skew_result,
   header <- shiny$tags$div(
     class = "d-flex align-items-center mb-1",
     bsicons$bs_icon(
-      "exclamation-triangle-fill", class = "me-2"
+      "exclamation-triangle-fill",
+      class = "me-2"
     ),
     shiny$tags$strong(
       paste0(

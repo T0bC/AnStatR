@@ -1,7 +1,7 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   ggiraph,
   ggplot2,
   rhino,
@@ -9,34 +9,37 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/lda/data_splitting[create_stratified_split],
+  app/logic/lda/ld_plot[create_ld_plot, create_qda_plot],
   app/logic/lda/lda[
-    run_lda, run_mda, run_plsda, run_plsda_perf,
-    run_plsda_tune_keepx, run_predict, run_qda,
+    run_lda,
+    run_mda,
+    run_plsda,
+    run_plsda_perf,
+    run_plsda_tune_keepx,
+    run_predict,
+    run_qda,
     validate_inputs
   ],
-  app/logic/lda/lda_export[create_lda_excel, create_lda_bundle],
+  app/logic/lda/lda_export[create_lda_bundle, create_lda_excel],
   app/logic/lda/perf_plot[create_perf_error_plot],
-  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/pca/pca[extract_pca_scores],
-  app/logic/pca/scaling[scale_data, residualize_data],
+  app/logic/pca/scaling[residualize_data, scale_data],
+  app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
-    detect_skewness, transform_skewed
+    detect_skewness,
+    transform_skewed
   ],
+  app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/shared/error_display,
-  app/view/shared/tuning_controls[parse_keepx_grid],
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
   app/view/lda/plotting_controls,
   app/view/lda/results_display,
   app/view/lda/var_contrib_jitter,
+  app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
-)
-
-box::use(
-  app/logic/lda/ld_plot[create_ld_plot, create_qda_plot],
+  app/view/shared/tuning_controls[parse_keepx_grid],
 )
 
 #' @export
@@ -87,19 +90,22 @@ server <- function(id, input_data, data_version,
     keepx_tuned <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
-    shiny$observeEvent(data_version(), {
-      result(NULL)
-      test_result(NULL)
-      last_error(NULL)
-      na_info(NULL)
-      transform_info(NULL)
-      skewness_info(NULL)
-      validation_warnings(character(0))
-      bundle_data(NULL)
-      perf_result(NULL)
-      perf_error(NULL)
-      rhino$log$info("LDA: state reset for new data")
-    }, ignoreInit = TRUE)
+    shiny$observeEvent(data_version(),
+      {
+        result(NULL)
+        test_result(NULL)
+        last_error(NULL)
+        na_info(NULL)
+        transform_info(NULL)
+        skewness_info(NULL)
+        validation_warnings(character(0))
+        bundle_data(NULL)
+        perf_result(NULL)
+        perf_error(NULL)
+        rhino$log$info("LDA: state reset for new data")
+      },
+      ignoreInit = TRUE
+    )
 
     # Reactive: PCA scores as a flat data frame
     # (metadata cols + Dim.1, Dim.2, … columns)
@@ -197,10 +203,10 @@ server <- function(id, input_data, data_version,
       residualize_col <- input$residualizeCol
       if (
         data_source == "raw" &&
-        !is.null(residualize_col) &&
-        length(residualize_col) > 0 &&
-        nzchar(residualize_col) &&
-        identical(residualize_col, grouping_col)
+          !is.null(residualize_col) &&
+          length(residualize_col) > 0 &&
+          nzchar(residualize_col) &&
+          identical(residualize_col, grouping_col)
       ) {
         last_error(error_handling$simple_error(
           message = paste(
@@ -274,9 +280,9 @@ server <- function(id, input_data, data_version,
       # (raw data only, skip for PCA scores)
       if (
         data_source == "raw" &&
-        !is.null(residualize_col) &&
-        length(residualize_col) > 0 &&
-        nzchar(residualize_col)
+          !is.null(residualize_col) &&
+          length(residualize_col) > 0 &&
+          nzchar(residualize_col)
       ) {
         rhino$log$info(
           "LDA: residualizing by '{residualize_col}'"
@@ -296,8 +302,8 @@ server <- function(id, input_data, data_version,
       scale_method <- input$scale_method
       if (
         data_source == "raw" &&
-        !is.null(scale_method) &&
-        scale_method != "none"
+          !is.null(scale_method) &&
+          scale_method != "none"
       ) {
         do_center <- scale_method %in%
           c("scale_center", "center_only")
@@ -319,7 +325,7 @@ server <- function(id, input_data, data_version,
       } else if (analysis_type == "qda") {
         input$qda_method
       } else {
-        "moment"  # MDA does not use MASS method
+        "moment" # MDA does not use MASS method
       }
 
       # Build prior and params
@@ -435,7 +441,7 @@ server <- function(id, input_data, data_version,
       tf_info <- transform_info()
       t_params <- if (
         !is.null(tf_info) &&
-        !is.null(tf_info$transform_params)
+          !is.null(tf_info$transform_params)
       ) {
         tf_info$transform_params
       } else {
@@ -444,11 +450,12 @@ server <- function(id, input_data, data_version,
       # Capture scale params from the pre-scaled data
       s_params <- if (
         data_source == "raw" &&
-        !is.null(scale_method) &&
-        scale_method != "none"
+          !is.null(scale_method) &&
+          scale_method != "none"
       ) {
         numeric_pre <- cleaned_data[
-          , measure_cols, drop = FALSE
+          , measure_cols,
+          drop = FALSE
         ]
         sc_center <- if (do_center) {
           colMeans(numeric_pre, na.rm = TRUE)
@@ -479,7 +486,7 @@ server <- function(id, input_data, data_version,
         settings = list(
           skewness_correction = (
             data_source == "raw" &&
-            isTRUE(input$correct_skewness)
+              isTRUE(input$correct_skewness)
           ),
           scale_method = if (
             data_source == "raw"
@@ -509,7 +516,7 @@ server <- function(id, input_data, data_version,
       # Predict on test set if split mode
       if (
         validation_method == "split" &&
-        !is.null(held_out_data)
+          !is.null(held_out_data)
       ) {
         pred_res <- run_predict(
           lda_res$result, held_out_data,
@@ -542,7 +549,7 @@ server <- function(id, input_data, data_version,
       res <- result()
       if (
         is.null(res) ||
-        !res$analysis_type %in% c("plsda", "splsda")
+          !res$analysis_type %in% c("plsda", "splsda")
       ) {
         return()
       }
@@ -564,7 +571,8 @@ server <- function(id, input_data, data_version,
             detail = "Cross-validating each component…"
           )
           out <- run_plsda_perf(
-            res, folds = folds, repeats = repeats
+            res,
+            folds = folds, repeats = repeats
           )
           shiny$incProgress(0.9, detail = "Summarising…")
           out
@@ -588,7 +596,9 @@ server <- function(id, input_data, data_version,
     # button would use (no train/test split or CV — tuning
     # operates on the full analysis-ready data).
     shiny$observeEvent(input$tune_keepx_button, {
-      if (input$analysis_type != "splsda") return()
+      if (input$analysis_type != "splsda") {
+        return()
+      }
 
       data_source <- input$data_source
       measure_cols <- input$measureVar
@@ -601,7 +611,7 @@ server <- function(id, input_data, data_version,
         input_data()
       }
       if (is.null(data) || length(measure_cols) == 0 ||
-          is.null(grouping_col) || grouping_col == "") {
+        is.null(grouping_col) || grouping_col == "") {
         shiny$showNotification(
           "Select measurement and grouping columns first.",
           type = "warning"
@@ -612,10 +622,10 @@ server <- function(id, input_data, data_version,
       residualize_col <- input$residualizeCol
       if (
         data_source == "raw" &&
-        !is.null(residualize_col) &&
-        length(residualize_col) > 0 &&
-        nzchar(residualize_col) &&
-        identical(residualize_col, grouping_col)
+          !is.null(residualize_col) &&
+          length(residualize_col) > 0 &&
+          nzchar(residualize_col) &&
+          identical(residualize_col, grouping_col)
       ) {
         shiny$showNotification(
           paste(
@@ -638,8 +648,8 @@ server <- function(id, input_data, data_version,
 
       if (
         data_source == "raw" &&
-        length(residualize_col) > 0 &&
-        nzchar(residualize_col)
+          length(residualize_col) > 0 &&
+          nzchar(residualize_col)
       ) {
         resid_res <- residualize_data(
           tune_data, measure_cols, residualize_col
@@ -650,8 +660,8 @@ server <- function(id, input_data, data_version,
       scale_method <- input$scale_method
       if (
         data_source == "raw" &&
-        !is.null(scale_method) &&
-        scale_method != "none"
+          !is.null(scale_method) &&
+          scale_method != "none"
       ) {
         do_center <- scale_method %in%
           c("scale_center", "center_only")
@@ -675,7 +685,8 @@ server <- function(id, input_data, data_version,
       )
       if (!is.null(grid_parsed$message)) {
         shiny$showNotification(
-          grid_parsed$message, type = "warning", duration = 8
+          grid_parsed$message,
+          type = "warning", duration = 8
         )
       }
 
@@ -736,7 +747,8 @@ server <- function(id, input_data, data_version,
       if (error_handling$is_app_error(err)) {
         return(
           error_display$error_alert_structured(
-            err, type = "danger"
+            err,
+            type = "danger"
           )
         )
       }
@@ -832,7 +844,7 @@ server <- function(id, input_data, data_version,
       # Skewness warning (when normalization disabled but skewed cols exist)
       skew_warning <- if (
         !isTRUE(shiny$isolate(input$correct_skewness)) &&
-        !is.null(skewness_info())
+          !is.null(skewness_info())
       ) {
         preprocessing_summary$render_skewness_warning(
           skewness_info(),
@@ -873,7 +885,8 @@ server <- function(id, input_data, data_version,
       lda_panel <- bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "bar-chart-line", class = "me-1"
+            "bar-chart-line",
+            class = "me-1"
           ),
           results_title
         ),
@@ -896,7 +909,7 @@ server <- function(id, input_data, data_version,
       if (has_lda_plot || has_qda_plot) {
         plot_title <- if (
           !is.null(res) &&
-          res$analysis_type %in% c("plsda", "splsda")
+            res$analysis_type %in% c("plsda", "splsda")
         ) {
           "Component Scores Plot"
         } else if (has_lda_plot) {
@@ -907,13 +920,15 @@ server <- function(id, input_data, data_version,
         ld_plot_panel <- bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "graph-up", class = "me-1"
+              "graph-up",
+              class = "me-1"
             ),
             plot_title
           ),
           value = "ld_plot_panel",
           ggiraph$girafeOutput(
-            ns("ld_plot"), height = "500px"
+            ns("ld_plot"),
+            height = "500px"
           ),
           download_buttons(ns, "ld_plot")
         )
@@ -923,14 +938,15 @@ server <- function(id, input_data, data_version,
       var_contrib_panel <- NULL
       has_scaling <- !is.null(res) && (
         (!is.null(res$scaling)) ||
-        (res$analysis_type == "qda" &&
-          !is.null(res$lda_scaling))
+          (res$analysis_type == "qda" &&
+            !is.null(res$lda_scaling))
       )
       if (has_scaling) {
         var_contrib_panel <- bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "diagram-3", class = "me-1"
+              "diagram-3",
+              class = "me-1"
             ),
             "Variable Contributions"
           ),
@@ -956,7 +972,8 @@ server <- function(id, input_data, data_version,
         perf_panel <- bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "clipboard-data", class = "me-1"
+              "clipboard-data",
+              class = "me-1"
             ),
             "Component Diagnostics (perf)"
           ),
@@ -1040,16 +1057,22 @@ server <- function(id, input_data, data_version,
     # Component error-rate curve (PLS-DA/sPLS-DA perf diagnostics)
     output$perf_error_plot <- ggiraph$renderGirafe({
       pr <- perf_result()
-      if (is.null(pr) || is.null(pr$errors)) return(NULL)
+      if (is.null(pr) || is.null(pr$errors)) {
+        return(NULL)
+      }
       plot_res <- create_perf_error_plot(pr$errors)
-      if (!plot_res$success) return(NULL)
+      if (!plot_res$success) {
+        return(NULL)
+      }
       plot_res$result
     })
 
     # Scores plot renderer (LDA/MDA/PLS-DA/sPLS-DA, or QDA)
     output$ld_plot <- ggiraph$renderGirafe({
       res <- result()
-      if (is.null(res)) return(NULL)
+      if (is.null(res)) {
+        return(NULL)
+      }
 
       dim_x <- input$ldDimX
       dim_y <- input$ldDimY
@@ -1072,8 +1095,12 @@ server <- function(id, input_data, data_version,
       plot_res <- if (
         res$analysis_type %in% c("lda", "mda", "plsda", "splsda")
       ) {
-        if (is.null(res$scores)) return(NULL)
-        if (!axes_valid(colnames(res$scores))) return(NULL)
+        if (is.null(res$scores)) {
+          return(NULL)
+        }
+        if (!axes_valid(colnames(res$scores))) {
+          return(NULL)
+        }
         show_diag <- isTRUE(input$show_diagnostics) &&
           !res$analysis_type %in% c("plsda", "splsda")
         create_ld_plot(
@@ -1085,7 +1112,9 @@ server <- function(id, input_data, data_version,
           boundary_dist = input$boundary_dist %||% "max.dist"
         )
       } else if (res$analysis_type == "qda") {
-        if (is.null(res$model)) return(NULL)
+        if (is.null(res$model)) {
+          return(NULL)
+        }
         # QDA offers LD axes (companion LDA projection) plus the
         # original variables; either is a valid selection.
         if (!axes_valid(c(
@@ -1106,7 +1135,9 @@ server <- function(id, input_data, data_version,
         return(NULL)
       }
 
-      if (!plot_res$success) return(NULL)
+      if (!plot_res$success) {
+        return(NULL)
+      }
 
       last_ld_plot(plot_res$result)
 
@@ -1265,7 +1296,8 @@ render_perf_panel <- function(perf_res, perf_err, ns) {
 
   shiny$tagList(
     ggiraph$girafeOutput(
-      ns("perf_error_plot"), height = "400px"
+      ns("perf_error_plot"),
+      height = "400px"
     ),
     shiny$tags$small(
       class = "text-muted mb-3 d-block",
@@ -1293,7 +1325,9 @@ render_perf_panel <- function(perf_res, perf_err, ns) {
 #' @param class_errors Data frame from run_plsda_perf(), or NULL
 #' @return Shiny tags, or NULL
 render_class_errors <- function(class_errors) {
-  if (is.null(class_errors)) return(NULL)
+  if (is.null(class_errors)) {
+    return(NULL)
+  }
 
   rule_cols <- setdiff(names(class_errors), "Class")
   tbl <- DT$datatable(
@@ -1370,7 +1404,9 @@ render_class_errors <- function(class_errors) {
 #' @param mix_choice Data frame from run_plsda_perf(), or NULL
 #' @return Shiny tags, or NULL
 render_mixomics_choice <- function(mix_choice) {
-  if (is.null(mix_choice)) return(NULL)
+  if (is.null(mix_choice)) {
+    return(NULL)
+  }
 
   rule_cols <- setdiff(names(mix_choice), "Measure")
   values <- unlist(mix_choice[, rule_cols, drop = FALSE])
@@ -1436,7 +1472,9 @@ render_mixomics_choice <- function(mix_choice) {
 #' @return Shiny tags, or NULL when unavailable
 render_dist_comparison <- function(dist_comparison,
                                    dist_agreement) {
-  if (is.null(dist_comparison)) return(NULL)
+  if (is.null(dist_comparison)) {
+    return(NULL)
+  }
 
   rule_labels <- c(
     max.dist = "Maximum distance",
@@ -1531,7 +1569,8 @@ download_buttons <- function(ns, id_prefix) {
       ns(paste0(id_prefix, "_dl_svg")),
       label = shiny$tags$span(
         bsicons$bs_icon(
-          "filetype-svg", class = "me-1"
+          "filetype-svg",
+          class = "me-1"
         ),
         "SVG"
       ),
@@ -1541,7 +1580,8 @@ download_buttons <- function(ns, id_prefix) {
       ns(paste0(id_prefix, "_dl_png")),
       label = shiny$tags$span(
         bsicons$bs_icon(
-          "filetype-png", class = "me-1"
+          "filetype-png",
+          class = "me-1"
         ),
         "PNG"
       ),
@@ -1572,7 +1612,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "svg",
+          file,
+          plot = p, device = "svg",
           width = w, height = h, units = "cm"
         )
         rhino$log$info(
@@ -1592,7 +1633,8 @@ register_plot_downloads <- function(output, input,
         w <- input$width %||% 16
         h <- input$height %||% 10
         ggplot2$ggsave(
-          file, plot = p, device = "png",
+          file,
+          plot = p, device = "png",
           width = w, height = h,
           units = "cm", dpi = 600
         )

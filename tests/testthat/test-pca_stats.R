@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[describe, expect_equal, expect_true, it],
 )
 
 box::use(
@@ -39,7 +39,7 @@ scores_fixture <- matrix(
 describe("compute_var_coord", {
   it("equals loadings scaled by per-component sdev derived from scores", {
     n <- nrow(scores_fixture)
-    sdev <- sqrt(colSums(scores_fixture^2) / (n - 1))
+    sdev <- sqrt(colSums(scores_fixture ^ 2) / (n - 1))
     expected <- sweep(loadings_fixture, 2, sdev, FUN = "*")
 
     result <- pca_stats$compute_var_coord(loadings_fixture, scores_fixture)
@@ -54,7 +54,7 @@ describe("compute_var_coord", {
 
 describe("compute_var_contrib", {
   it("matches loadings^2 * 100", {
-    expected <- loadings_fixture^2 * 100
+    expected <- loadings_fixture ^ 2 * 100
     result <- pca_stats$compute_var_contrib(loadings_fixture)
     expect_equal(result, expected)
   })
@@ -74,7 +74,7 @@ describe("compute_var_cos2", {
     var_coord <- pca_stats$compute_var_coord(
       loadings_fixture, scores_fixture
     )
-    expected <- var_coord^2
+    expected <- var_coord ^ 2
     result <- pca_stats$compute_var_cos2(var_coord)
     expect_equal(result, expected)
   })
@@ -87,7 +87,8 @@ describe("compute_var_cos2", {
 describe("compute_ind_contrib", {
   it("matches scores^2 / colSums(scores^2) * 100", {
     expected <- sweep(
-      scores_fixture^2, 2, colSums(scores_fixture^2), FUN = "/"
+      scores_fixture ^ 2, 2, colSums(scores_fixture ^ 2),
+      FUN = "/"
     ) * 100
     result <- pca_stats$compute_ind_contrib(scores_fixture)
     expect_equal(result, expected)
@@ -105,8 +106,8 @@ describe("compute_ind_contrib", {
 
 describe("compute_ind_cos2", {
   it("matches scores_display^2 / rowSums(scores^2)", {
-    total_dist2 <- rowSums(scores_fixture^2)
-    expected <- sweep(scores_fixture^2, 1, total_dist2, FUN = "/")
+    total_dist2 <- rowSums(scores_fixture ^ 2)
+    expected <- sweep(scores_fixture ^ 2, 1, total_dist2, FUN = "/")
     result <- pca_stats$compute_ind_cos2(scores_fixture, scores_fixture)
     expect_equal(result, expected)
   })

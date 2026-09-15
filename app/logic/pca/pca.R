@@ -120,7 +120,7 @@ run_pca <- function(data, columns,
 
       if (analysis_type == "spca") {
         if (is.null(keep_x) || anyNA(keep_x) ||
-            length(keep_x) != max_ncp) {
+          length(keep_x) != max_ncp) {
           stop(
             "keepX invalid or incomplete: a numeric value is ",
             "required for every component in sPCA."
@@ -134,23 +134,26 @@ run_pca <- function(data, columns,
         " {max_ncp} components"
       )
 
-      model <- switch(
-        analysis_type,
+      model <- switch(analysis_type,
         pca = mixOmics$pca(
-          x_mat, ncomp = max_ncp, center = center, scale = scale.
+          x_mat,
+          ncomp = max_ncp, center = center, scale = scale.
         ),
         spca = mixOmics$spca(
-          x_mat, ncomp = max_ncp, keepX = keep_x,
+          x_mat,
+          ncomp = max_ncp, keepX = keep_x,
           center = center, scale = scale.
         ),
         ipca = mixOmics$ipca(
-          x_mat, ncomp = max_ncp, mode = ipca_mode,
+          x_mat,
+          ncomp = max_ncp, mode = ipca_mode,
           scale = scale.
         )
       )
 
       result <- build_pca_result(
-        model, analysis_type, n, p, keep_x = keep_x
+        model, analysis_type, n, p,
+        keep_x = keep_x
       )
 
       # Centering/scaling used at fit time, captured explicitly:
@@ -229,7 +232,8 @@ run_pca_tune_keepx <- function(data, columns, ncomp,
       )
 
       tune_res <- mixOmics$tune.spca(
-        x_mat, ncomp = ncomp,
+        x_mat,
+        ncomp = ncomp,
         test.keepX = candidates,
         folds = folds, nrepeat = repeats,
         center = center, scale = scale.
@@ -283,7 +287,9 @@ run_pca_tune_keepx <- function(data, columns, ncomp,
 #'   is available
 #' @export
 extract_pca_scores <- function(pca_result_reactive) {
-  if (is.null(pca_result_reactive)) return(NULL)
+  if (is.null(pca_result_reactive)) {
+    return(NULL)
+  }
   pca_res <- pca_result_reactive()
   if (is.null(pca_res) || !isTRUE(pca_res$success)) {
     return(NULL)
@@ -293,8 +299,8 @@ extract_pca_scores <- function(pca_result_reactive) {
   meta <- res$ind_meta
   if (
     !is.null(meta) &&
-    nrow(meta) == nrow(coord) &&
-    !("Row" %in% names(meta) && ncol(meta) == 1)
+      nrow(meta) == nrow(coord) &&
+      !("Row" %in% names(meta) && ncol(meta) == 1)
   ) {
     cbind(meta, coord)
   } else {
@@ -317,15 +323,17 @@ extract_pca_scores <- function(pca_result_reactive) {
 #' @return List with n90, cum90, n95, cum95, or NULL
 #' @export
 extract_variance_explained <- function(pca_result_reactive) {
-  if (is.null(pca_result_reactive)) return(NULL)
+  if (is.null(pca_result_reactive)) {
+    return(NULL)
+  }
   pca_res <- tryCatch(
     pca_result_reactive(),
     error = function(e) NULL
   )
   if (
     is.null(pca_res) ||
-    !isTRUE(pca_res$success) ||
-    is.null(pca_res$result$variance)
+      !isTRUE(pca_res$success) ||
+      is.null(pca_res$result$variance)
   ) {
     return(NULL)
   }
@@ -356,7 +364,8 @@ pca_error_parser <- function(error_msg,
                              operation_name = "PCA") {
   if (grepl(
     "singular|invertible",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -365,7 +374,8 @@ pca_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -381,7 +391,8 @@ pca_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "ncp|dimension|ncomp",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -478,7 +489,7 @@ build_pca_result <- function(model, analysis_type, n, p,
 #' @export
 build_ind_meta <- function(data, meta_cols, n) {
   if (length(meta_cols) == 0 ||
-      !any(meta_cols %in% names(data))) {
+    !any(meta_cols %in% names(data))) {
     return(data.frame(
       Row = seq_len(n),
       stringsAsFactors = FALSE

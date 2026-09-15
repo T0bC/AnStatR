@@ -1,7 +1,7 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   shiny,
 )
 
@@ -26,9 +26,10 @@ box::use(
 #' @return Character label, e.g. "sPLS-DA"
 #' @export
 analysis_type_label <- function(analysis_type) {
-  if (is.null(analysis_type)) return("LDA")
-  switch(
-    analysis_type,
+  if (is.null(analysis_type)) {
+    return("LDA")
+  }
+  switch(analysis_type,
     lda = "LDA",
     qda = "QDA",
     mda = "MDA",
@@ -97,7 +98,8 @@ render_lda_results <- function(lda_result, ns,
     bslib$accordion_panel(
       title = shiny$tags$span(
         bsicons$bs_icon(
-          "speedometer2", class = "me-2"
+          "speedometer2",
+          class = "me-2"
         ),
         acc_label,
         acc_badge
@@ -115,7 +117,8 @@ render_lda_results <- function(lda_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "pie-chart", class = "me-2"
+            "pie-chart",
+            class = "me-2"
           ),
           "Prior Probabilities"
         ),
@@ -127,7 +130,7 @@ render_lda_results <- function(lda_result, ns,
   # 3. Group Means (absent for MDA in LOO-CV mode, which fits no
   # single full-data model to take means from)
   if (!is.null(lda_result$means) &&
-        length(lda_result$means) > 0) {
+    length(lda_result$means) > 0) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
@@ -144,10 +147,9 @@ render_lda_results <- function(lda_result, ns,
   if (
     lda_result$analysis_type %in%
       c("lda", "mda", "plsda", "splsda") &&
-    !is.null(lda_result$scaling)
+      !is.null(lda_result$scaling)
   ) {
-    coef_title <- switch(
-      lda_result$analysis_type,
+    coef_title <- switch(lda_result$analysis_type,
       mda = "Discriminant Coefficients",
       plsda = "Component Loadings",
       splsda = "Component Loadings",
@@ -170,13 +172,14 @@ render_lda_results <- function(lda_result, ns,
   # 4b2. VIP Scores (PLS-DA/sPLS-DA only)
   if (
     lda_result$analysis_type %in% c("plsda", "splsda") &&
-    !is.null(lda_result$vip)
+      !is.null(lda_result$vip)
   ) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "sort-numeric-down", class = "me-2"
+            "sort-numeric-down",
+            class = "me-2"
           ),
           "VIP Scores"
         ),
@@ -188,13 +191,14 @@ render_lda_results <- function(lda_result, ns,
   # 4c. Selected Variables (sPLS-DA only)
   if (
     lda_result$analysis_type == "splsda" &&
-    !is.null(lda_result$selected_variables)
+      !is.null(lda_result$selected_variables)
   ) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "check2-square", class = "me-2"
+            "check2-square",
+            class = "me-2"
           ),
           "Selected Variables",
           # Flag an untuned keepX so a UI default is never mistaken
@@ -222,13 +226,14 @@ render_lda_results <- function(lda_result, ns,
   # 4b. MDA Subclass Information (MDA only)
   if (
     lda_result$analysis_type == "mda" &&
-    !is.null(lda_result$sub_prior)
+      !is.null(lda_result$sub_prior)
   ) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "diagram-3", class = "me-2"
+            "diagram-3",
+            class = "me-2"
           ),
           "MDA Subclass Information"
         ),
@@ -250,7 +255,8 @@ render_lda_results <- function(lda_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "bar-chart-line", class = "me-2"
+            "bar-chart-line",
+            class = "me-2"
           ),
           trace_title
         ),
@@ -284,7 +290,8 @@ render_lda_results <- function(lda_result, ns,
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "clipboard-data", class = "me-2"
+              "clipboard-data",
+              class = "me-2"
             ),
             "Dimension Evaluation (ANOVA)"
           ),
@@ -303,7 +310,8 @@ render_lda_results <- function(lda_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "grid-3x3", class = "me-2"
+            "grid-3x3",
+            class = "me-2"
           ),
           "Confusion Matrix"
         ),
@@ -345,7 +353,8 @@ render_lda_results <- function(lda_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "percent", class = "me-2"
+            "percent",
+            class = "me-2"
           ),
           post_label
         ),
@@ -362,7 +371,8 @@ render_lda_results <- function(lda_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "scissors", class = "me-2"
+            "scissors",
+            class = "me-2"
           ),
           "Train / Test Split"
         ),
@@ -376,7 +386,8 @@ render_lda_results <- function(lda_result, ns,
     bslib$accordion_panel(
       title = shiny$tags$span(
         bsicons$bs_icon(
-          "download", class = "me-2"
+          "download",
+          class = "me-2"
         ),
         "Download Results"
       ),
@@ -570,13 +581,15 @@ build_summary_badge <- function(lda_result, type_label,
           ")"
         )
       ),
-      if (!is.null(n_ld)) shiny$tagList(
-        shiny$tags$dt(
-          class = "col-sm-5",
-          "Discriminant axes"
-        ),
-        shiny$tags$dd(class = "col-sm-7", n_ld)
-      )
+      if (!is.null(n_ld)) {
+        shiny$tagList(
+          shiny$tags$dt(
+            class = "col-sm-5",
+            "Discriminant axes"
+          ),
+          shiny$tags$dd(class = "col-sm-7", n_ld)
+        )
+      }
     )
   )
 }
@@ -597,7 +610,8 @@ render_download_buttons <- function(ns) {
       target = "_blank",
       download = NA,
       bsicons$bs_icon(
-        "file-earmark-excel", class = "me-2"
+        "file-earmark-excel",
+        class = "me-2"
       ),
       "Download Excel (All Results)"
     ),
@@ -613,11 +627,11 @@ render_download_buttons <- function(ns) {
       target = "_blank",
       download = NA,
       bsicons$bs_icon(
-        "file-earmark-code", class = "me-2"
+        "file-earmark-code",
+        class = "me-2"
       ),
       "Download RDS (LDA/QDA Object)"
     ),
-
     shiny$tags$small(
       class = "text-muted mt-2",
       paste(
@@ -742,10 +756,12 @@ render_vip_table <- function(vip_df) {
 
 
 render_selected_variables <- function(selected_variables,
-                                     keepx_tuned = FALSE) {
+                                      keepx_tuned = FALSE) {
   rows <- lapply(names(selected_variables), function(comp) {
     vars <- selected_variables[[comp]]
-    if (length(vars) == 0) return(NULL)
+    if (length(vars) == 0) {
+      return(NULL)
+    }
     data.frame(
       Component = comp, Variable = vars,
       stringsAsFactors = FALSE
@@ -898,7 +914,7 @@ render_trace_table <- function(trace_df, analysis_type = NULL) {
   # between-group variance. For PLS-DA/sPLS-DA the same column is
   # X-variance, where a low value need not mean weak separation.
   if (!is.null(analysis_type) &&
-        analysis_type %in% c("plsda", "splsda")) {
+    analysis_type %in% c("plsda", "splsda")) {
     return(shiny$tagList(
       dt,
       shiny$tags$small(
@@ -1047,8 +1063,8 @@ render_confusion <- function(confusion) {
 
 
 render_posterior_table <- function(posterior,
-                                  pred_class,
-                                  meta) {
+                                   pred_class,
+                                   meta) {
   df <- as.data.frame(round(posterior, 4))
 
   # Prepend predicted class
@@ -1074,7 +1090,8 @@ render_posterior_table <- function(posterior,
     shiny$tags$div(
       class = "alert alert-info mb-2 py-2",
       bsicons$bs_icon(
-        "info-circle-fill", class = "me-2"
+        "info-circle-fill",
+        class = "me-2"
       ),
       sprintf(
         "%d observations. Table is paginated.",
@@ -1119,7 +1136,7 @@ make_dt <- function(df, page_length = 10) {
   # Right-align numeric columns
   numeric_targets <- which(
     vapply(df, is.numeric, logical(1))
-  ) - 1  # 0-indexed
+  ) - 1 # 0-indexed
 
   col_defs <- if (length(numeric_targets) > 0) {
     list(
@@ -1158,7 +1175,7 @@ get_confusion <- function(lda_result, is_cv,
     lda_result$cv$confusion
   } else if (
     !is.null(test_result) &&
-    !is.null(test_result$confusion)
+      !is.null(test_result$confusion)
   ) {
     test_result$confusion
   } else if (!is.null(lda_result$confusion)) {
@@ -1201,7 +1218,7 @@ get_predicted_class <- function(lda_result, is_cv,
 
 get_meta <- function(lda_result, test_result) {
   if (!is.null(test_result) &&
-      !is.null(test_result$meta)) {
+    !is.null(test_result$meta)) {
     test_result$meta
   } else {
     lda_result$meta

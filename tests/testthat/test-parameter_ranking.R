@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, expect_false, it],
+  testthat[describe, expect_equal, expect_false, expect_true, it],
 )
 
 box::use(
@@ -38,7 +38,8 @@ make_two_measure_fixture <- function() {
 describe("rank_parameters_by_comparison", {
   it("ranks measures per comparison by ascending raw p-value", {
     result <- parameter_ranking$rank_parameters_by_comparison(
-      make_two_measure_fixture(), top_n = 1, p_column = "raw"
+      make_two_measure_fixture(),
+      top_n = 1, p_column = "raw"
     )
     ab <- result$ranking[result$ranking$Interaction == "A vs. B", ]
     expect_equal(ab$parameter[ab$rank == 1], "Asfc")
@@ -49,7 +50,8 @@ describe("rank_parameters_by_comparison", {
 
   it("marks exactly top_n per comparison when there are no ties", {
     result <- parameter_ranking$rank_parameters_by_comparison(
-      make_two_measure_fixture(), top_n = 1, p_column = "raw"
+      make_two_measure_fixture(),
+      top_n = 1, p_column = "raw"
     )
     for (comp in unique(result$ranking$Interaction)) {
       part <- result$ranking[result$ranking$Interaction == comp, ]
@@ -75,7 +77,8 @@ describe("rank_parameters_by_comparison", {
       )
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 1, p_column = "raw"
+      posthoc,
+      top_n = 1, p_column = "raw"
     )
     top <- result$ranking[result$ranking$is_top, ]
     expect_equal(top$parameter, "Y")
@@ -92,7 +95,8 @@ describe("rank_parameters_by_comparison", {
       )
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 3, p_column = "raw"
+      posthoc,
+      top_n = 3, p_column = "raw"
     )
     expect_equal(result$recommended, "Asfc")
     expect_equal(result$ranking$parameter, "Asfc")
@@ -101,7 +105,8 @@ describe("rank_parameters_by_comparison", {
 
   it("deduplicates the recommended union across comparisons", {
     result <- parameter_ranking$rank_parameters_by_comparison(
-      make_two_measure_fixture(), top_n = 2, p_column = "raw"
+      make_two_measure_fixture(),
+      top_n = 2, p_column = "raw"
     )
     expect_equal(length(result$recommended), length(unique(result$recommended)))
     expect_true(all(c("Asfc", "epLsar") %in% result$recommended))
@@ -111,7 +116,8 @@ describe("rank_parameters_by_comparison", {
     posthoc <- make_two_measure_fixture()
     posthoc$Broken <- error_handling$simple_error("boom")
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 1, p_column = "raw"
+      posthoc,
+      top_n = 1, p_column = "raw"
     )
     expect_true("Broken" %in% result$skipped$measure)
     expect_equal(
@@ -126,7 +132,8 @@ describe("rank_parameters_by_comparison", {
       Interaction = character(0), Tukey.p.value = numeric(0)
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 1, p_column = "raw"
+      posthoc,
+      top_n = 1, p_column = "raw"
     )
     expect_true("Empty" %in% result$skipped$measure)
     expect_equal(
@@ -140,7 +147,8 @@ describe("rank_parameters_by_comparison", {
       Broken2 = NULL
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 3, p_column = "raw"
+      posthoc,
+      top_n = 3, p_column = "raw"
     )
     expect_true(error_handling$is_app_error(result))
   })
@@ -163,7 +171,8 @@ describe("rank_parameters_by_comparison", {
       )
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 1, p_column = "raw"
+      posthoc,
+      top_n = 1, p_column = "raw"
     )
     expect_equal(nrow(result$ranking), 1L)
     expect_equal(result$ranking$parameter, "epLsar")
@@ -188,7 +197,8 @@ describe("rank_parameters_by_comparison", {
       )
     )
     result <- parameter_ranking$rank_parameters_by_comparison(
-      posthoc, top_n = 1, p_column = "adjusted"
+      posthoc,
+      top_n = 1, p_column = "adjusted"
     )
     top <- result$ranking[result$ranking$is_top, ]
     expect_equal(top$parameter, "epLsar")
@@ -203,7 +213,8 @@ describe("rank_parameters_by_comparison", {
 describe("build_ranking_matrix", {
   it("produces one row per parameter and one column per comparison", {
     result <- parameter_ranking$rank_parameters_by_comparison(
-      make_two_measure_fixture(), top_n = 1, p_column = "raw"
+      make_two_measure_fixture(),
+      top_n = 1, p_column = "raw"
     )
     mat <- parameter_ranking$build_ranking_matrix(result)
     expect_equal(nrow(mat), 2L)
@@ -213,7 +224,8 @@ describe("build_ranking_matrix", {
 
   it("agrees with ranking$is_top via the is_top attribute", {
     result <- parameter_ranking$rank_parameters_by_comparison(
-      make_two_measure_fixture(), top_n = 1, p_column = "raw"
+      make_two_measure_fixture(),
+      top_n = 1, p_column = "raw"
     )
     mat <- parameter_ranking$build_ranking_matrix(result)
     is_top_mat <- attr(mat, "is_top")

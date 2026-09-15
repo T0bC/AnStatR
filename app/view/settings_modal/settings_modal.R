@@ -26,7 +26,6 @@ ui <- function(id) {
 #' @export
 server <- function(id) {
   shiny$moduleServer(id, function(input, output, session) {
-
     # Open settings modal when gear icon is clicked
     shiny$observeEvent(input$settings_btn, {
       rhino$log$debug("Settings modal opened")

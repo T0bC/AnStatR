@@ -6,10 +6,8 @@ box::use(
 
 box::use(
   app/logic/cluster/optimal_clusters[
-    create_optimal_clusters_ggplot,
+    create_optimal_clusters_ggplot
   ],
-  app/logic/shared/error_handling,
-  app/view/shared/error_display,
 )
 
 #' Render optimal clusters panel content
@@ -36,7 +34,8 @@ render_optimal_clusters <- function(optimal_result, ns) {
     shiny$tags$div(
       class = "mt-3",
       ggiraph$girafeOutput(
-        ns("optimal_clusters_plot"), height = "600px"
+        ns("optimal_clusters_plot"),
+        height = "600px"
       )
     ),
     shiny$tags$div(
@@ -84,12 +83,13 @@ render_optimal_summary <- function(optimal_result) {
 
   if (
     is.null(summary_data) ||
-    summary_data$methods_computed == 0
+      summary_data$methods_computed == 0
   ) {
     return(shiny$tags$div(
       class = "alert alert-warning",
       bsicons$bs_icon(
-        "exclamation-triangle-fill", class = "me-2"
+        "exclamation-triangle-fill",
+        class = "me-2"
       ),
       "Could not compute optimal cluster estimates."
     ))

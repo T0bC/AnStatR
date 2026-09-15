@@ -1,9 +1,8 @@
 box::use(
-  stats[rnorm, rlnorm, rexp, sd],
+  stats[rexp, rlnorm, rnorm, sd],
 )
 
 box::use(
-
   app/logic/shared/error_handling,
 )
 
@@ -109,8 +108,8 @@ generate_distribution_samples <- function(mu, sigma, n, distribution) {
   } else if (distribution == "lognormal") {
     # Convert observed mean/sd to log-scale parameters
     if (mu <= 0) mu <- 0.01
-    log_mu <- log(mu^2 / sqrt(sigma^2 + mu^2))
-    log_sigma <- sqrt(log(1 + (sigma^2 / mu^2)))
+    log_mu <- log(mu ^ 2 / sqrt(sigma ^ 2 + mu ^ 2))
+    log_sigma <- sqrt(log(1 + (sigma ^ 2 / mu ^ 2)))
     rlnorm(n, meanlog = log_mu, sdlog = log_sigma)
   } else if (distribution == "exponential") {
     # Exponential: rate = 1/mean (SD is ignored for exponential)
@@ -152,14 +151,16 @@ extract_pilot_stats <- function(data, factor_cols, measure_col) {
   group_means <- tapply(
     data[[measure_col]],
     data$.interaction,
-    mean, na.rm = TRUE
+    mean,
+    na.rm = TRUE
   )
 
   # Calculate pooled SD
   group_sds <- tapply(
     data[[measure_col]],
     data$.interaction,
-    sd, na.rm = TRUE
+    sd,
+    na.rm = TRUE
   )
   group_ns <- tapply(
     data[[measure_col]],
@@ -168,7 +169,7 @@ extract_pilot_stats <- function(data, factor_cols, measure_col) {
   )
 
   # Pooled SD formula
-  pooled_var <- sum((group_ns - 1) * group_sds^2, na.rm = TRUE) /
+  pooled_var <- sum((group_ns - 1) * group_sds ^ 2, na.rm = TRUE) /
     sum(group_ns - 1, na.rm = TRUE)
   pooled_sd <- sqrt(pooled_var)
 

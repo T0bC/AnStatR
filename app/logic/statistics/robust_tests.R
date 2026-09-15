@@ -1,7 +1,7 @@
 box::use(
+  WRS2,
   rhino,
   stats,
-  WRS2,
 )
 
 box::use(
@@ -26,17 +26,14 @@ box::use(
 #' Defines all hooks for the one-way robust trimmed-means ANOVA.
 t1way_config <- list(
   name = "t1way",
-
   result_cols = c(
     "F_statistic", "df1", "df2", "Effect_Size", "p_value"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 1, "t1way", "t1way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -48,13 +45,11 @@ t1way_config <- list(
       bootstrap = use_bootstrap
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0("`", measure_col, "` ~ `", x_axis[1], "`")
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     vars <- all.vars(formula_obj)[-1]
     conversion <- omnibus$safe_factor_conversion(data, vars)
@@ -67,11 +62,9 @@ t1way_config <- list(
       tr = tr_value
     )
   },
-
   extract_results = function(out) {
     c(out$test, out$df1, out$df2, out$effsize, out$p.value)
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     if (use_bootstrap) {
       omnibus$format_bootstrap_results(results)
@@ -145,18 +138,15 @@ perform_t1way <- function(df, x_axis, measure_col,
 #' Returns main effects (A, B) and interaction (AB).
 t2way_config <- list(
   name = "t2way",
-
   result_cols = c(
     "Qa", "Qb", "Qab",
     "A.p.value", "B.p.value", "AB.p.value"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 2, "t2way", "t2way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -170,7 +160,6 @@ t2way_config <- list(
       bootstrap = use_bootstrap
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -179,7 +168,6 @@ t2way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     vars <- all.vars(formula_obj)[-1]
     conversion <- omnibus$safe_factor_conversion(data, vars)
@@ -192,14 +180,12 @@ t2way_config <- list(
       tr = tr_value
     )
   },
-
   extract_results = function(out) {
     c(
       out$Qa, out$Qb, out$Qab,
       out$A.p.value, out$B.p.value, out$AB.p.value
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     validation_utils$format_multiway_results(
       results, x_axis, use_bootstrap,
@@ -272,20 +258,17 @@ perform_t2way <- function(df, x_axis, measure_col,
 #' and three-way interaction (ABC).
 t3way_config <- list(
   name = "t3way",
-
   result_cols = c(
     "Qa", "Qb", "Qc", "Qab", "Qac", "Qbc", "Qabc",
     "A.p.value", "B.p.value", "C.p.value",
     "AB.p.value", "AC.p.value", "BC.p.value",
     "ABC.p.value"
   ),
-
   validate = function(df, x_axis) {
     validation_utils$validate_n_way(
       df, x_axis, 3, "t3way", "t3way_validate"
     )
   },
-
   build_context = function(df, x_axis, measure_col,
                            tr_value, use_bootstrap) {
     list(
@@ -301,7 +284,6 @@ t3way_config <- list(
       bootstrap = use_bootstrap
     )
   },
-
   build_formula = function(measure_col, x_axis) {
     stats$as.formula(
       paste0(
@@ -312,7 +294,6 @@ t3way_config <- list(
       )
     )
   },
-
   run_test = function(formula_obj, data, tr_value) {
     vars <- all.vars(formula_obj)[-1]
     conversion <- omnibus$safe_factor_conversion(data, vars)
@@ -325,7 +306,6 @@ t3way_config <- list(
       tr = tr_value
     )
   },
-
   extract_results = function(out) {
     c(
       out$Qa, out$Qb, out$Qc,
@@ -335,7 +315,6 @@ t3way_config <- list(
       out$ABC.p.value
     )
   },
-
   format_results = function(results, x_axis, use_bootstrap) {
     validation_utils$format_multiway_results(
       results, x_axis, use_bootstrap,
@@ -422,8 +401,8 @@ perform_t3way <- function(df, x_axis, measure_col,
 #' @return Data frame with RM robust ANOVA results, or structured app_error
 #' @export
 perform_rm_robust <- function(df, x_axis, measure_col,
-                               id_col, within_col,
-                               tr_value = 0.2) {
+                              id_col, within_col,
+                              tr_value = 0.2) {
   between_cols <- setdiff(x_axis, within_col)
   n_between <- length(between_cols)
   n_ways <- length(x_axis)
@@ -576,7 +555,9 @@ perform_rm_robust <- function(df, x_axis, measure_col,
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

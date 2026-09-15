@@ -1,4 +1,5 @@
 box::use(
+  ARTool[art],
   dunn.test[dunn.test],
   rhino,
   stats,
@@ -6,13 +7,7 @@ box::use(
 
 box::use(
   app/logic/shared/error_handling,
-  app/logic/statistics/omnibus,
-  app/logic/statistics/cliff_delta[cidmulv2_labelled],
   app/logic/statistics/validation_utils,
-)
-
-box::use(
-  ARTool[art],
 )
 
 # =============================================================================
@@ -100,7 +95,9 @@ perform_dunn_test <- function(df, x_axis, measure_col) {
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }
@@ -181,7 +178,9 @@ perform_wilcox_pairwise <- function(df, x_axis, measure_col) {
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }
@@ -210,10 +209,12 @@ run_art_contrasts <- function(formula_obj, data, x_axis) {
   env$art_con <- get("art.con", envir = asNamespace("ARTool"))
   env$artlm_con <- get("artlm.con", envir = asNamespace("ARTool"))
   env$summary_emmGrid <- get(
-    "summary.emmGrid", envir = asNamespace("emmeans")
+    "summary.emmGrid",
+    envir = asNamespace("emmeans")
   )
   env$pairs_emmGrid <- get(
-    "pairs.emmGrid", envir = asNamespace("emmeans")
+    "pairs.emmGrid",
+    envir = asNamespace("emmeans")
   )
   env$sigma <- stats::sigma
 
@@ -225,7 +226,8 @@ run_art_contrasts <- function(formula_obj, data, x_axis) {
 
     # Run ART-C contrasts on the interaction
     contrasts_result <- art_con(
-      art_model, interaction_term, adjust = "none"
+      art_model, interaction_term,
+      adjust = "none"
     )
 
     # Get the artlm.con model for sigmaHat (Cohen's d)
@@ -311,7 +313,8 @@ perform_art_contrasts <- function(df, x_axis, measure_col) {
 
       parsed <- strsplit(
         as.character(contrasts_df[[contrast_col]]),
-        " - ", fixed = TRUE
+        " - ",
+        fixed = TRUE
       )
       g1_vec <- vapply(parsed, function(p) {
         gsub(",", ".", trimws(p[1]), fixed = TRUE)
@@ -353,7 +356,9 @@ perform_art_contrasts <- function(df, x_axis, measure_col) {
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }
@@ -378,13 +383,14 @@ perform_art_contrasts <- function(df, x_axis, measure_col) {
 #' @return Data frame with combined results or app_error
 #' @export
 perform_combined_nonparametric_posthoc <- function(
-    df, x_axis, measure_col,
-    p_adjust_method = "bonferroni",
-    filter_valid = FALSE,
-    posthoc_method = "dunn",
-    is_rm = FALSE,
-    id_col = NULL,
-    within_col = NULL) {
+  df, x_axis, measure_col,
+  p_adjust_method = "bonferroni",
+  filter_valid = FALSE,
+  posthoc_method = "dunn",
+  is_rm = FALSE,
+  id_col = NULL,
+  within_col = NULL
+) {
   rhino$log$info(
     "combined_nonparametric_posthoc: starting for",
     " measure='{measure_col}',",
@@ -482,11 +488,15 @@ combine_oneway <- function(df, x_axis, measure_col,
     ))
   }
 
-  if (pairwise_err) return(pairwise_result)
-  if (cliff_err) return(cliff_result)
+  if (pairwise_err) {
+    return(pairwise_result)
+  }
+  if (cliff_err) {
+    return(cliff_result)
+  }
 
   if (!is.data.frame(pairwise_result) ||
-      !is.data.frame(cliff_result)) {
+    !is.data.frame(cliff_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_nonparametric_posthoc"
@@ -494,7 +504,7 @@ combine_oneway <- function(df, x_axis, measure_col,
   }
 
   if (nrow(pairwise_result) == 0 ||
-      nrow(cliff_result) == 0) {
+    nrow(cliff_result) == 0) {
     return(error_handling$simple_error(
       message = "One or both post-hoc tests returned empty results.",
       operation_name = "combined_nonparametric_posthoc"
@@ -509,7 +519,8 @@ combine_oneway <- function(df, x_axis, measure_col,
     names(cliff_norm), c("Interaction", "InteractionKey")
   )
   cliff_selected <- cliff_norm[
-    , c("InteractionKey", cliff_cols), drop = FALSE
+    , c("InteractionKey", cliff_cols),
+    drop = FALSE
   ]
 
   merged <- merge(
@@ -537,16 +548,18 @@ combine_oneway <- function(df, x_axis, measure_col,
     "Dunn.p.value"
   }
   if (p_col %in% names(merged) &&
-      is.numeric(merged[[p_col]])) {
+    is.numeric(merged[[p_col]])) {
     adj_col <- sub("\\.p\\.value$", ".p.adjusted", p_col)
     merged[[adj_col]] <- stats$p.adjust(
-      merged[[p_col]], method = p_adjust_method
+      merged[[p_col]],
+      method = p_adjust_method
     )
   }
   if ("Cliff.p.value" %in% names(merged) &&
-      is.numeric(merged$Cliff.p.value)) {
+    is.numeric(merged$Cliff.p.value)) {
     merged$Cliff.p.adjusted <- stats$p.adjust(
-      merged$Cliff.p.value, method = p_adjust_method
+      merged$Cliff.p.value,
+      method = p_adjust_method
     )
   }
 
@@ -621,9 +634,10 @@ combine_multiway <- function(df, x_axis, measure_col,
 
   # Apply p-value adjustment
   if ("ART.p.value" %in% names(art_result) &&
-      is.numeric(art_result$ART.p.value)) {
+    is.numeric(art_result$ART.p.value)) {
     art_result$ART.p.adjusted <- stats$p.adjust(
-      art_result$ART.p.value, method = p_adjust_method
+      art_result$ART.p.value,
+      method = p_adjust_method
     )
   }
 
@@ -637,7 +651,8 @@ combine_multiway <- function(df, x_axis, measure_col,
   final_cols <- intersect(desired_order, names(art_result))
   extra_cols <- setdiff(names(art_result), desired_order)
   art_result <- art_result[
-    , c(final_cols, extra_cols), drop = FALSE
+    , c(final_cols, extra_cols),
+    drop = FALSE
   ]
 
   # Round numeric columns
@@ -675,7 +690,9 @@ compute_paired_wilcox_stats <- function(df, g1_label, g2_label, id_col, measure_
   g2_data <- df[df$interaction_group == g2_label, c(id_col, measure_col), drop = FALSE]
 
   paired <- merge(g1_data, g2_data, by = id_col, suffixes = c(".1", ".2"))
-  if (nrow(paired) < 2) return(NULL)
+  if (nrow(paired) < 2) {
+    return(NULL)
+  }
 
   vals1 <- paired[[paste0(measure_col, ".1")]]
   vals2 <- paired[[paste0(measure_col, ".2")]]
@@ -732,9 +749,10 @@ compute_paired_wilcox_stats <- function(df, g1_label, g2_label, id_col, measure_
 #' @return Data frame with combined results or app_error
 #' @export
 perform_rm_nonparametric_posthoc <- function(
-    df, x_axis, measure_col,
-    id_col, within_col,
-    p_adjust_method = "bonferroni") {
+  df, x_axis, measure_col,
+  id_col, within_col,
+  p_adjust_method = "bonferroni"
+) {
   rhino$log$info(
     "rm_nonparametric_posthoc: starting for",
     " measure='{measure_col}'"
@@ -809,7 +827,8 @@ perform_rm_nonparametric_posthoc <- function(
 
         result <- do.call(rbind, rows)
         result$Wilcox.p.adjusted <- stats$p.adjust(
-          result$Wilcox.p.value, method = p_adjust_method
+          result$Wilcox.p.value,
+          method = p_adjust_method
         )
 
         desired_order <- c(
@@ -908,7 +927,8 @@ perform_rm_nonparametric_posthoc <- function(
         unpaired_base$ART.p.adjusted <- NULL
         if ("ART.p.value" %in% names(unpaired_base)) {
           unpaired_base$ART.p.adjusted <- stats$p.adjust(
-            unpaired_base$ART.p.value, method = p_adjust_method
+            unpaired_base$ART.p.value,
+            method = p_adjust_method
           )
         }
 
@@ -937,7 +957,9 @@ perform_rm_nonparametric_posthoc <- function(
     error_parser = error_handling$stat_error_parser
   )
 
-  if (!test_result$success) return(test_result$error)
+  if (!test_result$success) {
+    return(test_result$error)
+  }
 
   test_result$result
 }

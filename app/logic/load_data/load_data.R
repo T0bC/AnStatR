@@ -2,8 +2,8 @@ box::use(
   openxlsx,
   rhino,
   stats[setNames],
-  utils[read.csv],
   tools[file_ext],
+  utils[read.csv],
 )
 
 box::use(
@@ -29,10 +29,10 @@ validate_file_extension <- function(filename) {
 #' @export
 normalize_quote_char <- function(quote_char) {
   if (is.null(quote_char) ||
-      !is.character(quote_char) ||
-      length(quote_char) != 1 ||
-      quote_char == "" ||
-      quote_char == "None") {
+    !is.character(quote_char) ||
+    length(quote_char) != 1 ||
+    quote_char == "" ||
+    quote_char == "None") {
     return("")
   }
   quote_char
@@ -88,29 +88,29 @@ read_data_file <- function(path, ext, header = TRUE, delimiter = ",",
 fix_column_names <- function(data) {
   original_names <- names(data)
   has_dot <- grepl("\\.", original_names)
-  
+
   if (!any(has_dot)) {
     return(list(data = data, renamed_cols = character(0)))
   }
-  
+
   new_names <- gsub("\\.", "_", original_names)
   names(data) <- new_names
-  
+
   renamed_cols <- setNames(
     new_names[has_dot],
     original_names[has_dot]
   )
-  
+
   rhino$log$info(
     "Renamed {length(renamed_cols)} column(s) with dots: {paste(names(renamed_cols), collapse = ', ')}"
   )
-  
+
   list(data = data, renamed_cols = renamed_cols)
 }
 
 #' Validate that a loaded data.frame is usable
 #' @param data The object returned from reading a file
-#' @return List with `valid` (logical), `data` (possibly modified), 
+#' @return List with `valid` (logical), `data` (possibly modified),
 #'   `renamed_cols` (character vector), and `error` (or NULL)
 #' @export
 validate_data <- function(data) {
@@ -138,10 +138,10 @@ validate_data <- function(data) {
       )
     ))
   }
-  
+
   # Fix column names with spaces
   fix_result <- fix_column_names(data)
-  
+
   rhino$log$info("Data validation passed: {nrow(data)} rows, {ncol(data)} cols")
   list(
     valid = TRUE,

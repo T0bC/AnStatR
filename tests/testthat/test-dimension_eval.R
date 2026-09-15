@@ -1,5 +1,5 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[describe, expect_false, expect_true, it],
 )
 
 box::use(
@@ -67,7 +67,8 @@ describe("evaluate_dimensions", {
     dim_eval <- evaluate_dimensions(res$result)
     expect_false(isTRUE(dim_eval$success))
     expect_true(grepl(
-      "Descriptive columns", dim_eval$error$message, fixed = TRUE
+      "Descriptive columns", dim_eval$error$message,
+      fixed = TRUE
     ))
   })
 

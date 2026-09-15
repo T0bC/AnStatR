@@ -5,11 +5,14 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/settings[app_version],
   app/logic/pca/pca_stats[
-    compute_var_coord, compute_var_contrib, compute_var_cos2,
-    compute_ind_contrib, compute_ind_cos2
+    compute_ind_contrib,
+    compute_ind_cos2,
+    compute_var_contrib,
+    compute_var_coord,
+    compute_var_cos2
   ],
+  app/logic/shared/settings[app_version],
 )
 
 # =============================================================================
@@ -183,9 +186,12 @@ build_t2_q_reference <- function(pca_result, used_data, numeric_cols) {
   n_train <- nrow(train_scores)
 
   score_cov_inv <- tryCatch(
-    solve(stats$cov(train_scores)), error = function(e) NULL
+    solve(stats$cov(train_scores)),
+    error = function(e) NULL
   )
-  if (is.null(score_cov_inv)) return(NULL)
+  if (is.null(score_cov_inv)) {
+    return(NULL)
+  }
 
   train_x <- scale(
     as.matrix(used_data[, numeric_cols, drop = FALSE]),
@@ -193,7 +199,7 @@ build_t2_q_reference <- function(pca_result, used_data, numeric_cols) {
   )
   recon <- train_scores %*% t(loadings)
   train_resid <- train_x[, rownames(loadings), drop = FALSE] - recon
-  train_q <- rowSums(train_resid^2)
+  train_q <- rowSums(train_resid ^ 2)
 
   list(
     score_cov_inv = score_cov_inv,
@@ -219,7 +225,7 @@ matrix_to_df <- function(mat, row_label = "Item") {
 ind_matrix_to_df <- function(mat, meta) {
   df <- as.data.frame(round(mat, 4))
   if (!is.null(meta) && nrow(meta) == nrow(df) &&
-      !("Row" %in% names(meta) && ncol(meta) == 1)) {
+    !("Row" %in% names(meta) && ncol(meta) == 1)) {
     # Prepend metadata columns before PCA dimensions
     df <- cbind(meta, df)
     rownames(df) <- NULL

@@ -3,8 +3,8 @@ box::use(
 )
 
 box::use(
-  app/logic/lda/lda,
   app/logic/lda/data_splitting,
+  app/logic/lda/lda,
 )
 
 # =============================================================================
@@ -152,7 +152,8 @@ describe("run_lda", {
   it("works with LOO-CV", {
     data <- make_test_data()
     result <- lda$run_lda(
-      data, c("m1", "m2"), "species", cv = TRUE
+      data, c("m1", "m2"), "species",
+      cv = TRUE
     )
     expect_true(result$success)
     expect_true(!is.null(result$result$cv))
@@ -211,7 +212,8 @@ describe("run_qda", {
   it("works with LOO-CV", {
     data <- make_test_data()
     result <- lda$run_qda(
-      data, c("m1", "m2"), "species", cv = TRUE
+      data, c("m1", "m2"), "species",
+      cv = TRUE
     )
     expect_true(result$success)
     expect_true(!is.null(result$result$cv))
@@ -258,7 +260,8 @@ describe("run_predict", {
   it("fails when model was fitted with CV", {
     data <- make_test_data()
     fit <- lda$run_lda(
-      data, c("m1", "m2"), "species", cv = TRUE
+      data, c("m1", "m2"), "species",
+      cv = TRUE
     )
     pred <- lda$run_predict(
       fit$result, data, c("m1", "m2")
@@ -305,10 +308,12 @@ describe("create_stratified_split", {
   it("is reproducible with same seed", {
     data <- make_test_data()
     r1 <- data_splitting$create_stratified_split(
-      data, "species", seed = 99
+      data, "species",
+      seed = 99
     )
     r2 <- data_splitting$create_stratified_split(
-      data, "species", seed = 99
+      data, "species",
+      seed = 99
     )
     expect_equal(
       r1$result$train_idx, r2$result$train_idx
@@ -318,7 +323,8 @@ describe("create_stratified_split", {
   it("returns split_summary with per-group counts", {
     data <- make_test_data()
     result <- data_splitting$create_stratified_split(
-      data, "species", seed = 42
+      data, "species",
+      seed = 42
     )
     ss <- result$result$split_summary
     expect_true("Group" %in% names(ss))
@@ -429,7 +435,8 @@ describe("run_mda", {
   it("works with LOO-CV", {
     data <- make_test_data()
     result <- lda$run_mda(
-      data, c("m1", "m2"), "species", cv = TRUE
+      data, c("m1", "m2"), "species",
+      cv = TRUE
     )
     expect_true(result$success)
     expect_true(!is.null(result$result$cv))
@@ -512,7 +519,8 @@ describe("run_predict with MDA", {
   it("fails when MDA model was fitted with CV", {
     data <- make_test_data()
     fit <- lda$run_mda(
-      data, c("m1", "m2"), "species", cv = TRUE
+      data, c("m1", "m2"), "species",
+      cv = TRUE
     )
     pred <- lda$run_predict(
       fit$result, data, c("m1", "m2")

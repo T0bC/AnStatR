@@ -1,12 +1,11 @@
 box::use(
-  ggplot2,
   testthat[describe, expect_equal, expect_true, it],
 )
 
 box::use(
+  app/logic/lda/ld_plot[create_ld_plot, create_qda_plot],
   app/logic/lda/lda,
   app/logic/lda/lda_diagnostics,
-  app/logic/lda/ld_plot[create_ld_plot, create_qda_plot],
 )
 
 # =============================================================================
@@ -91,7 +90,8 @@ describe("generate_ellipse_points", {
   it("returns a data frame with x and y columns", {
     vc <- matrix(c(1, 0.5, 0.5, 1), nrow = 2)
     pts <- lda_diagnostics$generate_ellipse_points(
-      vc, center = c(0, 0)
+      vc,
+      center = c(0, 0)
     )
     expect_true(is.data.frame(pts))
     expect_true("x" %in% names(pts))
@@ -101,7 +101,8 @@ describe("generate_ellipse_points", {
   it("returns the requested number of points", {
     vc <- matrix(c(1, 0, 0, 1), nrow = 2)
     pts <- lda_diagnostics$generate_ellipse_points(
-      vc, center = c(0, 0), n_points = 50
+      vc,
+      center = c(0, 0), n_points = 50
     )
     expect_equal(nrow(pts), 50)
   })
@@ -110,7 +111,8 @@ describe("generate_ellipse_points", {
     vc <- matrix(c(1, 0, 0, 1), nrow = 2)
     center <- c(5, 10)
     pts <- lda_diagnostics$generate_ellipse_points(
-      vc, center = center, n_points = 200
+      vc,
+      center = center, n_points = 200
     )
     expect_true(
       abs(mean(pts$x) - center[1]) < 0.1
@@ -123,10 +125,12 @@ describe("generate_ellipse_points", {
   it("scales with n_std", {
     vc <- matrix(c(1, 0, 0, 1), nrow = 2)
     pts1 <- lda_diagnostics$generate_ellipse_points(
-      vc, center = c(0, 0), n_std = 1
+      vc,
+      center = c(0, 0), n_std = 1
     )
     pts2 <- lda_diagnostics$generate_ellipse_points(
-      vc, center = c(0, 0), n_std = 2
+      vc,
+      center = c(0, 0), n_std = 2
     )
     range1 <- max(pts1$x) - min(pts1$x)
     range2 <- max(pts2$x) - min(pts2$x)
@@ -142,7 +146,8 @@ describe("add_diagnostics_overlay", {
   it("adds layers to an existing ggplot", {
     lda_res <- make_lda_result()
     base_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_diagnostics = FALSE
     )
     base_plot <- base_res$result
@@ -160,7 +165,8 @@ describe("add_diagnostics_overlay", {
   it("works via create_ld_plot show_diagnostics flag", {
     lda_res <- make_lda_result()
     plot_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_diagnostics = TRUE
     )
     expect_true(plot_res$success)
@@ -174,7 +180,8 @@ describe("add_diagnostics_overlay", {
   it("does not add subtitle when diagnostics disabled", {
     lda_res <- make_lda_result()
     plot_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_diagnostics = FALSE
     )
     expect_true(plot_res$success)
@@ -251,7 +258,8 @@ describe("add_boundaries_overlay", {
   it("adds tile and contour layers to a ggplot", {
     lda_res <- make_lda_result()
     base_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = FALSE
     )
     base_plot <- base_res$result
@@ -268,7 +276,8 @@ describe("add_boundaries_overlay", {
   it("works via create_ld_plot show_boundaries flag", {
     lda_res <- make_lda_result()
     plot_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = TRUE
     )
     expect_true(plot_res$success)
@@ -282,7 +291,8 @@ describe("add_boundaries_overlay", {
   it("combines subtitles when both overlays active", {
     lda_res <- make_lda_result()
     plot_res <- create_ld_plot(
-      lda_res, dim_x = "LD1", dim_y = "LD2",
+      lda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_diagnostics = TRUE,
       show_boundaries = TRUE
     )
@@ -295,7 +305,8 @@ describe("add_boundaries_overlay", {
   it("adds tile and contour layers for PLS-DA (k-NN grid)", {
     plsda_res <- make_plsda_result()
     base_res <- create_ld_plot(
-      plsda_res, dim_x = "Comp1", dim_y = "Comp2",
+      plsda_res,
+      dim_x = "Comp1", dim_y = "Comp2",
       show_boundaries = FALSE
     )
     base_plot <- base_res$result
@@ -331,7 +342,8 @@ describe("add_boundaries_overlay", {
     splsda_res <- res$result
 
     plot_res <- create_ld_plot(
-      splsda_res, dim_x = "Comp1", dim_y = "Comp2",
+      splsda_res,
+      dim_x = "Comp1", dim_y = "Comp2",
       show_boundaries = TRUE
     )
     expect_true(plot_res$success)
@@ -444,7 +456,8 @@ describe("create_qda_plot in LD space", {
   it("produces a ggplot when using LD axes", {
     qda_res <- make_qda_result()
     plot_res <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "LD2",
+      qda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = FALSE
     )
     expect_true(plot_res$success)
@@ -454,7 +467,8 @@ describe("create_qda_plot in LD space", {
   it("title indicates LDA projection", {
     qda_res <- make_qda_result()
     plot_res <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "LD2"
+      qda_res,
+      dim_x = "LD1", dim_y = "LD2"
     )
     expect_true(grepl(
       "LDA projection",
@@ -465,11 +479,13 @@ describe("create_qda_plot in LD space", {
   it("adds boundary layers when enabled", {
     qda_res <- make_qda_result()
     plot_no <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "LD2",
+      qda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = FALSE
     )
     plot_yes <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "LD2",
+      qda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = TRUE
     )
     expect_true(
@@ -491,7 +507,8 @@ describe("create_qda_plot in original space", {
   it("produces a ggplot when using original vars", {
     qda_res <- make_qda_result()
     plot_res <- create_qda_plot(
-      qda_res, dim_x = "m1", dim_y = "m2",
+      qda_res,
+      dim_x = "m1", dim_y = "m2",
       show_boundaries = FALSE
     )
     expect_true(plot_res$success)
@@ -501,7 +518,8 @@ describe("create_qda_plot in original space", {
   it("title indicates original variables", {
     qda_res <- make_qda_result()
     plot_res <- create_qda_plot(
-      qda_res, dim_x = "m1", dim_y = "m2"
+      qda_res,
+      dim_x = "m1", dim_y = "m2"
     )
     expect_true(grepl(
       "original variables",
@@ -512,7 +530,8 @@ describe("create_qda_plot in original space", {
   it("errors when mixing LD and original axes", {
     qda_res <- make_qda_result()
     plot_res <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "m2"
+      qda_res,
+      dim_x = "LD1", dim_y = "m2"
     )
     expect_true(!plot_res$success)
   })
@@ -526,7 +545,8 @@ describe("add_qda_boundaries_overlay", {
   it("adds layers to an existing ggplot (LD space)", {
     qda_res <- make_qda_result()
     base_res <- create_qda_plot(
-      qda_res, dim_x = "LD1", dim_y = "LD2",
+      qda_res,
+      dim_x = "LD1", dim_y = "LD2",
       show_boundaries = FALSE
     )
     base_plot <- base_res$result
@@ -538,7 +558,8 @@ describe("add_qda_boundaries_overlay", {
     )
     p <- lda_diagnostics$add_qda_boundaries_overlay(
       base_plot, qda_res, "LD1", "LD2",
-      plot_data, axis_type = "ld",
+      plot_data,
+      axis_type = "ld",
       grid_n = 20
     )
     expect_true(inherits(p, "gg"))

@@ -22,7 +22,8 @@ tab_ui <- function(ns) {
         "Adjustment method ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           "Method to correct for multiple comparisons."
         )

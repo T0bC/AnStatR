@@ -95,7 +95,8 @@ describe("run_pca (pca)", {
 
   it("explicit ncp limits retained components", {
     res <- pca$run_pca(
-      test_data, c("a", "b", "c", "d"), ncp = 2
+      test_data, c("a", "b", "c", "d"),
+      ncp = 2
     )
     r <- res$result
     expect_equal(ncol(r$loadings), 2)
@@ -257,7 +258,8 @@ describe("run_pca_tune_keepx", {
 
   it("returns a named keepX vector with nrepeat >= 3", {
     res <- pca$run_pca_tune_keepx(
-      test_data, cols, ncomp = 2,
+      test_data, cols,
+      ncomp = 2,
       test_keep_x = c(2, 4, 6),
       folds = 3, repeats = 3
     )
@@ -268,7 +270,8 @@ describe("run_pca_tune_keepx", {
 
   it("records the settings actually used, for provenance", {
     res <- pca$run_pca_tune_keepx(
-      test_data, cols, ncomp = 2,
+      test_data, cols,
+      ncomp = 2,
       test_keep_x = c(2, 4, 6),
       folds = 3, repeats = 3
     )
@@ -280,7 +283,8 @@ describe("run_pca_tune_keepx", {
 
   it("returns the component-stability values used to choose keepX", {
     res <- pca$run_pca_tune_keepx(
-      test_data, cols, ncomp = 2,
+      test_data, cols,
+      ncomp = 2,
       test_keep_x = c(2, 4, 6),
       folds = 3, repeats = 3
     )
@@ -374,7 +378,8 @@ describe("extract_pca_scores", {
 
   it("combines metadata and scores into one data frame", {
     res <- pca$run_pca(
-      test_data, c("x", "y", "z"), meta_cols = "SEX"
+      test_data, c("x", "y", "z"),
+      meta_cols = "SEX"
     )
     fake_reactive <- function() res
     df <- pca$extract_pca_scores(fake_reactive)

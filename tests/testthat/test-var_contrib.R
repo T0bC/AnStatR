@@ -1,11 +1,16 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true,
-           it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
-  app/logic/pca/var_contrib_jitter,
   app/logic/pca/pca,
+  app/logic/pca/var_contrib_jitter,
 )
 
 impl <- attr(var_contrib_jitter, "namespace")
@@ -38,7 +43,8 @@ describe("create_var_contrib_jitter_plot", {
 
   it("returns a ggplot with default settings", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 2L
+      pca_res,
+      display_ncp = 2L
     )
     expect_true(res$success)
     expect_true(inherits(res$result$plot, "ggplot"))
@@ -46,7 +52,8 @@ describe("create_var_contrib_jitter_plot", {
 
   it("includes title when show_title = TRUE", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 2L, show_title = TRUE
+      pca_res,
+      display_ncp = 2L, show_title = TRUE
     )
     expect_true(res$success)
     expect_true(!is.null(res$result$plot$labels$title))
@@ -54,7 +61,8 @@ describe("create_var_contrib_jitter_plot", {
 
   it("omits title when show_title = FALSE", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 2L, show_title = FALSE
+      pca_res,
+      display_ncp = 2L, show_title = FALSE
     )
     expect_true(res$success)
     expect_true(is.null(res$result$plot$labels$title))
@@ -62,7 +70,8 @@ describe("create_var_contrib_jitter_plot", {
 
   it("clamps display_ncp to available dims", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 10L
+      pca_res,
+      display_ncp = 10L
     )
     expect_true(res$success)
     expect_true(res$result$n_dims_shown <= 4L)
@@ -70,7 +79,8 @@ describe("create_var_contrib_jitter_plot", {
 
   it("returns filter metadata", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 3L
+      pca_res,
+      display_ncp = 3L
     )
     expect_true(res$success)
     expect_true("filter_applied" %in% names(res$result))
@@ -85,7 +95,8 @@ describe("create_var_contrib_jitter_plot", {
 describe("create_var_contrib_jitter_plot error cases", {
   it("returns error for NULL pca_result", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      NULL, display_ncp = 2L
+      NULL,
+      display_ncp = 2L
     )
     expect_false(res$success)
     expect_true(res$error$is_error)
@@ -131,7 +142,8 @@ describe("select_label_vars", {
 
   it("labels all variables when n_vars <= 10", {
     res <- var_contrib_jitter$create_var_contrib_jitter_plot(
-      pca_res, display_ncp = 2L
+      pca_res,
+      display_ncp = 2L
     )
     expect_true(res$success)
     # 4 variables < 10, so all should get labels

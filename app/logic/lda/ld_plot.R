@@ -1,17 +1,16 @@
 box::use(
-  ggplot2,
   ggiraph,
-  rhino,
+  ggplot2,
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/lda/lda_diagnostics[
-    add_diagnostics_overlay,
     add_boundaries_overlay,
+    add_diagnostics_overlay,
     add_qda_boundaries_overlay,
-    compute_1d_boundary,
+    compute_1d_boundary
   ],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -101,7 +100,8 @@ ld_plot_error_parser <- function(error_msg,
                                  operation_name = "LD Plot") {
   if (grepl(
     "dimension|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -110,7 +110,8 @@ ld_plot_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "scores|NULL",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -138,8 +139,8 @@ ld_plot_error_parser <- function(error_msg,
 #' @return List with $success, $result (ggplot) or $error
 #' @export
 create_qda_plot <- function(qda_result,
-                             dim_x, dim_y,
-                             show_boundaries = FALSE) {
+                            dim_x, dim_y,
+                            show_boundaries = FALSE) {
   error_handling$safe_execute(
     expr = {
       # Determine axis type: LD axes or original vars
@@ -295,7 +296,8 @@ build_2d_plot <- function(scores, meta, grouping_col,
   if (length(subtitle_parts) > 0) {
     p <- p + ggplot2$labs(
       subtitle = paste(
-        subtitle_parts, collapse = " | "
+        subtitle_parts,
+        collapse = " | "
       )
     )
   }
@@ -391,13 +393,12 @@ build_1d_plot <- function(scores, meta, grouping_col,
 
 
 build_qda_2d_plot <- function(qda_result, dim_x, dim_y,
-                               axis_type, scores,
-                               prop_trace,
-                               show_boundaries) {
+                              axis_type, scores,
+                              prop_trace,
+                              show_boundaries) {
   meta <- qda_result$meta
   grouping_col <- qda_result$grouping_col
   group_vals <- get_group_values(meta, grouping_col)
-  columns <- qda_result$columns
 
   if (axis_type == "ld") {
     # Plot in LD space using companion LDA scores
@@ -468,7 +469,7 @@ build_qda_2d_plot <- function(qda_result, dim_x, dim_y,
 
   # Overlay QDA decision boundaries when requested
   if (isTRUE(show_boundaries) &&
-      !is.null(qda_result$model)) {
+    !is.null(qda_result$model)) {
     plot_data <- data.frame(
       x = df$x, y = df$y
     )
@@ -489,8 +490,8 @@ build_qda_2d_plot <- function(qda_result, dim_x, dim_y,
 get_group_values <- function(meta, grouping_col) {
   if (
     !is.null(grouping_col) &&
-    !is.null(meta) &&
-    grouping_col %in% names(meta)
+      !is.null(meta) &&
+      grouping_col %in% names(meta)
   ) {
     as.character(meta[[grouping_col]])
   } else {
@@ -532,8 +533,8 @@ build_tooltips <- function(scores, meta, grouping_col,
     # Group
     if (
       !is.null(grouping_col) &&
-      !is.null(meta) &&
-      grouping_col %in% names(meta)
+        !is.null(meta) &&
+        grouping_col %in% names(meta)
     ) {
       tip <- paste0(
         tip, "<br/>Group: ",

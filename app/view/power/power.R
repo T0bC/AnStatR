@@ -14,10 +14,10 @@ box::use(
   app/logic/power/power_calc,
   app/logic/shared/error_handling,
   app/view/components/sidebar_tabs,
-  app/view/shared/error_display,
   app/view/power/design,
   app/view/power/effect_input,
   app/view/power/options,
+  app/view/shared/error_display,
 )
 
 #' @export
@@ -226,7 +226,7 @@ server <- function(id, input_data = NULL) {
           # Use group_means from normalized params in result
           # For now, approximate by using medians as means (close for symmetric)
           dummy_means <- effect$group_medians
-          dummy_sd <- effect$group_iqr / (2 * qnorm(0.75))  # IQR to SD for normal
+          dummy_sd <- effect$group_iqr / (2 * qnorm(0.75)) # IQR to SD for normal
         } else {
           dummy_means <- effect$group_means
           dummy_sd <- effect$group_sd
@@ -333,8 +333,7 @@ server <- function(id, input_data = NULL) {
       # Results state
       if (status == "done" && !is.null(results)) {
         result_info <- results$result
-        approach_label <- switch(
-          results$params$approach,
+        approach_label <- switch(results$params$approach,
           "parametric" = "Parametric (ANOVA)",
           "robust" = "Robust (Simulation)",
           "nonparametric" = "Non-Parametric (Simulation)"
@@ -502,10 +501,10 @@ server <- function(id, input_data = NULL) {
 
       # Create scatter plot using existing logic
       p <- plot_factory$create_plot(
-        plot_type  = "scatter",
-        data       = df,
-        x_cols     = x_cols,
-        y_col      = measure_col,
+        plot_type = "scatter",
+        data = df,
+        x_cols = x_cols,
+        y_col = measure_col,
         point_style = list(size = 3, alpha = 0.7),
         grid_legend = list(show_median = TRUE, show_sd = TRUE)
       )

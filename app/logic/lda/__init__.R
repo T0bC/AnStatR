@@ -1,24 +1,19 @@
 #' @export
 box::use(
   app/logic/lda/data_splitting[
-    create_stratified_split,
+    create_stratified_split
+  ],
+  app/logic/lda/dimension_eval[
+    evaluate_dimensions
   ],
   app/logic/lda/ld_plot[
+    axis_label,
+    build_tooltips,
     create_ld_plot,
     create_qda_plot,
-    ld_plot_error_parser,
     get_group_values,
-    build_tooltips,
-    ld_theme,
-    axis_label,
-  ],
-  app/logic/lda/lda_diagnostics[
-    compute_pooled_vc,
-    generate_ellipse_points,
-    add_diagnostics_overlay,
-    add_boundaries_overlay,
-    add_qda_boundaries_overlay,
-    compute_1d_boundary,
+    ld_plot_error_parser,
+    ld_theme
   ],
   app/logic/lda/lda[
     lda_error_parser,
@@ -29,23 +24,28 @@ box::use(
     run_plsda_tune_keepx,
     run_predict,
     run_qda,
-    validate_inputs,
+    validate_inputs
+  ],
+  app/logic/lda/lda_diagnostics[
+    add_boundaries_overlay,
+    add_diagnostics_overlay,
+    add_qda_boundaries_overlay,
+    compute_1d_boundary,
+    compute_pooled_vc,
+    generate_ellipse_points
   ],
   app/logic/lda/lda_export[
-    create_lda_excel,
+    create_lda_excel
   ],
-  app/logic/lda/dimension_eval[
-    evaluate_dimensions,
+  app/logic/lda/lda_var_contrib[
+    lda_to_pca_var_structure
   ],
   app/logic/lda/perf_plot[
     create_perf_error_plot,
-    suggest_ncomp,
-  ],
-  app/logic/lda/lda_var_contrib[
-    lda_to_pca_var_structure,
+    suggest_ncomp
   ],
   app/logic/pca/var_contrib_jitter[
     create_var_contrib_jitter_plot,
-    var_contrib_jitter_error_parser,
+    var_contrib_jitter_error_parser
   ],
 )

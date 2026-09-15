@@ -121,7 +121,9 @@ build_posthoc_context <- function(df, x_axis, measure_col,
 #' @return Data frame with added InteractionKey column
 #' @export
 normalize_interaction <- function(df) {
-  if (!"Interaction" %in% names(df)) return(df)
+  if (!"Interaction" %in% names(df)) {
+    return(df)
+  }
 
   df$InteractionKey <- vapply(df$Interaction, function(int) {
     parts <- trimws(strsplit(int, " vs\\. ")[[1]])
@@ -141,14 +143,20 @@ normalize_interaction <- function(df) {
 #' @return Filtered data frame
 #' @export
 filter_valid_comparisons <- function(df, x_axis) {
-  if (is.null(x_axis) || length(x_axis) <= 1) return(df)
+  if (is.null(x_axis) || length(x_axis) <= 1) {
+    return(df)
+  }
 
   keep <- vapply(df$Interaction, function(int) {
     parts <- trimws(strsplit(int, " vs\\. ")[[1]])
-    if (length(parts) != 2) return(FALSE)
+    if (length(parts) != 2) {
+      return(FALSE)
+    }
     a_parts <- strsplit(parts[1], "\\.")[[1]]
     b_parts <- strsplit(parts[2], "\\.")[[1]]
-    if (length(a_parts) != length(b_parts)) return(FALSE)
+    if (length(a_parts) != length(b_parts)) {
+      return(FALSE)
+    }
     sum(a_parts != b_parts) == 1
   }, logical(1))
 

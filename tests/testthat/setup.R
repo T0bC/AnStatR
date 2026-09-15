@@ -1,6 +1,5 @@
 # Test setup: configure logging for test environment
 # This file runs before all tests in the testthat directory
-
 box::use(
   logger,
 )

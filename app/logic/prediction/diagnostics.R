@@ -1,5 +1,4 @@
 box::use(
-  rhino,
   stats,
 )
 
@@ -37,8 +36,7 @@ compute_diagnostics <- function(bundle, preprocessed_data, prediction_result) {
   error_handling$safe_execute(
     expr = {
       analysis_type <- bundle$analysis_type
-      switch(
-        analysis_type,
+      switch(analysis_type,
         pca = ,
         spca = ,
         ipca = diagnostics_pca(bundle, preprocessed_data, prediction_result),
@@ -80,7 +78,9 @@ compute_diagnostics <- function(bundle, preprocessed_data, prediction_result) {
 #'   this feature (no $t2_q_ref stored) or scores are unavailable
 diagnostics_pca <- function(bundle, preprocessed_data, prediction_result) {
   ref <- bundle$t2_q_ref
-  if (is.null(ref) || is.null(prediction_result$scores)) return(NULL)
+  if (is.null(ref) || is.null(prediction_result$scores)) {
+    return(NULL)
+  }
 
   new_scores <- as.matrix(prediction_result$scores)
   t2 <- apply(new_scores, 1, function(row) {
@@ -88,7 +88,8 @@ diagnostics_pca <- function(bundle, preprocessed_data, prediction_result) {
   })
   f_stat <- t2 * (ref$n_train - ref$k) / (ref$k * (ref$n_train - 1))
   t2_p <- stats$pf(
-    f_stat, df1 = ref$k, df2 = ref$n_train - ref$k, lower.tail = FALSE
+    f_stat,
+    df1 = ref$k, df2 = ref$n_train - ref$k, lower.tail = FALSE
   )
 
   new_x <- as.matrix(
@@ -96,7 +97,7 @@ diagnostics_pca <- function(bundle, preprocessed_data, prediction_result) {
   )
   recon <- new_scores %*% t(ref$loadings)
   resid <- new_x - recon
-  q <- rowSums(resid^2)
+  q <- rowSums(resid ^ 2)
 
   data.frame(
     T2 = t2,
@@ -129,7 +130,9 @@ diagnostics_pca <- function(bundle, preprocessed_data, prediction_result) {
 #'   or NULL if bundle predates this feature
 diagnostics_original_space <- function(bundle, preprocessed_data, prediction_result) {
   group_stats <- bundle$group_stats
-  if (is.null(group_stats) || length(group_stats) == 0) return(NULL)
+  if (is.null(group_stats) || length(group_stats) == 0) {
+    return(NULL)
+  }
 
   numeric_cols <- bundle$numeric_cols
   x_mat <- as.matrix(preprocessed_data[, numeric_cols, drop = FALSE])
@@ -145,7 +148,8 @@ diagnostics_original_space <- function(bundle, preprocessed_data, prediction_res
   # vapply collapses to a plain vector (not a matrix) when there is
   # exactly one unknown sample -- force back to n_unknown x n_groups.
   dist_mat <- matrix(
-    dist_mat, nrow = nrow(x_mat), dimnames = list(NULL, group_names)
+    dist_mat,
+    nrow = nrow(x_mat), dimnames = list(NULL, group_names)
   )
 
   nearest_idx <- apply(dist_mat, 1, which.min)
@@ -156,7 +160,7 @@ diagnostics_original_space <- function(bundle, preprocessed_data, prediction_res
   pred_idx <- match(pred_class_chr, group_names)
   pred_dist <- dist_mat[cbind(seq_len(nrow(dist_mat)), pred_idx)]
 
-  typicality_p <- stats$pchisq(nearest_dist^2, df = p, lower.tail = FALSE)
+  typicality_p <- stats$pchisq(nearest_dist ^ 2, df = p, lower.tail = FALSE)
 
   data.frame(
     Mahalanobis_to_predicted = pred_dist,
@@ -183,7 +187,9 @@ diagnostics_original_space <- function(bundle, preprocessed_data, prediction_res
 #'   NULL if bundle predates this feature
 diagnostics_component_space <- function(bundle, prediction_result) {
   group_stats <- bundle$group_component_stats
-  if (is.null(group_stats) || is.null(prediction_result$scores)) return(NULL)
+  if (is.null(group_stats) || is.null(prediction_result$scores)) {
+    return(NULL)
+  }
 
   scores <- as.matrix(prediction_result$scores)
   k <- ncol(scores)
@@ -198,7 +204,8 @@ diagnostics_component_space <- function(bundle, prediction_result) {
   # vapply collapses to a plain vector (not a matrix) when there is
   # exactly one unknown sample -- force back to n_unknown x n_groups.
   dist_mat <- matrix(
-    dist_mat, nrow = nrow(scores), dimnames = list(NULL, group_names)
+    dist_mat,
+    nrow = nrow(scores), dimnames = list(NULL, group_names)
   )
 
   nearest_idx <- apply(dist_mat, 1, which.min)
@@ -209,7 +216,7 @@ diagnostics_component_space <- function(bundle, prediction_result) {
   pred_idx <- match(pred_class_chr, group_names)
   pred_dist <- dist_mat[cbind(seq_len(nrow(dist_mat)), pred_idx)]
 
-  typicality_p <- stats$pchisq(nearest_dist^2, df = k, lower.tail = FALSE)
+  typicality_p <- stats$pchisq(nearest_dist ^ 2, df = k, lower.tail = FALSE)
 
   data.frame(
     Mahalanobis_to_predicted = pred_dist,
@@ -251,7 +258,7 @@ diagnostics_cluster <- function(bundle, prediction_result) {
   dist_fun <- if (metric == "manhattan") {
     function(x, y) sum(abs(x - y))
   } else {
-    function(x, y) sqrt(sum((x - y)^2))
+    function(x, y) sqrt(sum((x - y) ^ 2))
   }
 
   row_stats <- t(apply(num_mat, 1, function(row) {

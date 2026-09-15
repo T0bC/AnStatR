@@ -1,14 +1,19 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_null,
-           expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_null,
+    expect_true,
+    it
+  ],
 )
 
 box::use(
-  app/logic/shared/column_utils,
-  app/logic/shared/error_handling,
   app/logic/median/compute,
   app/logic/median/quality_analysis,
   app/logic/median/quality_filter,
+  app/logic/shared/column_utils,
 )
 
 # =============================================================================
@@ -297,7 +302,8 @@ describe("compute_medians", {
       Sq = c(1.0, 3.0)
     )
     result <- compute$compute_medians(
-      df, "GENUS", quality_col = "QUALITY"
+      df, "GENUS",
+      quality_col = "QUALITY"
     )
     expect_true(result$success)
     expect_false("QUALITY" %in% names(result$result))

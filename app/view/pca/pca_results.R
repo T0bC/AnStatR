@@ -1,14 +1,17 @@
 box::use(
+  DT,
   bsicons,
   bslib,
-  DT,
   shiny,
 )
 
 box::use(
   app/logic/pca/pca_stats[
-    compute_var_coord, compute_var_contrib, compute_var_cos2,
-    compute_ind_contrib, compute_ind_cos2
+    compute_ind_contrib,
+    compute_ind_cos2,
+    compute_var_contrib,
+    compute_var_coord,
+    compute_var_cos2
   ],
 )
 
@@ -58,7 +61,8 @@ render_pca_results <- function(pca_result, ns,
     shiny$tags$div(
       class = "alert alert-info mb-3 py-2",
       bsicons$bs_icon(
-        "info-circle-fill", class = "me-2"
+        "info-circle-fill",
+        class = "me-2"
       ),
       sprintf(
         paste(
@@ -82,7 +86,8 @@ render_pca_results <- function(pca_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "bar-chart-line", class = "me-2"
+            "bar-chart-line",
+            class = "me-2"
           ),
           "Eigenvalues & Variance"
         ),
@@ -94,7 +99,8 @@ render_pca_results <- function(pca_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "diagram-3", class = "me-2"
+            "diagram-3",
+            class = "me-2"
           ),
           "Variable Results"
         ),
@@ -105,12 +111,13 @@ render_pca_results <- function(pca_result, ns,
       # Selected Variables panel (sPCA only)
       if (
         pca_result$analysis_type == "spca" &&
-        !is.null(pca_result$selected_variables)
+          !is.null(pca_result$selected_variables)
       ) {
         bslib$accordion_panel(
           title = shiny$tags$span(
             bsicons$bs_icon(
-              "check2-square", class = "me-2"
+              "check2-square",
+              class = "me-2"
             ),
             "Selected Variables",
             if (isTRUE(pca_result$keepx_tuned)) {
@@ -147,7 +154,8 @@ render_pca_results <- function(pca_result, ns,
       bslib$accordion_panel(
         title = shiny$tags$span(
           bsicons$bs_icon(
-            "download", class = "me-2"
+            "download",
+            class = "me-2"
           ),
           "Download Results"
         ),
@@ -175,7 +183,9 @@ render_selected_variables <- function(selected_variables,
                                       keepx_tuned = FALSE) {
   rows <- lapply(names(selected_variables), function(comp) {
     vars <- selected_variables[[comp]]
-    if (length(vars) == 0) return(NULL)
+    if (length(vars) == 0) {
+      return(NULL)
+    }
     data.frame(
       Component = comp, Variable = vars,
       stringsAsFactors = FALSE
@@ -238,11 +248,13 @@ limit_var_dims <- function(loadings, scores, ncp, has_contrib) {
   result <- list(coord = loadings_d, has_contrib = has_contrib)
   if (has_contrib) {
     var_coord <- compute_var_coord(loadings, scores)[
-      , dim_cols, drop = FALSE
+      , dim_cols,
+      drop = FALSE
     ]
     result$coord <- var_coord
     result$contrib <- compute_var_contrib(loadings)[
-      , dim_cols, drop = FALSE
+      , dim_cols,
+      drop = FALSE
     ]
     result$cos2 <- compute_var_cos2(var_coord)
   }
@@ -258,7 +270,8 @@ limit_ind_dims <- function(scores, meta, ncp, has_contrib) {
   )
   if (has_contrib) {
     result$contrib <- compute_ind_contrib(scores)[
-      , dim_cols, drop = FALSE
+      , dim_cols,
+      drop = FALSE
     ]
     result$cos2 <- compute_ind_cos2(scores, scores_d)
   }
@@ -270,8 +283,10 @@ render_eigenvalues_table <- function(variance, has_contrib) {
   eig_df <- as.data.frame(variance)
   eig_df <- cbind(
     Component = rownames(eig_df),
-    round(eig_df[, c("variance_percent",
-                      "cumulative_variance_percent")], 3)
+    round(eig_df[, c(
+      "variance_percent",
+      "cumulative_variance_percent"
+    )], 3)
   )
   rownames(eig_df) <- NULL
   cum_label <- if (has_contrib) {
@@ -321,7 +336,6 @@ render_eigenvalues_table <- function(variance, has_contrib) {
 }
 
 
-
 render_variable_results <- function(var) {
   contrib_section <- if (var$has_contrib) {
     shiny$tagList(
@@ -338,7 +352,8 @@ render_variable_results <- function(var) {
     shiny$tags$div(
       class = "alert alert-secondary mb-2 py-2",
       bsicons$bs_icon(
-        "info-circle-fill", class = "me-2"
+        "info-circle-fill",
+        class = "me-2"
       ),
       paste(
         "Contribution % and cos2 are not applicable to",
@@ -356,7 +371,6 @@ render_variable_results <- function(var) {
 
   shiny$tagList(
     contrib_section,
-
     shiny$tags$h6(
       class = "mt-3 mb-2", coord_title
     ),
@@ -374,7 +388,8 @@ render_individual_results <- function(ind) {
     too_many_warning <- shiny$tags$div(
       class = "alert alert-info mb-2",
       bsicons$bs_icon(
-        "info-circle-fill", class = "me-2"
+        "info-circle-fill",
+        class = "me-2"
       ),
       sprintf(
         paste(
@@ -406,7 +421,8 @@ render_individual_results <- function(ind) {
     shiny$tags$div(
       class = "alert alert-secondary mb-2 py-2",
       bsicons$bs_icon(
-        "info-circle-fill", class = "me-2"
+        "info-circle-fill",
+        class = "me-2"
       ),
       paste(
         "Contribution % and cos2 are not applicable to",
@@ -419,7 +435,6 @@ render_individual_results <- function(ind) {
   shiny$tagList(
     too_many_warning,
     contrib_section,
-
     shiny$tags$h6(
       class = "mt-3 mb-2", "Scores"
     ),
@@ -575,7 +590,8 @@ render_download_buttons <- function(ns) {
       target = "_blank",
       download = NA,
       bsicons$bs_icon(
-        "file-earmark-excel", class = "me-2"
+        "file-earmark-excel",
+        class = "me-2"
       ),
       "Download Excel (All Results)"
     ),
@@ -591,11 +607,11 @@ render_download_buttons <- function(ns) {
       target = "_blank",
       download = NA,
       bsicons$bs_icon(
-        "file-earmark-code", class = "me-2"
+        "file-earmark-code",
+        class = "me-2"
       ),
       "Download RDS (PCA Object)"
     ),
-
     shiny$tags$small(
       class = "text-muted mt-2",
       paste(

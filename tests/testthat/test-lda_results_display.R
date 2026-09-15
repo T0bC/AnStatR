@@ -1,11 +1,11 @@
 box::use(
-  testthat[describe, expect_false, expect_true, it],
   shiny[NS],
+  testthat[describe, expect_false, expect_true, it],
 )
 
 box::use(
-  app/view/lda/results_display,
   app/logic/lda/lda[run_lda, run_plsda, run_qda],
+  app/view/lda/results_display,
 )
 
 # =============================================================================
@@ -43,7 +43,8 @@ render_ok <- function(result) {
 describe("render_lda_results", {
   it("renders LDA results without error", {
     res <- run_lda(
-      make_data(), measure_cols, "CLASS", meta_cols = "CLASS"
+      make_data(), measure_cols, "CLASS",
+      meta_cols = "CLASS"
     )
     expect_true(res$success)
     expect_true(render_ok(res$result))
@@ -51,7 +52,8 @@ describe("render_lda_results", {
 
   it("renders QDA results without error", {
     res <- run_qda(
-      make_data(), measure_cols, "CLASS", meta_cols = "CLASS"
+      make_data(), measure_cols, "CLASS",
+      meta_cols = "CLASS"
     )
     expect_true(res$success)
     expect_true(render_ok(res$result))

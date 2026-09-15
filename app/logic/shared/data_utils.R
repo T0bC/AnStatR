@@ -31,7 +31,9 @@ create_interaction <- function(df, cols, factor_order = NULL) {
     }
   })
 
-  if (length(cols) == 1) return(factor_cols[[1]])
+  if (length(cols) == 1) {
+    return(factor_cols[[1]])
+  }
 
   interaction(factor_cols, drop = TRUE)
 }
@@ -46,10 +48,14 @@ create_interaction <- function(df, cols, factor_order = NULL) {
 #' @return Named list of character vectors
 #' @export
 get_factor_levels <- function(df, cols) {
-  if (length(cols) == 0) return(list())
+  if (length(cols) == 0) {
+    return(list())
+  }
 
   result <- lapply(cols, function(col) {
-    if (!col %in% names(df)) return(character(0))
+    if (!col %in% names(df)) {
+      return(character(0))
+    }
     values <- df[[col]]
     values[is.na(values)] <- "NA"
     unique(as.character(values))
@@ -83,7 +89,9 @@ get_filter_choices <- function(values) {
 #' @return Filtered data frame
 #' @export
 filter_data <- function(data, filters) {
-  if (length(filters) == 0) return(data)
+  if (length(filters) == 0) {
+    return(data)
+  }
 
   for (col in names(filters)) {
     selected_values <- filters[[col]]
@@ -115,7 +123,9 @@ filter_data <- function(data, filters) {
 #' @return Character vector of hex color strings
 #' @export
 default_palette <- function(n) {
-  if (n <= 0) return(character(0))
+  if (n <= 0) {
+    return(character(0))
+  }
   if (n <= 8) {
     scales::hue_pal()(n)
   } else {

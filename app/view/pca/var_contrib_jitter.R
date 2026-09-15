@@ -25,15 +25,17 @@ box::use(
 #' @export
 render_output <- function(input, output, session,
                           pca_result, display_ncp = NULL) {
-  ns <- session$ns
-
   last_plot <- shiny$reactiveVal(NULL)
   last_meta <- shiny$reactiveVal(NULL)
 
   output$var_contrib_jitter <- ggiraph$renderGirafe({
     pca_res <- pca_result()
-    if (is.null(pca_res)) return(NULL)
-    if (!pca_res$success) return(NULL)
+    if (is.null(pca_res)) {
+      return(NULL)
+    }
+    if (!pca_res$success) {
+      return(NULL)
+    }
 
     ncp <- if (!is.null(display_ncp)) {
       display_ncp()
@@ -48,7 +50,9 @@ render_output <- function(input, output, session,
       show_title = TRUE
     )
 
-    if (!plot_res$success) return(NULL)
+    if (!plot_res$success) {
+      return(NULL)
+    }
 
     res <- plot_res$result
     last_plot(res$plot)
@@ -76,7 +80,9 @@ render_output <- function(input, output, session,
   # Figure caption explaining filtering
   output$var_contrib_jitter_caption <- shiny$renderUI({
     meta <- last_meta()
-    if (is.null(meta)) return(NULL)
+    if (is.null(meta)) {
+      return(NULL)
+    }
 
     build_caption(meta)
   })

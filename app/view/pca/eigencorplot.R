@@ -6,7 +6,7 @@ box::use(
 box::use(
   app/logic/pca/eigencorplot[
     compute_eigencor_data,
-    create_eigencor_plot,
+    create_eigencor_plot
   ],
 )
 
@@ -31,13 +31,21 @@ render_output <- function(input, output, session,
 
   output$eigencorplot <- ggiraph$renderGirafe({
     pca_res <- pca_result()
-    if (is.null(pca_res)) return(NULL)
-    if (!pca_res$success) return(NULL)
+    if (is.null(pca_res)) {
+      return(NULL)
+    }
+    if (!pca_res$success) {
+      return(NULL)
+    }
 
     # Check metadata availability
     meta <- pca_res$result$ind_meta
-    if (is.null(meta)) return(NULL)
-    if ("Row" %in% names(meta) && ncol(meta) == 1) return(NULL)
+    if (is.null(meta)) {
+      return(NULL)
+    }
+    if ("Row" %in% names(meta) && ncol(meta) == 1) {
+      return(NULL)
+    }
 
     ncp <- if (!is.null(display_ncp)) {
       display_ncp()
@@ -51,11 +59,15 @@ render_output <- function(input, output, session,
       pca_result = pca_res$result,
       display_ncp = ncp
     )
-    if (!eigencor_res$success) return(NULL)
+    if (!eigencor_res$success) {
+      return(NULL)
+    }
 
     # Create the plot
     plot_res <- create_eigencor_plot(eigencor_res$result)
-    if (!plot_res$success) return(NULL)
+    if (!plot_res$success) {
+      return(NULL)
+    }
 
     last_plot(plot_res$result)
 
@@ -64,9 +76,9 @@ render_output <- function(input, output, session,
     n_dims <- nrow(eigencor_res$result$cor_matrix)
     n_meta <- ncol(eigencor_res$result$cor_matrix)
     tile_inch <- 1.3
-    margin_w <- 3.5  # room for y-axis labels + legend
-    margin_h <- 2.0  # room for x-axis labels
-    width_svg  <- max(n_meta * tile_inch + margin_w, 5)
+    margin_w <- 3.5 # room for y-axis labels + legend
+    margin_h <- 2.0 # room for x-axis labels
+    width_svg <- max(n_meta * tile_inch + margin_w, 5)
     height_svg <- max(n_dims * tile_inch + margin_h, 4)
 
     ggiraph$girafe(

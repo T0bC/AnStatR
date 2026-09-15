@@ -23,7 +23,6 @@ create_modal <- function(validation_result) {
     size = "l",
     easyClose = TRUE,
     footer = shiny$modalButton("Understood"),
-
     shiny$tags$div(
       # Show renamed columns section first if any exist
       if (length(validation_result$renamed_cols) > 0) {
@@ -44,7 +43,6 @@ create_modal <- function(validation_result) {
           shiny$tags$hr()
         )
       },
-
       if (length(validation_result$ambiguous_cols) > 0) {
         shiny$tags$div(
           shiny$tags$p(
@@ -66,7 +64,6 @@ create_modal <- function(validation_result) {
           )
         )
       },
-
       if (length(validation_result$ambiguous_cols) > 0) {
         shiny$tags$div(
           shiny$tags$hr(),
@@ -88,7 +85,6 @@ create_modal <- function(validation_result) {
           )
         )
       },
-
       if (length(validation_result$descriptive_cols) > 0) {
         shiny$tags$div(
           shiny$tags$h5("Detected Descriptive Columns:"),
@@ -101,7 +97,6 @@ create_modal <- function(validation_result) {
           )
         )
       },
-
       if (length(validation_result$measurement_cols) > 0) {
         shiny$tags$div(
           shiny$tags$h5("Detected Measurement Columns:"),

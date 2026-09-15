@@ -36,7 +36,9 @@ list_examples <- function() {
     ignore.case = TRUE
   )
 
-  if (length(files) == 0) return(character(0))
+  if (length(files) == 0) {
+    return(character(0))
+  }
 
   names(files) <- vapply(files, display_name, character(1))
   files

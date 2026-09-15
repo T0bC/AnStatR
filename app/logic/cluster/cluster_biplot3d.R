@@ -5,8 +5,8 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/pca/pca[run_pca],
+  app/logic/shared/error_handling,
 )
 
 # =============================================================================
@@ -101,11 +101,13 @@ create_cluster_biplot3d <- function(data,
 #' @return Character, user-friendly error message
 #' @export
 cluster_biplot3d_error_parser <- function(
-    error_msg,
-    operation_name = "3D Cluster Plot") {
+  error_msg,
+  operation_name = "3D Cluster Plot"
+) {
   if (grepl(
     "at least 3",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -113,7 +115,8 @@ cluster_biplot3d_error_parser <- function(
     )
   } else if (grepl(
     "dimension|dim_|not found",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -121,7 +124,8 @@ cluster_biplot3d_error_parser <- function(
     )
   } else if (grepl(
     "not supported|not implemented",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name, ": ", error_msg
@@ -138,9 +142,9 @@ cluster_biplot3d_error_parser <- function(
 
 #' Build 3D plot with PCA projection
 build_pca_3d_plot <- function(data, measure_cols,
-                               clusters, meta_cols,
-                               dim_x, dim_y, dim_z,
-                               group_cols) {
+                              clusters, meta_cols,
+                              dim_x, dim_y, dim_z,
+                              group_cols) {
   # Run PCA for projection
   pca_res <- run_pca(
     data, measure_cols,
@@ -177,7 +181,6 @@ build_pca_3d_plot <- function(data, measure_cols,
   # Determine color grouping
   color_by <- resolve_3d_grouping(data, meta, clusters, group_cols)
   plot_df$color_group <- color_by$values
-  legend_title <- color_by$title
 
   # Get variance explained for axis labels
   variance <- pca_result$variance
@@ -230,9 +233,9 @@ build_pca_3d_plot <- function(data, measure_cols,
 
 #' Build 3D plot with raw data
 build_raw_3d_plot <- function(data, measure_cols,
-                               clusters, meta_cols,
-                               dim_x, dim_y, dim_z,
-                               group_cols) {
+                              clusters, meta_cols,
+                              dim_x, dim_y, dim_z,
+                              group_cols) {
   # Validate columns exist
   for (col in c(dim_x, dim_y, dim_z)) {
     if (!col %in% names(data)) {
@@ -257,7 +260,6 @@ build_raw_3d_plot <- function(data, measure_cols,
   # Determine color grouping
   color_by <- resolve_3d_grouping(data, meta, clusters, group_cols)
   plot_df$color_group <- color_by$values
-  legend_title <- color_by$title
 
   # Create color palette
   groups <- unique(plot_df$color_group)
@@ -422,10 +424,12 @@ add_cluster_centroids_3d <- function(fig, plot_df) {
         textfont = list(size = 10, color = "black"),
         showlegend = FALSE,
         hoverinfo = "text",
-        hovertext = ~paste0(cluster_label, "<br>",
-                           "x: ", sprintf("%.3f", x), "<br>",
-                           "y: ", sprintf("%.3f", y), "<br>",
-                           "z: ", sprintf("%.3f", z))
+        hovertext = ~ paste0(
+          cluster_label, "<br>",
+          "x: ", sprintf("%.3f", x), "<br>",
+          "y: ", sprintf("%.3f", y), "<br>",
+          "z: ", sprintf("%.3f", z)
+        )
       )
   }
 

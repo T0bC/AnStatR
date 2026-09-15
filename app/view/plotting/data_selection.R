@@ -6,8 +6,8 @@ box::use(
 )
 
 box::use(
-  app/logic/shared/column_utils,
   app/logic/plotting/plot_factory,
+  app/logic/shared/column_utils,
   app/view/components/sidebar_tabs,
 )
 
@@ -81,7 +81,8 @@ tab_ui <- function(ns) {
           "X-Axis ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Select up to 3 columns for the",
@@ -137,7 +138,8 @@ tab_ui <- function(ns) {
             "Tooltip ",
             bslib$tooltip(
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               ),
               paste(
                 "Select columns to display when",
@@ -161,7 +163,8 @@ tab_ui <- function(ns) {
               "Plot Type ",
               bslib$tooltip(
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 ),
                 paste(
                   "Choose the visualization type.",
@@ -194,74 +197,82 @@ tab_ui <- function(ns) {
 tab_server <- function(input, output, session, input_data,
                        data_version) {
   # Reset screening mode on new data (mirrors processing.R resets)
-  shiny$observeEvent(data_version(), {
-    shiny$updateCheckboxInput(session, "disablePlots", value = FALSE)
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      shiny$updateCheckboxInput(session, "disablePlots", value = FALSE)
+    },
+    ignoreInit = TRUE
+  )
 
   # Smart retention on new data: keep selections that still exist
-  shiny$observeEvent(data_version(), {
-    data <- input_data()
-    if (is.null(data)) {
-      rhino$log$info("Plotting data_selection: reset (no data)")
+  shiny$observeEvent(data_version(),
+    {
+      data <- input_data()
+      if (is.null(data)) {
+        rhino$log$info("Plotting data_selection: reset (no data)")
+        shiny$updateSelectizeInput(
+          session, "metaData",
+          choices = character(0), selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "measureVar",
+          choices = character(0), selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "xAxis",
+          choices = character(0), selected = character(0)
+        )
+        shiny$updateSelectizeInput(
+          session, "tooltip",
+          choices = character(0), selected = character(0)
+        )
+        return()
+      }
+
+      desc_cols <- column_utils$get_descriptive_cols(data)
+      meas_cols <- column_utils$get_measurement_cols(data)
+
+      cur_meta <- shiny$isolate(input$metaData)
+      cur_meas <- shiny$isolate(input$measureVar)
+      cur_x <- shiny$isolate(input$xAxis)
+      cur_tip <- shiny$isolate(input$tooltip)
+
+      ret_meta <- intersect(cur_meta, desc_cols)
+      ret_meas <- intersect(cur_meas, meas_cols)
+      ret_x <- intersect(cur_x, ret_meta)
+      ret_tip <- intersect(cur_tip, ret_meta)
+
+      rhino$log$info(
+        "Plotting data_selection: {length(desc_cols)} descriptive, ",
+        "{length(meas_cols)} measurement cols available"
+      )
+
       shiny$updateSelectizeInput(
         session, "metaData",
-        choices = character(0), selected = character(0)
+        choices = desc_cols, selected = ret_meta
       )
       shiny$updateSelectizeInput(
         session, "measureVar",
-        choices = character(0), selected = character(0)
+        choices = meas_cols, selected = ret_meas
       )
       shiny$updateSelectizeInput(
         session, "xAxis",
-        choices = character(0), selected = character(0)
+        choices = ret_meta, selected = ret_x
       )
       shiny$updateSelectizeInput(
         session, "tooltip",
-        choices = character(0), selected = character(0)
+        choices = ret_meta, selected = ret_tip
       )
-      return()
-    }
-
-    desc_cols <- column_utils$get_descriptive_cols(data)
-    meas_cols <- column_utils$get_measurement_cols(data)
-
-    cur_meta <- shiny$isolate(input$metaData)
-    cur_meas <- shiny$isolate(input$measureVar)
-    cur_x    <- shiny$isolate(input$xAxis)
-    cur_tip  <- shiny$isolate(input$tooltip)
-
-    ret_meta <- intersect(cur_meta, desc_cols)
-    ret_meas <- intersect(cur_meas, meas_cols)
-    ret_x    <- intersect(cur_x, ret_meta)
-    ret_tip  <- intersect(cur_tip, ret_meta)
-
-    rhino$log$info(
-      "Plotting data_selection: {length(desc_cols)} descriptive, ",
-      "{length(meas_cols)} measurement cols available"
-    )
-
-    shiny$updateSelectizeInput(
-      session, "metaData",
-      choices = desc_cols, selected = ret_meta
-    )
-    shiny$updateSelectizeInput(
-      session, "measureVar",
-      choices = meas_cols, selected = ret_meas
-    )
-    shiny$updateSelectizeInput(
-      session, "xAxis",
-      choices = ret_meta, selected = ret_x
-    )
-    shiny$updateSelectizeInput(
-      session, "tooltip",
-      choices = ret_meta, selected = ret_tip
-    )
-  }, ignoreInit = TRUE)
+    },
+    ignoreInit = TRUE
+  )
 
   # Select all measurement columns on link click
   shiny$observeEvent(input$select_all_measure, {
     data <- input_data()
-    if (is.null(data)) return()
+    if (is.null(data)) {
+      return()
+    }
     cols <- column_utils$get_measurement_cols(data)
     shiny$updateSelectizeInput(
       session, "measureVar",

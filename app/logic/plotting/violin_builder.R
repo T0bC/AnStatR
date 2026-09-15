@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
 )
 
 box::use(
@@ -28,7 +28,9 @@ add_violin_layer <- function(p, data, vp, ps) {
   is_outlier <- data[[".is_outlier"]]
   retained_idx <- which(!is_trimmed & !is_outlier)
 
-  if (length(retained_idx) == 0) return(p)
+  if (length(retained_idx) == 0) {
+    return(p)
+  }
 
   rd <- data[retained_idx, , drop = FALSE]
 
@@ -64,7 +66,9 @@ add_violin_layer_interactive <- function(p, data, vp, ps) {
   is_outlier <- data[[".is_outlier"]]
   retained_idx <- which(!is_trimmed & !is_outlier)
 
-  if (length(retained_idx) == 0) return(p)
+  if (length(retained_idx) == 0) {
+    return(p)
+  }
 
   rd <- data[retained_idx, , drop = FALSE]
 

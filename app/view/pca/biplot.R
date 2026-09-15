@@ -23,8 +23,6 @@ box::use(
 #' @export
 render_output <- function(input, output, session,
                           pca_result) {
-  ns <- session$ns
-
   last_plot <- shiny$reactiveVal(NULL)
 
   # Unified debounced params: bundle all sidebar inputs
@@ -74,15 +72,23 @@ render_output <- function(input, output, session,
     }
   })
 
-  biplot_params <- shiny$reactive({ cached_params() })
+  biplot_params <- shiny$reactive({
+    cached_params()
+  })
 
   output$biplot <- ggiraph$renderGirafe({
     pca_res <- pca_result()
-    if (is.null(pca_res)) return(NULL)
-    if (!pca_res$success) return(NULL)
+    if (is.null(pca_res)) {
+      return(NULL)
+    }
+    if (!pca_res$success) {
+      return(NULL)
+    }
 
     params <- biplot_params()
-    if (is.null(params)) return(NULL)
+    if (is.null(params)) {
+      return(NULL)
+    }
 
     # Extract params with defaults
     layer <- params$layer
@@ -116,7 +122,9 @@ render_output <- function(input, output, session,
       show_title = show_title
     )
 
-    if (!plot_res$success) return(NULL)
+    if (!plot_res$success) {
+      return(NULL)
+    }
 
     last_plot(plot_res$result)
 

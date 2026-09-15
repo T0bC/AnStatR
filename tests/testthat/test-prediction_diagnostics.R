@@ -2,7 +2,7 @@ box::use(
   app/logic/pca/pca[run_pca],
   app/logic/pca/pca_export[create_pca_bundle],
   app/logic/prediction/diagnostics[compute_diagnostics],
-  app/logic/prediction/predict[preprocess_unknown, predict_unknown],
+  app/logic/prediction/predict[predict_unknown, preprocess_unknown],
 )
 
 # =============================================================================
@@ -152,7 +152,8 @@ make_plsda_bundle <- function(sparse = FALSE) {
 
   model <- if (sparse) {
     mixOmics::splsda(
-      x_mat, y, ncomp = 2,
+      x_mat, y,
+      ncomp = 2,
       keepX = c(2, 2), scale = TRUE
     )
   } else {
@@ -191,13 +192,15 @@ make_cluster_bundle <- function(variant = "kmeans") {
 
   if (variant == "pam") {
     model <- cluster::pam(
-      numeric_data, k = 3, metric = "manhattan"
+      numeric_data,
+      k = 3, metric = "manhattan"
     )
     cluster_labels <- model$clustering
     metric <- "manhattan"
   } else {
     model <- stats::kmeans(
-      numeric_data, centers = 3, nstart = 10
+      numeric_data,
+      centers = 3, nstart = 10
     )
     cluster_labels <- model$cluster
     metric <- "euclidean"
@@ -240,13 +243,15 @@ make_blob_cluster_bundle <- function(variant = "kmeans") {
 
   if (variant == "pam") {
     model <- cluster::pam(
-      data[, numeric_cols], k = 2, metric = "manhattan"
+      data[, numeric_cols],
+      k = 2, metric = "manhattan"
     )
     cluster_labels <- model$clustering
     metric <- "manhattan"
   } else {
     model <- stats::kmeans(
-      data[, numeric_cols], centers = 2, nstart = 10
+      data[, numeric_cols],
+      centers = 2, nstart = 10
     )
     cluster_labels <- model$cluster
     metric <- "euclidean"
@@ -421,7 +426,8 @@ test_that("diagnostics_original_space: point at group mean has ~0 Mahalanobis", 
   mean_row <- bundle$group_stats[["setosa"]]$mean
   unknown <- as.data.frame(
     matrix(
-      mean_row, nrow = 1,
+      mean_row,
+      nrow = 1,
       dimnames = list(NULL, bundle$numeric_cols)
     )
   )
@@ -460,7 +466,8 @@ test_that("diagnostics_original_space flags an unrepresented-group despite a for
   sds <- vapply(bundle$used_data[, bundle$numeric_cols], stats::sd, numeric(1))
   outlier <- as.data.frame(
     matrix(
-      unlist(outlier) + 10 * sds, nrow = 1,
+      unlist(outlier) + 10 * sds,
+      nrow = 1,
       dimnames = list(NULL, bundle$numeric_cols)
     )
   )
@@ -559,7 +566,8 @@ test_that("diagnostics_cluster: point at a blob center has low distance-ratio", 
 
   unknown <- as.data.frame(
     matrix(
-      centers[1, ], nrow = 1,
+      centers[1, ],
+      nrow = 1,
       dimnames = list(NULL, bundle$numeric_cols)
     )
   )
@@ -582,7 +590,8 @@ test_that("diagnostics_cluster: centroid-midpoint tie gives Distance_ratio == 1"
   midpoint <- colMeans(centers[1:2, , drop = FALSE])
   unknown <- as.data.frame(
     matrix(
-      midpoint, nrow = 1,
+      midpoint,
+      nrow = 1,
       dimnames = list(NULL, bundle$numeric_cols)
     )
   )

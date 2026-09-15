@@ -77,7 +77,8 @@ describe("run_plsda", {
   it("fits successfully on n < p, collinear data", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     expect_true(result$success)
     r <- result$result
@@ -92,7 +93,8 @@ describe("run_plsda", {
   it("proportion_of_trace sums to <= 1 and is cumulative", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     trace <- result$result$proportion_of_trace
     expect_equal(nrow(trace), 2)
@@ -105,7 +107,8 @@ describe("run_plsda", {
   it("computes a confusion matrix with accuracy", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     expect_true(!is.null(result$result$confusion))
     expect_true(result$result$confusion$accuracy > 0)
@@ -114,7 +117,8 @@ describe("run_plsda", {
   it("has no keep_x/selected_variables for non-sparse fits", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2, sparse = FALSE
+      data, all_cols(), "species",
+      ncomp = 2, sparse = FALSE
     )
     expect_true(is.null(result$result$selected_variables))
   })
@@ -128,7 +132,8 @@ describe("run_plsda sparse (sPLS-DA)", {
   it("selects at most keep_x variables per component", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2,
+      data, all_cols(), "species",
+      ncomp = 2,
       sparse = TRUE, keep_x = c(5, 8)
     )
     expect_true(result$success)
@@ -140,7 +145,8 @@ describe("run_plsda sparse (sPLS-DA)", {
   it("selected variables are a subset of the input columns", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2,
+      data, all_cols(), "species",
+      ncomp = 2,
       sparse = TRUE, keep_x = c(5, 5)
     )
     sel <- result$result$selected_variables
@@ -151,7 +157,8 @@ describe("run_plsda sparse (sPLS-DA)", {
   it("returns analysis_type 'splsda'", {
     data <- make_high_dim_data()
     result <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2,
+      data, all_cols(), "species",
+      ncomp = 2,
       sparse = TRUE, keep_x = c(5, 5)
     )
     expect_equal(result$result$analysis_type, "splsda")
@@ -169,7 +176,8 @@ describe("run_predict for PLS-DA", {
     test <- data[c(7, 8, 15, 16, 23, 24), ]
 
     fit <- lda$run_plsda(
-      train, all_cols(), "species", ncomp = 2
+      train, all_cols(), "species",
+      ncomp = 2
     )
     expect_true(fit$success)
 
@@ -194,12 +202,14 @@ describe("run_plsda_perf", {
   it("returns a per-component error-rate table without erroring", {
     data <- make_high_dim_data()
     fit <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     expect_true(fit$success)
 
     perf_res <- lda$run_plsda_perf(
-      fit$result, folds = 3, repeats = 2
+      fit$result,
+      folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
     # run_plsda_perf() returns a list of tables:
@@ -217,10 +227,12 @@ describe("run_plsda_perf", {
     # leak extra columns into the reported error table.
     data <- make_high_dim_data()
     fit <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     perf_res <- lda$run_plsda_perf(
-      fit$result, folds = 3, repeats = 2
+      fit$result,
+      folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
     expect_equal(
@@ -232,10 +244,12 @@ describe("run_plsda_perf", {
   it("reports cross-validated error per group", {
     data <- make_high_dim_data()
     fit <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     perf_res <- lda$run_plsda_perf(
-      fit$result, folds = 3, repeats = 2
+      fit$result,
+      folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
 
@@ -257,10 +271,12 @@ describe("run_plsda_perf", {
   it("reports mixOmics' own component-count recommendation", {
     data <- make_high_dim_data()
     fit <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     perf_res <- lda$run_plsda_perf(
-      fit$result, folds = 3, repeats = 2
+      fit$result,
+      folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
 
@@ -277,10 +293,12 @@ describe("run_plsda_perf", {
   it("reports all available prediction distances", {
     data <- make_high_dim_data()
     fit <- lda$run_plsda(
-      data, all_cols(), "species", ncomp = 2
+      data, all_cols(), "species",
+      ncomp = 2
     )
     perf_res <- lda$run_plsda_perf(
-      fit$result, folds = 3, repeats = 2
+      fit$result,
+      folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
 

@@ -1,13 +1,15 @@
 box::use(
-  app/logic/prediction/predict[
-    preprocess_unknown, predict_unknown
-  ],
-  app/logic/preprocessing/skewness_transform[
-    detect_skewness, transform_skewed,
-    apply_stored_transform
-  ],
   app/logic/pca/pca[run_pca],
   app/logic/pca/pca_export[create_pca_bundle],
+  app/logic/prediction/predict[
+    predict_unknown,
+    preprocess_unknown
+  ],
+  app/logic/preprocessing/skewness_transform[
+    apply_stored_transform,
+    detect_skewness,
+    transform_skewed
+  ],
 )
 
 # =============================================================================
@@ -132,7 +134,8 @@ make_plsda_bundle <- function(sparse = FALSE) {
 
   model <- if (sparse) {
     mixOmics::splsda(
-      x_mat, y, ncomp = 2,
+      x_mat, y,
+      ncomp = 2,
       keepX = c(2, 2), scale = TRUE
     )
   } else {
@@ -167,13 +170,15 @@ make_cluster_bundle <- function(variant = "kmeans") {
 
   if (variant == "pam") {
     model <- cluster::pam(
-      numeric_data, k = 3, metric = "manhattan"
+      numeric_data,
+      k = 3, metric = "manhattan"
     )
     cluster_labels <- model$clustering
     metric <- "manhattan"
   } else {
     model <- stats::kmeans(
-      numeric_data, centers = 3, nstart = 10
+      numeric_data,
+      centers = 3, nstart = 10
     )
     cluster_labels <- model$cluster
     metric <- "euclidean"
@@ -216,13 +221,15 @@ make_blob_cluster_bundle <- function(variant = "kmeans") {
 
   if (variant == "pam") {
     model <- cluster::pam(
-      data[, numeric_cols], k = 2, metric = "manhattan"
+      data[, numeric_cols],
+      k = 2, metric = "manhattan"
     )
     cluster_labels <- model$clustering
     metric <- "manhattan"
   } else {
     model <- stats::kmeans(
-      data[, numeric_cols], centers = 2, nstart = 10
+      data[, numeric_cols],
+      centers = 2, nstart = 10
     )
     cluster_labels <- model$cluster
     metric <- "euclidean"
@@ -531,7 +538,8 @@ test_that("predict_cluster handles a centroid-midpoint tie without error", {
   midpoint <- colMeans(centers[1:2, , drop = FALSE])
   unknown <- as.data.frame(
     matrix(
-      midpoint, nrow = 1,
+      midpoint,
+      nrow = 1,
       dimnames = list(NULL, bundle$numeric_cols)
     )
   )
@@ -553,7 +561,8 @@ test_that("stored transform params reproduce training transform", {
 
   # Detect and transform
   skew_info <- detect_skewness(
-    train_df, "val", threshold = 0.5
+    train_df, "val",
+    threshold = 0.5
   )
   if (any(skew_info$is_skewed)) {
     transform_res <- transform_skewed(

@@ -128,8 +128,8 @@ get_grouping <- function(lda_result) {
 
   if (
     !is.null(meta) &&
-    !is.null(gcol) &&
-    gcol %in% names(meta)
+      !is.null(gcol) &&
+      gcol %in% names(meta)
   ) {
     return(as.factor(meta[[gcol]]))
   }
@@ -144,19 +144,35 @@ get_grouping <- function(lda_result) {
 
 #' Format p-value for display
 format_p <- function(p) {
-  if (is.na(p)) return("NA")
-  if (p < 0.001) return("< 0.001")
-  if (p < 0.01) return(sprintf("%.3f", p))
+  if (is.na(p)) {
+    return("NA")
+  }
+  if (p < 0.001) {
+    return("< 0.001")
+  }
+  if (p < 0.01) {
+    return(sprintf("%.3f", p))
+  }
   sprintf("%.3f", p)
 }
 
 
 #' Format significance stars
 format_sig <- function(p) {
-  if (is.na(p)) return("")
-  if (p < 0.001) return("***")
-  if (p < 0.01) return("**")
-  if (p < 0.05) return("*")
-  if (p < 0.1) return(".")
+  if (is.na(p)) {
+    return("")
+  }
+  if (p < 0.001) {
+    return("***")
+  }
+  if (p < 0.01) {
+    return("**")
+  }
+  if (p < 0.05) {
+    return("*")
+  }
+  if (p < 0.1) {
+    return(".")
+  }
   ""
 }

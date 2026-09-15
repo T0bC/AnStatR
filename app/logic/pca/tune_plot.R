@@ -1,6 +1,6 @@
 box::use(
-  ggplot2,
   ggiraph,
+  ggplot2,
   rhino,
 )
 
@@ -29,11 +29,15 @@ box::use(
 #'   when the structure is not recognised
 #' @export
 tidy_cor_comp <- function(cor_comp, grid) {
-  if (is.null(cor_comp) || length(cor_comp) == 0) return(NULL)
+  if (is.null(cor_comp) || length(cor_comp) == 0) {
+    return(NULL)
+  }
 
   rows <- lapply(seq_along(cor_comp), function(i) {
     block <- cor_comp[[i]]
-    if (is.null(block)) return(NULL)
+    if (is.null(block)) {
+      return(NULL)
+    }
 
     values <- if (is.data.frame(block)) {
       # mixOmics 6.36 names this "cor.mean". Prefer an explicitly
@@ -45,8 +49,12 @@ tidy_cor_comp <- function(cor_comp, grid) {
         which(vapply(block, is.numeric, logical(1))),
         which(names(block) == "keepX")
       )
-      pick <- if (length(named) > 0) named[1] else {
-        if (length(numeric_cols) == 0) return(NULL)
+      pick <- if (length(named) > 0) {
+        named[1]
+      } else {
+        if (length(numeric_cols) == 0) {
+          return(NULL)
+        }
         numeric_cols[1]
       }
       block[[pick]]
@@ -57,7 +65,9 @@ tidy_cor_comp <- function(cor_comp, grid) {
     }
 
     values <- as.numeric(values)
-    if (length(values) == 0) return(NULL)
+    if (length(values) == 0) {
+      return(NULL)
+    }
 
     # Align to the grid: tune.spca evaluates one value per tested
     # keepX, but bail out rather than recycling if they disagree.
@@ -78,7 +88,9 @@ tidy_cor_comp <- function(cor_comp, grid) {
   })
 
   df <- do.call(rbind, rows)
-  if (is.null(df) || nrow(df) == 0) return(NULL)
+  if (is.null(df) || nrow(df) == 0) {
+    return(NULL)
+  }
   rownames(df) <- NULL
   df
 }
@@ -138,7 +150,8 @@ create_tune_spca_plot <- function(cor_comp, grid, chosen = NULL) {
 
       p <- p +
         ggplot2$geom_line(
-          ggplot2$aes(group = Component), linewidth = 0.7
+          ggplot2$aes(group = Component),
+          linewidth = 0.7
         ) +
         ggiraph$geom_point_interactive(
           ggplot2$aes(

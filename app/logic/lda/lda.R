@@ -64,7 +64,7 @@ validate_inputs <- function(columns, data, grouping_col,
   }
 
   if (is.null(grouping_col) || length(grouping_col) == 0 ||
-      grouping_col == "") {
+    grouping_col == "") {
     rhino$log$warn("LDA: no grouping column selected")
     return(list(
       valid = FALSE,
@@ -378,7 +378,8 @@ run_mda <- function(data, columns, grouping_col,
       } else {
         # Build formula: grouping ~ .
         fit_data <- cbind(
-          numeric_data, .grouping. = grouping
+          numeric_data,
+          .grouping. = grouping
         )
 
         mda_obj <- fit_mda(
@@ -503,7 +504,8 @@ run_plsda_perf <- function(plsda_result, folds = 5,
       # we rely on all three rules being present to build the
       # distance comparison below.
       perf_res <- mixOmics$perf(
-        model, dist = "all", validation = "Mfold", folds = folds,
+        model,
+        dist = "all", validation = "Mfold", folds = folds,
         nrepeat = repeats, progressBar = FALSE
       )
 
@@ -671,7 +673,8 @@ run_predict <- function(lda_result, test_data, columns,
       }
 
       numeric_test <- test_data[
-        , columns, drop = FALSE
+        , columns,
+        drop = FALSE
       ]
 
       rhino$log$info(
@@ -699,10 +702,12 @@ run_predict <- function(lda_result, test_data, columns,
           model, numeric_test
         )
         pred_post <- stats::predict(
-          model, numeric_test, type = "posterior"
+          model, numeric_test,
+          type = "posterior"
         )
         pred_scores <- stats::predict(
-          model, numeric_test, type = "variates"
+          model, numeric_test,
+          type = "variates"
         )
       } else {
         pred <- stats::predict(model, numeric_test)
@@ -746,7 +751,7 @@ run_predict <- function(lda_result, test_data, columns,
       # Confusion matrix if true labels available
       if (
         !is.null(grouping_col) &&
-        grouping_col %in% names(test_data)
+          grouping_col %in% names(test_data)
       ) {
         true_labels <- as.factor(
           test_data[[grouping_col]]
@@ -790,7 +795,9 @@ build_dist_comparison <- function(overall, ber, n_comp) {
   rules <- intersect(PLSDA_DIST_RULES, colnames(overall))
   # mahalanobis.dist is dropped by perf() when the component
   # covariance is singular, so never assume all three are here.
-  if (length(rules) < 2) return(NULL)
+  if (length(rules) < 2) {
+    return(NULL)
+  }
 
   build_block <- function(mat, measure_label) {
     block <- data.frame(
@@ -825,21 +832,30 @@ build_dist_comparison <- function(overall, ber, n_comp) {
 #'   any component, in percentage points), $best_rule (rule with the
 #'   lowest BER at its best component) and $rules, or NULL
 build_dist_agreement <- function(dist_comparison) {
-  if (is.null(dist_comparison)) return(NULL)
+  if (is.null(dist_comparison)) {
+    return(NULL)
+  }
 
   ber_rows <- dist_comparison[
-    dist_comparison$Measure == "BER", , drop = FALSE
+    dist_comparison$Measure == "BER", ,
+    drop = FALSE
   ]
   rules <- intersect(PLSDA_DIST_RULES, names(ber_rows))
-  if (nrow(ber_rows) == 0 || length(rules) < 2) return(NULL)
+  if (nrow(ber_rows) == 0 || length(rules) < 2) {
+    return(NULL)
+  }
 
   ber_mat <- as.matrix(ber_rows[, rules, drop = FALSE])
-  if (all(is.na(ber_mat))) return(NULL)
+  if (all(is.na(ber_mat))) {
+    return(NULL)
+  }
 
   # Widest disagreement on any single component, in pp — the
   # worst case is what the user needs to know about.
   spreads <- apply(ber_mat, 1, function(row) {
-    if (all(is.na(row))) return(NA_real_)
+    if (all(is.na(row))) {
+      return(NA_real_)
+    }
     max(row, na.rm = TRUE) - min(row, na.rm = TRUE)
   })
   max_spread_pp <- round(max(spreads, na.rm = TRUE) * 100, 1)
@@ -869,17 +885,23 @@ build_dist_agreement <- function(dist_comparison) {
 #' @return Data frame with Class and one column per rule, or NULL
 build_class_error_table <- function(perf_res) {
   class_err <- perf_res$error.rate.class
-  if (is.null(class_err) || length(class_err) == 0) return(NULL)
+  if (is.null(class_err) || length(class_err) == 0) {
+    return(NULL)
+  }
 
   rules <- intersect(PLSDA_DIST_RULES, names(class_err))
-  if (length(rules) == 0) return(NULL)
+  if (length(rules) == 0) {
+    return(NULL)
+  }
 
   # perf() gives a classes-x-components matrix per rule (unlike
   # perf.assess(), which returns a single named vector). Report the
   # last component, matching the fitted model's component count.
   extract_final <- function(mat) {
     if (is.matrix(mat)) {
-      if (ncol(mat) == 0) return(NULL)
+      if (ncol(mat) == 0) {
+        return(NULL)
+      }
       vals <- mat[, ncol(mat)]
       names(vals) <- rownames(mat)
       vals
@@ -890,7 +912,9 @@ build_class_error_table <- function(perf_res) {
 
   first <- extract_final(class_err[[rules[1]]])
   classes <- names(first)
-  if (is.null(classes) || length(classes) == 0) return(NULL)
+  if (is.null(classes) || length(classes) == 0) {
+    return(NULL)
+  }
 
   df <- data.frame(Class = classes, stringsAsFactors = FALSE)
   for (rule in rules) {
@@ -899,7 +923,9 @@ build_class_error_table <- function(perf_res) {
     # Align by name — never assume the rules share an ordering.
     df[[rule]] <- round(as.numeric(vals[classes]), 4)
   }
-  if (ncol(df) < 2) return(NULL)
+  if (ncol(df) < 2) {
+    return(NULL)
+  }
   rownames(df) <- NULL
   df
 }
@@ -916,10 +942,14 @@ build_class_error_table <- function(perf_res) {
 #' @return Data frame with Measure and one column per rule, or NULL
 build_mixomics_choice <- function(perf_res) {
   choice <- perf_res$choice.ncomp
-  if (is.null(choice) || !is.matrix(choice)) return(NULL)
+  if (is.null(choice) || !is.matrix(choice)) {
+    return(NULL)
+  }
 
   rules <- intersect(PLSDA_DIST_RULES, colnames(choice))
-  if (length(rules) == 0) return(NULL)
+  if (length(rules) == 0) {
+    return(NULL)
+  }
 
   df <- data.frame(
     Measure = rownames(choice), stringsAsFactors = FALSE
@@ -951,7 +981,9 @@ build_stability_table <- function(perf_res, n_comp) {
     )
   })
   df <- do.call(rbind, rows)
-  if (is.null(df) || nrow(df) == 0) return(NULL)
+  if (is.null(df) || nrow(df) == 0) {
+    return(NULL)
+  }
 
   df <- df[order(df$Component, -df$Frequency), ]
   rownames(df) <- NULL
@@ -1094,7 +1126,7 @@ build_lda_result <- function(obj, data, columns,
       result$scaling <- as.data.frame(obj$scaling)
       result$svd <- obj$svd
       n_ld <- length(obj$svd)
-      prop_trace <- obj$svd^2 / sum(obj$svd^2)
+      prop_trace <- obj$svd ^ 2 / sum(obj$svd ^ 2)
       result$proportion_of_trace <- data.frame(
         LD = paste0("LD", seq_len(n_ld)),
         `Singular Value` = round(obj$svd, 4),
@@ -1144,8 +1176,8 @@ build_lda_result <- function(obj, data, columns,
         )
         result$lda_svd <- companion$svd
         n_ld <- length(companion$svd)
-        prop_trace <- companion$svd^2 /
-          sum(companion$svd^2)
+        prop_trace <- companion$svd ^ 2 /
+          sum(companion$svd ^ 2)
         result$lda_proportion_of_trace <- data.frame(
           LD = paste0("LD", seq_len(n_ld)),
           `Singular Value` = round(companion$svd, 4),
@@ -1324,12 +1356,14 @@ build_mda_result <- function(mda_obj, data, numeric_data,
     mda_obj, numeric_data
   )
   pred_post <- stats::predict(
-    mda_obj, numeric_data, type = "posterior"
+    mda_obj, numeric_data,
+    type = "posterior"
   )
 
   # Discriminant scores from predict
   scores_mat <- stats::predict(
-    mda_obj, numeric_data, type = "variates"
+    mda_obj, numeric_data,
+    type = "variates"
   )
   if (is.null(scores_mat)) {
     # Fallback: use companion LDA for projection
@@ -1393,7 +1427,8 @@ build_mda_result <- function(mda_obj, data, numeric_data,
       env <- new.env(parent = globalenv())
       env$mda_obj <- mda_obj
       coefs <- eval(
-        quote(coef(mda_obj)), envir = env
+        quote(coef(mda_obj)),
+        envir = env
       )
       if (!is.null(coefs) && is.matrix(coefs)) {
         as.data.frame(coefs)
@@ -1467,10 +1502,12 @@ build_mda_cv_result <- function(data, numeric_data,
   lvls <- levels(grouping)
 
   predicted <- factor(
-    rep(NA_character_, n), levels = lvls
+    rep(NA_character_, n),
+    levels = lvls
   )
   posterior <- matrix(
-    NA_real_, nrow = n, ncol = n_groups
+    NA_real_,
+    nrow = n, ncol = n_groups
   )
   colnames(posterior) <- lvls
 
@@ -1480,7 +1517,8 @@ build_mda_cv_result <- function(data, numeric_data,
     test_obs <- numeric_data[i, , drop = FALSE]
 
     fit_data <- cbind(
-      train_data, .grouping. = train_g
+      train_data,
+      .grouping. = train_g
     )
 
     fold_fit <- tryCatch(
@@ -1496,7 +1534,8 @@ build_mda_cv_result <- function(data, numeric_data,
         fold_fit, test_obs
       )
       fold_post <- stats::predict(
-        fold_fit, test_obs, type = "posterior"
+        fold_fit, test_obs,
+        type = "posterior"
       )
       predicted[i] <- as.character(fold_pred)
       posterior[i, ] <- as.numeric(fold_post)
@@ -1579,7 +1618,11 @@ build_confusion_stats <- function(true_labels,
   per_class <- lapply(levels_all, function(cls) {
     tp <- if (
       cls %in% rownames(cm) && cls %in% colnames(cm)
-    ) cm[cls, cls] else 0
+    ) {
+      cm[cls, cls]
+    } else {
+      0
+    }
     fn <- if (cls %in% rownames(cm)) {
       sum(cm[cls, ]) - tp
     } else {
@@ -1594,7 +1637,7 @@ build_confusion_stats <- function(true_labels,
     recall <- if (tp + fn > 0) tp / (tp + fn) else NA
     f1 <- if (
       !is.na(precision) && !is.na(recall) &&
-      (precision + recall) > 0
+        (precision + recall) > 0
     ) {
       2 * precision * recall / (precision + recall)
     } else {
@@ -1634,7 +1677,8 @@ lda_error_parser <- function(error_msg,
                              operation_name = "LDA") {
   if (grepl(
     "keepX",
-    error_msg, ignore.case = FALSE
+    error_msg,
+    ignore.case = FALSE
   )) {
     paste0(
       operation_name,
@@ -1645,7 +1689,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "singular|rank deficien",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1656,7 +1701,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "NAs are not allowed in subscripted",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1667,7 +1713,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1676,7 +1723,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "some group is too small",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1687,7 +1735,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "group|level|factor",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1697,7 +1746,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "converg|iteration|EM",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1707,7 +1757,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "subclass|mixture",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -1722,7 +1773,8 @@ lda_error_parser <- function(error_msg,
     )
   } else if (grepl(
     "variables.*constant|zero variance",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,

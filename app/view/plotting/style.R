@@ -9,7 +9,6 @@ box::use(
 
 box::use(
   app/logic/shared/data_utils,
-  app/logic/plotting/plot_factory,
   app/view/components/sidebar_tabs,
 )
 
@@ -83,32 +82,35 @@ tab_server <- function(input, output, session, input_data,
   saved_factor_order <- shiny$reactiveVal(list())
 
   # Set statOptions defaults when plot type changes
-  shiny$observeEvent(input$plotType, {
-    pt <- input$plotType %||% "scatter"
-    shows_lines <- pt %in% c("scatter", "violin_points")
+  shiny$observeEvent(input$plotType,
+    {
+      pt <- input$plotType %||% "scatter"
+      shows_lines <- pt %in% c("scatter", "violin_points")
 
-    if (shows_lines) {
-      shiny$updateCheckboxGroupInput(
-        session, "statOptions",
-        choices = c(
-          "Median" = "showMedian",
-          "SD"     = "showSD",
-          "Aspect Ratio" = "aspectRatio"
-        ),
-        selected = c("showMedian", "showSD")
-      )
-    } else {
-      shiny$updateCheckboxGroupInput(
-        session, "statOptions",
-        choices = c(
-          "Median" = "showMedian",
-          "SD"     = "showSD",
-          "Aspect Ratio" = "aspectRatio"
-        ),
-        selected = character(0)
-      )
-    }
-  }, ignoreNULL = TRUE)
+      if (shows_lines) {
+        shiny$updateCheckboxGroupInput(
+          session, "statOptions",
+          choices = c(
+            "Median" = "showMedian",
+            "SD" = "showSD",
+            "Aspect Ratio" = "aspectRatio"
+          ),
+          selected = c("showMedian", "showSD")
+        )
+      } else {
+        shiny$updateCheckboxGroupInput(
+          session, "statOptions",
+          choices = c(
+            "Median" = "showMedian",
+            "SD" = "showSD",
+            "Aspect Ratio" = "aspectRatio"
+          ),
+          selected = character(0)
+        )
+      }
+    },
+    ignoreNULL = TRUE
+  )
 
   # Update pointShape choices from metaData (debounced)
   debounced_meta <- shiny$reactive({
@@ -137,7 +139,8 @@ tab_server <- function(input, output, session, input_data,
     x_axis <- debounced_xaxis()
     if (length(x_axis) == 0) {
       shiny$updateSelectizeInput(
-        session, "pointColor", choices = character(0)
+        session, "pointColor",
+        choices = character(0)
       )
     } else {
       current <- shiny$isolate(input$pointColor)
@@ -154,9 +157,13 @@ tab_server <- function(input, output, session, input_data,
   # otherwise all xAxis columns
   color_cols <- shiny$reactive({
     xa <- input$xAxis
-    if (is.null(xa) || length(xa) == 0) return(character(0))
+    if (is.null(xa) || length(xa) == 0) {
+      return(character(0))
+    }
     pc <- input$pointColor
-    if (!is.null(pc) && length(pc) > 0) return(pc)
+    if (!is.null(pc) && length(pc) > 0) {
+      return(pc)
+    }
     xa
   })
 
@@ -173,7 +180,9 @@ tab_server <- function(input, output, session, input_data,
   # Current factor order: merge saved order with current data levels
   factor_order <- shiny$reactive({
     levels_list <- x_axis_levels()
-    if (length(levels_list) == 0) return(list())
+    if (length(levels_list) == 0) {
+      return(list())
+    }
 
     saved <- saved_factor_order()
     result <- list()
@@ -241,7 +250,9 @@ tab_server <- function(input, output, session, input_data,
   # Observer for sortable input changes (per column)
   shiny$observe({
     xa <- input$xAxis
-    if (length(xa) == 0) return()
+    if (length(xa) == 0) {
+      return()
+    }
 
     new_order <- list()
     for (col in xa) {
@@ -265,7 +276,9 @@ tab_server <- function(input, output, session, input_data,
   # Custom color map reactive
   color_map <- shiny$reactive({
     groups <- color_groups()
-    if (length(groups) == 0) return(NULL)
+    if (length(groups) == 0) {
+      return(NULL)
+    }
     collect_colors(input, groups)
   })
 
@@ -276,7 +289,9 @@ tab_server <- function(input, output, session, input_data,
       return(NULL)
     }
     groups <- color_groups()
-    if (length(groups) == 0) return(NULL)
+    if (length(groups) == 0) {
+      return(NULL)
+    }
     collect_shapes(input, groups)
   })
 
@@ -341,26 +356,26 @@ collect_shapes <- function(input, groups, default_shape = 21L) {
 shape_choices <- function() {
   pch_values <- c(0:14, 21:25)
   symbols <- c(
-    "\u25A1",   # pch  0: open square
-    "\u25CB",   # pch  1: open circle
-    "\u25B3",   # pch  2: open triangle up
-    "\u002B",   # pch  3: plus
-    "\u00D7",   # pch  4: cross (X)
-    "\u25C7",   # pch  5: open diamond
-    "\u25BD",   # pch  6: open triangle down
-    "\u22A0",   # pch  7: square with X inside
-    "\u2217",   # pch  8: asterisk
-    "\u25C8",   # pch  9: diamond with plus inside
-    "\u2A01",   # pch 10: circle with plus inside
-    "\u2606",   # pch 11: open star
-    "\u229E",   # pch 12: square with plus inside
-    "\u2297",   # pch 13: circle with X inside
-    "\u29C4",   # pch 14: square with triangle inside
-    "\u25CF",   # pch 21: filled circle (with border)
-    "\u25A0",   # pch 22: filled square (with border)
-    "\u25C6",   # pch 23: filled diamond (with border)
-    "\u25B2",   # pch 24: filled triangle up (with border)
-    "\u25BC"    # pch 25: filled triangle down (with border)
+    "\u25A1", # pch  0: open square
+    "\u25CB", # pch  1: open circle
+    "\u25B3", # pch  2: open triangle up
+    "\u002B", # pch  3: plus
+    "\u00D7", # pch  4: cross (X)
+    "\u25C7", # pch  5: open diamond
+    "\u25BD", # pch  6: open triangle down
+    "\u22A0", # pch  7: square with X inside
+    "\u2217", # pch  8: asterisk
+    "\u25C8", # pch  9: diamond with plus inside
+    "\u2A01", # pch 10: circle with plus inside
+    "\u2606", # pch 11: open star
+    "\u229E", # pch 12: square with plus inside
+    "\u2297", # pch 13: circle with X inside
+    "\u29C4", # pch 14: square with triangle inside
+    "\u25CF", # pch 21: filled circle (with border)
+    "\u25A0", # pch 22: filled square (with border)
+    "\u25C6", # pch 23: filled diamond (with border)
+    "\u25B2", # pch 24: filled triangle up (with border)
+    "\u25BC" # pch 25: filled triangle down (with border)
   )
   stats::setNames(as.character(pch_values), symbols)
 }
@@ -488,7 +503,8 @@ build_multi_level_tree <- function(ns, x_cols, factor_order, groups,
     inner_content <- build_inner_levels(
       ns, inner_cols, factor_order, outer_val,
       groups, existing_colors, existing_shapes, defaults,
-      shape_by_active, depth = 1
+      shape_by_active,
+      depth = 1
     )
 
     shiny$tags$div(
@@ -551,7 +567,9 @@ build_multi_level_tree <- function(ns, x_cols, factor_order, groups,
 build_inner_levels <- function(ns, cols, factor_order, parent_prefix,
                                groups, existing_colors, existing_shapes,
                                defaults, shape_by_active, depth = 1) {
-  if (length(cols) == 0) return(NULL)
+  if (length(cols) == 0) {
+    return(NULL)
+  }
 
   col <- cols[1]
   remaining_cols <- cols[-1]
@@ -570,7 +588,7 @@ build_inner_levels <- function(ns, cols, factor_order, parent_prefix,
       # Leaf level: show color picker and shape dropdown
       group_idx <- which(groups == current_prefix)
       color <- if (length(group_idx) > 0 &&
-                   current_prefix %in% names(existing_colors)) {
+        current_prefix %in% names(existing_colors)) {
         existing_colors[[current_prefix]]
       } else if (length(group_idx) > 0) {
         defaults[group_idx[1]]
@@ -692,7 +710,8 @@ points_panel <- function(ns) {
             shiny$tags$span(
               "Size ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             "Size of the plotted points"
@@ -708,7 +727,8 @@ points_panel <- function(ns) {
             shiny$tags$span(
               "Jitter ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             paste(
@@ -731,7 +751,8 @@ points_panel <- function(ns) {
           shiny$tags$span(
             "Alpha ",
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             )
           ),
           paste(
@@ -756,7 +777,8 @@ points_panel <- function(ns) {
               shiny$tags$span(
                 "Alpha Points ",
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 )
               ),
               paste(
@@ -775,7 +797,8 @@ points_panel <- function(ns) {
               shiny$tags$span(
                 "Alpha Box ",
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 )
               ),
               paste(
@@ -794,7 +817,8 @@ points_panel <- function(ns) {
         shiny$tags$span(
           "Shape by ",
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           )
         ),
         paste(
@@ -819,7 +843,8 @@ points_panel <- function(ns) {
           shiny$tags$span(
             "Black data points ",
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             )
           ),
           "Show data points in black while keeping boxplot/violin colors"
@@ -833,7 +858,8 @@ points_panel <- function(ns) {
         shiny$tags$span(
           "Color by ",
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           )
         ),
         "Column(s) to determine point/fill colors"
@@ -982,7 +1008,8 @@ boxplot_panel <- function(ns) {
             shiny$tags$span(
               "Box Width ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             "Width of the boxplot boxes (0-1)"
@@ -1003,7 +1030,8 @@ boxplot_panel <- function(ns) {
               shiny$tags$span(
                 "Show Outliers ",
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 )
               ),
               "Show outliers detected by the configured algorithm as 'X' marks (requires outlier detection enabled in Processing)"
@@ -1019,7 +1047,8 @@ boxplot_panel <- function(ns) {
         shiny$tags$span(
           "Notched ",
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           )
         ),
         "Show notches for median confidence interval"
@@ -1043,7 +1072,8 @@ violin_panel <- function(ns) {
             shiny$tags$span(
               "Violin Width ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             "Width of the violin plots (0-1)"
@@ -1064,7 +1094,8 @@ violin_panel <- function(ns) {
               shiny$tags$span(
                 "Show Outliers ",
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 )
               ),
               "Show outliers detected by the configured algorithm as 'X' marks (requires outlier detection enabled in Processing)"
@@ -1080,7 +1111,8 @@ violin_panel <- function(ns) {
         shiny$tags$span(
           "Scale ",
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           )
         ),
         paste(
@@ -1099,7 +1131,8 @@ violin_panel <- function(ns) {
         shiny$tags$span(
           "Trim Tails ",
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           )
         ),
         "Trim violin tails to data range"
@@ -1162,7 +1195,8 @@ export_panel <- function(ns) {
             shiny$tags$span(
               "Width (cm) ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             paste(
@@ -1181,7 +1215,8 @@ export_panel <- function(ns) {
             shiny$tags$span(
               "Height (cm) ",
               bsicons$bs_icon(
-                "info-circle", class = "text-muted"
+                "info-circle",
+                class = "text-muted"
               )
             ),
             paste(

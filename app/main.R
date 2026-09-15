@@ -8,7 +8,6 @@ box::use(
   app/logic/shared/logging,
   app/logic/shared/settings,
   app/view/cluster,
-  app/view/shared/help_modal,
   app/view/lda,
   app/view/load_data,
   app/view/median,
@@ -17,12 +16,13 @@ box::use(
   app/view/power,
   app/view/prediction,
   app/view/settings_modal,
+  app/view/shared/help_modal,
   app/view/statistics,
   app/view/summary,
 )
 
 # --- Shiny options ---
-options(shiny.maxRequestSize = 600 * 1024^2) # 600 MB upload limit
+options(shiny.maxRequestSize = 600 * 1024 ^ 2) # 600 MB upload limit
 
 #' @export
 ui <- function(id) {
@@ -285,9 +285,9 @@ server <- function(id) {
       has_selections <- length(measures) > 0 && length(x_axis) > 0
 
       session$sendCustomMessage("tab_disabled_state", list(
-        tab     = "statistics",
+        tab = "statistics",
         enabled = has_selections,
-        reason  = paste(
+        reason = paste(
           "Select measurement and X-axis columns in the",
           "<strong>Plotting</strong> tab first to unlock",
           "the Statistics tab."

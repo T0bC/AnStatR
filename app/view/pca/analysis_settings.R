@@ -6,12 +6,15 @@ box::use(
 )
 
 box::use(
+  app/logic/pca/pca[run_pca_tune_keepx],
   app/view/components/sidebar_tabs,
   app/view/shared/tuning_controls[
-    check_cv_settings, estimate_cv_runtime, parse_keepx_grid,
-    render_cv_advice, render_runtime_estimate
+    check_cv_settings,
+    estimate_cv_runtime,
+    parse_keepx_grid,
+    render_cv_advice,
+    render_runtime_estimate
   ],
-  app/logic/pca/pca[run_pca_tune_keepx],
 )
 
 #' @export
@@ -31,7 +34,8 @@ tab_ui <- function(ns) {
         "Analysis Type ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "PCA maximises variance explained per",
@@ -69,7 +73,8 @@ tab_ui <- function(ns) {
           "Number of components ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Number of sparse components to",
@@ -88,7 +93,8 @@ tab_ui <- function(ns) {
         "Variables to keep per component ",
         bslib$tooltip(
           bsicons$bs_icon(
-            "info-circle", class = "text-muted"
+            "info-circle",
+            class = "text-muted"
           ),
           paste(
             "How many measurement variables each",
@@ -143,7 +149,8 @@ tab_ui <- function(ns) {
               "CV folds ",
               bslib$tooltip(
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 ),
                 paste(
                   "How many parts the data is split into",
@@ -164,7 +171,8 @@ tab_ui <- function(ns) {
               "CV repeats ",
               bslib$tooltip(
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 ),
                 paste(
                   "How many times the whole fold split is",
@@ -184,7 +192,8 @@ tab_ui <- function(ns) {
               "keepX values to test ",
               bslib$tooltip(
                 bsicons$bs_icon(
-                  "info-circle", class = "text-muted"
+                  "info-circle",
+                  class = "text-muted"
                 ),
                 paste(
                   "The candidate variable counts",
@@ -215,7 +224,8 @@ tab_ui <- function(ns) {
           "Number of components ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Number of independent components to",
@@ -234,7 +244,8 @@ tab_ui <- function(ns) {
           "ICA Algorithm ",
           bslib$tooltip(
             bsicons$bs_icon(
-              "info-circle", class = "text-muted"
+              "info-circle",
+              class = "text-muted"
             ),
             paste(
               "Deflation: extracts components one at a",
@@ -254,7 +265,8 @@ tab_ui <- function(ns) {
       shiny$tags$div(
         class = "alert alert-secondary py-2 small",
         bsicons$bs_icon(
-          "info-circle-fill", class = "me-1"
+          "info-circle-fill",
+          class = "me-1"
         ),
         paste(
           "IPCA components are not ranked by variance",
@@ -290,35 +302,47 @@ tab_server <- function(input, output, session,
   # stability-curve panel in the results accordion.
   tune_details <- shiny$reactiveVal(NULL)
 
-  shiny$observeEvent(data_version(), {
-    rhino$log$info(
-      "PCA analysis_settings: reset for new data"
-    )
-    shiny$updateRadioButtons(
-      session, "analysis_type", selected = "pca"
-    )
-    shiny$updateNumericInput(
-      session, "spca_ncomp", value = 2
-    )
-    shiny$updateNumericInput(
-      session, "ipca_ncomp", value = 2
-    )
-    shiny$updateSelectInput(
-      session, "ipca_mode", selected = "deflation"
-    )
-    keepx_tuned(NULL)
-    tune_details(NULL)
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(data_version(),
+    {
+      rhino$log$info(
+        "PCA analysis_settings: reset for new data"
+      )
+      shiny$updateRadioButtons(
+        session, "analysis_type",
+        selected = "pca"
+      )
+      shiny$updateNumericInput(
+        session, "spca_ncomp",
+        value = 2
+      )
+      shiny$updateNumericInput(
+        session, "ipca_ncomp",
+        value = 2
+      )
+      shiny$updateSelectInput(
+        session, "ipca_mode",
+        selected = "deflation"
+      )
+      keepx_tuned(NULL)
+      tune_details(NULL)
+    },
+    ignoreInit = TRUE
+  )
 
-  shiny$observeEvent(input$analysis_type, {
-    keepx_tuned(NULL)
-    tune_details(NULL)
-  }, ignoreInit = TRUE)
+  shiny$observeEvent(input$analysis_type,
+    {
+      keepx_tuned(NULL)
+      tune_details(NULL)
+    },
+    ignoreInit = TRUE
+  )
 
   # Dynamic per-component keepX numeric inputs (sPCA)
   output$spca_keepx_inputs <- shiny$renderUI({
     ncomp <- input_num(input$spca_ncomp, 2)
-    if (ncomp < 1) return(NULL)
+    if (ncomp < 1) {
+      return(NULL)
+    }
     n_vars <- length(input$measureVar)
     default_keep <- if (n_vars > 0) min(10, n_vars) else 10
 
@@ -346,7 +370,9 @@ tab_server <- function(input, output, session,
   output$spca_tune_runtime <- shiny$renderUI({
     data <- input_data()
     measure_cols <- input$measureVar
-    if (is.null(data) || length(measure_cols) == 0) return(NULL)
+    if (is.null(data) || length(measure_cols) == 0) {
+      return(NULL)
+    }
 
     grid <- parse_keepx_grid(
       input$spca_tune_grid, length(measure_cols)
@@ -377,12 +403,14 @@ tab_server <- function(input, output, session,
 
   # Tune keepX via cross-validation, fill the boxes above
   shiny$observeEvent(input$tune_spca_keepx_button, {
-    if (input$analysis_type != "spca") return()
+    if (input$analysis_type != "spca") {
+      return()
+    }
 
     data <- input_data()
     measure_cols <- input$measureVar
     if (is.null(data) || is.null(measure_cols) ||
-        length(measure_cols) == 0) {
+      length(measure_cols) == 0) {
       shiny$showNotification(
         "Select measurement columns first.",
         type = "warning"
@@ -404,7 +432,8 @@ tab_server <- function(input, output, session,
     )
     if (!is.null(grid_parsed$message)) {
       shiny$showNotification(
-        grid_parsed$message, type = "warning", duration = 8
+        grid_parsed$message,
+        type = "warning", duration = 8
       )
     }
 
@@ -417,7 +446,8 @@ tab_server <- function(input, output, session,
           detail = "Cross-validating candidate values…"
         )
         res <- run_pca_tune_keepx(
-          data, measure_cols, ncomp = ncomp,
+          data, measure_cols,
+          ncomp = ncomp,
           test_keep_x = grid_parsed$values,
           folds = folds, repeats = repeats,
           center = do_center, scale. = do_scale

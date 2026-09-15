@@ -1,16 +1,13 @@
 box::use(
   colorspace,
   ggplot2,
-  ggiraph,
   rhino,
   stats,
 )
 
 box::use(
-  app/logic/shared/error_handling,
   app/logic/lda/ld_plot[
-    get_group_values, build_tooltips,
-    ld_theme, axis_label,
+    get_group_values
   ],
 )
 
@@ -78,7 +75,7 @@ generate_ellipse_points <- function(vc_matrix,
   vals[vals < 0] <- 0
 
   theta <- seq(0, 2 * pi, length.out = n_points + 1)
-  theta <- theta[-length(theta)]  # remove duplicate endpoint
+  theta <- theta[-length(theta)] # remove duplicate endpoint
 
   # Unit circle scaled by sqrt(eigenvalues) * n_std
   circle <- cbind(
@@ -110,7 +107,7 @@ generate_ellipse_points <- function(vc_matrix,
 #' @return The ggplot with diagnostics layers added
 #' @export
 add_diagnostics_overlay <- function(p, scores, groups,
-                                     dim_x, dim_y) {
+                                    dim_x, dim_y) {
   groups <- as.factor(groups)
 
   scores_2d <- data.frame(
@@ -121,7 +118,7 @@ add_diagnostics_overlay <- function(p, scores, groups,
 
   # stat_ellipse level for ~1.5 SD in bivariate normal
   # P(chi-sq(2) <= 1.5^2) = 1 - exp(-1.5^2/2) ≈ 0.6753
-  ellipse_level <- 1 - exp(-1.5^2 / 2)
+  ellipse_level <- 1 - exp(-1.5 ^ 2 / 2)
 
   # --- Per-group covariance ellipses (solid) ---
   group_counts <- table(scores_2d$group)
@@ -172,7 +169,8 @@ add_diagnostics_overlay <- function(p, scores, groups,
       mean(scores_2d$y[idx])
     )
     ell_pts <- generate_ellipse_points(
-      pooled_vc, center = g_mean,
+      pooled_vc,
+      center = g_mean,
       n_points = 100, n_std = 1.5
     )
     ell_pts$group <- g
@@ -181,20 +179,23 @@ add_diagnostics_overlay <- function(p, scores, groups,
   }
   pooled_df <- do.call(rbind, pooled_frames)
   pooled_df$group <- factor(
-    pooled_df$group, levels = levels(groups)
+    pooled_df$group,
+    levels = levels(groups)
   )
 
   # Darkened group colours for pooled ellipses
   n_grp <- nlevels(groups)
   default_hues <- scales::hue_pal()(n_grp)
   dark_hues <- colorspace$darken(
-    default_hues, amount = 0.4
+    default_hues,
+    amount = 0.4
   )
   names(dark_hues) <- levels(groups)
 
   for (g in levels(groups)) {
     g_data <- pooled_df[
-      pooled_df$group == g, , drop = FALSE
+      pooled_df$group == g, ,
+      drop = FALSE
     ]
     if (nrow(g_data) == 0) next
     p <- p + ggplot2$geom_path(
@@ -249,9 +250,9 @@ add_diagnostics_overlay <- function(p, scores, groups,
 #' @return The ggplot with boundary layers added
 #' @export
 add_boundaries_overlay <- function(p, lda_result,
-                                    dim_x, dim_y,
-                                    grid_n = 150,
-                                    dist = "max.dist") {
+                                   dim_x, dim_y,
+                                   grid_n = 150,
+                                   dist = "max.dist") {
   model <- lda_result$model
   scores <- lda_result$scores
   columns <- lda_result$columns
@@ -290,7 +291,8 @@ add_boundaries_overlay <- function(p, lda_result,
       dist
     }
     exact <- classify_plsda_grid_exact(
-      model, scores, dim_x, dim_y, grid_n, dist = rule
+      model, scores, dim_x, dim_y, grid_n,
+      dist = rule
     )
     grid_df <- exact$grid_df
     x_seq <- exact$x_seq
@@ -355,7 +357,8 @@ add_boundaries_overlay <- function(p, lda_result,
     ld_names <- colnames(scores)
     n_ld <- length(ld_names)
     grid_ld <- matrix(
-      0, nrow = nrow(grid_df), ncol = n_ld
+      0,
+      nrow = nrow(grid_df), ncol = n_ld
     )
     colnames(grid_ld) <- ld_names
     grid_ld[, dim_x] <- grid_df$x
@@ -382,7 +385,8 @@ add_boundaries_overlay <- function(p, lda_result,
 
   group_levels <- lda_result$group_levels
   grid_df$class <- factor(
-    grid_df$class, levels = group_levels
+    grid_df$class,
+    levels = group_levels
   )
 
   # Region fill + boundary lines — both MDA and LDA now use
@@ -572,9 +576,10 @@ classify_plsda_grid_exact <- function(model, scores,
   if (is.null(sigma_y)) sigma_y <- rep(1, ncol(ind_mat))
 
   c_mat <- crossprod(ind_mat, variates_x)
-  a_vec <- apply(variates_x, 2, function(v) sum(v^2))
+  a_vec <- apply(variates_x, 2, function(v) sum(v ^ 2))
   a_mat <- matrix(
-    a_vec, nrow = nrow(t_grid), ncol = 2, byrow = TRUE
+    a_vec,
+    nrow = nrow(t_grid), ncol = 2, byrow = TRUE
   )
 
   y_hat <- (t_grid / a_mat) %*% t(c_mat)
@@ -615,9 +620,11 @@ classify_plsda_grid_exact <- function(model, scores,
     train_idx <- max.col(ind_mat, ties.method = "first")
     centroids <- t(vapply(
       seq_along(class_levels),
-      function(k) colMeans(
-        variates_x[train_idx == k, , drop = FALSE]
-      ),
+      function(k) {
+        colMeans(
+          variates_x[train_idx == k, , drop = FALSE]
+        )
+      },
       numeric(2)
     ))
 
@@ -650,7 +657,7 @@ classify_plsda_grid_exact <- function(model, scores,
       d2 <- vapply(
         seq_len(nrow(centroids)),
         function(k) {
-          rowSums(sweep(t_grid, 2, centroids[k, ], "-")^2)
+          rowSums(sweep(t_grid, 2, centroids[k, ], "-") ^ 2)
         },
         numeric(nrow(t_grid))
       )
@@ -707,7 +714,7 @@ compute_1d_boundary <- function(lda_result) {
     if (is.null(sigma_y)) sigma_y <- rep(1, ncol(ind_mat))
 
     c_mat <- crossprod(ind_mat, variates_x)
-    a_val <- sum(variates_x^2)
+    a_val <- sum(variates_x ^ 2)
 
     y_hat <- (matrix(x_seq, ncol = 1) / a_val) %*% t(c_mat)
     y_hat <- sweep(y_hat, 2, sigma_y, "*")
@@ -838,9 +845,10 @@ compute_1d_boundary <- function(lda_result) {
 #' @return The ggplot with boundary layers added
 #' @export
 add_qda_boundaries_overlay <- function(
-    p, qda_result, dim_x, dim_y,
-    plot_data, axis_type = "ld",
-    grid_n = 150) {
+  p, qda_result, dim_x, dim_y,
+  plot_data, axis_type = "ld",
+  grid_n = 150
+) {
   qda_model <- qda_result$model
 
   # Grid range with 5% padding
@@ -870,7 +878,8 @@ add_qda_boundaries_overlay <- function(
     n_ld <- length(ld_names)
 
     grid_ld <- matrix(
-      0, nrow = nrow(grid_df), ncol = n_ld
+      0,
+      nrow = nrow(grid_df), ncol = n_ld
     )
     colnames(grid_ld) <- ld_names
     grid_ld[, dim_x] <- grid_df$x
@@ -910,7 +919,8 @@ add_qda_boundaries_overlay <- function(
 
   group_levels <- qda_result$group_levels
   grid_df$class <- factor(
-    grid_df$class, levels = group_levels
+    grid_df$class,
+    levels = group_levels
   )
 
   # Region fill + boundary lines
@@ -918,4 +928,3 @@ add_qda_boundaries_overlay <- function(
 
   p
 }
-

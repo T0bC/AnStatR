@@ -1,18 +1,7 @@
-box::use(
-  cluster,
-  rhino,
-  stats,
-)
-
-box::use(
-  app/logic/shared/error_handling,
-)
-
 # =============================================================================
 # Pure logic functions for optimal number of clusters
 # No Shiny dependencies allowed in this file.
 # =============================================================================
-
 #' Calculate optimal number of clusters using multiple methods
 #'
 #' Computes Elbow (WSS), Silhouette, and Gap statistic for
@@ -31,35 +20,28 @@ box::use(
 #'   Result contains $methods, $summary, $plot_data.
 #' @export
 compute_optimal_clusters <- function(data, measurement_cols,
-                                      max_k = 10) {
+                                     max_k = 10) {
   error_handling$safe_execute(
     expr = {
       validate_optimal_inputs(data, measurement_cols)
-
       num_data <- as.matrix(
         data[, measurement_cols, drop = FALSE]
       )
       n <- nrow(num_data)
       max_k <- min(max_k, n - 1)
-
       if (max_k < 2) {
         stop(
           "Not enough observations to evaluate ",
           "multiple cluster solutions (need at least 3 rows)"
         )
       }
-
       k_range <- 2:max_k
-
       # Method 1: Elbow (within-cluster sum of squares)
       wss_result <- compute_wss(num_data, k_range)
-
       # Method 2: Silhouette
       sil_result <- compute_silhouette(num_data, k_range)
-
       # Method 3: Gap statistic
       gap_result <- compute_gap(num_data, max_k)
-
       # Build methods list
       methods <- list()
       methods$elbow <- list(
@@ -80,7 +62,6 @@ compute_optimal_clusters <- function(data, measurement_cols,
           "measures how well objects fit their cluster"
         )
       )
-
       if (gap_result$success) {
         methods$gap <- list(
           name = "Gap Statistic",
@@ -103,7 +84,6 @@ compute_optimal_clusters <- function(data, measurement_cols,
           )
         )
       }
-
       # Summary: median of valid optimal k values
       valid_ks <- vapply(methods, function(m) {
         if (
@@ -115,7 +95,6 @@ compute_optimal_clusters <- function(data, measurement_cols,
         }
       }, numeric(1))
       valid_ks <- valid_ks[!is.na(valid_ks)]
-
       summary <- if (length(valid_ks) > 0) {
         list(
           min_k = min(valid_ks),
@@ -131,12 +110,10 @@ compute_optimal_clusters <- function(data, measurement_cols,
           methods_computed = 0
         )
       }
-
       # Build unified plot data
       plot_data <- build_plot_data(
         k_range, wss_result, sil_result, gap_result
       )
-
       rhino$log$info(
         "Optimal clusters: ",
         "Elbow={methods$elbow$optimal_k}, ",
@@ -145,7 +122,6 @@ compute_optimal_clusters <- function(data, measurement_cols,
         "Median={summary$median_k} ",
         "({n} obs, {length(measurement_cols)} vars)"
       )
-
       list(
         methods = methods,
         summary = summary,
@@ -162,7 +138,6 @@ compute_optimal_clusters <- function(data, measurement_cols,
     error_parser = optimal_clusters_error_parser
   )
 }
-
 #' Create the ggplot object for the optimal clusters plot
 #'
 #' Builds a faceted ggplot showing Elbow (WSS), Silhouette,
@@ -176,8 +151,15 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
   # Imported here to keep box::use at top level clean
   # (ggplot2/ggiraph only needed for plotting)
   box::use(
+    app/logic/shared/error_handling,
+  )
+
+  box::use(
+    cluster,
     ggiraph,
     ggplot2,
+    rhino,
+    stats,
   )
 
   plot_df <- optimal_data$plot_data
@@ -193,11 +175,11 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
 
   if (
     !is.null(methods$elbow$optimal_k) &&
-    !is.na(methods$elbow$optimal_k)
+      !is.na(methods$elbow$optimal_k)
   ) {
     idx <- which(
       plot_df$k == methods$elbow$optimal_k &
-      plot_df$method == "WSS (Elbow)"
+        plot_df$method == "WSS (Elbow)"
     )
     if (length(idx) > 0) {
       markers <- rbind(markers, data.frame(
@@ -211,11 +193,11 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
 
   if (
     !is.null(methods$silhouette$optimal_k) &&
-    !is.na(methods$silhouette$optimal_k)
+      !is.na(methods$silhouette$optimal_k)
   ) {
     idx <- which(
       plot_df$k == methods$silhouette$optimal_k &
-      plot_df$method == "Silhouette"
+        plot_df$method == "Silhouette"
     )
     if (length(idx) > 0) {
       markers <- rbind(markers, data.frame(
@@ -229,11 +211,11 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
 
   if (
     !is.null(methods$gap$optimal_k) &&
-    !is.na(methods$gap$optimal_k)
+      !is.na(methods$gap$optimal_k)
   ) {
     idx <- which(
       plot_df$k == methods$gap$optimal_k &
-      plot_df$method == "Gap Statistic"
+        plot_df$method == "Gap Statistic"
     )
     if (length(idx) > 0) {
       markers <- rbind(markers, data.frame(
@@ -251,7 +233,8 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
     plot_df$k, plot_df$value
   )
   plot_df$data_id <- paste(
-    plot_df$method, plot_df$k, sep = "_"
+    plot_df$method, plot_df$k,
+    sep = "_"
   )
 
   # Marker tooltips
@@ -274,11 +257,13 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
     method_levels %in% unique(plot_df$method)
   ]
   plot_df$method <- factor(
-    plot_df$method, levels = present_levels
+    plot_df$method,
+    levels = present_levels
   )
   if (nrow(markers) > 0) {
     markers$method <- factor(
-      markers$method, levels = present_levels
+      markers$method,
+      levels = present_levels
     )
   }
 
@@ -329,7 +314,8 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
 
   p <- p +
     ggplot2$facet_wrap(
-      ~method, scales = "free_y", ncol = 1
+      ~method,
+      scales = "free_y", ncol = 1
     ) +
     ggplot2$scale_x_continuous(
       breaks = k_range
@@ -360,11 +346,13 @@ create_optimal_clusters_ggplot <- function(optimal_data) {
 #' @return Character, user-friendly error message
 #' @export
 optimal_clusters_error_parser <- function(
-    error_msg,
-    operation_name = "Optimal Clusters") {
+  error_msg,
+  operation_name = "Optimal Clusters"
+) {
   if (grepl(
     "constant|variance|zero",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -372,7 +360,8 @@ optimal_clusters_error_parser <- function(
     )
   } else if (grepl(
     "\\bNA\\b|missing|NaN",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -380,7 +369,8 @@ optimal_clusters_error_parser <- function(
     )
   } else if (grepl(
     "observations|rows|enough",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -388,7 +378,8 @@ optimal_clusters_error_parser <- function(
     )
   } else if (grepl(
     "numeric|non-numeric",
-    error_msg, ignore.case = TRUE
+    error_msg,
+    ignore.case = TRUE
   )) {
     paste0(
       operation_name,
@@ -410,7 +401,7 @@ validate_optimal_inputs <- function(data, measurement_cols) {
 
   if (
     is.null(measurement_cols) ||
-    length(measurement_cols) < 1
+      length(measurement_cols) < 1
   ) {
     stop("At least 1 measurement column is required")
   }
@@ -486,7 +477,8 @@ compute_gap <- function(data, max_k) {
 
       # Use firstSEmax method (Tibshirani et al.)
       optimal_k <- cluster$maxSE(
-        gap_values, se_values, method = "firstSEmax"
+        gap_values, se_values,
+        method = "firstSEmax"
       )
 
       list(
@@ -507,7 +499,9 @@ compute_gap <- function(data, max_k) {
 
 detect_elbow_k <- function(k_range, values) {
   n <- length(values)
-  if (n < 3) return(k_range[1])
+  if (n < 3) {
+    return(k_range[1])
+  }
 
   first_diff <- diff(values)
   second_diff <- diff(first_diff)
@@ -524,7 +518,7 @@ detect_elbow_k <- function(k_range, values) {
 }
 
 build_plot_data <- function(k_range, wss_result,
-                             sil_result, gap_result) {
+                            sil_result, gap_result) {
   df <- data.frame(
     k = rep(k_range, 2),
     value = c(wss_result$values, sil_result$values),
