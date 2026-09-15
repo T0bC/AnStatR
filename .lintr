@@ -4,3 +4,5 @@ linters:
     line_length_linter = line_length_linter(120),
     commented_code_linter = NULL
   )
+exclusions:
+  list("app/logic/statistics/Rallfun-v43.R")
