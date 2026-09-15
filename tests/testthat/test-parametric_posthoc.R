@@ -241,13 +241,13 @@ describe("perform_cohens_d validation", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — 1-way happy path
+# perform_combined_param_posthoc — 1-way happy path
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc 1-way", {
+describe("perform_combined_param_posthoc 1-way", {
   it("returns merged table with both Tukey and Cohen columns", {
     df <- make_oneway_data(n_per_group = 20, n_groups = 3)
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure",
@@ -263,7 +263,7 @@ describe("perform_combined_parametric_posthoc 1-way", {
 
   it("has p.adjusted different from raw when bonferroni", {
     df <- make_oneway_data(n_per_group = 20, n_groups = 3)
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure",
@@ -283,13 +283,13 @@ describe("perform_combined_parametric_posthoc 1-way", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — 2-way merge
+# perform_combined_param_posthoc — 2-way merge
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc 2-way", {
+describe("perform_combined_param_posthoc 2-way", {
   it("successfully merges Tukey and Cohen for 2-way design", {
     df <- make_twoway_data(n_per_cell = 10)
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
@@ -303,13 +303,13 @@ describe("perform_combined_parametric_posthoc 2-way", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — 3-way merge
+# perform_combined_param_posthoc — 3-way merge
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc 3-way", {
+describe("perform_combined_param_posthoc 3-way", {
   it("successfully merges Tukey and Cohen for 3-way design", {
     df <- make_threeway_data(n_per_cell = 5)
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("f1", "f2", "f3"),
       measure_col = "measure",
@@ -323,26 +323,26 @@ describe("perform_combined_parametric_posthoc 3-way", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — filter_valid with 2-way
+# perform_combined_param_posthoc — filter_valid with 2-way
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc filter_valid", {
+describe("perform_combined_param_posthoc filter_valid", {
   it("reduces row count with filter_valid for 2-way", {
     df <- make_twoway_data(n_per_cell = 10)
-    result_all <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result_all <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
       filter_valid = FALSE
     )
-    result_filtered <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result_filtered <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
       filter_valid = TRUE
     )
     if (is.data.frame(result_all) &&
-      is.data.frame(result_filtered)) {
+          is.data.frame(result_filtered)) {
       expect_true(
         nrow(result_filtered) <= nrow(result_all)
       )
@@ -351,17 +351,17 @@ describe("perform_combined_parametric_posthoc filter_valid", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — error propagation
+# perform_combined_param_posthoc — error propagation
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc error propagation", {
+describe("perform_combined_param_posthoc error propagation", {
   it("returns app_error when < 2 groups", {
     df <- data.frame(
       group = rep("A", 10),
       measure = rnorm(10),
       stringsAsFactors = FALSE
     )
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure"
@@ -453,13 +453,13 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
 })
 
 # =============================================================================
-# perform_combined_parametric_posthoc — RM path via is_rm flag
+# perform_combined_param_posthoc — RM path via is_rm flag
 # =============================================================================
 
-describe("perform_combined_parametric_posthoc RM path", {
+describe("perform_combined_param_posthoc RM path", {
   it("routes to RM posthoc when is_rm=TRUE", {
     df <- make_rm_twoway_data(n_subjects = 10)
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -485,7 +485,7 @@ describe("DEBUG: Column structure inspection", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
     # Standard unpaired result with filter_valid=TRUE (no RM)
-    unpaired_result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired_result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -529,7 +529,7 @@ describe("perform_rm_parametric_posthoc hybrid approach", {
   it("returns same row count as filter_valid unpaired", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -553,7 +553,7 @@ describe("perform_rm_parametric_posthoc hybrid approach", {
   it("has different p-values for paired comparisons vs unpaired", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -591,7 +591,7 @@ describe("perform_rm_parametric_posthoc hybrid approach", {
   it("has same p-values for unpaired (between-subject) comparisons", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -712,7 +712,7 @@ describe("perform_rm_parametric_posthoc 1-way RM", {
 
   it("differs from unpaired 1-way for all (paired) comparisons", {
     df <- make_rm_oneway_data(n_subjects = 12)
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = "TIME",
       measure_col = "measure",
@@ -748,7 +748,7 @@ describe("perform_rm_parametric_posthoc 1-way RM", {
 describe("perform_rm_parametric_posthoc 3-way RM", {
   it("keeps identical column structure and matches unpaired row count", {
     df <- make_rm_threeway_data(n_subjects = 12)
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TREATMENT", "TIME"),
       measure_col = "measure",
@@ -771,7 +771,7 @@ describe("perform_rm_parametric_posthoc 3-way RM", {
 
   it("changes only within-subject (paired) rows, leaves between-subject equal", {
     df <- make_rm_threeway_data(n_subjects = 12)
-    unpaired <- parametric_posthoc$perform_combined_parametric_posthoc(
+    unpaired <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TREATMENT", "TIME"),
       measure_col = "measure",

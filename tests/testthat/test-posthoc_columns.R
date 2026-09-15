@@ -136,7 +136,7 @@ describe("detect_posthoc_schema golden test (real posthoc output)", {
         rnorm(15, mean = 0), rnorm(15, mean = 1), rnorm(15, mean = 2)
       )
     )
-    result <- parametric_posthoc$perform_combined_parametric_posthoc(
+    result <- parametric_posthoc$perform_combined_param_posthoc(
       df = df,
       x_axis = "GROUP",
       measure_col = "value",
@@ -160,7 +160,7 @@ describe("detect_posthoc_schema golden test (real posthoc output)", {
         rnorm(15, mean = 0), rnorm(15, mean = 1), rnorm(15, mean = 2)
       )
     )
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = "GROUP",
       measure_col = "value",

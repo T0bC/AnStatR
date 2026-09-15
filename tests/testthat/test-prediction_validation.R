@@ -103,7 +103,7 @@ test_that("validate_unknown_data no range warning for in-range data", {
 
 # --- Regression guard: validation stays generic for cluster bundles ---
 
-make_cluster_bundle_for_validation <- function() {
+make_cluster_bundle <- function() {
   bundle <- make_bundle()
   bundle$analysis_type <- "cluster"
   bundle$variant <- "kmeans"
@@ -114,7 +114,7 @@ make_cluster_bundle_for_validation <- function() {
 }
 
 test_that("validate_unknown_data works unchanged for a cluster bundle", {
-  bundle <- make_cluster_bundle_for_validation()
+  bundle <- make_cluster_bundle()
   unknown <- data.frame(x = c(2, 3), y = c(15, 25))
 
   result <- validate_unknown_data(unknown, bundle)
@@ -123,7 +123,7 @@ test_that("validate_unknown_data works unchanged for a cluster bundle", {
 })
 
 test_that("validate_unknown_data still flags missing columns for a cluster bundle", {
-  bundle <- make_cluster_bundle_for_validation()
+  bundle <- make_cluster_bundle()
   unknown <- data.frame(x = c(2, 3), z = c(15, 25))
 
   result <- validate_unknown_data(unknown, bundle)

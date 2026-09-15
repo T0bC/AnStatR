@@ -255,13 +255,13 @@ describe("perform_art_contrasts validation", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — 1-way Dunn happy path
+# perform_combined_np_posthoc — 1-way Dunn happy path
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc 1-way dunn", {
+describe("perform_combined_np_posthoc 1-way dunn", {
   it("returns merged table with Dunn and Cliff columns", {
     df <- make_oneway_data(n_per_group = 20, n_groups = 3)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure",
@@ -278,7 +278,7 @@ describe("perform_combined_nonparametric_posthoc 1-way dunn", {
 
   it("has p.adjusted different from raw when bonferroni", {
     df <- make_oneway_data(n_per_group = 20, n_groups = 3)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure",
@@ -297,13 +297,13 @@ describe("perform_combined_nonparametric_posthoc 1-way dunn", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — 1-way Wilcox happy path
+# perform_combined_np_posthoc — 1-way Wilcox happy path
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc 1-way wilcox", {
+describe("perform_combined_np_posthoc 1-way wilcox", {
   it("returns merged table with Wilcox and Cliff columns", {
     df <- make_oneway_data(n_per_group = 20, n_groups = 3)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure",
@@ -319,13 +319,13 @@ describe("perform_combined_nonparametric_posthoc 1-way wilcox", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — 2-way ART
+# perform_combined_np_posthoc — 2-way ART
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc 2-way", {
+describe("perform_combined_np_posthoc 2-way", {
   it("returns ART contrasts with Cohen's d for 2-way", {
     df <- make_twoway_data(n_per_cell = 10)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
@@ -340,13 +340,13 @@ describe("perform_combined_nonparametric_posthoc 2-way", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — 3-way ART
+# perform_combined_np_posthoc — 3-way ART
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc 3-way", {
+describe("perform_combined_np_posthoc 3-way", {
   it("returns ART contrasts with Cohen's d for 3-way", {
     df <- make_threeway_data(n_per_cell = 5)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("f1", "f2", "f3"),
       measure_col = "measure",
@@ -360,26 +360,26 @@ describe("perform_combined_nonparametric_posthoc 3-way", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — filter_valid 2-way
+# perform_combined_np_posthoc — filter_valid 2-way
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc filter_valid", {
+describe("perform_combined_np_posthoc filter_valid", {
   it("reduces row count with filter_valid for 2-way", {
     df <- make_twoway_data(n_per_cell = 10)
-    result_all <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result_all <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
       filter_valid = FALSE
     )
-    result_filtered <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result_filtered <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("f1", "f2"),
       measure_col = "measure",
       filter_valid = TRUE
     )
     if (is.data.frame(result_all) &&
-      is.data.frame(result_filtered)) {
+          is.data.frame(result_filtered)) {
       expect_true(
         nrow(result_filtered) <= nrow(result_all)
       )
@@ -388,17 +388,17 @@ describe("perform_combined_nonparametric_posthoc filter_valid", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — error propagation
+# perform_combined_np_posthoc — error propagation
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc error propagation", {
+describe("perform_combined_np_posthoc error propagation", {
   it("returns app_error when < 2 groups", {
     df <- data.frame(
       group = rep("A", 10),
       measure = rnorm(10),
       stringsAsFactors = FALSE
     )
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = "group",
       measure_col = "measure"
@@ -439,13 +439,13 @@ make_rm_oneway_data <- function(n_subjects = 15, n_times = 3) {
 }
 
 # =============================================================================
-# perform_rm_nonparametric_posthoc — 1-way RM (pure within, paired Wilcoxon)
+# perform_rm_np_posthoc — 1-way RM (pure within, paired Wilcoxon)
 # =============================================================================
 
-describe("perform_rm_nonparametric_posthoc 1-way RM", {
+describe("perform_rm_np_posthoc 1-way RM", {
   it("returns Wilcox + Cliff columns (no ART) for pure within design", {
     df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
-    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = "TIME",
       measure_col = "measure",
@@ -463,7 +463,7 @@ describe("perform_rm_nonparametric_posthoc 1-way RM", {
 
   it("returns C(k,2) comparisons for k within-subject levels", {
     df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
-    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = "TIME",
       measure_col = "measure",
@@ -475,7 +475,7 @@ describe("perform_rm_nonparametric_posthoc 1-way RM", {
 
   it("produces Cliff's delta bounded in [-1, 1]", {
     df <- make_rm_oneway_data(n_subjects = 15, n_times = 3)
-    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = "TIME",
       measure_col = "measure",
@@ -487,13 +487,13 @@ describe("perform_rm_nonparametric_posthoc 1-way RM", {
 })
 
 # =============================================================================
-# perform_rm_nonparametric_posthoc — 2-way RM happy path
+# perform_rm_np_posthoc — 2-way RM happy path
 # =============================================================================
 
-describe("perform_rm_nonparametric_posthoc 2-way RM", {
+describe("perform_rm_np_posthoc 2-way RM", {
   it("returns data.frame with ART columns matching non-RM structure", {
     df <- make_rm_twoway_data(n_subjects = 10)
-    result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -514,7 +514,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
   it("returns same row count as filter_valid unpaired", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    unpaired <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -523,7 +523,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
       is_rm = FALSE
     )
 
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -538,7 +538,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
   it("has different p-values for paired comparisons vs unpaired", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    unpaired <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -547,7 +547,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
       is_rm = FALSE
     )
 
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -576,7 +576,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
   it("has same p-values for unpaired (between-subject) comparisons", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    unpaired <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    unpaired <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -585,7 +585,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
       is_rm = FALSE
     )
 
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -615,7 +615,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
   it("applies p-adjustment correctly across all comparisons", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -635,7 +635,7 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
   it("blanks ART-only columns and sets Cliff's delta for paired rows", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -671,13 +671,13 @@ describe("perform_rm_nonparametric_posthoc 2-way RM", {
 })
 
 # =============================================================================
-# perform_combined_nonparametric_posthoc — RM path via is_rm flag
+# perform_combined_np_posthoc — RM path via is_rm flag
 # =============================================================================
 
-describe("perform_combined_nonparametric_posthoc RM path", {
+describe("perform_combined_np_posthoc RM path", {
   it("routes to RM posthoc when is_rm=TRUE", {
     df <- make_rm_twoway_data(n_subjects = 10)
-    result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -703,7 +703,7 @@ describe("DEBUG: Nonparametric column structure inspection", {
     df <- make_rm_twoway_data(n_subjects = 10)
 
     # Standard unpaired result with filter_valid=TRUE (no RM)
-    unpaired_result <- nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+    unpaired_result <- nonparametric_posthoc$perform_combined_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",
@@ -713,7 +713,7 @@ describe("DEBUG: Nonparametric column structure inspection", {
     )
 
     # RM result (hybrid approach)
-    rm_result <- nonparametric_posthoc$perform_rm_nonparametric_posthoc(
+    rm_result <- nonparametric_posthoc$perform_rm_np_posthoc(
       df = df,
       x_axis = c("COMPOSITE", "TIME"),
       measure_col = "measure",

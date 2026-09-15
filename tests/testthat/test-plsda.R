@@ -218,7 +218,7 @@ describe("run_plsda_perf", {
     expect_true(is.data.frame(df))
     expect_equal(nrow(df), 2)
     expect_true(all(c("Component", "Overall Error", "BER") %in%
-      names(df)))
+                      names(df)))
   })
 
   it("keeps $errors to exactly the three max.dist columns", {

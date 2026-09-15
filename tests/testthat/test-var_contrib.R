@@ -104,26 +104,26 @@ describe("create_var_contrib_jitter_plot error cases", {
 })
 
 # =============================================================================
-# var_contrib_jitter_error_parser
+# var_contrib_jitter_err_parser
 # =============================================================================
 
-describe("var_contrib_jitter_error_parser", {
+describe("var_contrib_jitter_err_parser", {
   it("parses dimension errors", {
-    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_err_parser(
       "Dimension not found: Dim.99"
     )
     expect_true(grepl("dimension", msg, ignore.case = TRUE))
   })
 
   it("parses NULL pca_result errors", {
-    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_err_parser(
       "pca_result is NULL"
     )
     expect_true(grepl("PCA result", msg, ignore.case = TRUE))
   })
 
   it("falls back for unknown errors", {
-    msg <- var_contrib_jitter$var_contrib_jitter_error_parser(
+    msg <- var_contrib_jitter$var_contrib_jitter_err_parser(
       "something unexpected"
     )
     expect_equal(

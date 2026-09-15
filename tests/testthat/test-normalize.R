@@ -33,7 +33,7 @@ make_normal_data <- function() {
   )
 }
 
-make_normality_results_nonnormal <- function(df) {
+make_nonnormal_results <- function(df) {
   grp <- factor(df$SPECIES)
   list(
     value = assumption_checks$check_normality(df, "value", grp)
@@ -54,7 +54,7 @@ make_normality_results_normal <- function(df) {
 describe("normalize_columns", {
   it("adds _normalized column for non-normal data", {
     df <- make_nonnormal_data()
-    norm_results <- make_normality_results_nonnormal(df)
+    norm_results <- make_nonnormal_results(df)
 
     result <- normalize$normalize_columns(
       data = df,
@@ -86,7 +86,7 @@ describe("normalize_columns", {
   it("sets NA for outlier-flagged rows", {
     df <- make_nonnormal_data()
     df$value_outlier[c(1, 2, 3)] <- TRUE
-    norm_results <- make_normality_results_nonnormal(df)
+    norm_results <- make_nonnormal_results(df)
 
     result <- normalize$normalize_columns(
       data = df,
@@ -106,7 +106,7 @@ describe("normalize_columns", {
   it("preserves original raw values", {
     df <- make_nonnormal_data()
     original_values <- df$value
-    norm_results <- make_normality_results_nonnormal(df)
+    norm_results <- make_nonnormal_results(df)
 
     result <- normalize$normalize_columns(
       data = df,

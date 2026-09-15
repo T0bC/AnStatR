@@ -50,7 +50,7 @@ boundary_grid <- function(result, dist,
   for (layer in plot_res$result$layers) {
     dat <- tryCatch(layer$data, error = function(e) NULL)
     if (is.data.frame(dat) && "class" %in% names(dat) &&
-      nrow(dat) > 1000) {
+          nrow(dat) > 1000) {
       return(dat)
     }
   }
@@ -94,7 +94,7 @@ describe("decision boundary distance rules", {
     for (layer in plot_res$result$layers) {
       dat <- tryCatch(layer$data, error = function(e) NULL)
       if (is.data.frame(dat) && "class" %in% names(dat) &&
-        nrow(dat) > 1000) {
+            nrow(dat) > 1000) {
         explicit <- dat
         break
       }

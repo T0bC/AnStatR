@@ -194,7 +194,7 @@ make_plsda_bundle <- function(sparse = FALSE) {
     data_source = "raw",
     app_version = "2.0.0",
     created = Sys.time(),
-    group_component_stats = build_group_component_stats_helper(scores, y)
+    group_component_stats = build_group_comp_stats(scores, y)
   )
 }
 
@@ -321,7 +321,7 @@ build_group_stats_helper <- function(used_data, numeric_cols, group_col) {
   stats_list
 }
 
-build_group_component_stats_helper <- function(scores, groups) {
+build_group_comp_stats <- function(scores, groups) {
   x <- as.matrix(scores)
   group_names <- sort(unique(as.character(groups)))
 

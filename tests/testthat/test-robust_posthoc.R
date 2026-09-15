@@ -399,7 +399,7 @@ describe("perform_combined_posthoc filter_valid", {
       filter_valid = TRUE
     )
     if (is.data.frame(result_all) &&
-      is.data.frame(result_filtered)) {
+          is.data.frame(result_filtered)) {
       expect_true(
         nrow(result_filtered) <= nrow(result_all)
       )
