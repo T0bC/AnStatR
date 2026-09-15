@@ -385,57 +385,49 @@ add_boundaries_overlay <- function(p, lda_result,
     grid_df$class, levels = group_levels
   )
 
-  # Tile layer (soft fill) — both MDA and LDA now use
+  # Region fill + boundary lines — both MDA and LDA now use
   # a regular grid with x_seq / y_seq
+  add_boundary_layers(p, grid_df, x_seq, y_seq)
+}
+
+
+#' Add the region fill and boundary lines for a classified grid
+#'
+#' Shared by add_boundaries_overlay() and
+#' add_qda_boundaries_overlay(), which build their grids
+#' differently but draw them identically.
+#'
+#' The fill is a geom_raster(), not a geom_tile(): at the
+#' default grid_n = 150 a tile layer emits 22,500 separate
+#' <rect> nodes into the ggiraph SVG, and inserting that many
+#' nodes was measured blocking the browser's main thread for
+#' over 5 s on the deployed app. A raster is a single embedded
+#' image, and with interpolate = FALSE it is pixel-identical to
+#' the tiles it replaces.
+#'
+#' @param p A ggplot object
+#' @param grid_df Grid data frame with x, y, class, class_num
+#' @param x_seq,y_seq Numeric grid coordinates
+#' @return The ggplot with fill and boundary layers added
+add_boundary_layers <- function(p, grid_df, x_seq, y_seq) {
   p <- p +
-    ggplot2$geom_tile(
+    ggplot2$geom_raster(
       data = grid_df,
       ggplot2$aes(
         x = x, y = y, fill = class
       ),
       alpha = 0.15,
+      interpolate = FALSE,
       inherit.aes = FALSE
     )
 
-  # Boundary segments: find adjacent cells that differ
-  dx <- x_seq[2] - x_seq[1]
-  dy <- y_seq[2] - y_seq[1]
   class_mat <- matrix(
     grid_df$class_num,
-    nrow = grid_n, ncol = grid_n
+    nrow = length(x_seq), ncol = length(y_seq)
   )
+  seg_df <- boundary_segments(class_mat, x_seq, y_seq)
 
-  seg_list <- vector("list", 2 * grid_n * grid_n)
-  k <- 0L
-  for (i in seq_len(grid_n)) {
-    for (j in seq_len(grid_n)) {
-      # Horizontal neighbour (right)
-      if (i < grid_n &&
-          class_mat[i, j] != class_mat[i + 1, j]) {
-        k <- k + 1L
-        mid_x <- x_seq[i] + dx / 2
-        seg_list[[k]] <- data.frame(
-          x = mid_x, xend = mid_x,
-          y = y_seq[j] - dy / 2,
-          yend = y_seq[j] + dy / 2
-        )
-      }
-      # Vertical neighbour (above)
-      if (j < grid_n &&
-          class_mat[i, j] != class_mat[i, j + 1]) {
-        k <- k + 1L
-        mid_y <- y_seq[j] + dy / 2
-        seg_list[[k]] <- data.frame(
-          x = x_seq[i] - dx / 2,
-          xend = x_seq[i] + dx / 2,
-          y = mid_y, yend = mid_y
-        )
-      }
-    }
-  }
-
-  if (k > 0) {
-    seg_df <- do.call(rbind, seg_list[seq_len(k)])
+  if (!is.null(seg_df)) {
     p <- p +
       ggplot2$geom_segment(
         data = seg_df,
@@ -450,6 +442,65 @@ add_boundaries_overlay <- function(p, lda_result,
   }
 
   p
+}
+
+
+#' Midline segments between adjacent grid cells of different class
+#'
+#' Vectorised replacement for the former per-cell nested loop,
+#' which ran grid_n^2 iterations and allocated a data.frame per
+#' boundary cell. Two matrix comparisons produce the same
+#' segments; only the row order differs, which geom_segment
+#' does not care about.
+#'
+#' NA class codes are treated as "no boundary" (which() drops
+#' them), where the loop errored on them.
+#'
+#' @param class_mat Integer matrix, [i, j] holding the class
+#'   code at (x_seq[i], y_seq[j])
+#' @param x_seq,y_seq Numeric grid coordinates
+#' @return Data frame with x, xend, y, yend, or NULL when no
+#'   two neighbours differ
+boundary_segments <- function(class_mat, x_seq, y_seq) {
+  n_x <- length(x_seq)
+  n_y <- length(y_seq)
+  dx <- x_seq[2] - x_seq[1]
+  dy <- y_seq[2] - y_seq[1]
+
+  # Differing left/right neighbours -> vertical segment between them
+  idx_x <- which(
+    class_mat[-n_x, , drop = FALSE] !=
+      class_mat[-1, , drop = FALSE],
+    arr.ind = TRUE
+  )
+  seg_x <- if (nrow(idx_x) > 0) {
+    mid_x <- x_seq[idx_x[, 1]] + dx / 2
+    data.frame(
+      x = mid_x, xend = mid_x,
+      y = y_seq[idx_x[, 2]] - dy / 2,
+      yend = y_seq[idx_x[, 2]] + dy / 2
+    )
+  }
+
+  # Differing lower/upper neighbours -> horizontal segment
+  idx_y <- which(
+    class_mat[, -n_y, drop = FALSE] !=
+      class_mat[, -1, drop = FALSE],
+    arr.ind = TRUE
+  )
+  seg_y <- if (nrow(idx_y) > 0) {
+    mid_y <- y_seq[idx_y[, 2]] + dy / 2
+    data.frame(
+      x = x_seq[idx_y[, 1]] - dx / 2,
+      xend = x_seq[idx_y[, 1]] + dx / 2,
+      y = mid_y, yend = mid_y
+    )
+  }
+
+  if (is.null(seg_x) && is.null(seg_y)) {
+    return(NULL)
+  }
+  rbind(seg_x, seg_y)
 }
 
 
@@ -862,66 +913,8 @@ add_qda_boundaries_overlay <- function(
     grid_df$class, levels = group_levels
   )
 
-  # Tile layer (soft fill)
-  p <- p +
-    ggplot2$geom_tile(
-      data = grid_df,
-      ggplot2$aes(
-        x = x, y = y, fill = class
-      ),
-      alpha = 0.15,
-      inherit.aes = FALSE
-    )
-
-  # Boundary segments: find adjacent cells that differ
-  dx <- x_seq[2] - x_seq[1]
-  dy <- y_seq[2] - y_seq[1]
-  class_mat <- matrix(
-    grid_df$class_num,
-    nrow = grid_n, ncol = grid_n
-  )
-
-  seg_list <- vector("list", 2 * grid_n * grid_n)
-  k <- 0L
-  for (i in seq_len(grid_n)) {
-    for (j in seq_len(grid_n)) {
-      if (i < grid_n &&
-          class_mat[i, j] != class_mat[i + 1, j]) {
-        k <- k + 1L
-        mid_x <- x_seq[i] + dx / 2
-        seg_list[[k]] <- data.frame(
-          x = mid_x, xend = mid_x,
-          y = y_seq[j] - dy / 2,
-          yend = y_seq[j] + dy / 2
-        )
-      }
-      if (j < grid_n &&
-          class_mat[i, j] != class_mat[i, j + 1]) {
-        k <- k + 1L
-        mid_y <- y_seq[j] + dy / 2
-        seg_list[[k]] <- data.frame(
-          x = x_seq[i] - dx / 2,
-          xend = x_seq[i] + dx / 2,
-          y = mid_y, yend = mid_y
-        )
-      }
-    }
-  }
-
-  if (k > 0) {
-    seg_df <- do.call(rbind, seg_list[seq_len(k)])
-    p <- p +
-      ggplot2$geom_segment(
-        data = seg_df,
-        ggplot2$aes(
-          x = x, xend = xend,
-          y = y, yend = yend
-        ),
-        colour = "grey50",
-        linewidth = 0.45,
-        inherit.aes = FALSE
-      )
-  }
+  # Region fill + boundary lines
+  p <- add_boundary_layers(p, grid_df, x_seq, y_seq)
 
   p
 }
