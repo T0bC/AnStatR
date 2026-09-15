@@ -130,7 +130,7 @@ render_lda_results <- function(lda_result, ns,
   # 3. Group Means (absent for MDA in LOO-CV mode, which fits no
   # single full-data model to take means from)
   if (!is.null(lda_result$means) &&
-    length(lda_result$means) > 0) {
+        length(lda_result$means) > 0) {
     sub_panels[[length(sub_panels) + 1]] <-
       bslib$accordion_panel(
         title = shiny$tags$span(
@@ -271,7 +271,7 @@ render_lda_results <- function(lda_result, ns,
   # 5b. Dimension Evaluation (ANOVA)
   has_scores <- !is.null(lda_result$scores) ||
     (!is.null(lda_result$lda_scores) &&
-      lda_result$analysis_type == "qda")
+       lda_result$analysis_type == "qda")
   if (has_scores && !is_cv) {
     dim_eval_res <- evaluate_dimensions(lda_result)
     if (isTRUE(dim_eval_res$success)) {
@@ -914,7 +914,7 @@ render_trace_table <- function(trace_df, analysis_type = NULL) {
   # between-group variance. For PLS-DA/sPLS-DA the same column is
   # X-variance, where a low value need not mean weak separation.
   if (!is.null(analysis_type) &&
-    analysis_type %in% c("plsda", "splsda")) {
+        analysis_type %in% c("plsda", "splsda")) {
     return(shiny$tagList(
       dt,
       shiny$tags$small(
@@ -1218,7 +1218,7 @@ get_predicted_class <- function(lda_result, is_cv,
 
 get_meta <- function(lda_result, test_result) {
   if (!is.null(test_result) &&
-    !is.null(test_result$meta)) {
+        !is.null(test_result$meta)) {
     test_result$meta
   } else {
     lda_result$meta

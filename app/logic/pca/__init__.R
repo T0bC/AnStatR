@@ -31,7 +31,7 @@ box::use(
   app/logic/pca/tune_plot[create_tune_spca_plot],
   app/logic/pca/var_contrib_jitter[
     create_var_contrib_jitter_plot,
-    var_contrib_jitter_error_parser
+    var_contrib_jitter_err_parser
   ],
   app/logic/preprocessing/na_handling[clean_na_rows],
 )

@@ -260,8 +260,8 @@ server <- function(id, input_data, data_version,
       # Residualize by a confound column, before scaling
       residualize_col <- input$residualizeCol
       if (!is.null(residualize_col) &&
-        length(residualize_col) > 0 &&
-        nzchar(residualize_col)) {
+            length(residualize_col) > 0 &&
+            nzchar(residualize_col)) {
         rhino$log$info(
           "PCA: residualizing by '{residualize_col}'"
         )
@@ -417,8 +417,8 @@ server <- function(id, input_data, data_version,
           # choice AND not already claimed by an earlier axis,
           # so dimX/dimY/dimZ never collide on the same value.
           sel <- if (!is.null(current) &&
-            current %in% dim_choices &&
-            !(current %in% used)) {
+                       current %in% dim_choices &&
+                       !(current %in% used)) {
             current
           } else {
             remaining <- setdiff(dim_choices, used)
@@ -442,8 +442,8 @@ server <- function(id, input_data, data_version,
         # Update GroupBiplot choices from metadata
         meta <- pca_res$result$ind_meta
         if (!is.null(meta) &&
-          !("Row" %in% names(meta) &&
-            ncol(meta) == 1)) {
+              !("Row" %in% names(meta) &&
+                  ncol(meta) == 1)) {
           shiny$updateSelectizeInput(
             session, "GroupBiplot",
             choices = names(meta),

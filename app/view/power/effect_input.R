@@ -238,7 +238,7 @@ tab_server <- function(input, output, session,
     distribution <- input$distribution %||% "normal"
 
     if (is.null(design) || is.null(design$factors) ||
-      length(design$factors) == 0) {
+          length(design$factors) == 0) {
       return(shiny$tags$div(
         class = "text-muted small",
         "Define factors and levels in the Design tab first."
@@ -378,7 +378,7 @@ tab_server <- function(input, output, session,
         }
       } else {
         if (is.null(design) || is.null(design$factors) ||
-          length(design$factors) == 0) {
+              length(design$factors) == 0) {
           return(list(
             effect_type = "raw",
             input_mode = input_mode,
@@ -687,7 +687,7 @@ generate_effect_terms <- function(factors) {
 }
 
 # Internal separator for multi-way group names (must match dummy_data.R)
-GROUP_SEP <- ":::"
+group_sep <- ":::"
 
 # --- Helper: generate all group combinations ---
 generate_group_combinations <- function(factors) {
@@ -701,5 +701,5 @@ generate_group_combinations <- function(factors) {
 
   level_lists <- lapply(factors, function(f) f$levels)
   grid <- expand.grid(level_lists, stringsAsFactors = FALSE)
-  apply(grid, 1, paste, collapse = GROUP_SEP)
+  apply(grid, 1, paste, collapse = group_sep)
 }

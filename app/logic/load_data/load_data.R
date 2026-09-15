@@ -29,10 +29,10 @@ validate_file_extension <- function(filename) {
 #' @export
 normalize_quote_char <- function(quote_char) {
   if (is.null(quote_char) ||
-    !is.character(quote_char) ||
-    length(quote_char) != 1 ||
-    quote_char == "" ||
-    quote_char == "None") {
+        !is.character(quote_char) ||
+        length(quote_char) != 1 ||
+        quote_char == "" ||
+        quote_char == "None") {
     return("")
   }
   quote_char

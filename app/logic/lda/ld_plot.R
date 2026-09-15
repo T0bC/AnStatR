@@ -469,7 +469,7 @@ build_qda_2d_plot <- function(qda_result, dim_x, dim_y,
 
   # Overlay QDA decision boundaries when requested
   if (isTRUE(show_boundaries) &&
-    !is.null(qda_result$model)) {
+        !is.null(qda_result$model)) {
     plot_data <- data.frame(
       x = df$x, y = df$y
     )

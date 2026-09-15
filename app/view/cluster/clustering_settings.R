@@ -177,8 +177,8 @@ tab_server <- function(input, output, session,
       current_clusters <- input$n_clusters
 
       if (!is.null(current_clusters) &&
-        !is.na(current_clusters) &&
-        current_clusters > max_clusters) {
+            !is.na(current_clusters) &&
+            current_clusters > max_clusters) {
         shiny$updateNumericInput(
           session, "n_clusters",
           value = max_clusters,

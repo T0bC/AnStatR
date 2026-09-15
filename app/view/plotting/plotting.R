@@ -200,7 +200,7 @@ server <- function(id, input_data, data_version) {
           outlier_enabled = input$enableOutlierDetection %||% FALSE,
           outlier_method = input$detectOutlier %||% "IQR",
           outlier_factor = if ((input$detectOutlier %||% "IQR") %in%
-            c("kde", "isolation_forest", "lof")) {
+                                 c("kde", "isolation_forest", "lof")) {
             input$probabilityFactor %||% 0.05
           } else {
             input$standardFactor %||% 1.5
@@ -265,7 +265,7 @@ server <- function(id, input_data, data_version) {
     make_style_fingerprint <- function(params, data_nrow, data_ncol) {
       # Convert factor_order to string for fingerprint
       fo_str <- if (is.null(params$factor_order) ||
-        length(params$factor_order) == 0) {
+                      length(params$factor_order) == 0) {
         "NULL"
       } else {
         paste(

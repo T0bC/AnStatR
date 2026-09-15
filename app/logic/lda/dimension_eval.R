@@ -64,7 +64,7 @@ evaluate_dimensions <- function(lda_result) {
       rows <- vector("list", n_dims)
 
       for (i in seq_len(n_dims)) {
-        dim_score <- scores[[i]]
+        dim_score <- scores[[i]] # nolint: unused_declared_object_linter.
         fit <- stats::lm(dim_score ~ group)
         aov_table <- stats::anova(fit)
         fit_summary <- summary(fit)

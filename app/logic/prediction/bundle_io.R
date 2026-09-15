@@ -13,13 +13,13 @@ box::use(
 # =============================================================================
 
 #' Required top-level fields in a prediction bundle
-REQUIRED_FIELDS <- c(
+required_fields <- c(
   "analysis_type", "model", "raw_data", "used_data",
   "numeric_cols", "app_version", "created"
 )
 
 #' Valid analysis types
-VALID_TYPES <- c(
+valid_types <- c(
   "pca", "spca", "ipca", "lda", "mda", "qda", "cluster",
   "plsda", "splsda"
 )
@@ -89,7 +89,7 @@ validate_bundle <- function(bundle) {
     ))
   }
 
-  missing <- setdiff(REQUIRED_FIELDS, names(bundle))
+  missing <- setdiff(required_fields, names(bundle))
   if (length(missing) > 0) {
     return(list(
       valid = FALSE,
@@ -102,14 +102,14 @@ validate_bundle <- function(bundle) {
     ))
   }
 
-  if (!bundle$analysis_type %in% VALID_TYPES) {
+  if (!bundle$analysis_type %in% valid_types) {
     return(list(
       valid = FALSE,
       message = paste0(
         "Unknown analysis type: '",
         bundle$analysis_type,
         "'. Expected one of: ",
-        paste(VALID_TYPES, collapse = ", ")
+        paste(valid_types, collapse = ", ")
       )
     ))
   }

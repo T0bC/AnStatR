@@ -9,9 +9,9 @@ box::use(
 )
 
 # Constants
-CURVE_SIM_DIVISOR <- 10
-MAX_SEARCH_N <- 500
-MDE_SEARCH_RANGE <- c(0.01, 2.0)
+curve_sim_divisor <- 10
+max_search_n <- 500
+mde_search_range <- c(0.01, 2.0)
 
 emit_progress <- function(progress_cb, value, detail = NULL) {
   if (is.null(progress_cb)) {
@@ -40,7 +40,7 @@ make_scaled_progress <- function(progress_cb, start, end, default_detail = NULL)
   }
 }
 
-simulate_power_with_step_progress <- function(
+simulate_power_step_progress <- function(
   dist_params,
   n,
   n_sim,
@@ -77,7 +77,7 @@ make_sim_runner <- function(dist_params, n_sim, alpha, approach,
   force(max_steps)
 
   function(n, step_idx, step_label, progress_detail) {
-    simulate_power_with_step_progress(
+    simulate_power_step_progress(
       dist_params = dist_params,
       n = n,
       n_sim = n_sim,
@@ -563,7 +563,7 @@ simulation_power <- function(params, effect_f, dist_params, progress_cb = NULL) 
   messages <- character(0)
 
   if (!is.numeric(n_sim) || length(n_sim) != 1 ||
-    is.na(n_sim) || !is.finite(n_sim) || n_sim < 1) {
+        is.na(n_sim) || !is.finite(n_sim) || n_sim < 1) {
     return(error_handling$simple_error(
       message = "Number of simulations must be a finite number greater than or equal to 1.",
       operation_name = "simulation_power",
@@ -639,8 +639,8 @@ simulation_power <- function(params, effect_f, dist_params, progress_cb = NULL) 
   }
 
   # Generate power curve via simulation
-  power_curve <- generate_simulation_power_curve(
-    dist_params$dist_params, alpha, approach, max(100, n_sim / CURVE_SIM_DIVISOR),
+  power_curve <- generate_sim_power_curve(
+    dist_params$dist_params, alpha, approach, max(100, n_sim / curve_sim_divisor),
     progress_cb = curve_progress
   )
 
@@ -694,7 +694,7 @@ simulate_power <- function(dist_params, n, n_sim, alpha, approach,
                            progress_cb = NULL, progress_detail = NULL) {
   k <- length(dist_params)
   if (!is.numeric(n_sim) || length(n_sim) != 1 ||
-    is.na(n_sim) || !is.finite(n_sim)) {
+        is.na(n_sim) || !is.finite(n_sim)) {
     n_sim <- 1L
   } else {
     n_sim <- as.integer(n_sim)
@@ -750,8 +750,8 @@ simulate_power <- function(dist_params, n, n_sim, alpha, approach,
 find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
                             progress_cb = NULL) {
   n_low <- 2
-  n_high <- MAX_SEARCH_N
-  max_steps <- ceiling(log2(MAX_SEARCH_N - n_low)) + 1
+  n_high <- max_search_n
+  max_steps <- ceiling(log2(max_search_n - n_low)) + 1
 
   run_sim <- make_sim_runner(
     dist_params, n_sim, alpha, approach,
@@ -778,19 +778,19 @@ find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
 
   # Check if target power is achievable at max N
   warning_msg <- NULL
-  if (n_high == MAX_SEARCH_N) {
+  if (n_high == max_search_n) {
     step_idx <- step_idx + 1
     power_at_max <- run_sim(
-      n = MAX_SEARCH_N,
+      n = max_search_n,
       step_idx = step_idx,
-      step_label = paste0("Checking upper bound n=", MAX_SEARCH_N),
-      progress_detail = paste0("Checking upper bound n=", MAX_SEARCH_N)
+      step_label = paste0("Checking upper bound n=", max_search_n),
+      progress_detail = paste0("Checking upper bound n=", max_search_n)
     )
     if (power_at_max < target_power) {
       warning_msg <- paste0(
         "Target power (", round(target_power * 100), "%) may not be achievable ",
-        "within n \u2264 ", MAX_SEARCH_N, " per group. ",
-        "Power at n=", MAX_SEARCH_N, ": ", round(power_at_max * 100, 1), "%"
+        "within n \u2264 ", max_search_n, " per group. ",
+        "Power at n=", max_search_n, ": ", round(power_at_max * 100, 1), "%"
       )
     }
   }
@@ -802,9 +802,9 @@ find_required_n <- function(dist_params, target_power, n_sim, alpha, approach,
 #' @return List with f (effect size) and optional warning message
 find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
                      distribution = "normal", progress_cb = NULL) {
-  f_low <- MDE_SEARCH_RANGE[1]
-  f_high <- MDE_SEARCH_RANGE[2]
-  max_steps <- ceiling(log2((MDE_SEARCH_RANGE[2] - MDE_SEARCH_RANGE[1]) / 0.01)) + 1
+  f_low <- mde_search_range[1]
+  f_high <- mde_search_range[2]
+  max_steps <- ceiling(log2((mde_search_range[2] - mde_search_range[1]) / 0.01)) + 1
 
   step_idx <- 0
   while (f_high - f_low > 0.01) {
@@ -832,7 +832,7 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
 
   # Check if target power is achievable at max effect size
   warning_msg <- NULL
-  if (abs(f_high - MDE_SEARCH_RANGE[2]) < 0.02) {
+  if (abs(f_high - mde_search_range[2]) < 0.02) {
     step_idx <- step_idx + 1
     dist_params <- build_effect_size_dist_params(f_high, pooled_sd, k, distribution)
     run_sim <- make_sim_runner(
@@ -849,7 +849,7 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
     if (power_at_max < target_power) {
       warning_msg <- paste0(
         "Target power (", round(target_power * 100), "%) may not be achievable ",
-        "even with large effect sizes (f \u2264 ", MDE_SEARCH_RANGE[2], "). ",
+        "even with large effect sizes (f \u2264 ", mde_search_range[2], "). ",
         "Consider increasing sample size."
       )
     }
@@ -859,9 +859,9 @@ find_mde <- function(n, pooled_sd, target_power, n_sim, alpha, approach, k,
 }
 
 #' Generate power curve via simulation
-generate_simulation_power_curve <- function(dist_params, alpha, approach,
-                                            n_sim_per_point,
-                                            progress_cb = NULL) {
+generate_sim_power_curve <- function(dist_params, alpha, approach,
+                                     n_sim_per_point,
+                                     progress_cb = NULL) {
   n_range <- seq(5, 100, by = 10)
   n_points <- length(n_range)
 

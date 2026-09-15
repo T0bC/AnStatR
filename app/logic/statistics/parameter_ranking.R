@@ -52,12 +52,13 @@ rank_parameters_by_comparison <- function(posthoc_results, top_n = 3,
                                           p_column = c("raw", "adjusted")) {
   p_column <- match.arg(p_column)
 
-  skipped <- data.frame(
+  skipped_acc <- new.env()
+  skipped_acc$df <- data.frame(
     measure = character(0), reason = character(0),
     detail = character(0), stringsAsFactors = FALSE
   )
   add_skipped <- function(measure, reason, detail = "") {
-    skipped <<- rbind(skipped, data.frame(
+    skipped_acc$df <- rbind(skipped_acc$df, data.frame(
       measure = measure, reason = reason, detail = detail,
       stringsAsFactors = FALSE
     ))
@@ -93,7 +94,7 @@ rank_parameters_by_comparison <- function(posthoc_results, top_n = 3,
     schemas[[measure]] <- schema
 
     effect_vals <- if (!is.na(schema$effect_col) &&
-      schema$effect_col %in% names(df)) {
+                         schema$effect_col %in% names(df)) {
       df[[schema$effect_col]]
     } else {
       rep(NA_real_, nrow(df))
@@ -193,7 +194,7 @@ rank_parameters_by_comparison <- function(posthoc_results, top_n = 3,
     effect_null = effect_null,
     p_column_used = p_column,
     top_n = top_n,
-    skipped = skipped
+    skipped = skipped_acc$df
   )
 }
 

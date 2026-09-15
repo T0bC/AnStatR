@@ -7,7 +7,7 @@ box::use(
 )
 
 # Internal separator for multi-way group names (unlikely to appear in user input)
-GROUP_SEP <- ":::"
+group_sep <- ":::"
 
 #' Simulate group data for power analysis visualization
 #'
@@ -75,7 +75,7 @@ simulate_group_data <- function(group_means,
     # Name the grid columns by factor names
     names(grid) <- sapply(factor_structure, function(f) f$name)
     # Create the combined group names using internal separator
-    grid$.group_key <- apply(grid, 1, paste, collapse = GROUP_SEP)
+    grid$.group_key <- apply(grid, 1, paste, collapse = group_sep)
 
     # Match each row's .group to the grid and extract factor levels
     for (factor_name in names(grid)[names(grid) != ".group_key"]) {

@@ -335,7 +335,7 @@ perform_cohens_d <- function(df, x_axis, measure_col) {
 #' @param filter_valid Logical, filter to valid comparisons for multi-way
 #' @return Data frame with combined results or app_error
 #' @export
-perform_combined_parametric_posthoc <- function(
+perform_combined_param_posthoc <- function(
   df, x_axis, measure_col,
   p_adjust_method = "bonferroni",
   filter_valid = FALSE,
@@ -386,7 +386,7 @@ perform_combined_parametric_posthoc <- function(
   }
 
   if (!is.data.frame(tukey_result) ||
-    !is.data.frame(cohen_result)) {
+        !is.data.frame(cohen_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_parametric_posthoc"
@@ -449,14 +449,14 @@ perform_combined_parametric_posthoc <- function(
 
   # Apply p-value adjustment
   if ("Tukey.p.value" %in% names(merged) &&
-    is.numeric(merged$Tukey.p.value)) {
+        is.numeric(merged$Tukey.p.value)) {
     merged$Tukey.p.adjusted <- stats$p.adjust(
       merged$Tukey.p.value,
       method = p_adjust_method
     )
   }
   if ("Cohen.p.value" %in% names(merged) &&
-    is.numeric(merged$Cohen.p.value)) {
+        is.numeric(merged$Cohen.p.value)) {
     merged$Cohen.p.adjusted <- stats$p.adjust(
       merged$Cohen.p.value,
       method = p_adjust_method
@@ -617,7 +617,7 @@ perform_rm_parametric_posthoc <- function(
       }
 
       # Step 1: Get unpaired base results (no p-adjustment yet)
-      unpaired_base <- perform_combined_parametric_posthoc(
+      unpaired_base <- perform_combined_param_posthoc(
         df = df,
         x_axis = x_axis,
         measure_col = measure_col,

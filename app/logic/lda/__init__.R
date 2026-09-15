@@ -22,7 +22,9 @@ box::use(
     run_plsda,
     run_plsda_perf,
     run_plsda_tune_keepx,
-    run_predict,
+    run_predict
+  ],
+  app/logic/lda/lda[
     run_qda,
     validate_inputs
   ],
@@ -46,6 +48,6 @@ box::use(
   ],
   app/logic/pca/var_contrib_jitter[
     create_var_contrib_jitter_plot,
-    var_contrib_jitter_error_parser
+    var_contrib_jitter_err_parser
   ],
 )

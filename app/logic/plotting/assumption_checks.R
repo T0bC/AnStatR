@@ -222,7 +222,7 @@ check_homogeneity <- function(data, measure_col, group_col,
 recommend_transformation <- function(normality_df, threshold = 0.5) {
   # Only consider groups with valid Shapiro results
   valid <- normality_df[!is.na(normality_df$normal) &
-    normality_df$normal != "identical values", ]
+                          normality_df$normal != "identical values", ]
   n_groups <- nrow(valid)
 
   if (n_groups == 0) {
@@ -313,8 +313,8 @@ build_recommendation_banner <- function(recommendation, levene_result) {
 
   # Overall class: worst of normality and variance
   overall_class <- if (norm_class == "danger" ||
-    (!is.na(levene_result$p_value) &&
-      levene_result$equal_variances == "no")) {
+                         (!is.na(levene_result$p_value) &&
+                            levene_result$equal_variances == "no")) {
     "danger"
   } else if (norm_class == "warning") {
     "warning"

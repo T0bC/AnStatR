@@ -7,7 +7,7 @@ box::use(
 create_plot <- plot_factory$create_plot
 
 #' @export
-PLOT_TYPES <- plot_factory$PLOT_TYPES
+plot_types <- plot_factory$plot_types
 
 #' @export
 get_plot_type_choices <- plot_factory$get_plot_type_choices

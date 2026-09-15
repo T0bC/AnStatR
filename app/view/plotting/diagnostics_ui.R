@@ -60,7 +60,7 @@ build_diagnostics_ui <- function(diag) {
 
   # Post-transformation tables (if applicable)
   if (isTRUE(diag$has_normalized) &&
-    !is.null(diag$normality_post)) {
+        !is.null(diag$normality_post)) {
     label <- if (!is.null(diag$transform_label)) {
       paste0("After Transformation (", diag$transform_label, ")")
     } else {

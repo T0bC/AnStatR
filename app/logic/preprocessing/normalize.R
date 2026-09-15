@@ -144,7 +144,7 @@ get_transform_label <- function(transform_info, col) {
 #' @return Logical
 needs_transformation <- function(normality_df, threshold) {
   valid <- normality_df[!is.na(normality_df$normal) &
-    normality_df$normal != "identical values", ]
+                          normality_df$normal != "identical values", ]
   if (nrow(valid) == 0) {
     return(FALSE)
   }

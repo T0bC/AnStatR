@@ -352,7 +352,7 @@ server <- function(id) {
     # Data summary (summarytools::dfSummary rendered as HTML)
     output$data_summary <- shiny$renderUI({
       shiny$req(loaded_data())
-      summary_obj <- summarytools$dfSummary(
+      summary_obj <- summarytools$dfSummary( # nolint: unused_declared_object_linter.
         loaded_data(),
         max.distinct.values = 25
       )

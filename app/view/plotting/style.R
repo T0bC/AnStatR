@@ -354,8 +354,8 @@ collect_shapes <- function(input, groups, default_shape = 21L) {
 # Shapes 15-20 are omitted: they are solid-filled with no separate border,
 # making white-border discrimination impossible.
 shape_choices <- function() {
-  pch_values <- c(0:14, 21:25)
-  symbols <- c(
+  pch_values <- c(0:14, 21:25) # nolint: unused_declared_object_linter.
+  symbols <- c( # nolint: unused_declared_object_linter.
     "\u25A1", # pch  0: open square
     "\u25CB", # pch  1: open circle
     "\u25B3", # pch  2: open triangle up
@@ -588,7 +588,7 @@ build_inner_levels <- function(ns, cols, factor_order, parent_prefix,
       # Leaf level: show color picker and shape dropdown
       group_idx <- which(groups == current_prefix)
       color <- if (length(group_idx) > 0 &&
-        current_prefix %in% names(existing_colors)) {
+                     current_prefix %in% names(existing_colors)) {
         existing_colors[[current_prefix]]
       } else if (length(group_idx) > 0) {
         defaults[group_idx[1]]
@@ -685,13 +685,6 @@ build_inner_levels <- function(ns, cols, factor_order, parent_prefix,
       class = paste0("sortable-inner-", depth)
     )
   )
-}
-
-# Build hidden sortable inputs for inner columns to capture their order
-# (No longer needed since we use actual rank_lists now, but kept for compatibility)
-build_inner_sortable_inputs <- function(ns, cols, factor_order) {
-  # Return empty - inner levels now have their own rank_lists
-  NULL
 }
 
 # ---- Accordion panel helpers ----
@@ -1034,7 +1027,10 @@ boxplot_panel <- function(ns) {
                   class = "text-muted"
                 )
               ),
-              "Show outliers detected by the configured algorithm as 'X' marks (requires outlier detection enabled in Processing)"
+              paste0(
+                "Show outliers detected by the configured algorithm as 'X' ",
+                "marks (requires outlier detection enabled in Processing)"
+              )
             ),
             value = FALSE
           )
@@ -1098,7 +1094,10 @@ violin_panel <- function(ns) {
                   class = "text-muted"
                 )
               ),
-              "Show outliers detected by the configured algorithm as 'X' marks (requires outlier detection enabled in Processing)"
+              paste0(
+                "Show outliers detected by the configured algorithm as 'X' ",
+                "marks (requires outlier detection enabled in Processing)"
+              )
             ),
             value = FALSE
           )

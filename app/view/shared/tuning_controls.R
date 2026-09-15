@@ -16,7 +16,7 @@ box::use(
 # Rough per-fit cost constants, in seconds per million cell-operations.
 # Calibrated to be pessimistic rather than optimistic: over-promising speed
 # is worse for the user than warning them about a job that finishes early.
-CV_COST_CONSTANTS <- list(
+cv_cost_constants <- list(
   spca = 4.0e-7,
   splsda = 9.0e-7,
   perf = 5.0e-7
@@ -64,8 +64,8 @@ estimate_cv_runtime <- function(n_samples = NULL, n_vars = NULL,
   }
 
   vals <- lapply(vals, as.numeric)
-  constant <- CV_COST_CONSTANTS[[method]]
-  if (is.null(constant)) constant <- CV_COST_CONSTANTS$spca
+  constant <- cv_cost_constants[[method]]
+  if (is.null(constant)) constant <- cv_cost_constants$spca
 
   n_fits <- vals$folds * vals$repeats * vals$n_grid * vals$ncomp
   cell_ops <- vals$n_samples * vals$n_vars

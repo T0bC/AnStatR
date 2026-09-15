@@ -14,7 +14,7 @@ box::use(
 # No Shiny dependencies allowed in this file.
 # =============================================================================
 
-SERIATION_CHOICES <- c(
+seriation_choices <- c(
   "OLO" = "OLO",
   "GW" = "GW",
   "mean" = "mean",
@@ -104,7 +104,7 @@ create_cluster_heatmap <- function(
 
       # Apply custom row labels
       if (!is.null(custom_labels) &&
-        length(custom_labels) == nrow(num_mat)) {
+            length(custom_labels) == nrow(num_mat)) {
         rownames(num_mat) <- custom_labels
       } else if (!show_labels) {
         rownames(num_mat) <- NULL
@@ -112,7 +112,7 @@ create_cluster_heatmap <- function(
 
       # Resolve seriation method
       seriate_method <- if (
-        seriation %in% names(SERIATION_CHOICES)
+        seriation %in% names(seriation_choices)
       ) {
         seriation
       } else {
@@ -131,7 +131,7 @@ create_cluster_heatmap <- function(
       rsc <- data.frame(Cluster = cluster_vec)
 
       if (!is.null(row_side_colors_df) &&
-        ncol(row_side_colors_df) > 0) {
+            ncol(row_side_colors_df) > 0) {
         for (col_name in names(row_side_colors_df)) {
           rsc[[col_name]] <- factor(
             row_side_colors_df[[col_name]]

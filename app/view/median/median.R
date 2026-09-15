@@ -122,8 +122,8 @@ server <- function(id, input_data, data_version) {
 
           current_qc <- shiny$isolate(input$quality_column)
           retained_qc <- if (!is.null(current_qc) &&
-            current_qc != "None" &&
-            current_qc %in% new_cols) {
+                               current_qc != "None" &&
+                               current_qc %in% new_cols) {
             current_qc
           } else {
             "None"
@@ -189,7 +189,7 @@ server <- function(id, input_data, data_version) {
       group_cols <- input$grouping_columns
 
       if (is.null(group_cols) ||
-        length(group_cols) == 0) {
+            length(group_cols) == 0) {
         return(shiny$tags$p(
           class = "text-muted small fst-italic",
           "No grouping selected.",
@@ -286,7 +286,7 @@ server <- function(id, input_data, data_version) {
     build_quality_settings <- function() {
       info <- quality_col_info()
       if (is.null(input$quality_column) ||
-        input$quality_column == "None") {
+            input$quality_column == "None") {
         list(
           enabled = FALSE, column = NULL, type = "none"
         )
@@ -572,7 +572,7 @@ server <- function(id, input_data, data_version) {
 render_summary_ui <- function(filter_msg, grouping_cols,
                               removed) {
   grouping_info <- if (is.null(grouping_cols) ||
-    length(grouping_cols) == 0) {
+                         length(grouping_cols) == 0) {
     shiny$tags$p(
       class = "mb-1",
       shiny$tags$em(
@@ -589,7 +589,7 @@ render_summary_ui <- function(filter_msg, grouping_cols,
   }
 
   removed_info <- if (!is.null(removed) &&
-    length(removed) > 0) {
+                        length(removed) > 0) {
     shiny$tags$p(
       class = "mb-1 text-warning",
       shiny$tags$strong(

@@ -122,7 +122,7 @@ build_omnibus_html <- function(omnibus_result,
   }
 
   if (is.data.frame(omnibus_result) &&
-    nrow(omnibus_result) > 0) {
+        nrow(omnibus_result) > 0) {
     n_ways <- length(x_axis)
     rm_prefix <- if (isTRUE(is_rm)) "RM " else ""
     header_label <- if (approach == "robust") {
@@ -187,7 +187,7 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
   }
 
   if (!is.data.frame(posthoc_result) ||
-    nrow(posthoc_result) == 0) {
+        nrow(posthoc_result) == 0) {
     return("")
   }
 
@@ -260,7 +260,7 @@ build_posthoc_html <- function(posthoc_result, params = NULL) {
   # unpaired output, so describe which rows used paired tests.
   rm_note_html <- ""
   if (!is.null(params) &&
-    isTRUE(params$is_repeated_measures)) {
+        isTRUE(params$is_repeated_measures)) {
     wn <- params$rm_within_col %||% "the within-subject factor"
     if (identical(params$test_approach, "parametric") && has_tukey) {
       rm_note_html <- paste0(

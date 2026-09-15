@@ -40,7 +40,7 @@ calculate_optimal_components <- function(data, scale = TRUE) {
     },
     operation_name = "Eigenvalue Computation",
     context = error_context,
-    error_parser = optimal_components_error_parser
+    error_parser = optimal_comp_error_parser
   )
 
   if (!eig_result$success) {
@@ -83,7 +83,7 @@ calculate_optimal_components <- function(data, scale = TRUE) {
     expr = compute_parallel_analysis(data, n_iter = 100),
     operation_name = "Parallel Analysis",
     context = error_context,
-    error_parser = optimal_components_error_parser
+    error_parser = optimal_comp_error_parser
   )
 
   if (parallel_result$success) {
@@ -234,7 +234,7 @@ compute_parallel_analysis <- function(data, n_iter = 100) {
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
 #' @export
-optimal_components_error_parser <- function(
+optimal_comp_error_parser <- function(
   error_msg,
   operation_name = "Optimal Components"
 ) {

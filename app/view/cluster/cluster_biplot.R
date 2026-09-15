@@ -125,7 +125,7 @@ render_output <- function(input, output, session,
     raw_data <- cleaned_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
-      is.null(measure_cols)) {
+          is.null(measure_cols)) {
       return(NULL)
     }
 
@@ -154,18 +154,18 @@ render_output <- function(input, output, session,
       data_source %in% c("pca_scores", "lda_scores")
     if (!is_reduced_source) {
       if (reduction_method == "pca" &&
-        !grepl("^Dim\\.", dim_x)) {
+            !grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
       if (reduction_method == "raw" &&
-        grepl("^Dim\\.", dim_x)) {
+            grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
     }
 
     group_cols <- params$group_cols
     if (is.null(group_cols) ||
-      length(group_cols) == 0) {
+          length(group_cols) == 0) {
       group_cols <- NULL
     }
 
@@ -182,7 +182,7 @@ render_output <- function(input, output, session,
     # Choose data source: scaled for PCA, raw for
     # raw data mode
     base_data <- if (reduction_method == "raw" &&
-      !is.null(raw_data)) {
+                       !is.null(raw_data)) {
       raw_data
     } else {
       analysis_data
@@ -204,11 +204,11 @@ render_output <- function(input, output, session,
             )
             meta_cols <- c(meta_cols, "CLUSTER")
           } else if (gc %in% names(md) &&
-            !gc %in% names(plot_data)) {
+                       !gc %in% names(plot_data)) {
             plot_data[[gc]] <- md[[gc]]
             meta_cols <- c(meta_cols, gc)
           } else if (
-            gc %in% names(plot_data)) {
+                     gc %in% names(plot_data)) {
             meta_cols <- c(meta_cols, gc)
           }
         }

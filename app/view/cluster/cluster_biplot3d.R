@@ -120,7 +120,7 @@ render_output <- function(input, output, session,
     raw_data <- cleaned_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
-      is.null(measure_cols)) {
+          is.null(measure_cols)) {
       return(NULL)
     }
 
@@ -143,18 +143,18 @@ render_output <- function(input, output, session,
 
     if (!is_reduced_source) {
       if (reduction_method == "pca" &&
-        !grepl("^Dim\\.", dim_x)) {
+            !grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
       if (reduction_method == "raw" &&
-        grepl("^Dim\\.", dim_x)) {
+            grepl("^Dim\\.", dim_x)) {
         return(NULL)
       }
     }
 
     # Choose data source
     base_data <- if (reduction_method == "raw" &&
-      !is.null(raw_data)) {
+                       !is.null(raw_data)) {
       raw_data
     } else {
       analysis_data
@@ -173,7 +173,7 @@ render_output <- function(input, output, session,
             plot_data$CLUSTER <- as.factor(res$clusters)
             meta_cols <- c(meta_cols, "CLUSTER")
           } else if (gc %in% names(md) &&
-            !gc %in% names(plot_data)) {
+                       !gc %in% names(plot_data)) {
             plot_data[[gc]] <- md[[gc]]
             meta_cols <- c(meta_cols, gc)
           } else if (gc %in% names(plot_data)) {

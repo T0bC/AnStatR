@@ -14,7 +14,7 @@ box::use(
 
 # Synthetic Group Biplot option that colors points by
 # cluster assignment rather than by a data column.
-CLUSTER_OPTION <- "CLUSTER"
+cluster_option <- "CLUSTER"
 
 #' @export
 tab_ui <- function(ns) {
@@ -499,7 +499,7 @@ tab_server <- function(input, output, session,
       shiny$updateSelectizeInput(
         session, "groupBiplot",
         choices = group_biplot_choices(desc_cols),
-        selected = CLUSTER_OPTION
+        selected = cluster_option
       )
       shiny$updateSelectizeInput(
         session, "residualizeCol",
@@ -531,8 +531,8 @@ tab_server <- function(input, output, session,
         )
         shiny$updateSelectizeInput(
           session, "groupBiplot",
-          choices = CLUSTER_OPTION,
-          selected = CLUSTER_OPTION
+          choices = cluster_option,
+          selected = cluster_option
         )
         shiny$updateSelectizeInput(
           session, "residualizeCol",
@@ -640,7 +640,7 @@ tab_server <- function(input, output, session,
 #' @param desc_cols Character vector of descriptive columns
 #' @return Character vector of choices including "CLUSTER"
 group_biplot_choices <- function(desc_cols) {
-  unique(c(desc_cols, CLUSTER_OPTION))
+  unique(c(desc_cols, cluster_option))
 }
 
 #' Compute PCA dimension recommendation based on

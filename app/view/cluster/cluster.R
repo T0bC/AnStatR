@@ -145,7 +145,7 @@ server <- function(id, input_data, data_version,
         !is.null(meta) &&
           nrow(meta) == nrow(scores) &&
           !("Row" %in% names(meta) &&
-            ncol(meta) == 1)
+              ncol(meta) == 1)
       ) {
         cbind(meta, scores)
       } else {
@@ -341,8 +341,8 @@ server <- function(id, input_data, data_version,
 
             # Step 1c: Residualize by a confound column, before scaling
             if (!is.null(residualize_col) &&
-              length(residualize_col) > 0 &&
-              nzchar(residualize_col)) {
+                  length(residualize_col) > 0 &&
+                  nzchar(residualize_col)) {
               rhino$log$info(
                 "Cluster: residualizing by",
                 " '{residualize_col}'"
@@ -364,7 +364,7 @@ server <- function(id, input_data, data_version,
             )
             analysis_data <- cleaned_data
             if (!is.null(scale_method) &&
-              scale_method != "none") {
+                  scale_method != "none") {
               do_center <- scale_method %in%
                 c("scale_center", "center_only")
               do_scale <- scale_method == "scale_center"
@@ -663,7 +663,7 @@ server <- function(id, input_data, data_version,
             # Choose which set to apply based on method
             use_raw <- is_reduced ||
               (!is.null(current_method) &&
-                current_method == "raw")
+                 current_method == "raw")
             dim_choices <- if (use_raw) {
               raw_dim_choices
             } else {
@@ -676,7 +676,7 @@ server <- function(id, input_data, data_version,
               dim_id <- dim_2d_ids[i]
               current <- input[[dim_id]]
               sel <- if (!is.null(current) &&
-                current %in% dim_choices) {
+                           current %in% dim_choices) {
                 current
               } else {
                 dim_choices[min(i, length(dim_choices))]
@@ -698,7 +698,7 @@ server <- function(id, input_data, data_version,
               dim_id <- dim_3d_ids[i]
               current <- input[[dim_id]]
               sel <- if (!is.null(current) &&
-                current %in% dim_choices) {
+                           current %in% dim_choices) {
                 current
               } else {
                 dim_choices[min(i, length(dim_choices))]

@@ -409,7 +409,9 @@ server <- function(id, input_data = NULL) {
       if (!has_required_cols) {
         col_names <- if (is.null(names(df))) character(0) else names(df)
         rhino$log$warn(
-          "Power curve anomaly: invalid payload shape. class={paste(class(df), collapse = ',')}, columns={paste(col_names, collapse = ',')}"
+          "Power curve anomaly: invalid payload shape.",
+          " class={paste(class(df), collapse = ',')},",
+          " columns={paste(col_names, collapse = ',')}"
         )
       }
       shiny$validate(shiny$need(
@@ -426,7 +428,9 @@ server <- function(id, input_data = NULL) {
       df <- df[finite_mask, , drop = FALSE]
       if (nrow(df) == 0) {
         rhino$log$warn(
-          "Power curve anomaly: no plottable rows after finite filtering. rows_total={n_total}, rows_finite={n_finite}, n_na={n_na}, power_na={power_na}"
+          "Power curve anomaly: no plottable rows after finite filtering.",
+          " rows_total={n_total}, rows_finite={n_finite},",
+          " n_na={n_na}, power_na={power_na}"
         )
       }
       shiny$validate(shiny$need(
@@ -538,7 +542,7 @@ server <- function(id, input_data = NULL) {
 }
 
 # Internal separator for multi-way group names (must match dummy_data.R)
-GROUP_SEP <- ":::"
+group_sep <- ":::"
 
 # --- Helper: generate group names from factor structure ---
 generate_group_names <- function(factors) {
@@ -553,7 +557,7 @@ generate_group_names <- function(factors) {
   # Multi-way: generate all combinations using internal separator
   level_lists <- lapply(factors, function(f) f$levels)
   grid <- expand.grid(level_lists, stringsAsFactors = FALSE)
-  apply(grid, 1, paste, collapse = GROUP_SEP)
+  apply(grid, 1, paste, collapse = group_sep)
 }
 
 # --- Helper: render design table as HTML ---

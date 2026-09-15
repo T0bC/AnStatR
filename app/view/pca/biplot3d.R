@@ -107,7 +107,7 @@ render_output <- function(input, output, session,
 
     group_cols <- params$group_cols
     if (is.null(group_cols) ||
-      length(group_cols) == 0) {
+          length(group_cols) == 0) {
       group_cols <- NULL
     }
 

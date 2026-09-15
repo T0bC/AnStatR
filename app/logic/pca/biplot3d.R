@@ -257,8 +257,8 @@ build_ind_data <- function(pca_result, dims,
 
   # Group column
   if (!is.null(group_cols) &&
-    length(group_cols) > 0 &&
-    !is.null(meta)) {
+        length(group_cols) > 0 &&
+        !is.null(meta)) {
     valid_cols <- intersect(group_cols, names(meta))
     if (length(valid_cols) == 1) {
       df$group <- as.factor(meta[[valid_cols]])
@@ -331,8 +331,8 @@ build_hover_text <- function(pca_result, ind_data,
                              dims) {
   meta <- pca_result$ind_meta
   meta_cols <- if (!is.null(meta) &&
-    !("Row" %in% names(meta) &&
-      ncol(meta) == 1)) {
+                     !("Row" %in% names(meta) &&
+                         ncol(meta) == 1)) {
     names(meta)
   } else {
     character(0)

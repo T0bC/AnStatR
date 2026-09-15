@@ -498,7 +498,7 @@ all_fillable_shapes <- function(shapes) {
 #' @return ggplot object with shape scale applied
 #' @export
 apply_shape_scale <- function(p, data, shape_legend_title) {
-  n <- length(unique(data$.shape_group))
+  n <- length(unique(data$.shape_group)) # nolint: unused_declared_object_linter.
   fillable <- c(21, 22, 23, 24, 25, 3)
   vals <- fillable[base::seq_len(min(n, length(fillable)))]
   p + ggplot2$scale_shape_manual(

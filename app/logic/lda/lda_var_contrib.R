@@ -90,7 +90,7 @@ lda_to_pca_var_structure <- function(lda_result) {
     # (and optionally Singular Value)
     var_pct <- prop_trace$Proportion * 100
     cum_pct <- prop_trace$Cumulative * 100
-    variance_dims <- dim_names[seq_len(length(var_pct))]
+    variance_dims <- dim_names[seq_along(var_pct)]
   } else {
     # Fallback: equal weight per dimension
     var_pct <- rep(100 / n_dims, n_dims)

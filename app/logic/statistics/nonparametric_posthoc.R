@@ -60,7 +60,7 @@ perform_dunn_test <- function(df, x_axis, measure_col) {
       }
 
       # Suppress dunn.test console output
-      dunn_out <- utils::capture.output({
+      utils::capture.output({
         dunn_result <- dunn.test(
           x = df[[measure_col]],
           g = df$combined_group,
@@ -382,7 +382,7 @@ perform_art_contrasts <- function(df, x_axis, measure_col) {
 #' @param posthoc_method Character, "dunn" or "wilcox" (1-way only)
 #' @return Data frame with combined results or app_error
 #' @export
-perform_combined_nonparametric_posthoc <- function(
+perform_combined_np_posthoc <- function(
   df, x_axis, measure_col,
   p_adjust_method = "bonferroni",
   filter_valid = FALSE,
@@ -398,7 +398,7 @@ perform_combined_nonparametric_posthoc <- function(
   )
 
   if (isTRUE(is_rm) && !is.null(id_col) && !is.null(within_col)) {
-    return(perform_rm_nonparametric_posthoc(
+    return(perform_rm_np_posthoc(
       df = df, x_axis = x_axis, measure_col = measure_col,
       id_col = id_col, within_col = within_col,
       p_adjust_method = p_adjust_method
@@ -496,7 +496,7 @@ combine_oneway <- function(df, x_axis, measure_col,
   }
 
   if (!is.data.frame(pairwise_result) ||
-    !is.data.frame(cliff_result)) {
+        !is.data.frame(cliff_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_nonparametric_posthoc"
@@ -504,7 +504,7 @@ combine_oneway <- function(df, x_axis, measure_col,
   }
 
   if (nrow(pairwise_result) == 0 ||
-    nrow(cliff_result) == 0) {
+        nrow(cliff_result) == 0) {
     return(error_handling$simple_error(
       message = "One or both post-hoc tests returned empty results.",
       operation_name = "combined_nonparametric_posthoc"
@@ -548,7 +548,7 @@ combine_oneway <- function(df, x_axis, measure_col,
     "Dunn.p.value"
   }
   if (p_col %in% names(merged) &&
-    is.numeric(merged[[p_col]])) {
+        is.numeric(merged[[p_col]])) {
     adj_col <- sub("\\.p\\.value$", ".p.adjusted", p_col)
     merged[[adj_col]] <- stats$p.adjust(
       merged[[p_col]],
@@ -556,7 +556,7 @@ combine_oneway <- function(df, x_axis, measure_col,
     )
   }
   if ("Cliff.p.value" %in% names(merged) &&
-    is.numeric(merged$Cliff.p.value)) {
+        is.numeric(merged$Cliff.p.value)) {
     merged$Cliff.p.adjusted <- stats$p.adjust(
       merged$Cliff.p.value,
       method = p_adjust_method
@@ -634,7 +634,7 @@ combine_multiway <- function(df, x_axis, measure_col,
 
   # Apply p-value adjustment
   if ("ART.p.value" %in% names(art_result) &&
-    is.numeric(art_result$ART.p.value)) {
+        is.numeric(art_result$ART.p.value)) {
     art_result$ART.p.adjusted <- stats$p.adjust(
       art_result$ART.p.value,
       method = p_adjust_method
@@ -748,7 +748,7 @@ compute_paired_wilcox_stats <- function(df, g1_label, g2_label, id_col, measure_
 #' @param p_adjust_method Character, p-value adjustment method
 #' @return Data frame with combined results or app_error
 #' @export
-perform_rm_nonparametric_posthoc <- function(
+perform_rm_np_posthoc <- function(
   df, x_axis, measure_col,
   id_col, within_col,
   p_adjust_method = "bonferroni"

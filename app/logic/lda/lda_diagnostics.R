@@ -36,7 +36,7 @@ compute_pooled_vc <- function(scores, groups) {
     idx <- which(groups == g)
     n_g <- length(idx)
     if (n_g < 2) next
-    g_scores <- scores[idx, , drop = FALSE]
+    g_scores <- scores[idx, , drop = FALSE] # nolint: unused_declared_object_linter.
     g_cov <- stats::cov(g_scores)
     pooled <- pooled + (n_g - 1) * g_cov
     total_df <- total_df + (n_g - 1)
@@ -327,7 +327,7 @@ add_boundaries_overlay <- function(p, lda_result,
     )
     grid_df <- expand.grid(x = x_seq, y = y_seq)
 
-    knn_k <- min(7, length(train_class) - 1)
+    knn_k <- min(7, length(train_class) - 1) # nolint: unused_declared_object_linter.
     pred_class <- class::knn(
       train = cbind(train_x, train_y),
       test  = as.matrix(grid_df),
@@ -757,7 +757,7 @@ compute_1d_boundary <- function(lda_result) {
       length.out = 500
     )
 
-    knn_k <- min(7, length(train_class) - 1)
+    knn_k <- min(7, length(train_class) - 1) # nolint: unused_declared_object_linter.
     pred_class <- as.integer(class::knn(
       train = matrix(train_ld1, ncol = 1),
       test  = matrix(x_seq, ncol = 1),
@@ -849,7 +849,7 @@ add_qda_boundaries_overlay <- function(
   plot_data, axis_type = "ld",
   grid_n = 150
 ) {
-  qda_model <- qda_result$model
+  qda_model <- qda_result$model # nolint: unused_declared_object_linter.
 
   # Grid range with 5% padding
   x_range <- range(plot_data$x)

@@ -611,7 +611,7 @@ server <- function(id, input_data, data_version,
         input_data()
       }
       if (is.null(data) || length(measure_cols) == 0 ||
-        is.null(grouping_col) || grouping_col == "") {
+            is.null(grouping_col) || grouping_col == "") {
         shiny$showNotification(
           "Select measurement and grouping columns first.",
           type = "warning"
@@ -939,7 +939,7 @@ server <- function(id, input_data, data_version,
       has_scaling <- !is.null(res) && (
         (!is.null(res$scaling)) ||
           (res$analysis_type == "qda" &&
-            !is.null(res$lda_scaling))
+             !is.null(res$lda_scaling))
       )
       if (has_scaling) {
         var_contrib_panel <- bslib$accordion_panel(

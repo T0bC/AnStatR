@@ -279,13 +279,13 @@ build_raw_biplot <- function(data, measure_cols,
 
   # Resolve alpha and size
   alpha_val <- if (is.character(point_alpha) &&
-    point_alpha == "Contribution") {
+                     point_alpha == "Contribution") {
     0.7
   } else {
     as.numeric(point_alpha)
   }
   size_val <- if (is.character(point_size) &&
-    point_size == "Contribution") {
+                    point_size == "Contribution") {
     3
   } else {
     as.numeric(point_size)
@@ -318,7 +318,7 @@ build_raw_biplot <- function(data, measure_cols,
           plot_df, "group"
         )
         if (!is.null(hull_grp) &&
-          nrow(hull_grp) > 0) {
+              nrow(hull_grp) > 0) {
           p <- p + ggplot2$geom_polygon(
             data = hull_grp,
             ggplot2$aes(
@@ -412,7 +412,7 @@ build_raw_biplot <- function(data, measure_cols,
 #' @param group_is_cluster Logical, TRUE when points are grouped
 #'   by the "CLUSTER" pseudo-column. When TRUE the point fill
 #'   scale is aligned with the hull colour scale so both use
-#'   CLUSTER_PALETTE for the same cluster.
+#'   cluster_palette for the same cluster.
 add_cluster_overlays <- function(p, ind_coord,
                                  clusters,
                                  dim_x, dim_y,
@@ -448,7 +448,7 @@ add_cluster_overlays <- function(p, ind_coord,
     ind_coord, clusters, dim_x, dim_y
   )
   if (!is.null(centroid_data) &&
-    nrow(centroid_data) > 0) {
+        nrow(centroid_data) > 0) {
     p <- p + ggplot2$geom_label(
       data = centroid_data,
       ggplot2$aes(

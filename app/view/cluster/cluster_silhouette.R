@@ -120,7 +120,7 @@ render_output <- function(input, output, session,
       analysis_data <- analysis_data_rv()
       measure_cols <- measure_cols_rv()
       if (is.null(analysis_data) ||
-        is.null(measure_cols)) {
+            is.null(measure_cols)) {
         return(NULL)
       }
 
@@ -160,7 +160,7 @@ render_output <- function(input, output, session,
       # Resolve group columns (exclude "CLUSTER")
       group_cols <- params$group_cols
       if (is.null(group_cols) ||
-        length(group_cols) == 0) {
+            length(group_cols) == 0) {
         group_cols <- NULL
       }
 

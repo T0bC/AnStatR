@@ -19,7 +19,7 @@ box::use(
 #' Used consistently across biplot, heatmap, and results.
 #' Supports up to 10 clusters; wraps around for more.
 #' @export
-CLUSTER_PALETTE <- c(
+cluster_palette <- c(
   "#0d6efd", "#198754", "#dc3545", "#fd7e14",
   "#6f42c1", "#20c997", "#d63384", "#0dcaf0",
   "#6610f2", "#ffc107"
@@ -27,11 +27,11 @@ CLUSTER_PALETTE <- c(
 
 #' Noise fraction above which the auto-computed DBSCAN eps is
 #' treated as degenerate and the fallback estimate is tried.
-DBSCAN_MAX_NOISE_FRACTION <- 0.7
+dbscan_max_noise_fraction <- 0.7
 
 #' Quantile of the sorted kNN distances used as the fallback
 #' eps when the knee estimate leaves too many points as noise.
-DBSCAN_FALLBACK_QUANTILE <- 0.95
+dbscan_fallback_quantile <- 0.95
 
 #' Get color for a cluster ID
 #'
@@ -40,8 +40,8 @@ DBSCAN_FALLBACK_QUANTILE <- 0.95
 #' @export
 cluster_color <- function(cluster_id) {
   idx <- ((as.integer(cluster_id) - 1L) %%
-    length(CLUSTER_PALETTE)) + 1L
-  CLUSTER_PALETTE[idx]
+            length(cluster_palette)) + 1L
+  cluster_palette[idx]
 }
 
 #' Build a named color vector for a set of cluster labels
@@ -57,10 +57,10 @@ cluster_color_map <- function(labels) {
   if (n_cl == 0) {
     return(stats$setNames(character(0), character(0)))
   }
-  colors <- if (n_cl > length(CLUSTER_PALETTE)) {
-    rep_len(CLUSTER_PALETTE, n_cl)
+  colors <- if (n_cl > length(cluster_palette)) {
+    rep_len(cluster_palette, n_cl)
   } else {
-    CLUSTER_PALETTE[seq_len(n_cl)]
+    cluster_palette[seq_len(n_cl)]
   }
   names(colors) <- labels
   colors
@@ -511,9 +511,9 @@ run_dbscan <- function(num_data, metric) {
   # but much more stable choice, and keep whichever result
   # labels more points.
   noise_frac <- mean(clusters == 0)
-  if (noise_frac > DBSCAN_MAX_NOISE_FRACTION) {
+  if (noise_frac > dbscan_max_noise_fraction) {
     fallback_eps <- unname(stats$quantile(
-      sorted_dists, DBSCAN_FALLBACK_QUANTILE
+      sorted_dists, dbscan_fallback_quantile
     ))
     if (fallback_eps > eps) {
       fallback_res <- dbscan$dbscan(

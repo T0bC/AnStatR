@@ -301,7 +301,7 @@ create_var_contrib_jitter_plot <- function(pca_result,
     },
     operation_name = "Variable Contribution Jitter Plot",
     context = error_context,
-    error_parser = var_contrib_jitter_error_parser
+    error_parser = var_contrib_jitter_err_parser
   )
 }
 
@@ -346,7 +346,7 @@ var_contrib_jitter_girafe_opts <- function() {
 #' @param operation_name Character, name of the operation
 #' @return Character, user-friendly error message
 #' @export
-var_contrib_jitter_error_parser <- function(
+var_contrib_jitter_err_parser <- function(
   error_msg,
   operation_name = "Variable Contribution Jitter Plot"
 ) {

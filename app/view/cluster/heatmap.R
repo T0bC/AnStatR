@@ -79,7 +79,7 @@ render_output <- function(input, output, session,
     analysis_data <- analysis_data_rv()
     measure_cols <- measure_cols_rv()
     if (is.null(analysis_data) ||
-      is.null(measure_cols)) {
+          is.null(measure_cols)) {
       return(NULL)
     }
 
@@ -90,7 +90,7 @@ render_output <- function(input, output, session,
     custom_labels <- NULL
     label_col <- input$labelColumn
     if (show_labels && !is.null(label_col) &&
-      nzchar(label_col)) {
+          nzchar(label_col)) {
       md <- membership_data_rv()
       if (!is.null(md) && label_col %in% names(md)) {
         custom_labels <- as.character(
@@ -115,8 +115,6 @@ render_output <- function(input, output, session,
       }
     }
 
-    # Map scale_method to heatmaply scale param
-    scale_method <- input$scale_method
     scale_heatmap <- "none"
 
     hm_result <- create_cluster_heatmap(

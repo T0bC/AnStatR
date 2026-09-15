@@ -14,7 +14,7 @@ box::use(
 
 #' Valid PCA analysis types
 #' @export
-VALID_ANALYSIS_TYPES <- c("pca", "spca", "ipca")
+valid_analysis_types <- c("pca", "spca", "ipca")
 
 #' Validate inputs before PCA computation
 #' @param columns Character vector of selected column names
@@ -86,7 +86,7 @@ validate_inputs <- function(columns, data) {
 #' @export
 run_pca <- function(data, columns,
                     meta_cols = character(0), ncp = NULL,
-                    center = FALSE, scale. = FALSE,
+                    center = FALSE, scale. = FALSE, # nolint: object_name_linter.
                     analysis_type = "pca", keep_x = NULL,
                     ipca_mode = "deflation") {
   error_context <- list(
@@ -98,11 +98,11 @@ run_pca <- function(data, columns,
 
   error_handling$safe_execute(
     expr = {
-      if (!analysis_type %in% VALID_ANALYSIS_TYPES) {
+      if (!analysis_type %in% valid_analysis_types) {
         stop(paste0(
           "Invalid analysis_type: '", analysis_type,
           "'. Expected one of: ",
-          paste(VALID_ANALYSIS_TYPES, collapse = ", ")
+          paste(valid_analysis_types, collapse = ", ")
         ))
       }
 
@@ -120,7 +120,7 @@ run_pca <- function(data, columns,
 
       if (analysis_type == "spca") {
         if (is.null(keep_x) || anyNA(keep_x) ||
-          length(keep_x) != max_ncp) {
+              length(keep_x) != max_ncp) {
           stop(
             "keepX invalid or incomplete: a numeric value is ",
             "required for every component in sPCA."
@@ -215,7 +215,7 @@ run_pca <- function(data, columns,
 run_pca_tune_keepx <- function(data, columns, ncomp,
                                test_keep_x = NULL,
                                folds = 5, repeats = 3,
-                               center = TRUE, scale. = TRUE) {
+                               center = TRUE, scale. = TRUE) { # nolint: object_name_linter.
   error_handling$safe_execute(
     {
       x_mat <- as.matrix(data[, columns, drop = FALSE])
@@ -489,7 +489,7 @@ build_pca_result <- function(model, analysis_type, n, p,
 #' @export
 build_ind_meta <- function(data, meta_cols, n) {
   if (length(meta_cols) == 0 ||
-    !any(meta_cols %in% names(data))) {
+        !any(meta_cols %in% names(data))) {
     return(data.frame(
       Row = seq_len(n),
       stringsAsFactors = FALSE

@@ -410,7 +410,7 @@ tab_server <- function(input, output, session,
     data <- input_data()
     measure_cols <- input$measureVar
     if (is.null(data) || is.null(measure_cols) ||
-      length(measure_cols) == 0) {
+          length(measure_cols) == 0) {
       shiny$showNotification(
         "Select measurement columns first.",
         type = "warning"

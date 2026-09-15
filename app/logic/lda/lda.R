@@ -64,7 +64,7 @@ validate_inputs <- function(columns, data, grouping_col,
   }
 
   if (is.null(grouping_col) || length(grouping_col) == 0 ||
-    grouping_col == "") {
+        grouping_col == "") {
     rhino$log$warn("LDA: no grouping column selected")
     return(list(
       valid = FALSE,
@@ -775,7 +775,7 @@ run_predict <- function(lda_result, test_data, columns,
 
 # The three prediction rules mixOmics can report, in the order we
 # want them shown. See ?predict.mixo_plsda for the definitions.
-PLSDA_DIST_RULES <- c(
+plsda_dist_rules <- c(
   "max.dist", "centroids.dist", "mahalanobis.dist"
 )
 
@@ -792,7 +792,7 @@ PLSDA_DIST_RULES <- c(
 #'   available rule, or NULL when fewer than two rules are present
 #'   (with only one rule there is nothing to compare)
 build_dist_comparison <- function(overall, ber, n_comp) {
-  rules <- intersect(PLSDA_DIST_RULES, colnames(overall))
+  rules <- intersect(plsda_dist_rules, colnames(overall))
   # mahalanobis.dist is dropped by perf() when the component
   # covariance is singular, so never assume all three are here.
   if (length(rules) < 2) {
@@ -840,7 +840,7 @@ build_dist_agreement <- function(dist_comparison) {
     dist_comparison$Measure == "BER", ,
     drop = FALSE
   ]
-  rules <- intersect(PLSDA_DIST_RULES, names(ber_rows))
+  rules <- intersect(plsda_dist_rules, names(ber_rows))
   if (nrow(ber_rows) == 0 || length(rules) < 2) {
     return(NULL)
   }
@@ -889,7 +889,7 @@ build_class_error_table <- function(perf_res) {
     return(NULL)
   }
 
-  rules <- intersect(PLSDA_DIST_RULES, names(class_err))
+  rules <- intersect(plsda_dist_rules, names(class_err))
   if (length(rules) == 0) {
     return(NULL)
   }
@@ -946,7 +946,7 @@ build_mixomics_choice <- function(perf_res) {
     return(NULL)
   }
 
-  rules <- intersect(PLSDA_DIST_RULES, colnames(choice))
+  rules <- intersect(plsda_dist_rules, colnames(choice))
   if (length(rules) == 0) {
     return(NULL)
   }
@@ -1097,7 +1097,7 @@ build_lda_result <- function(obj, data, columns,
           CV = FALSE
         )
         if (prior_ok) refit_args$prior <- prior_num
-        refit <- if (analysis_type == "qda") {
+        refit <- if (analysis_type == "qda") { # nolint: unused_declared_object_linter.
           do.call(MASS::qda, refit_args)
         } else {
           do.call(MASS::lda, refit_args)
@@ -1514,7 +1514,7 @@ build_mda_cv_result <- function(data, numeric_data,
   for (i in seq_len(n)) {
     train_data <- numeric_data[-i, , drop = FALSE]
     train_g <- grouping[-i]
-    test_obs <- numeric_data[i, , drop = FALSE]
+    test_obs <- numeric_data[i, , drop = FALSE] # nolint: unused_declared_object_linter.
 
     fit_data <- cbind(
       train_data,
@@ -1560,7 +1560,7 @@ build_mda_cv_result <- function(data, numeric_data,
   # the results panel. One extra fit next to the n fits above.
   resubstitution <- tryCatch(
     {
-      full_fit <- fit_mda(
+      full_fit <- fit_mda( # nolint: unused_declared_object_linter.
         cbind(numeric_data, .grouping. = grouping),
         subclasses, iter, dimension, eps
       )

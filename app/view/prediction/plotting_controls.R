@@ -636,8 +636,8 @@ get_available_dims <- function(bundle) {
     if (analysis_type == "lda") {
       n_ld <- length(model$svd)
     } else {
-      used <- bundle$used_data
-      numeric_cols <- bundle$numeric_cols
+      used <- bundle$used_data # nolint: unused_declared_object_linter.
+      numeric_cols <- bundle$numeric_cols # nolint: unused_declared_object_linter.
       scores <- tryCatch(
         stats::predict(
           model, used[, numeric_cols, drop = FALSE],

@@ -9,9 +9,9 @@ box::use(
     qf,
     qt,
     rt,
-    var,
-    variable.names
+    var
   ],
+  stats[variable.names],
 )
 
 winvar <- function(x, tr = 0.2, na.rm = FALSE, STAND = NULL, ...) {
@@ -191,13 +191,13 @@ smmcrit <- function(nuhat, C) {
       }
       if (temp[find[1]] != 0) {
         if (nuhat > nu[find[1]]) {
-          smmcrit <- m1[find[1], C] - (1 / nu[find[1]] -
-            1 / nuhat) * (m1[find[1], C] - m1[find[1] +
-            1, C]) / (1 / nu[find[1]] - 1 / nu[find[1] + 1])
+          smmcrit <- m1[find[1], C] - (1 / nu[find[1]] - 1 / nuhat) *
+            (m1[find[1], C] - m1[find[1] + 1, C]) /
+            (1 / nu[find[1]] - 1 / nu[find[1] + 1])
         }
         if (nuhat < nu[find[1]]) {
           smmcrit <- m1[find[1] - 1, C] - (1 / nu[find[1] -
-            1] - 1 / nuhat) * (m1[find[1] - 1, C] - m1[
+                                                    1] - 1 / nuhat) * (m1[find[1] - 1, C] - m1[
             find[1],
             C
           ]) / (1 / nu[find[1] - 1] - 1 / nu[find[1]])
@@ -362,13 +362,13 @@ smmcrit01 <- function(nuhat, C) {
       }
       if (temp[find[1]] != 0) {
         if (nuhat > nu[find[1]]) {
-          smmcrit01 <- m1[find[1], C] - (1 / nu[find[1]] -
-            1 / nuhat) * (m1[find[1], C] - m1[find[1] +
-            1, C]) / (1 / nu[find[1]] - 1 / nu[find[1] + 1])
+          smmcrit01 <- m1[find[1], C] - (1 / nu[find[1]] - 1 / nuhat) *
+            (m1[find[1], C] - m1[find[1] + 1, C]) /
+            (1 / nu[find[1]] - 1 / nu[find[1] + 1])
         }
         if (nuhat < nu[find[1]]) {
           smmcrit01 <- m1[find[1] - 1, C] - (1 / nu[find[1] -
-            1] - 1 / nuhat) * (m1[find[1] - 1, C] - m1[
+                                                      1] - 1 / nuhat) * (m1[find[1] - 1, C] - m1[
             find[1],
             C
           ]) / (1 / nu[find[1] - 1] - 1 / nu[find[1]])
@@ -430,9 +430,9 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
   if (KB) {
     stop("Use the function kbcon")
   }
-  flag <- T
+  flag <- TRUE
   if (alpha != 0.05 && alpha != 0.01) {
-    flag <- F
+    flag <- FALSE
   }
   if (is.matrix(x)) {
     x <- listm(x)
@@ -453,7 +453,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
     sam[j] <- length(x[[j]])
     h[j] <- length(x[[j]]) - 2 * floor(tr * length(x[[j]]))
     w[j] <- ((length(x[[j]]) - 1) * winvar(x[[j]], tr)) / (h[j] *
-      (h[j] - 1))
+                                                             (h[j] - 1))
     xbar[j] <- mean(x[[j]], tr)
   }
   if (sum(con ^ 2) == 0) {
@@ -474,7 +474,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
         if (j < k) {
           jcom <- jcom + 1
           test[jcom, 3] <- abs(xbar[j] - xbar[k]) / sqrt(w[j] +
-            w[k])
+                                                           w[k])
           sejk <- sqrt(w[j] + w[k])
           test[jcom, 5] <- sejk
           psihat[jcom, 1] <- j
@@ -483,7 +483,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
           test[jcom, 2] <- k
           psihat[jcom, 3] <- (xbar[j] - xbar[k])
           df <- (w[j] + w[k]) ^ 2 / (w[j] ^ 2 / (h[j] - 1) +
-            w[k] ^ 2 / (h[k] - 1))
+                                       w[k] ^ 2 / (h[k] - 1))
           test[jcom, 6] <- df
           psihat[jcom, 6] <- 2 * (1 - pt(
             test[jcom, 3],
@@ -491,7 +491,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
           ))
           if (!KB) {
             if (CC > 28) {
-              flag <- F
+              flag <- FALSE
             }
             if (flag) {
               if (alpha == 0.05) {
@@ -510,7 +510,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
           }
           if (KB) {
             crit <- sqrt((J - 1) * (1 + (J - 2) / df) *
-              qf(1 - alpha, J - 1, df))
+                           qf(1 - alpha, J - 1, df))
           }
           test[jcom, 4] <- crit
           psihat[jcom, 4] <- (xbar[j] - xbar[k]) - crit *
@@ -543,7 +543,7 @@ lincon1 <- function(x, con = 0, tr = 0.2, alpha = 0.05, pr = TRUE, crit = NA,
       test[d, 1] <- d
       test[d, 2] <- sum(con[, d] * xbar) / sejk
       df <- (sum(con[, d] ^ 2 * w)) ^ 2 / sum(con[, d] ^ 4 * w ^ 2 / (h -
-        1))
+                                                                        1))
       if (flag) {
         if (alpha == 0.05) {
           crit <- smmcrit(df, ncol(con))
@@ -704,7 +704,7 @@ selby2 <- function(m, grpc, coln = NA) {
           it <- 0
           for (i in 1:nrow(m)) {
             if (sum(m[i, c(grpc[1], grpc[2], grpc[3])] ==
-              c(cat1[i1], cat2[i2], cat3[i3])) == 3) {
+                      c(cat1[i1], cat2[i2], cat3[i3])) == 3) {
               it <- it + 1
               temp[it] <- m[i, coln]
             }
@@ -798,7 +798,7 @@ mcp2atm <- function(formula, data, tr = 0.2, ...) {
   K <- nlevels(mf[, 3])
   alpha <- 0.05
   grp <- NA
-  op <- F
+  op <- FALSE
   JK <- J * K
   nfac <- tapply(mf[, 1], list(mf[, 2], mf[, 3]), length, simplify = FALSE)
   nfac1 <- nfac[unique(mf[, 2]), unique(mf[, 3])]
@@ -909,7 +909,7 @@ mcp2atm_TM <- function(formula, data, tr = 0.2, ...) {
   K <- nlevels(mf[, 3])
   alpha <- 0.05
   grp <- NA
-  op <- F
+  op <- FALSE
   JK <- J * K
   nfac <- tapply(mf[, 1], list(mf[, 2], mf[, 3]), length, simplify = FALSE)
   nfac1 <- nfac[unique(mf[, 2]), unique(mf[, 3])]

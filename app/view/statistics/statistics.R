@@ -253,9 +253,9 @@ render_posthoc_result <- function(result, x_axis, params) {
     p_adj_col <- if (is.na(schema$p_adj_col)) NULL else schema$p_adj_col
 
     if (isTRUE(params$filter_p_values) &&
-      !is.null(p_adj_col) &&
-      p_adj_col %in% names(display_df) &&
-      is.numeric(display_df[[p_adj_col]])) {
+          !is.null(p_adj_col) &&
+          p_adj_col %in% names(display_df) &&
+          is.numeric(display_df[[p_adj_col]])) {
       display_df <- display_df[
         display_df[[p_adj_col]] < 0.07, ,
         drop = FALSE
@@ -404,7 +404,7 @@ render_posthoc_result <- function(result, x_axis, params) {
     }
 
     rm_note <- if (isTRUE(params$is_repeated_measures) &&
-      identical(params$test_approach, "parametric")) {
+                     identical(params$test_approach, "parametric")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       shiny$tags$p(
         class = "text-muted small mb-2",
@@ -421,7 +421,7 @@ render_posthoc_result <- function(result, x_axis, params) {
         "for both test regimes."
       )
     } else if (isTRUE(params$is_repeated_measures) &&
-      identical(params$test_approach, "nonparametric")) {
+                 identical(params$test_approach, "nonparametric")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       if (length(x_axis) <= 1) {
         # 1-way pure within: every comparison is paired
@@ -454,7 +454,7 @@ render_posthoc_result <- function(result, x_axis, params) {
         )
       }
     } else if (isTRUE(params$is_repeated_measures) &&
-      identical(params$test_approach, "robust")) {
+                 identical(params$test_approach, "robust")) {
       wn <- params$rm_within_col %||% "the within-subject factor"
       # Mirror the harmonized labels used in the downloadable report.
       left_label <- "Location (lincon / paired Yuen)"
@@ -717,7 +717,7 @@ server <- function(id, input_data, data_version,
       }
 
       if (plots_enabled &&
-        (is.null(cached_plots) || length(cached_plots) == 0)) {
+            (is.null(cached_plots) || length(cached_plots) == 0)) {
         computation_status("error")
         computation_results(list(
           error = paste(
@@ -972,7 +972,7 @@ server <- function(id, input_data, data_version,
           } else if (params$test_approach == "parametric") {
             ph <- lapply(measures, function(m) {
               df_m <- filter_excluded_rows(data, m)
-              parametric_posthoc$perform_combined_parametric_posthoc(
+              parametric_posthoc$perform_combined_param_posthoc(
                 df = df_m,
                 x_axis = x_cols,
                 measure_col = m,
@@ -991,7 +991,7 @@ server <- function(id, input_data, data_version,
           } else if (params$test_approach == "nonparametric") {
             ph <- lapply(measures, function(m) {
               df_m <- filter_excluded_rows(data, m)
-              nonparametric_posthoc$perform_combined_nonparametric_posthoc(
+              nonparametric_posthoc$perform_combined_np_posthoc(
                 df = df_m,
                 x_axis = x_cols,
                 measure_col = m,

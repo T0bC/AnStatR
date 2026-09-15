@@ -638,7 +638,7 @@ tab_server <- function(input, output, session,
       # Use measurement column names as choices
       measure_cols <- input$measureVar
       if (is.null(measure_cols) ||
-        length(measure_cols) == 0) {
+            length(measure_cols) == 0) {
         return()
       }
       cur_x <- shiny$isolate(
@@ -648,13 +648,13 @@ tab_server <- function(input, output, session,
         input$clusterBiplotDimY
       )
       sel_x <- if (!is.null(cur_x) &&
-        cur_x %in% measure_cols) {
+                     cur_x %in% measure_cols) {
         cur_x
       } else {
         measure_cols[1]
       }
       sel_y <- if (!is.null(cur_y) &&
-        cur_y %in% measure_cols) {
+                     cur_y %in% measure_cols) {
         cur_y
       } else {
         measure_cols[min(2, length(measure_cols))]
@@ -674,19 +674,19 @@ tab_server <- function(input, output, session,
       cur_3d_y <- shiny$isolate(input$clusterBiplot3dDimY)
       cur_3d_z <- shiny$isolate(input$clusterBiplot3dDimZ)
       sel_3d_x <- if (!is.null(cur_3d_x) &&
-        cur_3d_x %in% measure_cols) {
+                        cur_3d_x %in% measure_cols) {
         cur_3d_x
       } else {
         measure_cols[1]
       }
       sel_3d_y <- if (!is.null(cur_3d_y) &&
-        cur_3d_y %in% measure_cols) {
+                        cur_3d_y %in% measure_cols) {
         cur_3d_y
       } else {
         measure_cols[min(2, length(measure_cols))]
       }
       sel_3d_z <- if (!is.null(cur_3d_z) &&
-        cur_3d_z %in% measure_cols) {
+                        cur_3d_z %in% measure_cols) {
         cur_3d_z
       } else {
         measure_cols[min(3, length(measure_cols))]
@@ -715,7 +715,7 @@ tab_server <- function(input, output, session,
         input$clusterBiplotDimX
       )
       if (!is.null(cur_x) &&
-        !grepl("^Dim\\.", cur_x)) {
+            !grepl("^Dim\\.", cur_x)) {
         dim_choices <- paste0(
           "Dim.", seq_len(3)
         )

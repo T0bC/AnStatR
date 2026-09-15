@@ -259,8 +259,8 @@ create_ind_contrib_plot <- function(pca_result,
 add_group_column <- function(df, meta, group_cols,
                              n_obs, n_dims) {
   if (is.null(group_cols) ||
-    length(group_cols) == 0 ||
-    is.null(meta)) {
+        length(group_cols) == 0 ||
+        is.null(meta)) {
     return(df)
   }
 

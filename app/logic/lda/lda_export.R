@@ -158,7 +158,7 @@ create_lda_excel <- function(lda_result, file,
   # Sheet 4d: Prediction distance comparison (PLS-DA, if perf() run)
   # ---------------------------------------------------------------
   if (!is.null(perf_result) &&
-    !is.null(perf_result$dist_comparison)) {
+        !is.null(perf_result$dist_comparison)) {
     add_sheet(
       wb, "Distance Comparison", perf_result$dist_comparison
     )
@@ -169,7 +169,7 @@ create_lda_excel <- function(lda_result, file,
   # Sheet 4e: Per-group CV error rates (PLS-DA, if perf() run)
   # ---------------------------------------------------------------
   if (!is.null(perf_result) &&
-    !is.null(perf_result$class_errors)) {
+        !is.null(perf_result$class_errors)) {
     add_sheet(wb, "CV Error per Group", perf_result$class_errors)
     sheet_count <- sheet_count + 1
   }

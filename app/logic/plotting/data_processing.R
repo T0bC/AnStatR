@@ -153,7 +153,7 @@ process_data <- function(data, measure_cols, x_cols,
 
   # Build interaction term for grouping
   if (!is.null(x_cols) && length(x_cols) > 0 &&
-    all(x_cols %in% names(data))) {
+        all(x_cols %in% names(data))) {
     interaction_term <- data_utils$create_interaction(
       data, x_cols
     )
@@ -178,7 +178,7 @@ process_data <- function(data, measure_cols, x_cols,
         method = outlier_options$method %||% "IQR",
         factor = outlier_options$factor %||% 1.5,
         bootstrap_samples = outlier_options$bootstrap_samples
-          %||% 1000
+        %||% 1000
       )
     }
 
@@ -327,7 +327,7 @@ detect_kde <- function(x, fac) {
   }
 
   xv <- x[valid]
-  dens <- stats::density(xv)
+  dens <- stats::density(xv) # nolint: unused_declared_object_linter.
   point_dens <- stats::approx(
     dens$x, dens$y,
     xout = xv
@@ -353,7 +353,7 @@ detect_isolation_forest <- function(x, fac) {
   }
 
   xv <- x[valid]
-  iso <- isotree::isolation.forest(
+  iso <- isotree::isolation.forest( # nolint: unused_declared_object_linter.
     matrix(xv, ncol = 1),
     ntrees = 100, nthreads = 1
   )
@@ -404,7 +404,7 @@ detect_bootstrap <- function(x, fac, n_samples) {
   }
 
   xv <- x[valid]
-  boot_means <- replicate(
+  boot_means <- replicate( # nolint: unused_declared_object_linter.
     n_samples, mean(sample(xv, replace = TRUE))
   )
   boot_sd <- stats::sd(boot_means)

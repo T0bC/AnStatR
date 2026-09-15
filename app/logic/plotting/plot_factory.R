@@ -17,7 +17,7 @@ box::use(
 
 #' Available plot types
 #' @export
-PLOT_TYPES <- list(
+plot_types <- list(
   SCATTER        = "scatter",
   BOXPLOT        = "boxplot",
   BOXPLOT_POINTS = "boxplot_points",
@@ -30,11 +30,11 @@ PLOT_TYPES <- list(
 #' @export
 get_plot_type_choices <- function() {
   c(
-    "Scatter"          = PLOT_TYPES$SCATTER,
-    "Boxplot"          = PLOT_TYPES$BOXPLOT,
-    "Boxplot + Points" = PLOT_TYPES$BOXPLOT_POINTS,
-    "Violin"           = PLOT_TYPES$VIOLIN,
-    "Violin + Points"  = PLOT_TYPES$VIOLIN_POINTS
+    "Scatter"          = plot_types$SCATTER,
+    "Boxplot"          = plot_types$BOXPLOT,
+    "Boxplot + Points" = plot_types$BOXPLOT_POINTS,
+    "Violin"           = plot_types$VIOLIN,
+    "Violin + Points"  = plot_types$VIOLIN_POINTS
   )
 }
 
@@ -44,9 +44,9 @@ get_plot_type_choices <- function() {
 #' @export
 shows_points <- function(plot_type) {
   plot_type %in% c(
-    PLOT_TYPES$SCATTER,
-    PLOT_TYPES$BOXPLOT_POINTS,
-    PLOT_TYPES$VIOLIN_POINTS
+    plot_types$SCATTER,
+    plot_types$BOXPLOT_POINTS,
+    plot_types$VIOLIN_POINTS
   )
 }
 
@@ -56,9 +56,9 @@ shows_points <- function(plot_type) {
 #' @export
 shows_stat_overlays <- function(plot_type) {
   plot_type %in% c(
-    PLOT_TYPES$SCATTER,
-    PLOT_TYPES$BOXPLOT_POINTS,
-    PLOT_TYPES$VIOLIN_POINTS
+    plot_types$SCATTER,
+    plot_types$BOXPLOT_POINTS,
+    plot_types$VIOLIN_POINTS
   )
 }
 
@@ -67,7 +67,7 @@ shows_stat_overlays <- function(plot_type) {
 #' @return Logical
 #' @export
 is_boxplot_type <- function(plot_type) {
-  plot_type %in% c(PLOT_TYPES$BOXPLOT, PLOT_TYPES$BOXPLOT_POINTS)
+  plot_type %in% c(plot_types$BOXPLOT, plot_types$BOXPLOT_POINTS)
 }
 
 #' Check if plot type is violin variant
@@ -75,7 +75,7 @@ is_boxplot_type <- function(plot_type) {
 #' @return Logical
 #' @export
 is_violin_type <- function(plot_type) {
-  plot_type %in% c(PLOT_TYPES$VIOLIN, PLOT_TYPES$VIOLIN_POINTS)
+  plot_type %in% c(plot_types$VIOLIN, plot_types$VIOLIN_POINTS)
 }
 
 
@@ -88,7 +88,7 @@ is_violin_type <- function(plot_type) {
 #' Main entry point for creating plots. Dispatches to appropriate builder
 #' based on plot_type.
 #'
-#' @param plot_type Character string: one of PLOT_TYPES values
+#' @param plot_type Character string: one of plot_types values
 #' @param data Data frame containing the data to plot
 #' @param x_cols Character vector of column name(s) for X-axis
 #' @param y_col Character string of column name for Y-axis (measurement)

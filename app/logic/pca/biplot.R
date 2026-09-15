@@ -78,7 +78,7 @@ create_biplot <- function(pca_result, dim_x = "Dim.1",
 
       # Scale variable arrows in combined mode
       if (layer == "combined" && !is.null(ind_data) &&
-        !is.null(var_data)) {
+            !is.null(var_data)) {
         max_ind <- max(
           abs(c(ind_data$x, ind_data$y)),
           na.rm = TRUE
@@ -430,13 +430,13 @@ build_ind_plot_data <- function(pca_result, dim_x, dim_y,
 
   # Store normalised contribution for alpha/size mapping
   if (identical(point_alpha, "Contribution") ||
-    identical(point_size, "Contribution")) {
+        identical(point_size, "Contribution")) {
     df$contrib <- contrib_scaled
   }
 
   # Group column(s) — use interaction() for multi-level designs
   if (!is.null(group_cols) && length(group_cols) > 0 &&
-    !is.null(meta)) {
+        !is.null(meta)) {
     valid_cols <- intersect(group_cols, names(meta))
     if (length(valid_cols) == 1) {
       df$group <- as.factor(meta[[valid_cols]])

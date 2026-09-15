@@ -654,7 +654,7 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
   }
 
   if (!is.data.frame(lincon_result) ||
-    !is.data.frame(cliff_result)) {
+        !is.data.frame(cliff_result)) {
     return(error_handling$simple_error(
       message = "Unexpected result type from post-hoc tests.",
       operation_name = "combined_posthoc"
@@ -717,14 +717,14 @@ perform_combined_posthoc <- function(df, x_axis, measure_col,
 
   if (!use_bootstrap) {
     if ("Lincon.p.value" %in% names(merged) &&
-      is.numeric(merged$Lincon.p.value)) {
+          is.numeric(merged$Lincon.p.value)) {
       merged$Lincon.p.adjusted <- stats$p.adjust(
         merged$Lincon.p.value,
         method = p_adjust_method
       )
     }
     if ("Cliff.p.value" %in% names(merged) &&
-      is.numeric(merged$Cliff.p.value)) {
+          is.numeric(merged$Cliff.p.value)) {
       merged$Cliff.p.adjusted <- stats$p.adjust(
         merged$Cliff.p.value,
         method = p_adjust_method

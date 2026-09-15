@@ -79,7 +79,7 @@ render_app_error <- function(error_obj, show_icon = TRUE,
   # Stack trace section (filtered to app code only)
   trace_section <- NULL
   if (!is.null(error_obj$traces$stack_trace) &&
-    nchar(error_obj$traces$stack_trace) > 0) {
+        nchar(error_obj$traces$stack_trace) > 0) {
     trace_section <- shiny$tags$div(
       class = "app-error-trace-wrapper",
       shiny$tags$div(class = "app-error-context-title", "Stack Trace:"),
@@ -97,7 +97,7 @@ render_app_error <- function(error_obj, show_icon = TRUE,
     Sys.getenv("R_CONFIG_ACTIVE"), "production"
   )
   if (!is_production &&
-    (!is.null(context_section) || !is.null(trace_section))) {
+        (!is.null(context_section) || !is.null(trace_section))) {
     details_content <- shiny$tags$details(
       class = "app-error-details mt-2",
       shiny$tags$summary(

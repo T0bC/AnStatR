@@ -1,10 +1,10 @@
 #' @export
 box::use(
   app/logic/cluster/cluster[
-    CLUSTER_PALETTE,
     cluster_color,
     cluster_color_map,
     cluster_error_parser,
+    cluster_palette,
     compute_cluster_summary,
     run_clustering,
     validate_inputs

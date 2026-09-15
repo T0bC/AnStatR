@@ -268,13 +268,13 @@ split_by_measurement <- function(summary_df) {
 
     # Drop n_outliers if all zeros
     if ("n_outliers" %in% names(df) &&
-      all(df$n_outliers == 0, na.rm = TRUE)) {
+          all(df$n_outliers == 0, na.rm = TRUE)) {
       df$n_outliers <- NULL
     }
 
     # Drop n_trimmed if all zeros
     if ("n_trimmed" %in% names(df) &&
-      all(df$n_trimmed == 0, na.rm = TRUE)) {
+          all(df$n_trimmed == 0, na.rm = TRUE)) {
       df$n_trimmed <- NULL
     }
 

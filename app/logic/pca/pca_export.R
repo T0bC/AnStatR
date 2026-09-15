@@ -225,7 +225,7 @@ matrix_to_df <- function(mat, row_label = "Item") {
 ind_matrix_to_df <- function(mat, meta) {
   df <- as.data.frame(round(mat, 4))
   if (!is.null(meta) && nrow(meta) == nrow(df) &&
-    !("Row" %in% names(meta) && ncol(meta) == 1)) {
+        !("Row" %in% names(meta) && ncol(meta) == 1)) {
     # Prepend metadata columns before PCA dimensions
     df <- cbind(meta, df)
     rownames(df) <- NULL
