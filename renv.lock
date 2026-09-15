@@ -182,7 +182,7 @@
       ],
       "VignetteBuilder": "knitr",
       "RoxygenNote": "7.1.2",
-      "Repository": "Bioconductor 3.23",
+      "Repository": "https://bioc-release.r-universe.dev",
       "NeedsCompilation": "yes",
       "Author": "Jiefei Wang [aut, cre], Martin Morgan [aut], Valerie Obenchain [aut], Michel Lang [aut], Ryan Thompson [aut], Nitesh Turaga [aut], Aaron Lun [ctb], Henrik Bengtsson [ctb], Madelyn Carlson [ctb] (Translated 'Random Numbers' vignette from Sweave to RMarkdown / HTML.), Phylis Atieno [ctb] (Translated 'Introduction to BiocParallel' vignette from Sweave to Rmarkdown / HTML.), Sergio Oller [ctb] (Improved bpmapply() efficiency., ORCID: <https://orcid.org/0000-0002-8994-1549>)",
       "Maintainer": "Jiefei Wang <jiefei0804@gmail.com>",
@@ -1289,6 +1289,44 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut, cre]",
       "Maintainer": "Hadley Wickham <hadley@rstudio.com>",
+      "Repository": "CRAN"
+    },
+    "astgrepr": {
+      "Package": "astgrepr",
+      "Version": "0.1.2",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Parse and Manipulate R Code",
+      "Authors@R": "person(given = \"Etienne\", family = \"Bacher\", role = c(\"aut\", \"cre\", \"cph\"), email = \"etienne.bacher@protonmail.com\")",
+      "Description": "Parsing R code is key to build tools such as linters and stylers. This package provides a binding to the 'Rust' crate 'ast-grep' so that one can parse and explore R code.",
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "Depends": [
+        "R (>= 4.2)"
+      ],
+      "Imports": [
+        "checkmate",
+        "rrapply",
+        "stats",
+        "yaml"
+      ],
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "rstudioapi",
+        "spelling",
+        "tinytest"
+      ],
+      "URL": "https://github.com/etiennebacher/astgrepr, https://astgrepr.etiennebacher.com/",
+      "BugReports": "https://github.com/etiennebacher/astgrepr/issues",
+      "SystemRequirements": "Cargo (Rust's package manager), rustc (>= 1.78.0)",
+      "VignetteBuilder": "knitr",
+      "Language": "en-US",
+      "Config/roxygen2/version": "8.0.0",
+      "Config/rextendr/version": "0.5.0",
+      "NeedsCompilation": "yes",
+      "Author": "Etienne Bacher [aut, cre, cph]",
+      "Maintainer": "Etienne Bacher <etienne.bacher@protonmail.com>",
       "Repository": "CRAN"
     },
     "backports": {
@@ -3747,6 +3785,58 @@
       "Maintainer": "Winston Chang <winston@posit.co>",
       "Repository": "CRAN"
     },
+    "flir": {
+      "Package": "flir",
+      "Version": "0.6.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Find and Fix Lints in R Code",
+      "Authors@R": "c(person(given = \"Etienne\", family = \"Bacher\", role = c(\"aut\", \"cre\", \"cph\"), email = \"etienne.bacher@protonmail.com\"), person(\"lintr authors\", role = \"aut\"), person(\"Trevor L.\", \"Davis\", role = c(\"ctb\"), comment = c(ORCID = \"0000-0001-6341-4639\")))",
+      "Description": "Lints are code patterns that are not optimal because they are inefficient, forget corner cases, or are less readable. 'flir' provides a small set of functions to detect those lints and automatically fix them. It builds on 'astgrepr', which itself uses the 'Rust' crate 'ast-grep' to parse and navigate R code.",
+      "Depends": [
+        "R (>= 4.2)"
+      ],
+      "Imports": [
+        "astgrepr (>= 0.1.0)",
+        "cli",
+        "crayon",
+        "data.table",
+        "digest",
+        "fs",
+        "git2r",
+        "rprojroot",
+        "yaml"
+      ],
+      "Suggests": [
+        "diffviewer",
+        "glue",
+        "knitr",
+        "patrick",
+        "rlang",
+        "rmarkdown",
+        "rstudioapi",
+        "shiny",
+        "spelling",
+        "testthat (>= 3.0.0)",
+        "tibble",
+        "usethis",
+        "utils",
+        "withr"
+      ],
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "URL": "https://flir.etiennebacher.com, https://github.com/etiennebacher/flir",
+      "BugReports": "https://github.com/etiennebacher/flir/issues",
+      "Config/testthat/edition": "3",
+      "VignetteBuilder": "knitr",
+      "Config/testthat/parallel": "true",
+      "Language": "en-US",
+      "NeedsCompilation": "no",
+      "Author": "Etienne Bacher [aut, cre, cph], lintr authors [aut], Trevor L. Davis [ctb] (ORCID: <https://orcid.org/0000-0001-6341-4639>)",
+      "Maintainer": "Etienne Bacher <etienne.bacher@protonmail.com>",
+      "Repository": "CRAN"
+    },
     "fontBitstreamVera": {
       "Package": "fontBitstreamVera",
       "Version": "0.1.1",
@@ -4472,6 +4562,36 @@
       "NeedsCompilation": "yes",
       "Author": "Kamil Slowikowski [aut, cre] (ORCID: <https://orcid.org/0000-0002-2843-6370>), Teun van den Brand [ctb] (ORCID: <https://orcid.org/0000-0002-9335-7468>), Alicia Schep [ctb] (ORCID: <https://orcid.org/0000-0002-3915-0618>), Sean Hughes [ctb] (ORCID: <https://orcid.org/0000-0002-9409-9405>), Trung Kien Dang [ctb] (ORCID: <https://orcid.org/0000-0001-7562-6495>), Saulius Lukauskas [ctb], Jean-Olivier Irisson [ctb] (ORCID: <https://orcid.org/0000-0003-4920-3880>), Zhian N Kamvar [ctb] (ORCID: <https://orcid.org/0000-0003-1458-7108>), Thompson Ryan [ctb] (ORCID: <https://orcid.org/0000-0002-0450-8181>), Dervieux Christophe [ctb] (ORCID: <https://orcid.org/0000-0003-4474-2498>), Yutani Hiroaki [ctb], Pierre Gramme [ctb], Amir Masoud Abdol [ctb], Malcolm Barrett [ctb] (ORCID: <https://orcid.org/0000-0003-0299-5825>), Robrecht Cannoodt [ctb] (ORCID: <https://orcid.org/0000-0003-3641-729X>), Michał Krassowski [ctb] (ORCID: <https://orcid.org/0000-0002-9638-7785>), Michael Chirico [ctb] (ORCID: <https://orcid.org/0000-0003-0787-087X>), Pedro Aphalo [ctb] (ORCID: <https://orcid.org/0000-0003-3385-972X>), Francis Barton [ctb]",
       "Maintainer": "Kamil Slowikowski <kslowikowski@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "git2r": {
+      "Package": "git2r",
+      "Version": "0.36.2",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Provides Access to Git Repositories",
+      "Authors@R": "c(person(\"Stefan\", \"Widgren\", role = c(\"aut\", \"cre\"), email = \"stefan.widgren@gmail.com\", comment = c(ORCID = \"0000-0001-5745-2284\")), person(\"Gabor\", \"Csardi\", role = \"ctb\"), person(\"Gregory\", \"Jefferis\", role = \"ctb\"), person(\"Jennifer\", \"Bryan\", role = \"ctb\"), person(\"Jeroen\", \"Ooms\", role = \"ctb\"), person(\"Jim\", \"Hester\", role = \"ctb\"), person(\"John\", \"Blischak\", role = \"ctb\"), person(\"Karthik\", \"Ram\", role = \"ctb\"), person(\"Peter\", \"Carbonetto\", role = \"ctb\"), person(\"Scott\", \"Chamberlain\", role = \"ctb\"), person(\"Thomas\", \"Rosendal\", role = \"ctb\"))",
+      "Description": "Interface to the 'libgit2' library, which is a pure C implementation of the 'Git' core methods. Provides access to 'Git' repositories to extract data and running some basic 'Git' commands.",
+      "License": "GPL-2",
+      "URL": "https://docs.ropensci.org/git2r/, https://github.com/ropensci/git2r",
+      "BugReports": "https://github.com/ropensci/git2r/issues",
+      "Imports": [
+        "graphics",
+        "utils"
+      ],
+      "Depends": [
+        "R (>= 4.0)"
+      ],
+      "Suggests": [
+        "getPass"
+      ],
+      "NeedsCompilation": "yes",
+      "SystemRequirements": "libgit2 (>= 1.0) and its dependencies libssh2 and openssl header and libraries.",
+      "Collate": "'blame.R' 'blob.R' 'branch.R' 'bundle_r_package.R' 'checkout.R' 'commit.R' 'config.R' 'contributions.R' 'credential.R' 'diff.R' 'fetch.R' 'git2r.R' 'index.R' 'libgit2.R' 'merge.R' 'note.R' 'odb.R' 'plot.R' 'pull.R' 'punch_card.R' 'push.R' 'reference.R' 'reflog.R' 'refspec.R' 'remote.R' 'repository.R' 'reset.R' 'revparse.R' 'sha.R' 'signature.R' 'stash.R' 'status.R' 'tag.R' 'time.R' 'tree.R' 'when.R'",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "Author": "Stefan Widgren [aut, cre] (<https://orcid.org/0000-0001-5745-2284>), Gabor Csardi [ctb], Gregory Jefferis [ctb], Jennifer Bryan [ctb], Jeroen Ooms [ctb], Jim Hester [ctb], John Blischak [ctb], Karthik Ram [ctb], Peter Carbonetto [ctb], Scott Chamberlain [ctb], Thomas Rosendal [ctb]",
+      "Maintainer": "Stefan Widgren <stefan.widgren@gmail.com>",
       "Repository": "CRAN"
     },
     "globals": {
@@ -6637,7 +6757,7 @@
       "RoxygenNote": "7.3.3",
       "Encoding": "UTF-8",
       "Config/pak/sysreqs": "cmake libfreetype6-dev libglpk-dev libglu1-mesa-dev make texlive libicu-dev libpng-dev libuv1-dev libxml2-dev libgl1-mesa-dev zlib1g-dev",
-      "Repository": "Bioconductor 3.23",
+      "Repository": "https://bioc-release.r-universe.dev",
       "Author": "Kim-Anh Le Cao [aut], Florian Rohart [aut], Ignacio Gonzalez [aut], Sebastien Dejean [aut], Al J Abadi [ctb], Max Bladen [ctb], Benoit Gautier [ctb], Francois Bartolo [ctb], Pierre Monget [ctb], Jeff Coquery [ctb], FangZou Yao [ctb], Benoit Liquet [ctb], Eva Hamrud [ctb], Derek Lei [ctb, cre]",
       "Maintainer": "Derek Lei <mixomicsdeveloper@gmail.com>",
       "RemoteType": "bioconductor",
@@ -9019,6 +9139,29 @@
       "NeedsCompilation": "no",
       "Author": "Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>)",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
+      "Repository": "CRAN"
+    },
+    "rrapply": {
+      "Package": "rrapply",
+      "Version": "1.2.8",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Revisiting Base Rapply",
+      "Date": "2025-11-24",
+      "Authors@R": "person(\"Joris\", \"Chau\", email = \"joris.chau@openanalytics.eu\", role = c(\"aut\", \"cre\"))",
+      "Description": "The minimal 'rrapply'-package contains a single function rrapply(), providing an extended implementation of 'R'-base rapply() by allowing to recursively apply a function to elements of a nested list based on a general condition function and including the possibility to prune or aggregate nested list elements from the result. In addition, special arguments can be supplied to access the name, location, parents and siblings in the nested list of the element under evaluation. The rrapply() function builds upon rapply()'s native 'C' implementation and requires no other package dependencies.",
+      "BugReports": "https://github.com/JorisChau/rrapply/issues",
+      "URL": "https://jorischau.github.io/rrapply/, https://github.com/JorisChau/rrapply",
+      "Depends": [
+        "R (>= 3.5)"
+      ],
+      "Encoding": "UTF-8",
+      "License": "LGPL-3",
+      "LazyData": "true",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "yes",
+      "Author": "Joris Chau [aut, cre]",
+      "Maintainer": "Joris Chau <joris.chau@openanalytics.eu>",
       "Repository": "CRAN"
     },
     "rstudioapi": {
