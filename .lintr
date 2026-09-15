@@ -5,4 +5,32 @@ linters:
     commented_code_linter = NULL
   )
 exclusions:
-  list("app/logic/statistics/Rallfun-v43.R")
+  list(
+    "app/logic/statistics/Rallfun-v43.R",
+    "app/logic/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/cluster/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/lda/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/load_data/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/median/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/pca/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/plotting/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/power/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/prediction/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/preprocessing/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/shared/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/statistics/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/logic/summary/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/cluster/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/components/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/lda/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/load_data/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/median/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/pca/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/plotting/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/power/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/prediction/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/settings_modal/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/statistics/__init__.R" = list(box_unused_att_mod_obj_linter = Inf),
+    "app/view/summary/__init__.R" = list(box_unused_att_mod_obj_linter = Inf)
+  )
