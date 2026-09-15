@@ -1514,7 +1514,7 @@ build_mda_cv_result <- function(data, numeric_data,
   for (i in seq_len(n)) {
     train_data <- numeric_data[-i, , drop = FALSE]
     train_g <- grouping[-i]
-    test_obs <- numeric_data[i, , drop = FALSE] # nolint: unused_declared_object_linter.
+    test_obs <- numeric_data[i, , drop = FALSE] # nolint
 
     fit_data <- cbind(
       train_data,
