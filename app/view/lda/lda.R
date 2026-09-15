@@ -807,22 +807,36 @@ server <- function(id, input_data, data_version,
       }
 
       # Preprocessing summary banner (NA + skewness)
+      #
+      # input$measureVar and input$correct_skewness are isolated on
+      # purpose. Reading them reactively made this renderUI — the whole
+      # results accordion, including both girafeOutput placeholders —
+      # rebuild whenever the measurement-column selectize changed, which
+      # forces Shiny to unbind, rebind and re-request both plots. Several
+      # observers in data_selection.R write input$measureVar
+      # programmatically, so that fired without the user going near the
+      # plot. The pane still rebuilds on every compute via result().
+      #
+      # Isolating is also the more correct reading: these banners describe
+      # the state the displayed results were computed with, not whatever
+      # the sidebar happens to hold now.
+      n_measure_cols <- shiny$isolate(length(input$measureVar))
       na_res <- na_info()
       tf_res <- transform_info()
       preprocess_banner <- preprocessing_summary$render_na_summary(
         na_res,
         transform_result = tf_res,
-        n_measure_cols = length(input$measureVar)
+        n_measure_cols = n_measure_cols
       )
 
       # Skewness warning (when normalization disabled but skewed cols exist)
       skew_warning <- if (
-        !isTRUE(input$correct_skewness) &&
+        !isTRUE(shiny$isolate(input$correct_skewness)) &&
         !is.null(skewness_info())
       ) {
         preprocessing_summary$render_skewness_warning(
           skewness_info(),
-          n_measure_cols = length(input$measureVar)
+          n_measure_cols = n_measure_cols
         )
       }
 
@@ -1037,14 +1051,29 @@ server <- function(id, input_data, data_version,
       res <- result()
       if (is.null(res)) return(NULL)
 
-      dim_x <- input$ldDimX %||% "LD1"
-      dim_y <- input$ldDimY %||% "LD2"
+      dim_x <- input$ldDimX
+      dim_y <- input$ldDimY
       show_bound <- isTRUE(input$show_boundaries)
+
+      # Only render once the axis selectizes hold values that belong to
+      # THIS result. plotting_controls pushes new choices via
+      # updateSelectizeInput after a compute, so without this guard the
+      # plot is built once against the previous result's axes and again
+      # when the browser echoes the new selection back — two full
+      # decision-boundary overlays per click.
+      #
+      # This also replaces the former `%||% "LD1"` / `%||% "LD2"`
+      # fallbacks, which were wrong for PLS-DA/sPLS-DA: those name their
+      # axes Comp1/Comp2, so "LD1" never matched.
+      axes_valid <- function(valid) {
+        isTRUE(dim_x %in% valid) && isTRUE(dim_y %in% valid)
+      }
 
       plot_res <- if (
         res$analysis_type %in% c("lda", "mda", "plsda", "splsda")
       ) {
         if (is.null(res$scores)) return(NULL)
+        if (!axes_valid(colnames(res$scores))) return(NULL)
         show_diag <- isTRUE(input$show_diagnostics) &&
           !res$analysis_type %in% c("plsda", "splsda")
         create_ld_plot(
@@ -1057,6 +1086,16 @@ server <- function(id, input_data, data_version,
         )
       } else if (res$analysis_type == "qda") {
         if (is.null(res$model)) return(NULL)
+        # QDA offers LD axes (companion LDA projection) plus the
+        # original variables; either is a valid selection.
+        if (!axes_valid(c(
+          if (!is.null(res$lda_scores)) {
+            colnames(res$lda_scores)
+          },
+          res$columns
+        ))) {
+          return(NULL)
+        }
         create_qda_plot(
           qda_result = res,
           dim_x = dim_x,
