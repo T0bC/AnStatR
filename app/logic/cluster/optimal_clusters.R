@@ -1,3 +1,13 @@
+box::use(
+  cluster,
+  rhino,
+  stats,
+)
+
+box::use(
+  app/logic/shared/error_handling,
+)
+
 # =============================================================================
 # Pure logic functions for optimal number of clusters
 # No Shiny dependencies allowed in this file.
