@@ -225,18 +225,18 @@ run_art_contrasts <- function(formula_obj, data, x_axis) {
     interaction_term <- paste(x_axis, collapse = ":")
 
     # Run ART-C contrasts on the interaction
-    contrasts_result <- art_con(
+    contrasts_result <- art_con( # nolint: box_usage_linter.
       art_model, interaction_term,
       adjust = "none"
     )
 
     # Get the artlm.con model for sigmaHat (Cohen's d)
-    art_lm <- artlm_con(art_model, interaction_term)
+    art_lm <- artlm_con(art_model, interaction_term) # nolint: box_usage_linter.
     sigma_hat <- sigma(art_lm)
 
     # Convert emmeans contrast output to data frame
     contrasts_df <- as.data.frame(
-      summary_emmGrid(contrasts_result)
+      summary_emmGrid(contrasts_result) # nolint: box_usage_linter.
     )
 
     list(
