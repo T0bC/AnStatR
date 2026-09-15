@@ -272,12 +272,52 @@ tab_ui <- function(ns) {
 #' @export
 tab_server <- function(input, output, session,
                        lda_result) {
+  # Push new axis choices, keeping the user's current selection whenever it
+  # is still valid for the new result.
+  #
+  # Re-selecting an axis the user already had makes the browser echo a
+  # changed value back, which invalidates output$ld_plot a second time and
+  # rebuilds the entire decision boundary overlay for nothing. Only genuinely
+  # invalid selections are replaced with the defaults.
+  #
+  # Safe to read input$* here: observeEvent isolates its handler.
+  set_axis_choices <- function(choices, valid,
+                               default_x, default_y, default_z) {
+    keep <- function(input_id, default) {
+      current <- input[[input_id]]
+      if (!is.null(current) && current %in% valid) {
+        current
+      } else {
+        default
+      }
+    }
+    shiny$updateSelectizeInput(
+      session, "ldDimX",
+      choices = choices,
+      selected = keep("ldDimX", default_x)
+    )
+    shiny$updateSelectizeInput(
+      session, "ldDimY",
+      choices = choices,
+      selected = keep("ldDimY", default_y)
+    )
+    shiny$updateSelectizeInput(
+      session, "ldDimZ",
+      choices = choices,
+      selected = keep("ldDimZ", default_z)
+    )
+  }
+
+  # priority: must run before the output flush, so that output$ld_plot is
+  # never scheduled against axes belonging to the previous result.
   shiny$observeEvent(lda_result(), {
     res <- lda_result()
     if (is.null(res)) return()
 
-    if (res$analysis_type %in% c("lda", "plsda", "splsda")) {
-      # LDA/PLS-DA/sPLS-DA: use LD/component scores
+    score_based <- c("lda", "plsda", "splsda", "mda")
+
+    if (res$analysis_type %in% score_based) {
+      # LDA/MDA/PLS-DA/sPLS-DA: use LD/component/discriminant scores
       if (
         is.null(res$scores) ||
         ncol(res$scores) == 0
@@ -292,63 +332,16 @@ tab_server <- function(input, output, session,
         "{n_ld} axes available"
       )
 
-      shiny$updateSelectizeInput(
-        session, "ldDimX",
+      set_axis_choices(
         choices = ld_names,
-        selected = ld_names[1]
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimY",
-        choices = ld_names,
-        selected = if (n_ld >= 2) {
+        valid = ld_names,
+        default_x = ld_names[1],
+        default_y = if (n_ld >= 2) {
           ld_names[2]
         } else {
           ld_names[1]
-        }
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimZ",
-        choices = ld_names,
-        selected = if (n_ld >= 3) {
-          ld_names[3]
-        } else {
-          ld_names[min(n_ld, 2)]
-        }
-      )
-    } else if (res$analysis_type == "mda") {
-      # MDA: use discriminant scores (like LDA)
-      if (
-        is.null(res$scores) ||
-        ncol(res$scores) == 0
-      ) {
-        return()
-      }
-      ld_names <- colnames(res$scores)
-      n_ld <- length(ld_names)
-
-      rhino$log$info(
-        "plotting_controls: MDA — ",
-        "{n_ld} discriminant axes available"
-      )
-
-      shiny$updateSelectizeInput(
-        session, "ldDimX",
-        choices = ld_names,
-        selected = ld_names[1]
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimY",
-        choices = ld_names,
-        selected = if (n_ld >= 2) {
-          ld_names[2]
-        } else {
-          ld_names[1]
-        }
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimZ",
-        choices = ld_names,
-        selected = if (n_ld >= 3) {
+        },
+        default_z = if (n_ld >= 3) {
           ld_names[3]
         } else {
           ld_names[min(n_ld, 2)]
@@ -393,21 +386,13 @@ tab_server <- function(input, output, session,
         "{length(orig_names)} original vars"
       )
 
-      shiny$updateSelectizeInput(
-        session, "ldDimX",
+      set_axis_choices(
         choices = choices,
-        selected = default_x
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimY",
-        choices = choices,
-        selected = default_y
-      )
-      shiny$updateSelectizeInput(
-        session, "ldDimZ",
-        choices = choices,
-        selected = default_y
+        valid = c(ld_names, orig_names),
+        default_x = default_x,
+        default_y = default_y,
+        default_z = default_y
       )
     }
-  }, ignoreNULL = TRUE)
+  }, ignoreNULL = TRUE, priority = 10)
 }
