@@ -147,7 +147,7 @@ run_art_anova <- function(formula_obj, data) {
   env$anova_art <- get("anova.art", envir = asNamespace("ARTool"))
   eval(quote({
     art_model <- art(formula_obj, data = data)
-    anova_art(art_model)
+    anova_art(art_model) # nolint: box_usage_linter.
   }), envir = env)
 }
 

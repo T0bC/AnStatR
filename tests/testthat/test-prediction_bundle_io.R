@@ -1,4 +1,15 @@
 box::use(
+  testthat[
+    expect_equal,
+    expect_false,
+    expect_match,
+    expect_null,
+    expect_true,
+    test_that
+  ],
+)
+
+box::use(
   app/logic/prediction/bundle_io[
     load_bundle,
     validate_bundle

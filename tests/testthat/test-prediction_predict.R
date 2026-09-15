@@ -1,4 +1,15 @@
 box::use(
+  testthat[
+    expect_equal,
+    expect_false,
+    expect_length,
+    expect_null,
+    expect_true,
+    test_that
+  ],
+)
+
+box::use(
   app/logic/pca/pca[run_pca],
   app/logic/pca/pca_export[create_pca_bundle],
   app/logic/prediction/predict[

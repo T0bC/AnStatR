@@ -1,4 +1,8 @@
 box::use(
+  testthat[expect_equal, expect_length, expect_true, test_that],
+)
+
+box::use(
   app/logic/cluster/cluster[run_clustering],
   app/logic/cluster/cluster_export[create_cluster_bundle],
   app/logic/prediction/bundle_io[validate_bundle],
