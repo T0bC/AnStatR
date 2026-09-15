@@ -298,6 +298,15 @@ var ANSTATR_DEBUG = false;
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        // This block exists verbatim in app/js/index.js too, and both files
+        // are loaded: main.R adds this file explicitly, while rhino's
+        // with_head_tags() auto-injects app.min.js (built from index.js).
+        // Without this claim the observer would attach twice and every DOM
+        // insertion would be swept twice. First one in wins; the other
+        // becomes a no-op.
+        if (window.__anstatrGirafeObserverAttached) return;
+        window.__anstatrGirafeObserverAttached = true;
+
         observer.observe(document.body, {
             childList: true,
             subtree: true
