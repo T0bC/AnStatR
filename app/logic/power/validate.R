@@ -32,7 +32,7 @@ sanitize_name <- function(name) {
 
   # If empty after sanitization, return placeholder
 
-  if (nchar(sanitized) == 0) {
+  if (!nzchar(sanitized, keepNA = TRUE)) {
     sanitized <- "unnamed"
   }
 
@@ -302,7 +302,7 @@ validate_design_structure <- function(factors) {
 
   for (i in seq_along(factors)) {
     f <- factors[[i]]
-    if (is.null(f$name) || nchar(trimws(f$name)) == 0) {
+    if (is.null(f$name) || !nzchar(trimws(f$name), keepNA = TRUE)) {
       return(error_handling$simple_error(
         message = paste0("Factor ", i, " must have a name."),
         operation_name = "power_validate"

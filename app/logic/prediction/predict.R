@@ -122,10 +122,7 @@ predict_unknown <- function(bundle, preprocessed_data) {
         ),
         plsda = predict_plsda(model, numeric_data),
         splsda = predict_plsda(model, numeric_data),
-        stop(paste0(
-          "Unsupported analysis type: '",
-          analysis_type, "'"
-        ))
+        stop("Unsupported analysis type: '", analysis_type, "'")
       )
 
       result$analysis_type <- analysis_type

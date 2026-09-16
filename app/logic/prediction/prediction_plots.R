@@ -107,10 +107,7 @@ create_prediction_overlay_plot <- function(
           show_diagnostics = FALSE,
           show_boundaries = show_boundaries
         ),
-        stop(paste0(
-          "Unsupported analysis type: '",
-          analysis_type, "'"
-        ))
+        stop("Unsupported analysis type: '", analysis_type, "'")
       )
 
       rhino$log$info(

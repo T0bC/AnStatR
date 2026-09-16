@@ -271,7 +271,7 @@ server <- function(id) {
       },
       content = function(file) {
         sel <- input$example_dataset
-        shiny$req(sel, nchar(sel) > 0)
+        shiny$req(sel, nzchar(sel, keepNA = TRUE))
         src <- example_data$example_path(sel)
         file.copy(src, file)
       }

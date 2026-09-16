@@ -42,10 +42,7 @@ load_bundle <- function(path) {
 
       ext <- tolower(file_ext(path))
       if (ext != "rds") {
-        stop(paste0(
-          "Expected an .rds file, got '.",
-          ext, "'"
-        ))
+        stop("Expected an .rds file, got '.", ext, "'")
       }
 
       bundle <- readRDS(path)

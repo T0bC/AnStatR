@@ -554,13 +554,10 @@ perform_rm_nonparametric <- function(df, x_axis, measure_col,
     expr = {
       # Validate columns
       if (!id_col %in% names(df)) {
-        stop(paste0("ID column '", id_col, "' not found."))
+        stop("ID column '", id_col, "' not found.")
       }
       if (!within_col %in% names(df)) {
-        stop(paste0(
-          "Within-subject factor '", within_col,
-          "' not found."
-        ))
+        stop("Within-subject factor '", within_col, "' not found.")
       }
 
       df[[id_col]] <- as.factor(df[[id_col]])
@@ -582,11 +579,11 @@ perform_rm_nonparametric <- function(df, x_axis, measure_col,
       # Validate balanced design
       id_within_counts <- table(df[[id_col]], df[[within_col]])
       if (any(id_within_counts != 1)) {
-        stop(paste0(
+        stop(
           "Unbalanced repeated measures design. ",
           "Each subject must appear exactly once per ",
           "level of '", within_col, "'."
-        ))
+        )
       }
 
       if (length(between_cols) == 0) {

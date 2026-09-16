@@ -493,13 +493,10 @@ perform_rm_anova <- function(df, x_axis, measure_col,
     expr = {
       # Validate RM design
       if (!id_col %in% names(df)) {
-        stop(paste0("ID column '", id_col, "' not found in data."))
+        stop("ID column '", id_col, "' not found in data.")
       }
       if (!within_col %in% names(df)) {
-        stop(paste0(
-          "Within-subject factor '", within_col,
-          "' not found in data."
-        ))
+        stop("Within-subject factor '", within_col, "' not found in data.")
       }
 
       # Convert to factors
@@ -516,11 +513,11 @@ perform_rm_anova <- function(df, x_axis, measure_col,
       # within-factor level
       id_within_counts <- table(df[[id_col]], df[[within_col]])
       if (any(id_within_counts != 1)) {
-        stop(paste0(
+        stop(
           "Unbalanced repeated measures design. ",
           "Each subject must appear exactly once per ",
           "level of '", within_col, "'."
-        ))
+        )
       }
 
       # Build formula with Error() term

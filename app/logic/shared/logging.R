@@ -31,7 +31,7 @@ configure_session_logging <- function() {
     }
 
     if (!dir.exists(log_dir)) {
-      warning(paste0("Could not create log directory '", log_dir, "'. Falling back to console logging."))
+      warning("Could not create log directory '", log_dir, "'. Falling back to console logging.")
       logger$log_appender(logger$appender_stderr)
     } else {
       # Build per-session filename: YYYY_MM_DD_<sessid>.log

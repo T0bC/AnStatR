@@ -180,7 +180,7 @@ build_results_table <- function(prediction_result,
   # Row labels
   if (
     !is.null(meta_col) &&
-      nchar(meta_col) > 0 &&
+      nzchar(meta_col, keepNA = TRUE) &&
       meta_col %in% names(unknown_data)
   ) {
     labels <- as.character(unknown_data[[meta_col]])

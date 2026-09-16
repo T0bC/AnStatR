@@ -194,7 +194,7 @@ create_eigencor_plot <- function(eigencor_data) {
         df$r,
         format_pval(df$pval),
         ifelse(
-          nchar(df$stars) > 0,
+          nzchar(df$stars, keepNA = TRUE),
           paste0("Significance: ", df$stars),
           "Not significant"
         )

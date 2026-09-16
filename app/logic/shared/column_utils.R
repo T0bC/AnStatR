@@ -32,9 +32,7 @@ get_measurement_cols <- function(data) {
 #' @return Character vector of descriptive column names
 #' @export
 get_descriptive_cols <- function(data) {
-  names(data)[which(
-    grepl("^[A-Z_]+$", names(data))
-  )]
+  names(data)[grep("^[A-Z_]+$", names(data))]
 }
 
 #' Strip a trailing "_normalized" suffix from column names

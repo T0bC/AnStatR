@@ -48,10 +48,7 @@ compute_diagnostics <- function(bundle, preprocessed_data, prediction_result) {
         plsda = ,
         splsda = diagnostics_component_space(bundle, prediction_result),
         cluster = diagnostics_cluster(bundle, prediction_result),
-        stop(paste0(
-          "Unsupported analysis type for diagnostics: '",
-          analysis_type, "'"
-        ))
+        stop("Unsupported analysis type for diagnostics: '", analysis_type, "'")
       )
     },
     operation_name = "Prediction Diagnostics",

@@ -190,7 +190,7 @@ tab_server <- function(input, output, session, input_data = NULL) {
         }
 
         levels <- trimws(strsplit(levels_raw, ",")[[1]])
-        levels <- levels[nchar(levels) > 0]
+        levels <- levels[nzchar(levels, keepNA = TRUE)]
 
         list(
           name = trimws(factor_name),

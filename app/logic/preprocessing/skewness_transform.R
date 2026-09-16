@@ -236,10 +236,7 @@ apply_stored_transform <- function(x, params) {
   bn_object <- params$bn_object
 
   if (is.null(bn_object)) {
-    stop(paste0(
-      "No bestNormalize object stored for column '",
-      params$column, "'"
-    ))
+    stop("No bestNormalize object stored for column '", params$column, "'")
   }
 
   # Use predict() on the stored bestNormalize object
@@ -251,10 +248,7 @@ apply_stored_transform <- function(x, params) {
       as.numeric(transformed)
     },
     error = function(e) {
-      stop(paste0(
-        "Failed to apply stored transform for '",
-        params$column, "': ", conditionMessage(e)
-      ))
+      stop("Failed to apply stored transform for '", params$column, "': ", conditionMessage(e))
     }
   )
 }
@@ -280,10 +274,7 @@ apply_stored_transforms <- function(data,
   for (params in transform_params) {
     col <- params$column
     if (!col %in% names(result)) {
-      warning(paste0(
-        "Column '", col,
-        "' not found in data; skipping transform"
-      ))
+      warning("Column '", col, "' not found in data; skipping transform")
       next
     }
     result[[col]] <- apply_stored_transform(

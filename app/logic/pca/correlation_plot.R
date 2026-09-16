@@ -289,7 +289,7 @@ compute_cor_matrix <- function(cor_data) {
     use = "pairwise.complete.obs"
   )
 
-  if (any(is.na(cor_matrix))) {
+  if (anyNA(cor_matrix)) {
     complete_rows <- stats$complete.cases(cor_data)
     if (sum(complete_rows) >= 2) {
       cor_matrix <- stats$cor(
@@ -297,7 +297,7 @@ compute_cor_matrix <- function(cor_data) {
         use = "everything"
       )
     }
-    if (any(is.na(cor_matrix))) {
+    if (anyNA(cor_matrix)) {
       stop(
         "Unable to compute correlations due to missing values"
       )

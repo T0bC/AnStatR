@@ -435,23 +435,21 @@ perform_rm_robust <- function(df, x_axis, measure_col,
       # 3-way omnibus model. Users wanting a 3-way RM omnibus should use
       # the nonparametric (ARTool) approach.
       if (n_ways >= 3) {
-        stop(paste0(
+        stop(
           "3-way repeated measures designs are not supported for the ",
           "robust omnibus test (WRS2::bwtrim only supports 1 between x ",
           "1 within). The robust pairwise post-hoc comparisons below are ",
           "still computed with the correct paired tests. For a 3-way RM ",
           "omnibus, use the nonparametric approach (ARTool)."
-        ))
+        )
       }
 
       # Validate columns
       if (!id_col %in% names(df)) {
-        stop(paste0("ID column '", id_col, "' not found."))
+        stop("ID column '", id_col, "' not found.")
       }
       if (!within_col %in% names(df)) {
-        stop(paste0(
-          "Within-subject factor '", within_col, "' not found."
-        ))
+        stop("Within-subject factor '", within_col, "' not found.")
       }
 
       df[[id_col]] <- as.factor(df[[id_col]])
@@ -474,21 +472,21 @@ perform_rm_robust <- function(df, x_axis, measure_col,
       df[[id_col]] <- droplevels(as.factor(df[[id_col]]))
 
       if (nrow(df) == 0 || length(complete_ids) < 2) {
-        stop(paste0(
+        stop(
           "Not enough subjects with complete repeated-measures data ",
           "after removing missing values. At least 2 subjects must have ",
           "a measurement at every level of '", within_col, "'."
-        ))
+        )
       }
 
       # Validate balanced design
       id_within_counts <- table(df[[id_col]], df[[within_col]])
       if (any(id_within_counts != 1)) {
-        stop(paste0(
+        stop(
           "Unbalanced repeated measures design. ",
           "Each subject must appear exactly once per ",
           "level of '", within_col, "'."
-        ))
+        )
       }
 
       if (n_between == 0) {
@@ -542,12 +540,12 @@ perform_rm_robust <- function(df, x_axis, measure_col,
           stringsAsFactors = FALSE
         )
       } else {
-        stop(paste0(
+        stop(
           "Unsupported RM design: ", n_between, " between x 1 within. ",
           "Robust RM ANOVA supports only 1-way within or ",
           "2-way mixed (1 between x 1 within) designs. ",
           "For more complex designs, use nonparametric alternatives."
-        ))
+        )
       }
     },
     operation_name = "rm_robust",

@@ -108,25 +108,20 @@ residualize_data <- function(data, measurement_cols, group_col) {
         stop("No grouping column selected for residualization")
       }
       if (!group_col %in% names(data)) {
-        stop(paste0(
-          "Grouping column '", group_col, "' not found in data"
-        ))
+        stop("Grouping column '", group_col, "' not found in data")
       }
       if (anyNA(data[[group_col]])) {
-        stop(paste0(
+        stop(
           "Grouping column '", group_col,
           "' contains missing values; ave() treats each NA",
           " row as its own group, silently zeroing it out —",
           " remove or impute missing values in this column",
           " first"
-        ))
+        )
       }
       groups <- as.factor(data[[group_col]])
       if (nlevels(groups) < 2) {
-        stop(paste0(
-          "Grouping column '", group_col,
-          "' has fewer than 2 levels; nothing to residualize"
-        ))
+        stop("Grouping column '", group_col, "' has fewer than 2 levels; nothing to residualize")
       }
 
       subset_df <- data[, measurement_cols, drop = FALSE]

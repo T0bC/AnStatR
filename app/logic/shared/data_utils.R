@@ -71,7 +71,7 @@ get_factor_levels <- function(df, cols) {
 #' @export
 get_filter_choices <- function(values) {
   choices <- unique(values)
-  has_na <- any(is.na(choices))
+  has_na <- anyNA(choices)
   choices <- choices[!is.na(choices)]
   if (has_na) choices <- c(choices, "NA")
   as.character(choices)

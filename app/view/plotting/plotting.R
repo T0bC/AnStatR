@@ -422,7 +422,7 @@ server <- function(id, input_data, data_version) {
           y_col
         }
 
-        error_handling$safe_execute(
+        exec_result <- error_handling$safe_execute(
           plot_factory$create_plot(
             plot_type       = params$plot_type %||% "scatter",
             data            = data,
@@ -443,7 +443,7 @@ server <- function(id, input_data, data_version) {
             black_points    = params$black_points
           ),
           operation_name = paste("Plot", y_col)
-        ) -> exec_result
+        )
 
         list(y_col = y_col, result = exec_result)
       })
