@@ -1,6 +1,3 @@
 ^renv$
 ^renv\.lock$
 
-
-# flir files
-^flir$
