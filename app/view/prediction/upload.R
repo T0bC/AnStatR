@@ -5,6 +5,7 @@ box::use(
 )
 
 box::use(
+  app/logic/shared/filter_spec,
   app/view/components/sidebar_tabs,
 )
 
@@ -92,6 +93,10 @@ tab_server <- function(input, output, session,
     }
     version <- bundle$app_version %||% "?"
 
+    # Surfaced here rather than only on failure, so the user sees what
+    # the model requires of the unknown data before uploading it.
+    filter_line <- filter_spec$describe_filter_spec(bundle$filter_spec)
+
     shiny$tags$div(
       class = "alert alert-success py-2 px-2 small mb-2",
       bsicons$bs_icon(
@@ -113,7 +118,15 @@ tab_server <- function(input, output, session,
           " \u2022 v", version,
           " \u2022 ", created
         )
-      )
+      ),
+      if (!is.null(filter_line)) {
+        shiny$tags$div(
+          class = "mt-1",
+          bsicons$bs_icon("funnel", class = "me-1"),
+          shiny$tags$strong("Training filter: "),
+          filter_line
+        )
+      }
     )
   })
 
@@ -152,6 +165,25 @@ tab_server <- function(input, output, session,
       )
     }
 
+    # When the model carries a training filter, report how much of the
+    # upload survives it -- a large drop should be visible here rather
+    # than come as a surprise in the results table.
+    match_line <- if (
+      !is.null(val) &&
+        !is.null(val$n_matching) &&
+        !is.null(val$n_uploaded) &&
+        val$n_matching < val$n_uploaded
+    ) {
+      shiny$tags$div(
+        class = "mt-1",
+        bsicons$bs_icon("funnel", class = "me-1"),
+        paste0(
+          val$n_matching, " of ", val$n_uploaded,
+          " rows match the training filter"
+        )
+      )
+    }
+
     content <- shiny$tagList(
       shiny$tags$div(
         class = "alert alert-info py-2 px-2 small mb-2",
@@ -160,7 +192,8 @@ tab_server <- function(input, output, session,
           class = "me-1"
         ),
         paste0(n_rows, " rows, ", n_cols, " columns "),
-        badge
+        badge,
+        match_line
       )
     )
 
