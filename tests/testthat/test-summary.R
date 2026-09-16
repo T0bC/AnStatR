@@ -1,5 +1,14 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_length,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -47,13 +56,13 @@ describe("validate_inputs", {
   it("returns valid = FALSE when no columns selected", {
     data <- make_test_data()
     result <- summary$validate_inputs(NULL, data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for missing columns", {
     data <- make_test_data()
     result <- summary$validate_inputs(c("SPECIES", "MISSING"), data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 })
 
@@ -89,9 +98,9 @@ describe("compute_base_stats", {
     expect_equal(result$n, 5)
     expect_equal(result$mean, 6)
     expect_equal(result$median, 6)
-    expect_true(!is.na(result$sd))
-    expect_true(!is.na(result$sem))
-    expect_true(!is.na(result$cv))
+    expect_false(is.na(result$sd))
+    expect_false(is.na(result$sem))
+    expect_false(is.na(result$cv))
   })
 
   it("returns NA for single value", {
@@ -117,8 +126,8 @@ describe("compute_shapiro", {
   it("returns test results for valid data", {
     set.seed(42)
     result <- impl$compute_shapiro(rnorm(50))
-    expect_true(!is.na(result$shapiro_p))
-    expect_true(!is.na(result$shapiro_W))
+    expect_false(is.na(result$shapiro_p))
+    expect_false(is.na(result$shapiro_W))
     expect_true(result$normal %in% c("yes", "no"))
   })
 
@@ -182,8 +191,8 @@ describe("split_by_measurement", {
       data, "SPECIES", c("Asfc", "epLsar")
     )
     result <- summary$split_by_measurement(summary_df)
-    expect_equal(length(result), 2)
-    expect_true(is.null(result[[1]]$df$Measurement))
+    expect_length(result, 2)
+    expect_null(result[[1]]$df$Measurement)
     expect_true(result[[1]]$col %in% c("Asfc", "epLsar"))
   })
 
@@ -194,8 +203,8 @@ describe("split_by_measurement", {
     )
     result <- summary$split_by_measurement(summary_df)
     # No flags in test data → columns should be dropped
-    expect_true(is.null(result[[1]]$df$n_outliers))
-    expect_true(is.null(result[[1]]$df$n_trimmed))
+    expect_null(result[[1]]$df$n_outliers)
+    expect_null(result[[1]]$df$n_trimmed)
   })
 })
 
@@ -208,18 +217,18 @@ describe("run_summary", {
     data <- make_test_data()
     result <- summary$run_summary(data, "SPECIES")
     expect_true(result$success)
-    expect_true(length(result$result) > 0)
+    expect_gt(length(result$result), 0)
   })
 
   it("returns error for invalid grouping columns", {
     data <- make_test_data()
     result <- summary$run_summary(data, "NONEXISTENT")
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error when no measurement columns exist", {
     data <- data.frame(SPECIES = c("A", "B"), SITE = c("X", "Y"))
     result <- summary$run_summary(data, "SPECIES")
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 })

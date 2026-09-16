@@ -1,11 +1,12 @@
 box::use(
   testthat[
     describe,
-    expect_equal,
+    expect_false,
+    expect_length,
     expect_s3_class,
     expect_true,
     expect_type,
-    it
+    it,
   ],
 )
 
@@ -60,7 +61,7 @@ describe("build_tooltip_text", {
       y_col = "Value1"
     )
     expect_type(tips, "character")
-    expect_equal(length(tips), nrow(df))
+    expect_length(tips, nrow(df))
   })
 
   it("includes extra tooltip columns", {
@@ -85,7 +86,7 @@ describe("build_tooltip_text", {
       y_col = "Value1"
     )
     expect_true(grepl("Trimmed", tips[1]))
-    expect_true(!grepl("Trimmed", tips[2]))
+    expect_false(grepl("Trimmed", tips[2]))
   })
 
   it("marks outlier points in tooltip", {
@@ -98,7 +99,7 @@ describe("build_tooltip_text", {
       y_col = "Value1"
     )
     expect_true(grepl("Outlier", tips[3]))
-    expect_true(!grepl("Outlier", tips[1]))
+    expect_false(grepl("Outlier", tips[1]))
   })
 })
 

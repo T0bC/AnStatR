@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gte,
+    expect_lte,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -24,11 +32,11 @@ describe("compute_optimal_clusters", {
       max_k = 5
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$methods$elbow))
-    expect_true(!is.null(result$result$methods$silhouette))
-    expect_true(!is.null(result$result$methods$gap))
-    expect_true(!is.null(result$result$summary))
-    expect_true(!is.null(result$result$plot_data))
+    expect_false(is.null(result$result$methods$elbow))
+    expect_false(is.null(result$result$methods$silhouette))
+    expect_false(is.null(result$result$methods$gap))
+    expect_false(is.null(result$result$summary))
+    expect_false(is.null(result$result$plot_data))
   })
 
   it("returns valid optimal_k values within k_range", {
@@ -45,8 +53,8 @@ describe("compute_optimal_clusters", {
     methods <- result$result$methods
     for (m in methods) {
       if (!is.null(m$optimal_k) && !is.na(m$optimal_k)) {
-        expect_true(m$optimal_k >= 2)
-        expect_true(m$optimal_k <= 6)
+        expect_gte(m$optimal_k, 2)
+        expect_lte(m$optimal_k, 6)
       }
     }
   })
@@ -63,9 +71,9 @@ describe("compute_optimal_clusters", {
     )
     expect_true(result$success)
     s <- result$result$summary
-    expect_true(s$median_k >= s$min_k)
-    expect_true(s$median_k <= s$max_k)
-    expect_true(s$methods_computed >= 1)
+    expect_gte(s$median_k, s$min_k)
+    expect_lte(s$median_k, s$max_k)
+    expect_gte(s$methods_computed, 1)
   })
 
   it("clamps max_k to nrow - 1", {
@@ -77,9 +85,7 @@ describe("compute_optimal_clusters", {
     )
     expect_true(result$success)
     # max_k should be clamped to 4 (nrow - 1)
-    expect_true(
-      max(result$result$k_range) <= nrow(data) - 1
-    )
+    expect_lte(max(result$result$k_range), nrow(data) - 1)
   })
 
   it("returns error for NULL data", {
@@ -87,7 +93,7 @@ describe("compute_optimal_clusters", {
       NULL, c("a"),
       max_k = 5
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for empty columns", {
@@ -96,7 +102,7 @@ describe("compute_optimal_clusters", {
       data, character(0),
       max_k = 5
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for non-numeric columns", {
@@ -109,7 +115,7 @@ describe("compute_optimal_clusters", {
       data, c("a", "b"),
       max_k = 5
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for too few rows", {
@@ -118,7 +124,7 @@ describe("compute_optimal_clusters", {
       data, c("a", "b"),
       max_k = 5
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("builds correct plot_data structure", {

@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_named,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -21,7 +29,7 @@ describe("safe_factor_conversion", {
     result <- omnibus$safe_factor_conversion(df, "group")
     expect_true(result$success)
     expect_true(is.factor(result$data$group))
-    expect_true(is.null(result$error))
+    expect_null(result$error)
   })
 
   it("returns error for missing column", {
@@ -119,7 +127,7 @@ describe("setup_bootstrap_params", {
       boot_sample_size = NULL
     )
     expect_equal(result$n_iterations, 1)
-    expect_true(is.null(result$sample_size))
+    expect_null(result$sample_size)
   })
 
   it("returns correct params when bootstrap is on", {
@@ -164,7 +172,7 @@ describe("format_bootstrap_results", {
     )
     result <- omnibus$format_bootstrap_results(boot_df)
     expect_true(is.data.frame(result))
-    expect_equal(names(result), c("F_stat", "p_value"))
+    expect_named(result, c("F_stat", "p_value"))
     expect_true(grepl("\\[", result$F_stat))
   })
 

@@ -33,7 +33,7 @@ describe("create_interaction", {
     )
     result <- data_utils$create_interaction(df, c("species", "diet"))
     expect_true(is.factor(result))
-    expect_equal(length(result), 3)
+    expect_length(result, 3)
     expect_true("cat.wet" %in% as.character(result))
     expect_true("cat.dry" %in% as.character(result))
     expect_true("dog.dry" %in% as.character(result))

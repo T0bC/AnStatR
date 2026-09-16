@@ -1,5 +1,14 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_length,
+    expect_named,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -20,13 +29,13 @@ describe("validate_inputs", {
   it("returns valid = FALSE when no columns selected", {
     data <- data.frame(a = 1:3)
     result <- pca$validate_inputs(NULL, data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for missing columns", {
     data <- data.frame(a = 1:3)
     result <- pca$validate_inputs(c("a", "z"), data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 })
 
@@ -50,7 +59,7 @@ describe("run_pca (pca)", {
 
   it("returns error for non-existent columns", {
     res <- pca$run_pca(test_data, c("nonexistent"))
-    expect_true(!res$success)
+    expect_false(res$success)
   })
 
   it("result contains model, scores, loadings, variance", {
@@ -68,7 +77,7 @@ describe("run_pca (pca)", {
     cols <- c("a", "b", "c", "d")
     res <- pca$run_pca(test_data, cols)
     r <- res$result
-    expect_equal(nrow(r$variance), length(cols))
+    expect_length(cols, nrow(r$variance))
     expect_true("variance_percent" %in% names(r$variance))
     expect_true(
       "cumulative_variance_percent" %in% names(r$variance)
@@ -88,9 +97,9 @@ describe("run_pca (pca)", {
     cols <- c("a", "b", "c", "d")
     res <- pca$run_pca(test_data, cols)
     r <- res$result
-    expect_equal(ncol(r$loadings), length(cols))
-    expect_equal(ncol(r$scores), length(cols))
-    expect_equal(nrow(r$variance), length(cols))
+    expect_length(cols, ncol(r$loadings))
+    expect_length(cols, ncol(r$scores))
+    expect_length(cols, nrow(r$variance))
   })
 
   it("explicit ncp limits retained components", {
@@ -117,8 +126,8 @@ describe("run_pca (pca)", {
       center = TRUE, scale. = TRUE
     )
     r <- res$result
-    expect_equal(names(r$center), c("a", "b", "c", "d"))
-    expect_equal(names(r$scale), c("a", "b", "c", "d"))
+    expect_named(r$center, c("a", "b", "c", "d"))
+    expect_named(r$scale, c("a", "b", "c", "d"))
   })
 })
 
@@ -151,7 +160,7 @@ describe("run_pca (spca)", {
       test_data, cols,
       analysis_type = "spca", ncp = 3, keep_x = NULL
     )
-    expect_true(!res$success)
+    expect_false(res$success)
   })
 
   it("fails when keepX length does not match ncp", {
@@ -160,7 +169,7 @@ describe("run_pca (spca)", {
       analysis_type = "spca", ncp = 3,
       keep_x = c(3, 3)
     )
-    expect_true(!res$success)
+    expect_false(res$success)
   })
 
   it("produces sparse loadings honoring keepX", {
@@ -183,7 +192,7 @@ describe("run_pca (spca)", {
     r <- res$result
     expect_true("keep_x" %in% names(r))
     expect_true("selected_variables" %in% names(r))
-    expect_equal(length(r$selected_variables[["Dim.1"]]), 2)
+    expect_length(r$selected_variables[["Dim.1"]], 2)
   })
 })
 
@@ -264,8 +273,8 @@ describe("run_pca_tune_keepx", {
       folds = 3, repeats = 3
     )
     expect_true(res$success)
-    expect_equal(length(res$result$keep_x), 2)
-    expect_equal(names(res$result$keep_x), c("Dim.1", "Dim.2"))
+    expect_length(res$result$keep_x, 2)
+    expect_named(res$result$keep_x, c("Dim.1", "Dim.2"))
   })
 
   it("records the settings actually used, for provenance", {
@@ -319,7 +328,7 @@ describe("run_pca with meta_cols", {
     expect_true("ind_meta" %in% names(r))
     expect_equal(ncol(r$ind_meta), 2)
     expect_equal(nrow(r$ind_meta), 5)
-    expect_equal(names(r$ind_meta), c("SEX", "TREATMENT"))
+    expect_named(r$ind_meta, c("SEX", "TREATMENT"))
   })
 
   it("uses metadata for row labels", {
@@ -338,7 +347,7 @@ describe("run_pca with meta_cols", {
     )
     r <- res$result
     expect_true("ind_meta" %in% names(r))
-    expect_equal(names(r$ind_meta), "Row")
+    expect_named(r$ind_meta, "Row")
     labels <- rownames(r$scores)
     expect_equal(labels, as.character(1:5))
   })
@@ -351,7 +360,7 @@ describe("run_pca with meta_cols", {
     r <- res$result
     labels <- rownames(r$scores)
     # 3 M's and 2 F's — duplicates get suffixed
-    expect_equal(length(unique(labels)), 5)
+    expect_length(unique(labels), 5)
   })
 })
 
@@ -368,12 +377,12 @@ describe("extract_pca_scores", {
   )
 
   it("returns NULL when the reactive is NULL", {
-    expect_true(is.null(pca$extract_pca_scores(NULL)))
+    expect_null(pca$extract_pca_scores(NULL))
   })
 
   it("returns NULL when the wrapped result failed", {
     fake_reactive <- function() list(success = FALSE)
-    expect_true(is.null(pca$extract_pca_scores(fake_reactive)))
+    expect_null(pca$extract_pca_scores(fake_reactive))
   })
 
   it("combines metadata and scores into one data frame", {
@@ -395,7 +404,7 @@ describe("extract_variance_explained", {
   )
 
   it("returns NULL when the reactive is NULL", {
-    expect_true(is.null(pca$extract_variance_explained(NULL)))
+    expect_null(pca$extract_variance_explained(NULL))
   })
 
   it("returns n90/cum90/n95/cum95", {

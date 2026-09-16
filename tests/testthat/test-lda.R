@@ -1,5 +1,14 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_length,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -47,7 +56,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       NULL, data, "species"
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for missing columns", {
@@ -55,7 +64,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       c("m1", "nonexistent"), data, "species"
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE when no grouping column", {
@@ -63,7 +72,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       c("m1", "m2"), data, NULL
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for empty grouping column", {
@@ -71,7 +80,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       c("m1", "m2"), data, ""
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE when grouping not in data", {
@@ -79,7 +88,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       c("m1", "m2"), data, "nonexistent"
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE when grouping < 2 levels", {
@@ -88,7 +97,7 @@ describe("validate_inputs", {
     result <- lda$validate_inputs(
       c("m1", "m2"), data, "species"
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns warnings when n < p for some groups", {
@@ -105,7 +114,7 @@ describe("validate_inputs", {
       data, "species"
     )
     expect_true(result$valid)
-    expect_true(length(result$warnings) > 0)
+    expect_gt(length(result$warnings), 0)
   })
 })
 
@@ -120,12 +129,10 @@ describe("run_lda", {
       data, c("m1", "m2", "m3"), "species"
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$model))
-    expect_true(!is.null(result$result$scaling))
-    expect_true(!is.null(result$result$means))
-    expect_true(
-      !is.null(result$result$proportion_of_trace)
-    )
+    expect_false(is.null(result$result$model))
+    expect_false(is.null(result$result$scaling))
+    expect_false(is.null(result$result$means))
+    expect_false(is.null(result$result$proportion_of_trace))
     expect_equal(result$result$n_groups, 3)
     expect_equal(result$result$n, 45)
   })
@@ -135,10 +142,8 @@ describe("run_lda", {
     result <- lda$run_lda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(!is.null(result$result$confusion))
-    expect_true(
-      result$result$confusion$accuracy > 0
-    )
+    expect_false(is.null(result$result$confusion))
+    expect_gt(result$result$confusion$accuracy, 0)
   })
 
   it("computes LD scores for all observations", {
@@ -156,11 +161,9 @@ describe("run_lda", {
       cv = TRUE
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$cv))
-    expect_true(
-      result$result$cv$accuracy > 0
-    )
-    expect_true(is.null(result$result$model))
+    expect_false(is.null(result$result$cv))
+    expect_gt(result$result$cv$accuracy, 0)
+    expect_null(result$result$model)
   })
 
   it("works with equal prior", {
@@ -200,13 +203,9 @@ describe("run_qda", {
       data, c("m1", "m2", "m3"), "species"
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$means))
-    expect_true(
-      !is.null(result$result$confusion)
-    )
-    expect_true(
-      is.null(result$result$scaling)
-    )
+    expect_false(is.null(result$result$means))
+    expect_false(is.null(result$result$confusion))
+    expect_null(result$result$scaling)
   })
 
   it("works with LOO-CV", {
@@ -216,7 +215,7 @@ describe("run_qda", {
       cv = TRUE
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$cv))
+    expect_false(is.null(result$result$cv))
   })
 })
 
@@ -237,9 +236,9 @@ describe("run_predict", {
       grouping_col = "species"
     )
     expect_true(pred$success)
-    expect_equal(length(pred$result$predicted_class), 15)
-    expect_true(!is.null(pred$result$confusion))
-    expect_true(!is.null(pred$result$scores))
+    expect_length(pred$result$predicted_class, 15)
+    expect_false(is.null(pred$result$confusion))
+    expect_false(is.null(pred$result$scores))
   })
 
   it("predicts on test data from QDA model", {
@@ -254,7 +253,7 @@ describe("run_predict", {
       grouping_col = "species"
     )
     expect_true(pred$success)
-    expect_equal(length(pred$result$predicted_class), 15)
+    expect_length(pred$result$predicted_class, 15)
   })
 
   it("fails when model was fitted with CV", {
@@ -266,7 +265,7 @@ describe("run_predict", {
     pred <- lda$run_predict(
       fit$result, data, c("m1", "m2")
     )
-    expect_true(!pred$success)
+    expect_false(pred$success)
   })
 })
 
@@ -285,7 +284,7 @@ describe("create_stratified_split", {
     n_train <- nrow(result$result$train_data)
     n_test <- nrow(result$result$test_data)
     expect_equal(n_train + n_test, 45)
-    expect_true(n_train > n_test)
+    expect_gt(n_train, n_test)
   })
 
   it("preserves all groups in both sets", {
@@ -385,8 +384,8 @@ describe("run_mda", {
       data, c("m1", "m2", "m3"), "species"
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$model))
-    expect_true(!is.null(result$result$means))
+    expect_false(is.null(result$result$model))
+    expect_false(is.null(result$result$means))
     expect_equal(result$result$analysis_type, "mda")
     expect_equal(result$result$n_groups, 3)
     expect_equal(result$result$n, 45)
@@ -397,10 +396,8 @@ describe("run_mda", {
     result <- lda$run_mda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(!is.null(result$result$confusion))
-    expect_true(
-      result$result$confusion$accuracy > 0
-    )
+    expect_false(is.null(result$result$confusion))
+    expect_gt(result$result$confusion$accuracy, 0)
   })
 
   it("computes discriminant scores", {
@@ -408,7 +405,7 @@ describe("run_mda", {
     result <- lda$run_mda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(!is.null(result$result$scores))
+    expect_false(is.null(result$result$scores))
     expect_equal(nrow(result$result$scores), 45)
   })
 
@@ -417,7 +414,7 @@ describe("run_mda", {
     result <- lda$run_mda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(!is.null(result$result$posterior))
+    expect_false(is.null(result$result$posterior))
     expect_equal(nrow(result$result$posterior), 45)
     expect_equal(ncol(result$result$posterior), 3)
   })
@@ -427,9 +424,7 @@ describe("run_mda", {
     result <- lda$run_mda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(
-      !is.null(result$result$proportion_of_trace)
-    )
+    expect_false(is.null(result$result$proportion_of_trace))
   })
 
   it("works with LOO-CV", {
@@ -439,11 +434,9 @@ describe("run_mda", {
       cv = TRUE
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$cv))
-    expect_true(
-      result$result$cv$accuracy > 0
-    )
-    expect_true(is.null(result$result$model))
+    expect_false(is.null(result$result$cv))
+    expect_gt(result$result$cv$accuracy, 0)
+    expect_null(result$result$model)
   })
 
   it("works with equal prior", {
@@ -478,7 +471,7 @@ describe("run_mda", {
       subclasses = 2, iter = 10
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$model))
+    expect_false(is.null(result$result$model))
   })
 
   it("returns subclass priors", {
@@ -486,9 +479,7 @@ describe("run_mda", {
     result <- lda$run_mda(
       data, c("m1", "m2", "m3"), "species"
     )
-    expect_true(
-      !is.null(result$result$sub_prior)
-    )
+    expect_false(is.null(result$result$sub_prior))
   })
 })
 
@@ -509,11 +500,9 @@ describe("run_predict with MDA", {
       grouping_col = "species"
     )
     expect_true(pred$success)
-    expect_equal(
-      length(pred$result$predicted_class), 15
-    )
-    expect_true(!is.null(pred$result$confusion))
-    expect_true(!is.null(pred$result$posterior))
+    expect_length(pred$result$predicted_class, 15)
+    expect_false(is.null(pred$result$confusion))
+    expect_false(is.null(pred$result$posterior))
   })
 
   it("fails when MDA model was fitted with CV", {
@@ -525,6 +514,6 @@ describe("run_predict with MDA", {
     pred <- lda$run_predict(
       fit$result, data, c("m1", "m2")
     )
-    expect_true(!pred$success)
+    expect_false(pred$success)
   })
 })

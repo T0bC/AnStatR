@@ -1,5 +1,20 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_setequal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_gte,
+    expect_length,
+  ],
+  testthat[
+    expect_lte,
+    expect_named,
+    expect_null,
+    expect_setequal,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -45,7 +60,7 @@ describe("validate_inputs for PLS-DA", {
       analysis_type = "plsda"
     )
     expect_true(result$valid)
-    expect_equal(length(result$warnings), 0)
+    expect_length(result$warnings, 0)
   })
 
   it("still requires >= 2 groups", {
@@ -55,7 +70,7 @@ describe("validate_inputs for PLS-DA", {
       all_cols(), data, "species",
       analysis_type = "plsda"
     )
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("LDA validation on the same n < p data still warns", {
@@ -65,7 +80,7 @@ describe("validate_inputs for PLS-DA", {
       analysis_type = "lda"
     )
     expect_true(result$valid)
-    expect_true(length(result$warnings) > 0)
+    expect_gt(length(result$warnings), 0)
   })
 })
 
@@ -87,7 +102,7 @@ describe("run_plsda", {
     expect_equal(ncol(r$scores), 2)
     expect_equal(colnames(r$scores), c("Comp1", "Comp2"))
     expect_equal(nrow(r$scaling), 40)
-    expect_true(!is.null(r$model))
+    expect_false(is.null(r$model))
   })
 
   it("proportion_of_trace sums to <= 1 and is cumulative", {
@@ -99,9 +114,7 @@ describe("run_plsda", {
     trace <- result$result$proportion_of_trace
     expect_equal(nrow(trace), 2)
     expect_true(all(trace$Proportion >= 0))
-    expect_true(
-      trace$Cumulative[2] >= trace$Cumulative[1]
-    )
+    expect_gte(trace$Cumulative[2], trace$Cumulative[1])
   })
 
   it("computes a confusion matrix with accuracy", {
@@ -110,8 +123,8 @@ describe("run_plsda", {
       data, all_cols(), "species",
       ncomp = 2
     )
-    expect_true(!is.null(result$result$confusion))
-    expect_true(result$result$confusion$accuracy > 0)
+    expect_false(is.null(result$result$confusion))
+    expect_gt(result$result$confusion$accuracy, 0)
   })
 
   it("has no keep_x/selected_variables for non-sparse fits", {
@@ -120,7 +133,7 @@ describe("run_plsda", {
       data, all_cols(), "species",
       ncomp = 2, sparse = FALSE
     )
-    expect_true(is.null(result$result$selected_variables))
+    expect_null(result$result$selected_variables)
   })
 })
 
@@ -138,8 +151,8 @@ describe("run_plsda sparse (sPLS-DA)", {
     )
     expect_true(result$success)
     sel <- result$result$selected_variables
-    expect_true(length(sel$Comp1) <= 5)
-    expect_true(length(sel$Comp2) <= 8)
+    expect_lte(length(sel$Comp1), 5)
+    expect_lte(length(sel$Comp2), 8)
   })
 
   it("selected variables are a subset of the input columns", {
@@ -190,7 +203,7 @@ describe("run_predict for PLS-DA", {
     expect_equal(
       colnames(pred$result$scores), c("Comp1", "Comp2")
     )
-    expect_true(!is.null(pred$result$confusion))
+    expect_false(is.null(pred$result$confusion))
   })
 })
 
@@ -235,10 +248,7 @@ describe("run_plsda_perf", {
       folds = 3, repeats = 2
     )
     expect_true(perf_res$success)
-    expect_equal(
-      names(perf_res$result$errors),
-      c("Component", "Overall Error", "BER")
-    )
+    expect_named(perf_res$result$errors, c("Component", "Overall Error", "BER"))
   })
 
   it("reports cross-validated error per group", {
@@ -315,7 +325,7 @@ describe("run_plsda_perf", {
 
       agree <- perf_res$result$dist_agreement
       expect_false(is.null(agree))
-      expect_true(agree$max_spread_pp >= 0)
+      expect_gte(agree$max_spread_pp, 0)
       expect_true(agree$best_rule %in% names(cmp))
     }
   })

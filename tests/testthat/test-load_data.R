@@ -3,9 +3,14 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_gt,
+    expect_length,
+  ],
+  testthat[
+    expect_named,
     expect_null,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -97,7 +102,7 @@ describe("read_data_file with CSV", {
     expect_null(result$error)
     expect_equal(nrow(result$data), 4)
     expect_equal(ncol(result$data), 3)
-    expect_equal(names(result$data), c("name", "value", "group"))
+    expect_named(result$data, c("name", "value", "group"))
   })
 
   it("reads a semicolon-delimited CSV", {
@@ -110,7 +115,7 @@ describe("read_data_file with CSV", {
     )
     expect_true(result$success)
     expect_equal(nrow(result$data), 2)
-    expect_equal(names(result$data), c("name", "value", "group"))
+    expect_named(result$data, c("name", "value", "group"))
   })
 
   it("returns structured error for non-existent file", {
@@ -122,7 +127,7 @@ describe("read_data_file with CSV", {
     expect_null(result$data)
     expect_true(error_handling$is_app_error(result$error))
     expect_equal(result$error$operation_name, "Data Import")
-    expect_true(nchar(result$error$message) > 0)
+    expect_gt(nchar(result$error$message), 0)
   })
 })
 
@@ -137,7 +142,7 @@ describe("validate_data", {
     expect_true(result$valid)
     expect_null(result$error)
     expect_equal(nrow(result$data), 3)
-    expect_equal(length(result$renamed_cols), 0)
+    expect_length(result$renamed_cols, 0)
   })
 
   it("rejects an empty data.frame with structured error", {
@@ -145,7 +150,7 @@ describe("validate_data", {
     result <- load_data$validate_data(df)
     expect_false(result$valid)
     expect_true(error_handling$is_app_error(result$error))
-    expect_true(nchar(result$error$message) > 0)
+    expect_gt(nchar(result$error$message), 0)
   })
 
   it("rejects a non-data.frame with structured error", {
@@ -168,8 +173,8 @@ describe("validate_data", {
     )
     result <- load_data$validate_data(df)
     expect_true(result$valid)
-    expect_equal(names(result$data), c("BOP_index", "normal_col", "Another_Dot"))
-    expect_equal(length(result$renamed_cols), 2)
-    expect_equal(names(result$renamed_cols), c("BOP.index", "Another.Dot"))
+    expect_named(result$data, c("BOP_index", "normal_col", "Another_Dot"))
+    expect_length(result$renamed_cols, 2)
+    expect_named(result$renamed_cols, c("BOP.index", "Another.Dot"))
   })
 })

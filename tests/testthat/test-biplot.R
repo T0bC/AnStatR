@@ -3,8 +3,11 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_gt,
+    expect_null,
+    expect_s3_class,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -57,7 +60,7 @@ describe("create_biplot", {
       layer = "individuals"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("returns a ggplot for layer = 'variables'", {
@@ -66,7 +69,7 @@ describe("create_biplot", {
       layer = "variables"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("returns a ggplot for layer = 'combined'", {
@@ -75,7 +78,7 @@ describe("create_biplot", {
       layer = "combined"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 })
 
@@ -93,7 +96,7 @@ describe("create_biplot with grouping", {
       group_cols = "group"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("handles group_cols for combined layer", {
@@ -103,7 +106,7 @@ describe("create_biplot with grouping", {
       group_cols = "group"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("handles missing group_cols gracefully", {
@@ -113,7 +116,7 @@ describe("create_biplot with grouping", {
       group_cols = NULL
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("handles non-existent group_cols gracefully", {
@@ -123,7 +126,7 @@ describe("create_biplot with grouping", {
       group_cols = "nonexistent"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 })
 
@@ -142,7 +145,7 @@ describe("create_biplot hull/ellipse toggle", {
       show_convex_hull = TRUE
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("renders with ellipse (default)", {
@@ -153,7 +156,7 @@ describe("create_biplot hull/ellipse toggle", {
       show_convex_hull = FALSE
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 })
 
@@ -172,7 +175,7 @@ describe("create_biplot contribution mapping", {
       point_size = 3
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("maps size to contribution", {
@@ -183,7 +186,7 @@ describe("create_biplot contribution mapping", {
       point_size = "Contribution"
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("uses fixed alpha and size", {
@@ -194,7 +197,7 @@ describe("create_biplot contribution mapping", {
       point_size = 4
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 })
 
@@ -214,7 +217,7 @@ describe("create_biplot with multi-column grouping", {
       group_cols = c("group", "treatment")
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("combined mode with multi-column grouping", {
@@ -224,7 +227,7 @@ describe("create_biplot with multi-column grouping", {
       group_cols = c("group", "treatment")
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("convex hull with multi-column grouping", {
@@ -235,7 +238,7 @@ describe("create_biplot with multi-column grouping", {
       show_convex_hull = TRUE
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 
   it("ignores invalid columns in multi-select", {
@@ -245,7 +248,7 @@ describe("create_biplot with multi-column grouping", {
       group_cols = c("group", "nonexistent")
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "ggplot"))
+    expect_s3_class(res$result, "ggplot")
   })
 })
 
@@ -297,7 +300,7 @@ describe("create_biplot title toggle", {
       layer = "combined", show_title = TRUE
     )
     expect_true(res$success)
-    expect_true(!is.null(res$result$labels$title))
+    expect_false(is.null(res$result$labels$title))
   })
 
   it("omits title when show_title = FALSE", {
@@ -306,7 +309,7 @@ describe("create_biplot title toggle", {
       layer = "combined", show_title = FALSE
     )
     expect_true(res$success)
-    expect_true(is.null(res$result$labels$title))
+    expect_null(res$result$labels$title)
   })
 })
 
@@ -418,14 +421,14 @@ describe("build_hull_data", {
     )
     result <- impl$build_hull_data(ind_data)
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true(all(c("x", "y", "group") %in% names(result)))
   })
 
   it("returns NULL when no group column", {
     ind_data <- data.frame(x = 1:5, y = 1:5)
     result <- impl$build_hull_data(ind_data)
-    expect_true(is.null(result))
+    expect_null(result)
   })
 
   it("skips groups with fewer than 3 points", {

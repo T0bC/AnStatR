@@ -1,5 +1,12 @@
 box::use(
-  testthat[expect_equal, expect_length, expect_true, test_that],
+  testthat[
+    expect_equal,
+    expect_false,
+    expect_length,
+    expect_s3_class,
+    expect_true,
+    test_that,
+  ],
 )
 
 box::use(
@@ -45,8 +52,8 @@ test_that("create_cluster_bundle produces a bundle that passes validate_bundle (
 
   expect_equal(bundle$analysis_type, "cluster")
   expect_equal(bundle$variant, "kmeans")
-  expect_true(!is.null(bundle$model))
-  expect_true(inherits(bundle$model, "kmeans"))
+  expect_false(is.null(bundle$model))
+  expect_s3_class(bundle$model, "kmeans")
   expect_equal(bundle$cluster_metric, "euclidean")
   expect_length(bundle$cluster_labels, nrow(data))
 
@@ -78,7 +85,7 @@ test_that("create_cluster_bundle produces a bundle that passes validate_bundle (
   )
 
   expect_equal(bundle$variant, "pam")
-  expect_true(inherits(bundle$model, "pam"))
+  expect_s3_class(bundle$model, "pam")
   expect_equal(bundle$cluster_metric, "manhattan")
 
   validation <- validate_bundle(bundle)

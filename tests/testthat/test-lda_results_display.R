@@ -36,7 +36,7 @@ render_ok <- function(result) {
   html <- as.character(
     results_display$render_lda_results(result, ns)
   )
-  nchar(html) > 0
+  nzchar(html, keepNA = TRUE)
 }
 
 

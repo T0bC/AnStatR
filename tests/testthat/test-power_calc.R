@@ -1,5 +1,17 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_gte,
+  ],
+  testthat[
+    expect_lt,
+    expect_lte,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -54,7 +66,7 @@ describe("solve_sample_size", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value > 0)
+    expect_gt(result$result$value, 0)
     expect_true(result$result$value == floor(result$result$value))
     expect_equal(result$result$type, "sample_size")
   })
@@ -111,8 +123,8 @@ describe("solve_power", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value > 0)
-    expect_true(result$result$value < 1)
+    expect_gt(result$result$value, 0)
+    expect_lt(result$result$value, 1)
     expect_equal(result$result$type, "power")
   })
 
@@ -128,8 +140,8 @@ describe("solve_power", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value > 0)
-    expect_true(result$result$value < 1)
+    expect_gt(result$result$value, 0)
+    expect_lt(result$result$value, 1)
   })
 })
 
@@ -149,7 +161,7 @@ describe("solve_mde", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value > 0)
+    expect_gt(result$result$value, 0)
     expect_equal(result$result$type, "mde")
   })
 })
@@ -171,8 +183,8 @@ describe("simulation path", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value >= 0)
-    expect_true(result$result$value <= 1)
+    expect_gte(result$result$value, 0)
+    expect_lte(result$result$value, 1)
   })
 
   it("robust approach returns a numeric power in (0,1)", {
@@ -187,8 +199,8 @@ describe("simulation path", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value >= 0)
-    expect_true(result$result$value <= 1)
+    expect_gte(result$result$value, 0)
+    expect_lte(result$result$value, 1)
   })
 
   it("returns an app error when n_sim is NA in simulation mode", {
@@ -235,7 +247,7 @@ describe("generate_power_curve", {
     expect_true(is.data.frame(curve))
     expect_true("n" %in% names(curve))
     expect_true("power" %in% names(curve))
-    expect_true(nrow(curve) > 0)
+    expect_gt(nrow(curve), 0)
   })
 
   it("power increases with sample size", {
@@ -245,7 +257,7 @@ describe("generate_power_curve", {
     )
     curve <- power_calc$generate_power_curve(params, n_range = c(10, 50, 100))
 
-    expect_true(curve$power[3] > curve$power[1])
+    expect_gt(curve$power[3], curve$power[1])
   })
 })
 
@@ -271,8 +283,8 @@ describe("raw effect type with per-group SDs", {
     result <- power_calc$perform_power_analysis(params)
 
     expect_false(error_handling$is_app_error(result))
-    expect_true(result$result$value > 0)
-    expect_true(result$result$value < 1)
+    expect_gt(result$result$value, 0)
+    expect_lt(result$result$value, 1)
   })
 
   it("computes different Cohen's f for different SD vectors", {
@@ -311,7 +323,7 @@ describe("raw effect type with per-group SDs", {
     expect_false(error_handling$is_app_error(result_small))
     expect_false(error_handling$is_app_error(result_large))
     # Smaller SD = larger effect size = higher power
-    expect_true(result_small$effect_f > result_large$effect_f)
-    expect_true(result_small$result$value > result_large$result$value)
+    expect_gt(result_small$effect_f, result_large$effect_f)
+    expect_gt(result_small$result$value, result_large$result$value)
   })
 })

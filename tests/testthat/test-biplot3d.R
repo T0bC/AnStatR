@@ -1,5 +1,12 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -20,7 +27,7 @@ make_pca_result <- function(n = 20, p = 5,
     matrix(rnorm(n * p), nrow = n)
   )
   colnames(data) <- paste0("V", seq_len(p))
-  data$G1 <- rep(c("A", "B"), length.out = n)
+  data$G1 <- rep_len(c("A", "B"), n)
 
   res <- pca$run_pca(
     data, paste0("V", seq_len(p)),
@@ -45,7 +52,7 @@ describe("create_biplot3d", {
       dim_z = "Dim.3"
     )
     expect_true(result$success)
-    expect_true(inherits(result$result, "plotly"))
+    expect_s3_class(result$result, "plotly")
   })
 
   it("returns success with grouping", {
@@ -64,7 +71,7 @@ describe("create_biplot3d", {
     result <- biplot3d$create_biplot3d(
       pca_result = NULL
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for invalid dimension", {
@@ -75,7 +82,7 @@ describe("create_biplot3d", {
       dim_y = "Dim.2",
       dim_z = "Dim.3"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error when fewer than 3 dims", {
@@ -86,7 +93,7 @@ describe("create_biplot3d", {
       dim_y = "Dim.2",
       dim_z = "Dim.3"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for duplicate dimensions", {
@@ -97,7 +104,7 @@ describe("create_biplot3d", {
       dim_y = "Dim.1",
       dim_z = "Dim.3"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 })
 

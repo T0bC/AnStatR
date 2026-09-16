@@ -3,8 +3,9 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_length,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -27,12 +28,12 @@ describe("calculate_kmo", {
     )
     result <- kmo$calculate_kmo(data)
     expect_true(result$success)
-    expect_true(!is.null(result$result$overall))
-    expect_true(!is.null(result$result$individual))
+    expect_false(is.null(result$result$overall))
+    expect_false(is.null(result$result$individual))
     expect_true(
       result$result$overall >= 0 && result$result$overall <= 1
     )
-    expect_equal(length(result$result$individual), 4)
+    expect_length(result$result$individual, 4)
   })
 
   it("returns individual KMO for each variable", {
@@ -74,10 +75,10 @@ describe("calculate_kmo", {
     data <- data.frame(a = rep(1, 10), b = rep(2, 10))
     result <- suppressWarnings(kmo$calculate_kmo(data))
     expect_false(result$success)
-    expect_true(!is.null(result$error$context))
+    expect_false(is.null(result$error$context))
     expect_equal(result$error$context$n_variables, 2)
     expect_equal(result$error$context$n_observations, 10)
-    expect_true(!is.null(
+    expect_false(is.null(
       result$error$context$problematic_variables
     ))
   })

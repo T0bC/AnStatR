@@ -3,8 +3,11 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_lte,
+    expect_null,
+    expect_s3_class,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -47,7 +50,7 @@ describe("create_var_contrib_jitter_plot", {
       display_ncp = 2L
     )
     expect_true(res$success)
-    expect_true(inherits(res$result$plot, "ggplot"))
+    expect_s3_class(res$result$plot, "ggplot")
   })
 
   it("includes title when show_title = TRUE", {
@@ -56,7 +59,7 @@ describe("create_var_contrib_jitter_plot", {
       display_ncp = 2L, show_title = TRUE
     )
     expect_true(res$success)
-    expect_true(!is.null(res$result$plot$labels$title))
+    expect_false(is.null(res$result$plot$labels$title))
   })
 
   it("omits title when show_title = FALSE", {
@@ -65,7 +68,7 @@ describe("create_var_contrib_jitter_plot", {
       display_ncp = 2L, show_title = FALSE
     )
     expect_true(res$success)
-    expect_true(is.null(res$result$plot$labels$title))
+    expect_null(res$result$plot$labels$title)
   })
 
   it("clamps display_ncp to available dims", {
@@ -74,7 +77,7 @@ describe("create_var_contrib_jitter_plot", {
       display_ncp = 10L
     )
     expect_true(res$success)
-    expect_true(res$result$n_dims_shown <= 4L)
+    expect_lte(res$result$n_dims_shown, 4L)
   })
 
   it("returns filter metadata", {

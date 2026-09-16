@@ -2,9 +2,10 @@ box::use(
   testthat[
     describe,
     expect_equal,
+    expect_false,
     expect_null,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -77,6 +78,6 @@ describe("create_tune_spca_plot", {
 
   it("fails cleanly rather than erroring on unusable input", {
     res <- create_tune_spca_plot(NULL, grid = c(2, 4))
-    expect_true(!is.null(res$error))
+    expect_false(is.null(res$error))
   })
 })

@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_gt,
+    expect_length,
+    expect_lt,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -180,9 +188,9 @@ describe("extract_pilot_stats", {
     )
 
     expect_true(is.list(result))
-    expect_equal(length(result$group_means), 3)
-    expect_true(result$pooled_sd > 0)
-    expect_equal(length(result$group_names), 3)
+    expect_length(result$group_means, 3)
+    expect_gt(result$pooled_sd, 0)
+    expect_length(result$group_names, 3)
   })
 
   it("returns error for missing measure column", {
@@ -223,10 +231,10 @@ describe("simulate_group_data with per-group SDs", {
     sd_b <- sd(df$measure[df$group == "B"])
 
     # Group A should have much smaller SD than Group B
-    expect_true(sd_a < sd_b)
+    expect_lt(sd_a, sd_b)
     # Observed SDs should be close to specified (within sampling error)
-    expect_true(abs(sd_a - 0.1) < 0.05)
-    expect_true(abs(sd_b - 5) < 1)
+    expect_lt(abs(sd_a - 0.1), 0.05)
+    expect_lt(abs(sd_b - 5), 1)
   })
 
   it("expands single SD to all groups", {
@@ -246,7 +254,7 @@ describe("simulate_group_data with per-group SDs", {
     sd_b <- sd(df$measure[df$group == "B"])
     sd_c <- sd(df$measure[df$group == "C"])
 
-    expect_true(abs(sd_a - sd_b) < 0.5)
-    expect_true(abs(sd_b - sd_c) < 0.5)
+    expect_lt(abs(sd_a - sd_b), 0.5)
+    expect_lt(abs(sd_b - sd_c), 0.5)
   })
 })

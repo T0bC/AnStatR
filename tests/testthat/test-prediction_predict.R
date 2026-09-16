@@ -2,10 +2,12 @@ box::use(
   testthat[
     expect_equal,
     expect_false,
+    expect_gt,
+    expect_gte,
     expect_length,
     expect_null,
     expect_true,
-    test_that
+    test_that,
   ],
 )
 
@@ -493,7 +495,7 @@ test_that("predict_unknown works for cluster kmeans (nearest centroid)", {
     as.character(result$result$predicted_class)
   )))
   expect_null(result$result$posterior)
-  expect_true(ncol(result$result$scores) >= 2)
+  expect_gte(ncol(result$result$scores), 2)
 })
 
 test_that("predict_unknown works for cluster pam (nearest medoid)", {
@@ -506,7 +508,7 @@ test_that("predict_unknown works for cluster pam (nearest medoid)", {
   expect_equal(result$result$analysis_type, "cluster")
   expect_length(result$result$predicted_class, 30)
   expect_null(result$result$posterior)
-  expect_true(ncol(result$result$scores) >= 2)
+  expect_gte(ncol(result$result$scores), 2)
 })
 
 test_that("predict_cluster assigns exact training points to their own cluster", {
@@ -582,7 +584,7 @@ test_that("stored transform params reproduce training transform", {
     expect_true(transform_res$success)
 
     params <- transform_res$result$transform_params
-    expect_true(length(params) > 0)
+    expect_gt(length(params), 0)
 
     # Apply stored transform to new data
     x_new <- rexp(20, rate = 0.5)

@@ -4,8 +4,9 @@ box::use(
     expect_equal,
     expect_error,
     expect_false,
+    expect_length,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -26,9 +27,9 @@ describe("compute_correlation_data", {
       data, c("a", "b", "c")
     )
     expect_true(result$success)
-    expect_true(!is.null(result$result$cor_long))
-    expect_true(!is.null(result$result$ordered_cols))
-    expect_equal(length(result$result$ordered_cols), 3)
+    expect_false(is.null(result$result$cor_long))
+    expect_false(is.null(result$result$ordered_cols))
+    expect_length(result$result$ordered_cols, 3)
   })
 
   it("returns long-format data with expected columns", {
@@ -53,7 +54,7 @@ describe("compute_correlation_data", {
       data, c("a")
     )
     expect_false(result$success)
-    expect_true(!is.null(result$error))
+    expect_false(is.null(result$error))
     expect_true(result$error$is_error)
   })
 
@@ -134,7 +135,7 @@ describe("compute_correlation_data", {
     )
     expect_true(result$success)
     ordered <- result$result$ordered_cols
-    expect_equal(length(ordered), 3)
+    expect_length(ordered, 3)
     expect_true(all(ordered %in% c("a", "b", "c")))
   })
 
@@ -143,7 +144,7 @@ describe("compute_correlation_data", {
       NULL, c("a", "b")
     )
     expect_false(result$success)
-    expect_true(!is.null(result$error$context))
+    expect_false(is.null(result$error$context))
     expect_equal(result$error$context$n_columns, 2)
   })
 })
@@ -241,7 +242,7 @@ describe("cluster_columns", {
       dimnames = list(c("a", "b", "c"), c("a", "b", "c"))
     )
     result <- impl$cluster_columns(mat, c("a", "b", "c"))
-    expect_equal(length(result), 3)
+    expect_length(result, 3)
     expect_true(all(result %in% c("a", "b", "c")))
   })
 })

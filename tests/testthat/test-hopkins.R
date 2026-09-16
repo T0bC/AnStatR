@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_length,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -36,7 +44,7 @@ describe("compute_hopkins", {
     result <- hopkins$compute_hopkins(data, c("a", "b"))
     expect_true(result$success)
     expect_equal(result$result$n, 30)
-    expect_true(!is.null(result$result$warnings$small_n))
+    expect_false(is.null(result$result$warnings$small_n))
   })
 
   it("uses m = 10% of n for large datasets", {
@@ -63,13 +71,13 @@ describe("compute_hopkins", {
 
   it("returns error for NULL data", {
     result <- hopkins$compute_hopkins(NULL, c("a"))
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for empty columns", {
     data <- data.frame(a = 1:10)
     result <- hopkins$compute_hopkins(data, character(0))
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for non-numeric columns", {
@@ -79,13 +87,13 @@ describe("compute_hopkins", {
       stringsAsFactors = FALSE
     )
     result <- hopkins$compute_hopkins(data, c("a", "b"))
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for missing columns", {
     data <- data.frame(a = 1:10)
     result <- hopkins$compute_hopkins(data, c("a", "z"))
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("includes high_dims warning for > 10 dimensions", {
@@ -97,7 +105,7 @@ describe("compute_hopkins", {
     names(data) <- cols
     result <- hopkins$compute_hopkins(data, cols)
     expect_true(result$success)
-    expect_true(!is.null(result$result$warnings$high_dims))
+    expect_false(is.null(result$result$warnings$high_dims))
   })
 })
 
@@ -132,27 +140,27 @@ describe("interpret_hopkins", {
 describe("build_warnings", {
   it("returns small_n warning when n <= 100", {
     warns <- impl$build_warnings(50, 3, 3)
-    expect_true(!is.null(warns$small_n))
+    expect_false(is.null(warns$small_n))
   })
 
   it("does not return small_n warning when n > 100", {
     warns <- impl$build_warnings(150, 3, 15)
-    expect_true(is.null(warns$small_n))
+    expect_null(warns$small_n)
   })
 
   it("returns high_dims warning when dims > 10", {
     warns <- impl$build_warnings(150, 12, 15)
-    expect_true(!is.null(warns$high_dims))
+    expect_false(is.null(warns$high_dims))
   })
 
   it("does not return high_dims warning when dims <= 10", {
     warns <- impl$build_warnings(150, 5, 15)
-    expect_true(is.null(warns$high_dims))
+    expect_null(warns$high_dims)
   })
 
   it("returns empty list when no warnings apply", {
     warns <- impl$build_warnings(150, 5, 15)
-    expect_equal(length(warns), 0)
+    expect_length(warns, 0)
   })
 })
 

@@ -1,6 +1,13 @@
 box::use(
   openxlsx,
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_length,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -18,7 +25,7 @@ make_pca_result <- function(analysis_type = "pca", n = 20, p = 5) {
     matrix(rnorm(n * p), nrow = n)
   )
   colnames(data) <- paste0("V", seq_len(p))
-  data$G1 <- rep(c("A", "B"), length.out = n)
+  data$G1 <- rep_len(c("A", "B"), n)
 
   keep_x <- if (analysis_type == "spca") rep(3L, p) else NULL
 
@@ -47,7 +54,7 @@ describe("create_pca_excel", {
     wb <- openxlsx$loadWorkbook(file)
     sheet_names <- openxlsx$sheets(wb)
 
-    expect_equal(length(sheet_names), 7)
+    expect_length(sheet_names, 7)
     expect_true("Variance Explained" %in% sheet_names)
     expect_true("Variable Loadings" %in% sheet_names)
     expect_true("Variable Contributions" %in% sheet_names)
@@ -67,7 +74,7 @@ describe("create_pca_excel", {
     wb <- openxlsx$loadWorkbook(file)
     sheet_names <- openxlsx$sheets(wb)
 
-    expect_equal(length(sheet_names), 3)
+    expect_length(sheet_names, 3)
     expect_true("Variance Explained" %in% sheet_names)
     expect_true("Variable Loadings" %in% sheet_names)
     expect_true("Individual Scores" %in% sheet_names)

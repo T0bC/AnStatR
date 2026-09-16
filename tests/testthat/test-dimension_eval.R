@@ -1,5 +1,11 @@
 box::use(
-  testthat[describe, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_false,
+    expect_gt,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -46,7 +52,7 @@ describe("evaluate_dimensions", {
     dim_eval <- evaluate_dimensions(res$result)
     expect_true(dim_eval$success)
     expect_true(is.data.frame(dim_eval$result))
-    expect_true(nrow(dim_eval$result) > 0)
+    expect_gt(nrow(dim_eval$result), 0)
     expect_true(all(
       c("Dimension", "F", "p.value", "R2") %in% names(dim_eval$result)
     ))
@@ -82,7 +88,7 @@ describe("evaluate_dimensions", {
     )
     expect_true(res$success)
     # predicted_class exists, so the old fallback would have fired here.
-    expect_true(!is.null(res$result$predicted_class))
+    expect_false(is.null(res$result$predicted_class))
 
     dim_eval <- evaluate_dimensions(res$result)
     expect_false(isTRUE(dim_eval$success))

@@ -2,11 +2,15 @@ box::use(
   testthat[
     expect_equal,
     expect_false,
+    expect_gte,
     expect_length,
+    expect_lt,
+  ],
+  testthat[
     expect_null,
     expect_setequal,
     expect_true,
-    test_that
+    test_that,
   ],
 )
 
@@ -362,8 +366,8 @@ test_that("diagnostics_pca: training data reproduces small T2 and Q", {
   expect_equal(nrow(diag), nrow(train_data))
 
   train_t2_95 <- stats::quantile(diag$T2, 0.95)
-  expect_true(mean(diag$T2 <= train_t2_95) >= 0.90)
-  expect_true(mean(diag$Q_residual) < 1e-6)
+  expect_gte(mean(diag$T2 <= train_t2_95), 0.90)
+  expect_lt(mean(diag$Q_residual), 1e-6)
 })
 
 test_that("diagnostics_pca flags a synthetic far-outlier row", {
@@ -412,7 +416,7 @@ test_that("diagnostics_pca works for sPCA training data", {
   expect_true(diag_res$success)
   diag <- diag_res$result
   expect_false(is.null(diag))
-  expect_true(mean(diag$Q_residual <= diag$Q_threshold) >= 0.90)
+  expect_gte(mean(diag$Q_residual <= diag$Q_threshold), 0.90)
 })
 
 test_that("diagnostics_pca works for IPCA training data", {
@@ -428,7 +432,7 @@ test_that("diagnostics_pca works for IPCA training data", {
   expect_true(diag_res$success)
   diag <- diag_res$result
   expect_false(is.null(diag))
-  expect_true(mean(diag$Q_residual <= diag$Q_threshold) >= 0.90)
+  expect_gte(mean(diag$Q_residual <= diag$Q_threshold), 0.90)
 })
 
 # --- Mahalanobis/typicality: LDA / QDA / MDA ---
@@ -452,7 +456,7 @@ test_that("diagnostics_original_space: point at group mean has ~0 Mahalanobis", 
   expect_true(diag_res$success)
   diag <- diag_res$result
 
-  expect_true(diag$Mahalanobis_to_nearest[1] < 1e-6)
+  expect_lt(diag$Mahalanobis_to_nearest[1], 1e-6)
   expect_equal(diag$Nearest_group[1], "setosa")
 })
 
@@ -494,7 +498,7 @@ test_that("diagnostics_original_space flags an unrepresented-group despite a for
   expect_true(diag_res$success)
   diag <- diag_res$result
 
-  expect_true(diag$Typicality_p[1] < 0.05)
+  expect_lt(diag$Typicality_p[1], 0.05)
 })
 
 test_that("diagnostics_original_space: QDA group_stats are per-group, not pooled", {
@@ -591,7 +595,7 @@ test_that("diagnostics_cluster: point at a blob center has low distance-ratio", 
   expect_true(diag_res$success)
   diag <- diag_res$result
 
-  expect_true(diag$Distance_ratio[1] < 0.5)
+  expect_lt(diag$Distance_ratio[1], 0.5)
 })
 
 test_that("diagnostics_cluster: centroid-midpoint tie gives Distance_ratio == 1", {

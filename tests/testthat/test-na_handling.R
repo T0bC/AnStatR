@@ -2,8 +2,9 @@ box::use(
   testthat[
     describe,
     expect_equal,
+    expect_gt,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -120,7 +121,7 @@ describe("clean_na_rows", {
     result <- na_handling$clean_na_rows(
       data, c("a", "b")
     )
-    expect_true(nrow(result$na_summary) > 0)
+    expect_gt(nrow(result$na_summary), 0)
     expect_true("a" %in% result$na_summary$column)
     expect_true("b" %in% result$na_summary$column)
   })

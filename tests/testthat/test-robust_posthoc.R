@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_lte,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -37,7 +45,7 @@ make_twoway_data <- function(n_per_cell = 10) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0)
   rownames(df) <- NULL
   df
@@ -53,7 +61,7 @@ make_threeway_data <- function(n_per_cell = 5) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0) +
     ifelse(df$f3 == "M", 0.3, 0)
   rownames(df) <- NULL
@@ -120,7 +128,7 @@ describe("perform_lincon 2-way", {
       tr_value = 0.2
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Interaction" %in% names(result))
     expect_true("Lincon.psihat" %in% names(result))
   })
@@ -140,7 +148,7 @@ describe("perform_lincon 3-way", {
       tr_value = 0.2
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Interaction" %in% names(result))
   })
 })
@@ -183,7 +191,7 @@ describe("perform_lincon bootstrap", {
       boot_sample_size = NULL
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     # Bootstrap results are formatted as "mean [lower - upper]"
     expect_true(grepl("\\[", result$Lincon.psihat[1]))
   })
@@ -285,7 +293,7 @@ describe("perform_cliff bootstrap", {
       boot_sample_size = NULL
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true(grepl("\\[", result$Cliff.psihat[1]))
   })
 })
@@ -350,7 +358,7 @@ describe("perform_combined_posthoc 2-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Lincon.psihat" %in% names(result))
     expect_true("Cliff.psihat" %in% names(result))
   })
@@ -371,7 +379,7 @@ describe("perform_combined_posthoc 3-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Lincon.psihat" %in% names(result))
     expect_true("Cliff.psihat" %in% names(result))
   })
@@ -400,9 +408,7 @@ describe("perform_combined_posthoc filter_valid", {
     )
     if (is.data.frame(result_all) &&
           is.data.frame(result_filtered)) {
-      expect_true(
-        nrow(result_filtered) <= nrow(result_all)
-      )
+      expect_lte(nrow(result_filtered), nrow(result_all))
     }
   })
 })
@@ -445,7 +451,7 @@ describe("perform_combined_posthoc bootstrap", {
       boot_sample_size = NULL
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Lincon.psihat" %in% names(result))
     expect_true("Cliff.psihat" %in% names(result))
   })
@@ -464,7 +470,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
     stringsAsFactors = FALSE
   )
   grid$measure <- rnorm(nrow(grid)) +
-    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    as.integer(grid$COMPOSITE == "B") +
     ifelse(grid$TIME == "T2", 0.5, 0)
   grid
 }
@@ -493,7 +499,7 @@ describe("perform_rm_robust_posthoc 2-way RM", {
     expect_true("Lincon.p.adjusted" %in% names(result))
     expect_true("Cliff.psihat" %in% names(result))
     expect_true("Cliff.p.adjusted" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 
   it("returns same row count as filter_valid unpaired", {
@@ -646,7 +652,7 @@ describe("perform_combined_posthoc RM path", {
     expect_false("Type" %in% names(result))
     expect_true("Lincon.p.value" %in% names(result))
     expect_true("Cliff.psihat" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 })
 

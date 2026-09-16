@@ -1,5 +1,14 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_null, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_length,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -365,7 +374,7 @@ describe("sanitize_factor_structure", {
 
     expect_equal(result$factors[[1]]$name, "Material")
     expect_equal(result$factors[[1]]$levels, c("A", "B", "C"))
-    expect_equal(length(result$warnings), 0)
+    expect_length(result$warnings, 0)
   })
 
   it("sanitizes factor names with spaces", {
@@ -375,7 +384,7 @@ describe("sanitize_factor_structure", {
     result <- validate$sanitize_factor_structure(factors)
 
     expect_equal(result$factors[[1]]$name, "MyMaterial")
-    expect_true(length(result$warnings) > 0)
+    expect_gt(length(result$warnings), 0)
   })
 
   it("sanitizes level names with special characters", {
@@ -385,7 +394,7 @@ describe("sanitize_factor_structure", {
     result <- validate$sanitize_factor_structure(factors)
 
     expect_equal(result$factors[[1]]$levels, c("GroupA", "GroupB", "GroupC"))
-    expect_true(length(result$warnings) > 0)
+    expect_gt(length(result$warnings), 0)
   })
 
   it("makes duplicate levels unique after sanitization", {
@@ -413,15 +422,15 @@ describe("sanitize_factor_structure", {
   it("handles empty factors list", {
     result <- validate$sanitize_factor_structure(list())
 
-    expect_equal(length(result$factors), 0)
-    expect_equal(length(result$warnings), 0)
+    expect_length(result$factors, 0)
+    expect_length(result$warnings, 0)
   })
 
   it("handles NULL input", {
     result <- validate$sanitize_factor_structure(NULL)
 
-    expect_equal(length(result$factors), 0)
-    expect_equal(length(result$warnings), 0)
+    expect_length(result$factors, 0)
+    expect_length(result$warnings, 0)
   })
 })
 

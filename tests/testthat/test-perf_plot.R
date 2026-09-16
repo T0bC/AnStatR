@@ -1,5 +1,12 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -49,7 +56,7 @@ describe("create_perf_error_plot", {
       make_errors(c(0.42, 0.21, 0.20), c(0.45, 0.22, 0.19))
     )
     expect_true(res$success)
-    expect_true(inherits(res$result, "girafe"))
+    expect_s3_class(res$result, "girafe")
   })
 
   it("handles a single-component model", {

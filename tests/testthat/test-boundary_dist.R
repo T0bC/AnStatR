@@ -1,5 +1,12 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -63,8 +70,8 @@ describe("decision boundary distance rules", {
     result <- fit()
     for (dist in c("max.dist", "centroids.dist", "mahalanobis.dist")) {
       grid <- boundary_grid(result, dist)
-      expect_true(!is.null(grid))
-      expect_true(nrow(grid) > 1000)
+      expect_false(is.null(grid))
+      expect_gt(nrow(grid), 1000)
       expect_true(all(grid$class %in% c("a", "b", "c")))
     }
   })
@@ -78,8 +85,8 @@ describe("decision boundary distance rules", {
     expect_equal(nrow(g_max), nrow(g_cen))
     expect_equal(nrow(g_max), nrow(g_mah))
     # If these were identical the selector would be pointless.
-    expect_true(sum(g_max$class != g_mah$class) > 0)
-    expect_true(sum(g_max$class != g_cen$class) > 0)
+    expect_gt(sum(g_max$class != g_mah$class), 0)
+    expect_gt(sum(g_max$class != g_cen$class), 0)
   })
 
   it("defaults to max.dist when no rule is given", {
@@ -99,7 +106,7 @@ describe("decision boundary distance rules", {
         break
       }
     }
-    expect_true(!is.null(explicit))
+    expect_false(is.null(explicit))
     expect_equal(explicit$class, default_grid$class)
   })
 
@@ -135,15 +142,15 @@ describe("boundary rules on non-leading component pairs", {
     result <- fit4()
     g_cen <- boundary_grid(result, "centroids.dist", "Comp3", "Comp4")
     g_mah <- boundary_grid(result, "mahalanobis.dist", "Comp3", "Comp4")
-    expect_true(!is.null(g_cen))
-    expect_true(sum(g_cen$class != g_mah$class) > 0)
+    expect_false(is.null(g_cen))
+    expect_gt(sum(g_cen$class != g_mah$class), 0)
   })
 
   it("handles reversed component order", {
     result <- fit4()
     g_cen <- boundary_grid(result, "centroids.dist", "Comp4", "Comp2")
     g_mah <- boundary_grid(result, "mahalanobis.dist", "Comp4", "Comp2")
-    expect_true(!is.null(g_cen))
-    expect_true(sum(g_cen$class != g_mah$class) > 0)
+    expect_false(is.null(g_cen))
+    expect_gt(sum(g_cen$class != g_mah$class), 0)
   })
 })

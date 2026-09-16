@@ -1,5 +1,17 @@
 box::use(
-  testthat[describe, expect_equal, expect_null, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gte,
+  ],
+  testthat[
+    expect_length,
+    expect_null,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -35,13 +47,13 @@ describe("validate_inputs", {
   it("returns valid = FALSE when no columns selected", {
     data <- data.frame(a = 1:3)
     result <- cluster$validate_inputs(NULL, data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for missing columns", {
     data <- data.frame(a = 1:3)
     result <- cluster$validate_inputs(c("a", "z"), data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 })
 
@@ -58,12 +70,12 @@ describe("run_clustering kmeans euclidean", {
     )
     expect_true(result$success)
     r <- result$result
-    expect_equal(length(r$clusters), nrow(data))
+    expect_length(r$clusters, nrow(data))
     expect_equal(r$n_clusters, 2)
     expect_equal(r$algorithm, "kmeans")
     expect_equal(r$metric, "euclidean")
     expect_equal(r$details$variant, "kmeans")
-    expect_true(!is.null(r$details$centers))
+    expect_false(is.null(r$details$centers))
   })
 
   it("retains the fitted kmeans model object", {
@@ -74,8 +86,8 @@ describe("run_clustering kmeans euclidean", {
     )
     expect_true(result$success)
     fitted <- result$result$details$fitted_model
-    expect_true(!is.null(fitted))
-    expect_true(inherits(fitted, "kmeans"))
+    expect_false(is.null(fitted))
+    expect_s3_class(fitted, "kmeans")
   })
 
   it("assigns all rows to a cluster", {
@@ -104,7 +116,7 @@ describe("run_clustering kmeans manhattan (PAM)", {
     r <- result$result
     expect_equal(r$details$variant, "pam")
     expect_equal(r$metric, "manhattan")
-    expect_true(!is.null(r$details$medoids))
+    expect_false(is.null(r$details$medoids))
   })
 
   it("retains the fitted pam model object", {
@@ -115,8 +127,8 @@ describe("run_clustering kmeans manhattan (PAM)", {
     )
     expect_true(result$success)
     fitted <- result$result$details$fitted_model
-    expect_true(!is.null(fitted))
-    expect_true(inherits(fitted, "pam"))
+    expect_false(is.null(fitted))
+    expect_s3_class(fitted, "pam")
   })
 })
 
@@ -137,7 +149,7 @@ describe("run_clustering hierarchical", {
     expect_equal(r$algorithm, "hierarchical")
     expect_equal(r$details$variant, "hclust")
     expect_equal(r$details$method, "ward.D2")
-    expect_equal(length(r$clusters), nrow(data))
+    expect_length(r$clusters, nrow(data))
   })
 
   it("works with single linkage and manhattan", {
@@ -193,8 +205,8 @@ describe("run_clustering dbscan", {
     r <- result$result
     expect_equal(r$algorithm, "dbscan")
     expect_equal(r$details$variant, "dbscan")
-    expect_true(r$details$n_clusters_found >= 1)
-    expect_true(!is.null(r$details$eps))
+    expect_gte(r$details$n_clusters_found, 1)
+    expect_false(is.null(r$details$eps))
   })
 
   it("ignores n_clusters parameter", {
@@ -232,12 +244,12 @@ describe("shared quality metrics", {
     )
     expect_true(r$success)
     d <- r$result$details
-    expect_true(!is.na(d$silhouette_avg))
+    expect_false(is.na(d$silhouette_avg))
     expect_true(d$silhouette_avg >= -1 && d$silhouette_avg <= 1)
-    expect_true(!is.na(d$bss_tss))
+    expect_false(is.na(d$bss_tss))
     expect_true(d$bss_tss >= 0 && d$bss_tss <= 1)
-    expect_true(!is.null(d$tot_withinss))
-    expect_true(!is.null(d$size))
+    expect_false(is.null(d$tot_withinss))
+    expect_false(is.null(d$size))
   })
 
   it("hierarchical returns silhouette, bss_tss, withinss", {
@@ -249,10 +261,10 @@ describe("shared quality metrics", {
     )
     expect_true(r$success)
     d <- r$result$details
-    expect_true(!is.na(d$silhouette_avg))
-    expect_true(!is.na(d$bss_tss))
-    expect_true(!is.null(d$tot_withinss))
-    expect_true(!is.null(d$size))
+    expect_false(is.na(d$silhouette_avg))
+    expect_false(is.na(d$bss_tss))
+    expect_false(is.null(d$tot_withinss))
+    expect_false(is.null(d$size))
   })
 
   it("pam returns silhouette, bss_tss, withinss", {
@@ -263,9 +275,9 @@ describe("shared quality metrics", {
     )
     expect_true(r$success)
     d <- r$result$details
-    expect_true(!is.na(d$silhouette_avg))
-    expect_true(!is.na(d$bss_tss))
-    expect_true(!is.null(d$tot_withinss))
+    expect_false(is.na(d$silhouette_avg))
+    expect_false(is.na(d$bss_tss))
+    expect_false(is.null(d$tot_withinss))
   })
 
   it("dbscan returns silhouette, bss_tss, withinss", {
@@ -277,9 +289,9 @@ describe("shared quality metrics", {
     expect_true(r$success)
     d <- r$result$details
     # silhouette may be NA if only 1 cluster found
-    expect_true(!is.null(d$silhouette_avg))
-    expect_true(!is.null(d$bss_tss))
-    expect_true(!is.null(d$tot_withinss))
+    expect_false(is.null(d$silhouette_avg))
+    expect_false(is.null(d$bss_tss))
+    expect_false(is.null(d$tot_withinss))
   })
 
   it("bss + withinss equals totss", {
@@ -308,13 +320,13 @@ describe("compute_cluster_summary", {
     cs <- cluster$compute_cluster_summary(
       as.matrix(data[, c("a", "b")]), clusters
     )
-    expect_true(!is.null(cs))
+    expect_false(is.null(cs))
     expect_equal(nrow(cs$means), 2)
     expect_equal(ncol(cs$means), 2)
-    expect_equal(length(cs$cluster_ids), 2)
-    expect_equal(length(cs$n_per_cluster), 2)
+    expect_length(cs$cluster_ids, 2)
+    expect_length(cs$n_per_cluster, 2)
     expect_equal(sum(cs$n_per_cluster), 30)
-    expect_true(!is.null(cs$overall_mean))
+    expect_false(is.null(cs$overall_mean))
   })
 
   it("overall_mean matches colMeans of data", {
@@ -366,7 +378,7 @@ describe("run_clustering errors", {
     result <- cluster$run_clustering(
       data, c("nonexistent"), 2, "kmeans"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error when n_clusters >= nrow", {
@@ -374,7 +386,7 @@ describe("run_clustering errors", {
     result <- cluster$run_clustering(
       data, c("a", "b"), 5, "kmeans"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for unknown algorithm", {
@@ -382,7 +394,7 @@ describe("run_clustering errors", {
     result <- cluster$run_clustering(
       data, c("a", "b"), 2, "unknown_algo"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("returns error for n_clusters < 2", {
@@ -390,7 +402,7 @@ describe("run_clustering errors", {
     result <- cluster$run_clustering(
       data, c("a", "b"), 1, "kmeans"
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 })
 

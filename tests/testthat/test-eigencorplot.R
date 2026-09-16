@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_error, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_error,
+    expect_false,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -112,7 +120,7 @@ describe("compute_eigencor_data", {
 
   it("fails when pca_result is NULL", {
     res <- eigencorplot$compute_eigencor_data(NULL)
-    expect_true(!res$success)
+    expect_false(res$success)
   })
 
   it("fails when metadata is only Row column", {
@@ -122,7 +130,7 @@ describe("compute_eigencor_data", {
     )
     pca_res <- pca$run_pca(test_data, c("a", "b", "c"))
     res <- eigencorplot$compute_eigencor_data(pca_res$result)
-    expect_true(!res$success)
+    expect_false(res$success)
   })
 })
 
@@ -141,7 +149,7 @@ describe("create_eigencor_plot", {
       eigencor_res$result
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "ggplot"))
+    expect_s3_class(plot_res$result, "ggplot")
   })
 })
 

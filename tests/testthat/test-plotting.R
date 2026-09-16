@@ -1,5 +1,10 @@
 box::use(
-  testthat[describe, expect_true, it],
+  testthat[
+    describe,
+    expect_false,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -20,12 +25,12 @@ describe("validate_inputs", {
   it("returns valid = FALSE when no columns selected", {
     data <- data.frame(a = 1:3)
     result <- validate$validate_inputs(NULL, data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 
   it("returns valid = FALSE for missing columns", {
     data <- data.frame(a = 1:3)
     result <- validate$validate_inputs(c("a", "z"), data)
-    expect_true(!result$valid)
+    expect_false(result$valid)
   })
 })

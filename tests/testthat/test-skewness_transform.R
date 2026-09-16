@@ -3,8 +3,14 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_gt,
+    expect_gte,
+  ],
+  testthat[
+    expect_length,
+    expect_lt,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -39,7 +45,7 @@ describe("detect_skewness", {
       data, "x"
     )
     expect_equal(nrow(result), 1)
-    expect_true(result$skewness[1] > 0)
+    expect_gt(result$skewness[1], 0)
     expect_equal(result$direction[1], "right")
     expect_true(result$is_skewed[1])
   })
@@ -55,7 +61,7 @@ describe("detect_skewness", {
       data, "x"
     )
     expect_equal(nrow(result), 1)
-    expect_true(result$skewness[1] < 0)
+    expect_lt(result$skewness[1], 0)
     expect_equal(result$direction[1], "left")
     expect_true(result$is_skewed[1])
   })
@@ -119,9 +125,7 @@ describe("detect_skewness", {
     result <- skewness_transform$detect_skewness(
       data, c("mild", "extreme")
     )
-    expect_true(
-      result$abs_skewness[1] >= result$abs_skewness[2]
-    )
+    expect_gte(result$abs_skewness[1], result$abs_skewness[2])
   })
 })
 
@@ -144,7 +148,7 @@ describe("transform_skewed", {
     )
     expect_true(result$success)
     expect_equal(nrow(result$result$transformed_cols), 0)
-    expect_equal(length(result$result$skipped_cols), 0)
+    expect_length(result$result$skipped_cols, 0)
     expect_equal(result$result$data, data)
   })
 
@@ -166,9 +170,9 @@ describe("transform_skewed", {
       result$result$transformed_cols$direction[1], "right"
     )
     # Skewness should be reduced
-    expect_true(
-      abs(result$result$transformed_cols$skewness_after[1]) <
-        abs(result$result$transformed_cols$skewness_before[1])
+    expect_lt(
+      abs(result$result$transformed_cols$skewness_after[1]),
+      abs(result$result$transformed_cols$skewness_before[1])
     )
     # Metadata should be preserved
     expect_equal(result$result$data$meta, data$meta)
@@ -192,9 +196,9 @@ describe("transform_skewed", {
       result$result$transformed_cols$direction[1], "left"
     )
     # bestNormalize selects the best method automatically
-    expect_true(nchar(
+    expect_gt(nchar(
       result$result$transformed_cols$method_used[1]
-    ) > 0)
+    ), 0)
   })
 
   it("does nothing when method is 'none'", {

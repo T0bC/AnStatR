@@ -1,5 +1,10 @@
 box::use(
-  testthat[describe, expect_true, it],
+  testthat[
+    describe,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -77,6 +82,6 @@ describe("app_version", {
 describe("get_default_theme", {
   it("returns a bs_theme object", {
     theme <- settings$get_default_theme()
-    expect_true(inherits(theme, "bs_theme"))
+    expect_s3_class(theme, "bs_theme")
   })
 })

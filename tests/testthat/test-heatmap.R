@@ -1,5 +1,11 @@
 box::use(
-  testthat[describe, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_false,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -37,7 +43,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       measure_cols = c("a", "b")
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with seriation = OLO (default)", {
@@ -48,7 +54,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       seriation = "OLO"
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with seriation = GW", {
@@ -59,7 +65,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       seriation = "GW"
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with seriation = mean", {
@@ -70,7 +76,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       seriation = "mean"
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with seriation = none", {
@@ -81,7 +87,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       seriation = "none"
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with show_labels = TRUE", {
@@ -92,7 +98,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       show_labels = TRUE
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with custom_labels", {
@@ -105,7 +111,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       custom_labels = labels
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 
   it("works with row_side_colors_df", {
@@ -119,7 +125,7 @@ describe("create_cluster_heatmap with hierarchical result", {
       row_side_colors_df = side_df
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 })
 
@@ -143,7 +149,7 @@ describe("create_cluster_heatmap with kmeans result", {
       measure_cols = c("a", "b")
     )
     expect_true(hm_res$success)
-    expect_true(inherits(hm_res$result, "plotly"))
+    expect_s3_class(hm_res$result, "plotly")
   })
 })
 
@@ -166,7 +172,7 @@ describe("create_cluster_heatmap with dbscan result", {
         measure_cols = c("a", "b")
       )
       expect_true(hm_res$success)
-      expect_true(inherits(hm_res$result, "plotly"))
+      expect_s3_class(hm_res$result, "plotly")
     }
   })
 })

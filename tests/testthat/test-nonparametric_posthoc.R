@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_lte,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -37,7 +45,7 @@ make_twoway_data <- function(n_per_cell = 10) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0)
   rownames(df) <- NULL
   df
@@ -53,7 +61,7 @@ make_threeway_data <- function(n_per_cell = 5) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0) +
     ifelse(df$f3 == "M", 0.3, 0)
   rownames(df) <- NULL
@@ -227,7 +235,7 @@ describe("perform_art_contrasts 3-way", {
       measure_col = "measure"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Interaction" %in% names(result))
     expect_true("ART.d" %in% names(result))
   })
@@ -332,7 +340,7 @@ describe("perform_combined_np_posthoc 2-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("ART.estimate" %in% names(result))
     expect_true("ART.p.adjusted" %in% names(result))
     expect_true("ART.d" %in% names(result))
@@ -353,7 +361,7 @@ describe("perform_combined_np_posthoc 3-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("ART.estimate" %in% names(result))
     expect_true("ART.d" %in% names(result))
   })
@@ -380,9 +388,7 @@ describe("perform_combined_np_posthoc filter_valid", {
     )
     if (is.data.frame(result_all) &&
           is.data.frame(result_filtered)) {
-      expect_true(
-        nrow(result_filtered) <= nrow(result_all)
-      )
+      expect_lte(nrow(result_filtered), nrow(result_all))
     }
   })
 })
@@ -420,7 +426,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
     stringsAsFactors = FALSE
   )
   grid$measure <- rnorm(nrow(grid)) +
-    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    as.integer(grid$COMPOSITE == "B") +
     ifelse(grid$TIME == "T2", 0.5, 0)
   grid
 }
@@ -508,7 +514,7 @@ describe("perform_rm_np_posthoc 2-way RM", {
     expect_true("ART.p.value" %in% names(result))
     expect_true("ART.p.adjusted" %in% names(result))
     expect_true("ART.d" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 
   it("returns same row count as filter_valid unpaired", {
@@ -690,7 +696,7 @@ describe("perform_combined_np_posthoc RM path", {
     expect_false("Type" %in% names(result))
     expect_true("ART.p.value" %in% names(result))
     expect_true("ART.d" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 })
 

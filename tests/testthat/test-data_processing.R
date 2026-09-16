@@ -75,7 +75,7 @@ describe("detect_outliers", {
       small_df, "value", grp_small,
       method = "IQR"
     )
-    expect_true(all(!result))
+    expect_false(any(result))
   })
 
   it("handles NaN and Inf gracefully", {
@@ -130,7 +130,7 @@ describe("mark_trimmed", {
     values <- 1:10
     grp <- factor(rep("A", 10))
     result <- data_processing$mark_trimmed(values, grp, 0)
-    expect_true(all(!result))
+    expect_false(any(result))
   })
 
   it("trims correct number from each end", {
@@ -214,8 +214,8 @@ describe("process_data", {
       trim_percent = 0,
       outlier_options = list(enabled = FALSE)
     )
-    expect_true(all(!result$measurement_A_outlier))
-    expect_true(all(!result$measurement_A_trimmed))
+    expect_false(any(result$measurement_A_outlier))
+    expect_false(any(result$measurement_A_trimmed))
   })
 
   it("detects outliers when enabled", {
@@ -243,7 +243,7 @@ describe("process_data", {
     )
     # Outlier rows should NOT be marked as trimmed
     outlier_rows <- which(result$measurement_A_outlier)
-    expect_true(all(!result$measurement_A_trimmed[outlier_rows]))
+    expect_false(any(result$measurement_A_trimmed[outlier_rows]))
   })
 
   it("applies trimming without outlier detection", {
@@ -253,7 +253,7 @@ describe("process_data", {
       outlier_options = list(enabled = FALSE)
     )
     expect_true(any(result$measurement_A_trimmed))
-    expect_true(all(!result$measurement_A_outlier))
+    expect_false(any(result$measurement_A_outlier))
   })
 
   it("handles missing x_cols gracefully (single group)", {

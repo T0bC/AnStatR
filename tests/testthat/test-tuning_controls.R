@@ -3,9 +3,11 @@ box::use(
     describe,
     expect_equal,
     expect_false,
+    expect_gt,
+    expect_length,
     expect_null,
     expect_true,
-    it
+    it,
   ],
 )
 
@@ -21,12 +23,9 @@ describe("check_cv_settings", {
   # mixOmics advises >= 5-6 samples per fold and 50-100 repeats
   # for a final reported result.
   it("is silent when the settings follow the guidance", {
-    expect_equal(
-      length(check_cv_settings(
-        n_samples = 100, folds = 5, repeats = 50
-      )),
-      0
-    )
+    expect_length(check_cv_settings(
+      n_samples = 100, folds = 5, repeats = 50
+    ), 0)
   })
 
   it("warns when folds leave too few samples per fold", {
@@ -35,7 +34,7 @@ describe("check_cv_settings", {
     msgs <- check_cv_settings(
       n_samples = 20, folds = 10, repeats = 50
     )
-    expect_true(length(msgs) > 0)
+    expect_gt(length(msgs), 0)
     expect_true(any(grepl("fold", msgs)))
   })
 
@@ -58,13 +57,10 @@ describe("check_cv_settings", {
   })
 
   it("tolerates absent or unusable input", {
-    expect_equal(length(check_cv_settings()), 0)
-    expect_equal(
-      length(check_cv_settings(
-        n_samples = NULL, folds = NULL, repeats = NULL
-      )),
-      0
-    )
+    expect_length(check_cv_settings(), 0)
+    expect_length(check_cv_settings(
+      n_samples = NULL, folds = NULL, repeats = NULL
+    ), 0)
   })
 })
 
@@ -81,29 +77,19 @@ describe("estimate_cv_runtime", {
   }
 
   it("grows with more folds", {
-    expect_true(
-      call_est(folds = 10)$seconds > call_est(folds = 5)$seconds
-    )
+    expect_gt(call_est(folds = 10)$seconds, call_est(folds = 5)$seconds)
   })
 
   it("grows with more repeats", {
-    expect_true(
-      call_est(repeats = 20)$seconds >
-        call_est(repeats = 10)$seconds
-    )
+    expect_gt(call_est(repeats = 20)$seconds, call_est(repeats = 10)$seconds)
   })
 
   it("grows with a longer keepX grid", {
-    expect_true(
-      call_est(n_grid = 10)$seconds > call_est(n_grid = 5)$seconds
-    )
+    expect_gt(call_est(n_grid = 10)$seconds, call_est(n_grid = 5)$seconds)
   })
 
   it("grows with data size", {
-    expect_true(
-      call_est(n_samples = 1000)$seconds >
-        call_est(n_samples = 100)$seconds
-    )
+    expect_gt(call_est(n_samples = 1000)$seconds, call_est(n_samples = 100)$seconds)
   })
 
   it("tiers a tiny job as fast and a huge one as slow", {

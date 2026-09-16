@@ -1,5 +1,12 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -19,7 +26,7 @@ make_pca_result <- function(n = 20, p = 5) {
     matrix(rnorm(n * p), nrow = n)
   )
   colnames(data) <- paste0("V", seq_len(p))
-  data$G1 <- rep(c("A", "B"), length.out = n)
+  data$G1 <- rep_len(c("A", "B"), n)
 
   res <- pca$run_pca(
     data, paste0("V", seq_len(p)),
@@ -42,7 +49,7 @@ describe("create_ind_contrib_plot", {
       display_ncp = 3L
     )
     expect_true(result$success)
-    expect_true(inherits(result$result, "gg"))
+    expect_s3_class(result$result, "gg")
   })
 
   it("returns success with grouping", {
@@ -59,7 +66,7 @@ describe("create_ind_contrib_plot", {
     result <- ind_contrib$create_ind_contrib_plot(
       pca_result = NULL
     )
-    expect_true(!result$success)
+    expect_false(result$success)
   })
 
   it("clamps display_ncp to available dims", {
@@ -107,7 +114,7 @@ describe("add_group_column", {
     result <- impl$add_group_column(
       df, NULL, NULL, 1, 1
     )
-    expect_true(!"group" %in% names(result))
+    expect_false("group" %in% names(result))
   })
 })
 

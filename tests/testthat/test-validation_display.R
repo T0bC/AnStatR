@@ -84,7 +84,7 @@ describe("validated results", {
       cv = TRUE, meta_cols = "CLASS"
     )
     expect_true(res$success)
-    expect_true(!is.null(res$result$resubstitution))
+    expect_false(is.null(res$result$resubstitution))
 
     html <- render(res$result)
     expect_false(grepl("Not validated", html, fixed = TRUE))

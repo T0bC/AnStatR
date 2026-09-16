@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_gt,
+    expect_lt,
+    expect_named,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -38,10 +46,7 @@ describe("perform_kruskal1way", {
       measure_col = "measure"
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("Effect", "Df", "H.Statistic", "p.value")
-    )
+    expect_named(result, c("Effect", "Df", "H.Statistic", "p.value"))
     expect_equal(nrow(result), 1)
   })
 
@@ -102,8 +107,8 @@ describe("perform_kruskal1way", {
       x_axis = "group",
       measure_col = "measure"
     )
-    expect_true(result$p.value < 0.05)
-    expect_true(result$H.Statistic > 1)
+    expect_lt(result$p.value, 0.05)
+    expect_gt(result$H.Statistic, 1)
   })
 })
 
@@ -128,7 +133,7 @@ describe("perform_kruskal1way validation", {
 
   it("returns app_error when x_axis has 2 variables", {
     df <- make_oneway_data()
-    df$group2 <- rep(c("X", "Y"), length.out = nrow(df))
+    df$group2 <- rep_len(c("X", "Y"), nrow(df))
     result <- nonparametric_tests$perform_kruskal1way(
       df = df,
       x_axis = c("group", "group2"),
@@ -175,7 +180,7 @@ make_twoway_data <- function(n_per_cell = 10) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0)
   rownames(df) <- NULL
   df
@@ -194,13 +199,10 @@ describe("perform_art2way", {
       measure_col = "measure"
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c(
-        "Effect", "Df", "Df.res",
-        "F.Statistic", "p.value"
-      )
-    )
+    expect_named(result, c(
+      "Effect", "Df", "Df.res",
+      "F.Statistic", "p.value"
+    ))
     expect_equal(nrow(result), 3)
   })
 
@@ -257,7 +259,7 @@ describe("perform_art2way", {
       measure_col = "measure"
     )
     # f1 should be highly significant
-    expect_true(result$p.value[1] < 0.05)
+    expect_lt(result$p.value[1], 0.05)
   })
 })
 
@@ -278,7 +280,7 @@ describe("perform_art2way validation", {
 
   it("returns app_error when 3 grouping variables given", {
     df <- make_twoway_data()
-    df$f3 <- rep(c("P", "Q"), length.out = nrow(df))
+    df$f3 <- rep_len(c("P", "Q"), nrow(df))
     result <- nonparametric_tests$perform_art2way(
       df = df,
       x_axis = c("f1", "f2", "f3"),
@@ -337,7 +339,7 @@ make_threeway_data <- function(n_per_cell = 5) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0) +
     ifelse(df$f3 == "M", 0.3, 0)
   rownames(df) <- NULL
@@ -357,13 +359,10 @@ describe("perform_art3way", {
       measure_col = "measure"
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c(
-        "Effect", "Df", "Df.res",
-        "F.Statistic", "p.value"
-      )
-    )
+    expect_named(result, c(
+      "Effect", "Df", "Df.res",
+      "F.Statistic", "p.value"
+    ))
     expect_equal(nrow(result), 7)
   })
 
@@ -526,10 +525,7 @@ describe("perform_rm_nonparametric (Friedman)", {
       within_col = "time"
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("Effect", "Df", "Chi.Sq.Statistic", "p.value")
-    )
+    expect_named(result, c("Effect", "Df", "Chi.Sq.Statistic", "p.value"))
     expect_equal(nrow(result), 1)
   })
 
@@ -594,8 +590,8 @@ describe("perform_rm_nonparametric (Friedman)", {
       id_col = "id",
       within_col = "time"
     )
-    expect_true(result$p.value < 0.05)
-    expect_true(result$Chi.Sq.Statistic > 1)
+    expect_lt(result$p.value, 0.05)
+    expect_gt(result$Chi.Sq.Statistic, 1)
   })
 })
 
@@ -614,10 +610,7 @@ describe("perform_rm_nonparametric (mixed ART)", {
       within_col = "time"
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("Effect", "Df", "Df.res", "F.Statistic", "p.value")
-    )
+    expect_named(result, c("Effect", "Df", "Df.res", "F.Statistic", "p.value"))
     expect_equal(nrow(result), 3)
   })
 
@@ -682,7 +675,7 @@ describe("perform_rm_nonparametric (mixed ART)", {
       id_col = "id",
       within_col = "time"
     )
-    expect_true(result$p.value[1] < 0.05)
+    expect_lt(result$p.value[1], 0.05)
   })
 })
 

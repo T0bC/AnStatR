@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gte,
+    expect_named,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -62,10 +70,7 @@ describe("check_normality", {
     result <- assumption_checks$check_normality(df, "value", grp)
 
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("group", "n", "W", "p_value", "normal")
-    )
+    expect_named(result, c("group", "n", "W", "p_value", "normal"))
   })
 
   it("detects normally distributed groups", {
@@ -76,7 +81,7 @@ describe("check_normality", {
     expect_equal(nrow(result), 3)
     # With normally distributed data, most groups should pass
     n_normal <- sum(result$normal == "yes", na.rm = TRUE)
-    expect_true(n_normal >= 2)
+    expect_gte(n_normal, 2)
   })
 
   it("respects outlier flag columns", {
@@ -124,7 +129,7 @@ describe("check_homogeneity", {
     grp <- factor(df$SPECIES)
     result <- assumption_checks$check_homogeneity(df, "value", grp)
 
-    expect_true(!is.na(result$p_value))
+    expect_false(is.na(result$p_value))
     expect_equal(result$df1, 2)
     expect_equal(result$df2, 147)
   })
@@ -284,7 +289,7 @@ describe("check_normality_residuals", {
       df, "value", grp
     )
 
-    expect_true(!is.na(result$W))
+    expect_false(is.na(result$W))
     expect_equal(result$n, 150)
     # Normal data → residuals should typically pass
     expect_equal(result$normal, "yes")
@@ -297,7 +302,7 @@ describe("check_normality_residuals", {
       df, "value", grp
     )
 
-    expect_true(!is.na(result$W))
+    expect_false(is.na(result$W))
     expect_equal(result$normal, "no")
   })
 

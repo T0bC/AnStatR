@@ -1,5 +1,11 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_named,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -31,7 +37,7 @@ make_twoway_data <- function(n_per_cell = 10) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0)
   rownames(df) <- NULL
   df
@@ -52,10 +58,7 @@ describe("perform_t1way", {
       use_bootstrap = FALSE
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("F_statistic", "df1", "df2", "Effect_Size", "p_value")
-    )
+    expect_named(result, c("F_statistic", "df1", "df2", "Effect_Size", "p_value"))
     expect_equal(nrow(result), 1)
   })
 
@@ -109,7 +112,7 @@ describe("perform_t1way validation", {
 
   it("returns app_error when x_axis has 2 variables", {
     df <- make_oneway_data()
-    df$group2 <- rep(c("X", "Y"), length.out = nrow(df))
+    df$group2 <- rep_len(c("X", "Y"), nrow(df))
     result <- robust_tests$perform_t1way(
       df = df,
       x_axis = c("group", "group2"),
@@ -158,10 +161,7 @@ describe("perform_t2way", {
       use_bootstrap = FALSE
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("Effect", "Q.Statistic", "p.value")
-    )
+    expect_named(result, c("Effect", "Q.Statistic", "p.value"))
     expect_equal(nrow(result), 3)
   })
 
@@ -212,7 +212,7 @@ describe("perform_t2way validation", {
 
   it("returns app_error when 3 grouping variables given", {
     df <- make_twoway_data()
-    df$f3 <- rep(c("P", "Q"), length.out = nrow(df))
+    df$f3 <- rep_len(c("P", "Q"), nrow(df))
     result <- robust_tests$perform_t2way(
       df = df,
       x_axis = c("f1", "f2", "f3"),
@@ -273,7 +273,7 @@ make_threeway_data <- function(n_per_cell = 5) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0) +
     ifelse(df$f3 == "M", 0.3, 0)
   rownames(df) <- NULL
@@ -295,10 +295,7 @@ describe("perform_t3way", {
       use_bootstrap = FALSE
     )
     expect_true(is.data.frame(result))
-    expect_equal(
-      names(result),
-      c("Effect", "Q.Statistic", "p.value")
-    )
+    expect_named(result, c("Effect", "Q.Statistic", "p.value"))
     expect_equal(nrow(result), 7)
   })
 

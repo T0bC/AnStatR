@@ -1,5 +1,13 @@
 box::use(
-  testthat[describe, expect_equal, expect_null, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_null,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -64,7 +72,7 @@ describe("normalize_columns", {
     )
 
     expect_true("value_normalized" %in% names(result$data))
-    expect_true(nrow(result$transform_info) > 0)
+    expect_gt(nrow(result$transform_info), 0)
     expect_equal(result$transform_info$column[1], "value")
   })
 
@@ -79,7 +87,7 @@ describe("normalize_columns", {
       threshold = 0.5
     )
 
-    expect_true(!"value_normalized" %in% names(result$data))
+    expect_false("value_normalized" %in% names(result$data))
     expect_equal(nrow(result$transform_info), 0)
   })
 
@@ -99,7 +107,7 @@ describe("normalize_columns", {
       expect_true(all(is.na(result$data$value_normalized[c(1, 2, 3)])))
       # Non-outlier, non-NA values should have actual transformed values
       clean_idx <- which(!df$value_outlier & !is.na(df$value))
-      expect_true(all(!is.na(result$data$value_normalized[clean_idx])))
+      expect_false(anyNA(result$data$value_normalized[clean_idx]))
     }
   })
 
@@ -128,7 +136,7 @@ describe("normalize_columns", {
       threshold = 0.5
     )
 
-    expect_true(!"value_normalized" %in% names(result$data))
+    expect_false("value_normalized" %in% names(result$data))
     expect_equal(nrow(result$transform_info), 0)
   })
 })

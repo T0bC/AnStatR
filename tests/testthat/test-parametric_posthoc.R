@@ -1,5 +1,14 @@
 box::use(
-  testthat[describe, expect_equal, expect_false, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_lte,
+    expect_named,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -37,7 +46,7 @@ make_twoway_data <- function(n_per_cell = 10) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0)
   rownames(df) <- NULL
   df
@@ -53,7 +62,7 @@ make_threeway_data <- function(n_per_cell = 5) {
   )
   df <- grid[rep(seq_len(nrow(grid)), each = n_per_cell), ]
   df$measure <- rnorm(nrow(df)) +
-    ifelse(df$f1 == "B", 1, 0) +
+    as.integer(df$f1 == "B") +
     ifelse(df$f2 == "Y", 0.5, 0) +
     ifelse(df$f3 == "M", 0.3, 0)
   rownames(df) <- NULL
@@ -296,7 +305,7 @@ describe("perform_combined_param_posthoc 2-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Tukey.diff" %in% names(result))
     expect_true("Cohen.d" %in% names(result))
   })
@@ -316,7 +325,7 @@ describe("perform_combined_param_posthoc 3-way", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     expect_true("Tukey.diff" %in% names(result))
     expect_true("Cohen.d" %in% names(result))
   })
@@ -343,9 +352,7 @@ describe("perform_combined_param_posthoc filter_valid", {
     )
     if (is.data.frame(result_all) &&
           is.data.frame(result_filtered)) {
-      expect_true(
-        nrow(result_filtered) <= nrow(result_all)
-      )
+      expect_lte(nrow(result_filtered), nrow(result_all))
     }
   })
 })
@@ -383,7 +390,7 @@ make_rm_twoway_data <- function(n_subjects = 10) {
     stringsAsFactors = FALSE
   )
   grid$measure <- rnorm(nrow(grid)) +
-    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    as.integer(grid$COMPOSITE == "B") +
     ifelse(grid$TIME == "T2", 0.5, 0)
   grid
 }
@@ -416,7 +423,7 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
     expect_true("Cohen.ci.upper" %in% names(result))
     expect_true("Cohen.p.value" %in% names(result))
     expect_true("Cohen.p.adjusted" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 
   it("contains both paired and unpaired comparisons", {
@@ -430,10 +437,10 @@ describe("perform_rm_parametric_posthoc 2-way RM", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
     # Should have comparisons like A.T1 vs A.T2 (paired) and A.T1 vs B.T1 (unpaired)
     interactions <- result$Interaction
-    expect_true(length(interactions) > 1)
+    expect_gt(length(interactions), 1)
   })
 
   it("applies p-adjustment across all comparisons", {
@@ -472,7 +479,7 @@ describe("perform_combined_param_posthoc RM path", {
     expect_false("Type" %in% names(result))
     expect_true("Tukey.diff" %in% names(result))
     expect_true("Cohen.d" %in% names(result))
-    expect_true(nrow(result) > 0)
+    expect_gt(nrow(result), 0)
   })
 })
 
@@ -675,7 +682,7 @@ make_rm_threeway_data <- function(n_subjects = 12) {
     stringsAsFactors = FALSE
   )
   grid$measure <- rnorm(nrow(grid)) +
-    ifelse(grid$COMPOSITE == "B", 1, 0) +
+    as.integer(grid$COMPOSITE == "B") +
     ifelse(grid$TREATMENT == "D", 0.4, 0) +
     ifelse(grid$TIME == "T2", 0.5, 0)
   grid
@@ -705,7 +712,7 @@ describe("perform_rm_parametric_posthoc 1-way RM", {
       p_adjust_method = "bonferroni"
     )
     expect_true(is.data.frame(result))
-    expect_equal(names(result), rm_posthoc_cols)
+    expect_named(result, rm_posthoc_cols)
     # C(3,2) = 3 comparisons, all within-subject (paired)
     expect_equal(nrow(result), 3)
   })
@@ -765,7 +772,7 @@ describe("perform_rm_parametric_posthoc 3-way RM", {
       p_adjust_method = "none"
     )
     expect_true(is.data.frame(rm_result))
-    expect_equal(names(rm_result), rm_posthoc_cols)
+    expect_named(rm_result, rm_posthoc_cols)
     expect_equal(nrow(rm_result), nrow(unpaired))
   })
 

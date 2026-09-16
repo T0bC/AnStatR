@@ -21,7 +21,7 @@ describe("list_examples", {
   it("returns a named character vector", {
     examples <- example_data$list_examples()
     expect_true(is.character(examples))
-    expect_true(length(examples) > 0)
+    expect_gt(length(examples), 0)
     expect_false(is.null(names(examples)))
   })
 
@@ -89,6 +89,6 @@ describe("load_example", {
     result <- example_data$load_example("does_not_exist.xlsx")
     expect_false(result$success)
     expect_null(result$data)
-    expect_true(!is.null(result$error))
+    expect_false(is.null(result$error))
   })
 })

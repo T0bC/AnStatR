@@ -63,7 +63,7 @@ describe("create_app_error", {
     expect_equal(err$operation_name, "Test Op")
     expect_equal(err$context$file, "data.csv")
     expect_equal(err$context$rows, 100)
-    expect_true(!is.null(err$timestamp))
+    expect_false(is.null(err$timestamp))
   })
 
   it("has NULL stack_trace when no error_obj provided", {

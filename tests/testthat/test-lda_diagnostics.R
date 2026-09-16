@@ -1,5 +1,18 @@
 box::use(
-  testthat[describe, expect_equal, expect_true, it],
+  testthat[
+    describe,
+    expect_equal,
+    expect_false,
+    expect_gt,
+    expect_length,
+  ],
+  testthat[
+    expect_lt,
+    expect_null,
+    expect_s3_class,
+    expect_true,
+    it,
+  ],
 )
 
 box::use(
@@ -114,12 +127,8 @@ describe("generate_ellipse_points", {
       vc,
       center = center, n_points = 200
     )
-    expect_true(
-      abs(mean(pts$x) - center[1]) < 0.1
-    )
-    expect_true(
-      abs(mean(pts$y) - center[2]) < 0.1
-    )
+    expect_lt(abs(mean(pts$x) - center[1]), 0.1)
+    expect_lt(abs(mean(pts$y) - center[2]), 0.1)
   })
 
   it("scales with n_std", {
@@ -134,7 +143,7 @@ describe("generate_ellipse_points", {
     )
     range1 <- max(pts1$x) - min(pts1$x)
     range2 <- max(pts2$x) - min(pts2$x)
-    expect_true(range2 > range1)
+    expect_gt(range2, range1)
   })
 })
 
@@ -158,8 +167,8 @@ describe("add_diagnostics_overlay", {
       base_plot, lda_res$scores, groups,
       "LD1", "LD2"
     )
-    expect_true(inherits(p, "gg"))
-    expect_true(length(p$layers) > n_layers_before)
+    expect_s3_class(p, "gg")
+    expect_gt(length(p$layers), n_layers_before)
   })
 
   it("works via create_ld_plot show_diagnostics flag", {
@@ -170,11 +179,9 @@ describe("add_diagnostics_overlay", {
       show_diagnostics = TRUE
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "gg"))
+    expect_s3_class(plot_res$result, "gg")
     # Should have subtitle when diagnostics enabled
-    expect_true(
-      !is.null(plot_res$result$labels$subtitle)
-    )
+    expect_false(is.null(plot_res$result$labels$subtitle))
   })
 
   it("does not add subtitle when diagnostics disabled", {
@@ -185,9 +192,7 @@ describe("add_diagnostics_overlay", {
       show_diagnostics = FALSE
     )
     expect_true(plot_res$success)
-    expect_true(
-      is.null(plot_res$result$labels$subtitle)
-    )
+    expect_null(plot_res$result$labels$subtitle)
   })
 })
 
@@ -269,8 +274,8 @@ describe("add_boundaries_overlay", {
       base_plot, lda_res, "LD1", "LD2",
       grid_n = 20
     )
-    expect_true(inherits(p, "gg"))
-    expect_true(length(p$layers) > n_layers_before)
+    expect_s3_class(p, "gg")
+    expect_gt(length(p$layers), n_layers_before)
   })
 
   it("works via create_ld_plot show_boundaries flag", {
@@ -281,7 +286,7 @@ describe("add_boundaries_overlay", {
       show_boundaries = TRUE
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "gg"))
+    expect_s3_class(plot_res$result, "gg")
     expect_true(grepl(
       "decision regions",
       plot_res$result$labels$subtitle
@@ -316,8 +321,8 @@ describe("add_boundaries_overlay", {
       base_plot, plsda_res, "Comp1", "Comp2",
       grid_n = 20
     )
-    expect_true(inherits(p, "gg"))
-    expect_true(length(p$layers) > n_layers_before)
+    expect_s3_class(p, "gg")
+    expect_gt(length(p$layers), n_layers_before)
   })
 
   it("works via create_ld_plot show_boundaries flag for sPLS-DA", {
@@ -347,7 +352,7 @@ describe("add_boundaries_overlay", {
       show_boundaries = TRUE
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "gg"))
+    expect_s3_class(plot_res$result, "gg")
     expect_true(grepl(
       "decision regions",
       plot_res$result$labels$subtitle
@@ -366,7 +371,7 @@ describe("compute_1d_boundary", {
       lda_res
     )
     expect_true(is.numeric(boundary))
-    expect_equal(length(boundary), 1)
+    expect_length(boundary, 1)
     expect_true(is.finite(boundary))
   })
 
@@ -403,7 +408,7 @@ describe("compute_1d_boundary", {
       plsda_res
     )
     expect_true(is.numeric(boundary))
-    expect_equal(length(boundary), 1)
+    expect_length(boundary, 1)
     expect_true(is.finite(boundary))
   })
 
@@ -461,7 +466,7 @@ describe("create_qda_plot in LD space", {
       show_boundaries = FALSE
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "gg"))
+    expect_s3_class(plot_res$result, "gg")
   })
 
   it("title indicates LDA projection", {
@@ -488,10 +493,7 @@ describe("create_qda_plot in LD space", {
       dim_x = "LD1", dim_y = "LD2",
       show_boundaries = TRUE
     )
-    expect_true(
-      length(plot_yes$result$layers) >
-        length(plot_no$result$layers)
-    )
+    expect_gt(length(plot_yes$result$layers), length(plot_no$result$layers))
     expect_true(grepl(
       "QDA decision regions",
       plot_yes$result$labels$subtitle
@@ -512,7 +514,7 @@ describe("create_qda_plot in original space", {
       show_boundaries = FALSE
     )
     expect_true(plot_res$success)
-    expect_true(inherits(plot_res$result, "gg"))
+    expect_s3_class(plot_res$result, "gg")
   })
 
   it("title indicates original variables", {
@@ -533,7 +535,7 @@ describe("create_qda_plot in original space", {
       qda_res,
       dim_x = "LD1", dim_y = "m2"
     )
-    expect_true(!plot_res$success)
+    expect_false(plot_res$success)
   })
 })
 
@@ -562,7 +564,7 @@ describe("add_qda_boundaries_overlay", {
       axis_type = "ld",
       grid_n = 20
     )
-    expect_true(inherits(p, "gg"))
-    expect_true(length(p$layers) > n_before)
+    expect_s3_class(p, "gg")
+    expect_gt(length(p$layers), n_before)
   })
 })
