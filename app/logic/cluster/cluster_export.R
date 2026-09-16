@@ -37,6 +37,10 @@ box::use(
 #'   (from base::scale()-style centering), or NULL
 #' @param settings List with algorithm, metric,
 #'   n_clusters, etc.
+#' @param filter_spec Optional training filter spec (from
+#'   filter_spec$build_filter_spec) recording the row subset the
+#'   model was fitted on, so the same subset can be reproduced on
+#'   unknown data. NULL when no filter narrowed the training data.
 #' @return Named list (the bundle)
 #' @export
 create_cluster_bundle <- function(cluster_result, raw_data,
@@ -44,7 +48,8 @@ create_cluster_bundle <- function(cluster_result, raw_data,
                                   meta_cols = character(0),
                                   transform_params = list(),
                                   scale_params = NULL,
-                                  settings = list()) {
+                                  settings = list(),
+                                  filter_spec = NULL) {
   variant <- cluster_result$details$variant
 
   bundle <- list(
@@ -56,6 +61,7 @@ create_cluster_bundle <- function(cluster_result, raw_data,
     group_col = NULL,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
+    filter_spec = filter_spec,
     transform_params = transform_params,
     scale_params = scale_params,
     cluster_metric = cluster_result$metric,
