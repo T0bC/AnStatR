@@ -1,5 +1,26 @@
 # Changelog
 
+## [2026.17] - 2026-09-16
+
+### Added
+
+- **Filter Data tab in PCA, LDA and Cluster**: The row filter previously exclusive to the Plotting tab is now available in each analysis module, so a tooth/facet subset can be changed and the analysis re-run without leaving the tab. Unlike the Plotting version, the column pool is *every* descriptive column in the incoming data rather than only those selected as metadata, so a column can be filtered on without also being selected for labelling. Disabled (with an explanation) when the data source is PCA or LDA scores, whose rows are already reduced
+- **Row counter in the filter sidebar**: Reports `kept / total rows selected`, so an over-narrow filter is visible before running the analysis rather than surfacing as an unexplained failure
+- **Stale-result warning in PCA, LDA and Cluster**: Changing a filter after computing leaves the existing results on screen and shows an amber notice above the Compute button naming the button to press. Results are warned about rather than cleared, following the existing `keepX was not tuned` pattern — a stray checkbox click can no longer discard a long clustering run. Implemented as a reactive comparison of a cheap filter signature string, never a data-frame comparison, so a checkbox click costs one string compare rather than re-filtering up to 600 MB
+- **Training filter stored in model bundles (`filter_spec`)**: When a model is fitted on a filtered subset, that subset is recorded in the exported `.rds` and reapplied to unknown data in the Prediction tab, so training and test data are compared like-for-like. Saving a filtered model opens a dialog to confirm which columns must also hold for unknown data — structural columns such as `TOOTH` or `FACET` are pre-ticked, identity columns such as `SAMPLE_ID` or `SPECIES` are not, since reapplying those to new specimens would match zero rows. No dialog appears when no filter narrowed the training data
+- **Blocking validation against the training filter**: Prediction now refuses to run when the unknown data lacks a required filter column, contains none of the required values, or yields no rows for the filter combination. Error messages list required alongside available values, so the common `M1` vs `m1` case mismatch is immediately visible. The bundle card shows the requirement on load and the unknown-data card reports `N of M rows match the training filter`
+
+### Fixed
+
+- **Cached cluster diagnostics could be served for the wrong row subset**: The Cluster module's session cache for the Hopkins statistic and optimal-*k* keyed on row and column *counts* as its only data-dependent terms. Two different filter selections retaining the same number of rows produced an identical key, so one subset's diagnostics were presented as another's and logged as "(cached)". The filter selection is now part of the key. The Plotting module's plot cache had the same latent collision and is fixed the same way
+- **Cluster's automatic *k* suggestion could be silently disabled**: Re-capping the cluster count against the available row count is a programmatic edit, but the user-vs-programmatic tracker read it as a manual one, permanently suppressing the auto-*k* suggestion for the rest of the session
+- **LDA tuning outlived the data it was computed on**: `keepX` values from a previous auto-tune run were not cleared when new data was loaded, so an outdated tuning could be presented as current
+
+### Changed
+
+- **`app/view/plotting/filter.R` replaced by `app/view/shared/data_filter.R`**: The filter is now shared by Plotting, PCA, LDA and Cluster. Filter checkbox input ids are prefixed (`flt_`) so a data column can never collide with a parent input such as `metaData` or `data_source`. Plotting's behaviour is otherwise unchanged
+- **Prediction row filtering happens at upload**: The training filter is applied once where the unknown data is stored, not inside `preprocess_unknown()`. The results table, diagnostics table and Excel export index that frame positionally, so filtering later would desynchronise them
+
 ## [2026.16] - 2026-09-01
 
 ### Added
