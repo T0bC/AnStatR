@@ -76,10 +76,22 @@ The results table includes interactive column filters that function like Excel's
   - Remove specific individuals by deselecting `SAMPLE_ID` values
   - Filter to specific groups (e.g., `SEX` = "Male" only, or `SITE` = "Site_A")
   - Create custom subsets for downstream analysis
-- **Propagation**: Active filters affect the data passed to downstream modules — only visible rows are included in the analysis pipeline
+- **Propagation**: Active filters affect the data passed to **all** downstream modules — Plotting, Summary, Statistics, PCA, LDA and Cluster. Only visible rows enter the analysis pipeline, so a filter left active here silently narrows every later tab
 - **Convenience**: Click **All** above any filter to quickly select all values; individual items can then be unchecked
 
 This filtering is independent of the quality filter and applies after median calculation, allowing flexible data subsetting without reprocessing.
+
+##### What you can filter on downstream
+
+Median calculation **drops** any descriptive column that varies within a group rather than collapsing it (see *Median Calculation Process* above). This determines which columns remain available for filtering in this table and in the PCA, LDA and Cluster **Filter Data** tabs:
+
+| Grouping columns | `FACET` survives? | Can you filter by facet downstream? |
+| --- | --- | --- |
+| `SAMPLE_ID` | No | No |
+| `SAMPLE_ID`, `JAW`, `TOOTH` | No | No |
+| `SAMPLE_ID`, `JAW`, `TOOTH`, `FACET` | Yes (it is a grouping column) | Yes |
+
+In short: **you can only filter downstream on columns you grouped by**, plus any descriptive column that happens to be constant within every group. If you intend to hunt for a signal at facet level, group down to facet level first.
 
 #### Quality Assurance
 
