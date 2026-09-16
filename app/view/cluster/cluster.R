@@ -19,7 +19,9 @@ box::use(
     detect_skewness,
     transform_skewed
   ],
+  app/logic/shared/column_utils,
   app/logic/shared/error_handling,
+  app/logic/shared/filter_spec,
   app/view/cluster/cluster_biplot,
   app/view/cluster/cluster_biplot3d,
   app/view/cluster/cluster_results,
@@ -30,7 +32,9 @@ box::use(
   app/view/cluster/heatmap,
   app/view/cluster/hopkins,
   app/view/cluster/optimal_clusters,
+  app/view/components/filter_spec_modal,
   app/view/components/sidebar_tabs,
+  app/view/shared/data_filter,
   app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
 )
@@ -44,15 +48,19 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
+      data_filter$tab_ui(ns),
       clustering_settings$tab_ui(ns),
       display_options$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
-    action_button = shiny$actionButton(
-      inputId = ns("run_clustering"),
-      label = "Run Clustering",
-      class = "btn-primary btn-sm w-100",
-      icon = bsicons$bs_icon("pie-chart")
+    action_button = shiny$tagList(
+      shiny$uiOutput(ns("run_stale_notice")),
+      shiny$actionButton(
+        inputId = ns("run_clustering"),
+        label = "Run Clustering",
+        class = "btn-primary btn-sm w-100",
+        icon = bsicons$bs_icon("pie-chart")
+      )
     )
   )
 }
@@ -88,11 +96,16 @@ server <- function(id, input_data, data_version,
     cached_fingerprint <- shiny$reactiveVal(NULL)
     cached_hopkins <- shiny$reactiveVal(NULL)
     cached_optimal <- shiny$reactiveVal(NULL)
+    # Filter selection and data source that produced the results
+    # currently on screen, compared live so a change made after
+    # running is flagged rather than silently presented as current.
+    computed_run_signature <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(),
       {
         result(NULL)
+        computed_run_signature(NULL)
         membership_data(NULL)
         cluster_summary(NULL)
         last_error(NULL)
@@ -164,10 +177,72 @@ server <- function(id, input_data, data_version,
       recommended_parameters = recommended_parameters
     )
 
-    clustering_settings$tab_server(
+    filter_result <- data_filter$tab_server(
       input, output, session,
       input_data = input_data,
-      data_version = data_version
+      data_version = data_version,
+      candidate_cols = shiny$reactive(
+        column_utils$get_descriptive_cols(input_data())
+      ),
+      # Filtering by metadata level is only meaningful on raw data;
+      # PCA/LDA scores carry their own already-reduced rows.
+      enabled = shiny$reactive(
+        identical(input$data_source %||% "raw", "raw")
+      ),
+      log_prefix = "Cluster filter"
+    )
+
+    # Signature of the filter selection and data source behind a
+    # result. In score modes the filter is disabled, so it contributes
+    # nothing and no unactionable banner can appear.
+    run_signature <- shiny$reactive({
+      src <- input$data_source %||% "raw"
+      if (identical(src, "raw")) {
+        paste0(src, "|", filter_result$filter_signature())
+      } else {
+        paste0(src, "|nofilter")
+      }
+    })
+
+    # A reactive, not an observer: evaluated only when the banner
+    # renders, so a checkbox click costs one string comparison rather
+    # than re-filtering the whole data frame.
+    run_stale <- shiny$reactive({
+      previous <- computed_run_signature()
+      if (is.null(previous) || is.null(result())) {
+        return(FALSE)
+      }
+      !identical(previous, run_signature())
+    })
+
+    output$run_stale_notice <- shiny$renderUI({
+      if (!run_stale()) {
+        return(NULL)
+      }
+      error_display$error_alert(
+        shiny$tags$span(
+          shiny$tags$strong("Data selection changed. "),
+          "The results shown were computed on the previous row",
+          " selection. Press ",
+          shiny$tags$strong("Run Clustering"),
+          " to update them."
+        ),
+        type = "warning",
+        icon_name = "exclamation-triangle-fill",
+        extra_class = "py-2 px-2 small mb-2"
+      )
+    })
+
+    clustering_settings$tab_server(
+      input, output, session,
+      # The k cap depends on how many rows survive filtering, so this
+      # must see the filtered data or the user can select k > n - 1.
+      input_data = filter_result$filtered_data,
+      data_version = data_version,
+      # Re-capping k is a programmatic edit. Without this the tracker
+      # below would read it as a manual change and permanently disable
+      # the automatic k suggestion.
+      set_updating_k = updating_k_programmatically
     )
 
     display_options$tab_server(
@@ -219,8 +294,9 @@ server <- function(id, input_data, data_version,
       } else if (data_source == "lda_scores") {
         lda_scores_data()
       } else {
-        input_data()
+        filter_result$filtered_data()
       }
+      computed_run_signature(run_signature())
 
       if (is.null(data)) {
         last_error(error_handling$simple_error(
@@ -396,6 +472,15 @@ server <- function(id, input_data, data_version,
             ncol(analysis_data),
             scale_method %||% "none",
             residualize_col %||% "none",
+            # Row subset identity: nrow/ncol alone collide when two
+            # different filter selections retain the same row count,
+            # which would serve one subset's Hopkins and optimal-k
+            # as another's.
+            if (is_reduced) {
+              "nofilter"
+            } else {
+              filter_result$filter_signature()
+            },
             sep = "|"
           )
           use_cache <- identical(fp, cached_fingerprint())
@@ -602,6 +687,31 @@ server <- function(id, input_data, data_version,
                 meta_cols = meta_cols,
                 transform_params = t_params,
                 scale_params = s_params,
+                # Row subset the model was actually fitted on. Only
+                # recorded for raw data -- in score modes the filter
+                # is disabled. analyze_filter() needs the *unfiltered*
+                # frame to tell a narrowed column from an untouched
+                # one, but only its small character-vector output is
+                # retained.
+                filter_state = if (is_reduced) {
+                  list()
+                } else {
+                  filter_result$filter_state()
+                },
+                filter_analysis = if (is_reduced) {
+                  NULL
+                } else {
+                  filter_spec$analyze_filter(
+                    filter_result$filter_state(),
+                    input_data()
+                  )
+                },
+                filter_rows_before = if (is_reduced) {
+                  NULL
+                } else {
+                  nrow(input_data())
+                },
+                filter_rows_after = nrow(data),
                 settings = list(
                   algorithm = algorithm,
                   metric = cluster_metric,
@@ -1153,6 +1263,52 @@ server <- function(id, input_data, data_version,
     )
 
     # Download handler: RDS export (Prediction bundle)
+    # Columns the training filter genuinely narrowed. When empty the
+    # bundle carries no filter and the download needs no confirmation.
+    constrained_filter_cols <- shiny$reactive({
+      bd <- bundle_data()
+      if (is.null(bd) || is.null(bd$filter_analysis)) {
+        return(character(0))
+      }
+      bd$filter_analysis$constrained
+    })
+
+    output$cluster_rds_control <- shiny$renderUI({
+      label <- "Download RDS (for Prediction)"
+      if (length(constrained_filter_cols()) == 0) {
+        return(filter_spec_modal$download_link(
+          ns, "download_cluster_rds", label,
+          class = "btn btn-outline-secondary btn-sm"
+        ))
+      }
+      # A downloadHandler cannot open a modal mid-download, so the
+      # visible control becomes a button and the real download link
+      # moves into the modal footer.
+      shiny$actionButton(
+        inputId = ns("open_filter_spec_modal"),
+        label = label,
+        class = "btn btn-outline-secondary btn-sm",
+        icon = bsicons$bs_icon("file-earmark-code")
+      )
+    })
+
+    shiny$observeEvent(input$open_filter_spec_modal, {
+      bd <- bundle_data()
+      shiny$req(bd, bd$filter_analysis)
+      shiny$showModal(filter_spec_modal$create_modal(
+        constrained = bd$filter_analysis$constrained,
+        suggested = bd$filter_analysis$suggested,
+        filter_state = bd$filter_state,
+        level_counts = bd$filter_analysis$level_counts,
+        ns = ns,
+        checkbox_id = "filter_spec_reapply",
+        download_button = filter_spec_modal$download_link(
+          ns, "download_cluster_rds", "Save bundle",
+          class = "btn btn-primary"
+        )
+      ))
+    })
+
     output$download_cluster_rds <- shiny$downloadHandler(
       filename = function() {
         bd <- bundle_data()
@@ -1172,6 +1328,17 @@ server <- function(id, input_data, data_version,
         shiny$req(res)
         bd <- bundle_data()
         shiny$req(bd)
+        spec <- if (is.null(bd$filter_analysis)) {
+          NULL
+        } else {
+          filter_spec$build_filter_spec(
+            filter_state = bd$filter_state,
+            constrained = bd$filter_analysis$constrained,
+            reapply_cols = input$filter_spec_reapply %||% character(0),
+            n_rows_before = bd$filter_rows_before,
+            n_rows_after = bd$filter_rows_after
+          )
+        }
         bundle <- create_cluster_bundle(
           cluster_result = res,
           raw_data = bd$raw_data,
@@ -1180,9 +1347,11 @@ server <- function(id, input_data, data_version,
           meta_cols = bd$meta_cols,
           transform_params = bd$transform_params,
           scale_params = bd$scale_params,
-          settings = bd$settings
+          settings = bd$settings,
+          filter_spec = spec
         )
         saveRDS(bundle, file)
+        shiny$removeModal()
         rhino$log$info(
           "Download: Cluster RDS bundle"
         )
