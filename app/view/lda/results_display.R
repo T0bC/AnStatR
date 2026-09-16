@@ -616,22 +616,9 @@ render_download_buttons <- function(ns) {
       "Download Excel (All Results)"
     ),
 
-    # RDS download
-    shiny$tags$a(
-      id = ns("download_lda_rds"),
-      class = paste(
-        "btn btn-outline-secondary",
-        "shiny-download-link"
-      ),
-      href = "",
-      target = "_blank",
-      download = NA,
-      bsicons$bs_icon(
-        "file-earmark-code",
-        class = "me-2"
-      ),
-      "Download RDS (LDA/QDA Object)"
-    ),
+    # RDS download. Rendered server-side because a model fitted on a
+    # filtered subset needs the training filter confirmed first.
+    shiny$uiOutput(ns("lda_rds_control"), inline = TRUE),
     shiny$tags$small(
       class = "text-muted mt-2",
       paste(
