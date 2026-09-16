@@ -726,21 +726,9 @@ render_download_section <- function(ns,
                                     can_export_bundle = FALSE) {
   rds_button <- if (can_export_bundle) {
     shiny$tagList(
-      shiny$tags$a(
-        id = ns("download_cluster_rds"),
-        class = paste(
-          "btn btn-outline-secondary btn-sm",
-          "shiny-download-link"
-        ),
-        href = "",
-        target = "_blank",
-        download = NA,
-        bsicons$bs_icon(
-          "file-earmark-code",
-          class = "me-1"
-        ),
-        "Download RDS (for Prediction)"
-      ),
+      # Rendered server-side because a model fitted on a filtered
+      # subset needs the training filter confirmed first.
+      shiny$uiOutput(ns("cluster_rds_control"), inline = TRUE),
       shiny$tags$small(
         class = "text-muted mt-1 d-block",
         paste(
