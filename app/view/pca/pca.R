@@ -25,7 +25,10 @@ box::use(
     detect_skewness,
     transform_skewed
   ],
+  app/logic/shared/column_utils,
   app/logic/shared/error_handling,
+  app/logic/shared/filter_spec,
+  app/view/components/filter_spec_modal,
   app/view/components/sidebar_tabs,
   app/view/pca/analysis_settings,
   app/view/pca/biplot,
@@ -39,6 +42,7 @@ box::use(
   app/view/pca/pca_results,
   app/view/pca/plotting_controls,
   app/view/pca/var_contrib_jitter,
+  app/view/shared/data_filter,
   app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
 )
@@ -52,11 +56,13 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
+      data_filter$tab_ui(ns),
       analysis_settings$tab_ui(ns),
       plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$tagList(
+      shiny$uiOutput(ns("run_stale_notice")),
       shiny$actionButton(
         inputId = ns("compute_pca_button"),
         label = "Compute PCA",
@@ -83,11 +89,16 @@ server <- function(id, input_data, data_version,
     transform_info <- shiny$reactiveVal(NULL)
     skewness_info <- shiny$reactiveVal(NULL)
     bundle_data <- shiny$reactiveVal(NULL)
+    # Filter selection that produced the results currently on screen.
+    # Compared live against the active selection so a filter change made
+    # after computing is flagged rather than silently presented as current.
+    computed_run_signature <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(),
       {
         result(NULL)
+        computed_run_signature(NULL)
         last_error(NULL)
         correlation_result(NULL)
         kmo_result(NULL)
@@ -110,10 +121,57 @@ server <- function(id, input_data, data_version,
       recommended_parameters = recommended_parameters
     )
 
+    filter_result <- data_filter$tab_server(
+      input, output, session,
+      input_data = input_data,
+      data_version = data_version,
+      candidate_cols = shiny$reactive(
+        column_utils$get_descriptive_cols(input_data())
+      ),
+      log_prefix = "PCA filter"
+    )
+
+    # Signature of the filter selection behind a result. PCA has no
+    # data source switch, so the filter is the whole story here.
+    run_signature <- shiny$reactive({
+      filter_result$filter_signature()
+    })
+
+    # TRUE when results on screen were computed under a different
+    # filter than the one currently selected. A reactive, not an
+    # observer: evaluated only when the banner renders, so a checkbox
+    # click costs one string comparison rather than re-filtering the
+    # whole data frame.
+    run_stale <- shiny$reactive({
+      previous <- computed_run_signature()
+      if (is.null(previous) || is.null(result())) {
+        return(FALSE)
+      }
+      !identical(previous, run_signature())
+    })
+
+    output$run_stale_notice <- shiny$renderUI({
+      if (!run_stale()) {
+        return(NULL)
+      }
+      error_display$error_alert(
+        shiny$tags$span(
+          shiny$tags$strong("Filter changed. "),
+          "The results shown were computed on the previous row",
+          " selection. Press ",
+          shiny$tags$strong("Compute PCA"),
+          " to update them."
+        ),
+        type = "warning",
+        icon_name = "exclamation-triangle-fill",
+        extra_class = "py-2 px-2 small mb-2"
+      )
+    })
+
     analysis_settings_state <- analysis_settings$tab_server(
       input, output, session,
       data_version = data_version,
-      input_data = input_data
+      input_data = filter_result$filtered_data
     )
 
     # Delegate correlation plot rendering
@@ -196,7 +254,8 @@ server <- function(id, input_data, data_version,
       transform_info(NULL)
       bundle_data(NULL)
 
-      data <- input_data()
+      data <- filter_result$filtered_data()
+      computed_run_signature(run_signature())
       measure_cols <- input$measureVar
 
       # Validate inputs
@@ -394,6 +453,19 @@ server <- function(id, input_data, data_version,
           numeric_cols = measure_cols,
           meta_cols = meta_cols,
           transform_params = t_params,
+          # Row subset the model was actually fitted on, captured here
+          # rather than at download time so it reflects the filter that
+          # produced this result, not whatever is selected later.
+          # analyze_filter() needs the *unfiltered* frame to tell a
+          # narrowed column from an untouched one, but only its small
+          # character-vector output is retained.
+          filter_state = filter_result$filter_state(),
+          filter_analysis = filter_spec$analyze_filter(
+            filter_result$filter_state(),
+            input_data()
+          ),
+          filter_rows_before = nrow(input_data()),
+          filter_rows_after = nrow(data),
           settings = list(
             skewness_correction = isTRUE(
               input$correct_skewness
@@ -952,6 +1024,51 @@ server <- function(id, input_data, data_version,
     )
 
     # Download handler: RDS export
+    # Columns the training filter genuinely narrowed. When empty the
+    # bundle carries no filter and the download needs no confirmation.
+    constrained_filter_cols <- shiny$reactive({
+      bd <- bundle_data()
+      if (is.null(bd) || is.null(bd$filter_analysis)) {
+        return(character(0))
+      }
+      bd$filter_analysis$constrained
+    })
+
+    output$pca_rds_control <- shiny$renderUI({
+      label <- "Download RDS (PCA Object)"
+      if (length(constrained_filter_cols()) == 0) {
+        return(filter_spec_modal$download_link(
+          ns, "download_pca_rds", label
+        ))
+      }
+      # A downloadHandler cannot open a modal mid-download, so the
+      # visible control becomes a button and the real download link
+      # moves into the modal footer.
+      shiny$actionButton(
+        inputId = ns("open_filter_spec_modal"),
+        label = label,
+        class = "btn btn-outline-secondary",
+        icon = bsicons$bs_icon("file-earmark-code")
+      )
+    })
+
+    shiny$observeEvent(input$open_filter_spec_modal, {
+      bd <- bundle_data()
+      shiny$req(bd, bd$filter_analysis)
+      shiny$showModal(filter_spec_modal$create_modal(
+        constrained = bd$filter_analysis$constrained,
+        suggested = bd$filter_analysis$suggested,
+        filter_state = bd$filter_state,
+        level_counts = bd$filter_analysis$level_counts,
+        ns = ns,
+        checkbox_id = "filter_spec_reapply",
+        download_button = filter_spec_modal$download_link(
+          ns, "download_pca_rds", "Save bundle",
+          class = "btn btn-primary"
+        )
+      ))
+    })
+
     output$download_pca_rds <- shiny$downloadHandler(
       filename = function() {
         paste0(
@@ -966,6 +1083,17 @@ server <- function(id, input_data, data_version,
         shiny$req(pca_res$success)
         bd <- bundle_data()
         shiny$req(bd)
+        spec <- if (is.null(bd$filter_analysis)) {
+          NULL
+        } else {
+          filter_spec$build_filter_spec(
+            filter_state = bd$filter_state,
+            constrained = bd$filter_analysis$constrained,
+            reapply_cols = input$filter_spec_reapply %||% character(0),
+            n_rows_before = bd$filter_rows_before,
+            n_rows_after = bd$filter_rows_after
+          )
+        }
         bundle <- create_pca_bundle(
           pca_result = pca_res$result,
           raw_data = bd$raw_data,
@@ -973,9 +1101,11 @@ server <- function(id, input_data, data_version,
           numeric_cols = bd$numeric_cols,
           meta_cols = bd$meta_cols,
           transform_params = bd$transform_params,
-          settings = bd$settings
+          settings = bd$settings,
+          filter_spec = spec
         )
         saveRDS(bundle, file)
+        shiny$removeModal()
       }
     )
 
