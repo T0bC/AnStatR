@@ -114,6 +114,42 @@ filter_data <- function(data, filters) {
   data
 }
 
+#' Build a cheap signature string for a filter selection
+#'
+#' Summarises which values are selected per column without touching
+#' the data itself, so consumers can detect that a filter changed
+#' without comparing data frames (uploads may be several hundred MB).
+#'
+#' A NULL or empty selection maps to "*", mirroring `filter_data()`,
+#' which skips such a column rather than dropping every row. Column
+#' names and values are both sorted, so the signature depends only on
+#' what is selected, not on the order it was selected in.
+#'
+#' @param filters Named list where names are column names and values
+#'   are character vectors of selected values (may include "NA")
+#' @return A single character string
+#' @export
+filter_signature <- function(filters) {
+  if (length(filters) == 0) {
+    return("nofilter")
+  }
+
+  cols <- sort(names(filters))
+  parts <- vapply(cols, function(col) {
+    selected <- filters[[col]]
+    if (is.null(selected) || length(selected) == 0) {
+      paste0(col, "=*")
+    } else {
+      paste0(
+        col, "=",
+        paste(sort(as.character(selected)), collapse = ",")
+      )
+    }
+  }, character(1))
+
+  paste(parts, collapse = "|")
+}
+
 #' Generate a default color palette for n groups
 #'
 #' Returns a character vector of hex colors. Uses scales::hue_pal()
