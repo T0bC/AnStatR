@@ -129,13 +129,18 @@ create_pca_excel <- function(pca_result, file) {
 #'   param lists (from transform_skewed), or empty list
 #' @param settings List with skewness_correction,
 #'   scale_method, etc.
+#' @param filter_spec Optional training filter spec (from
+#'   filter_spec$build_filter_spec) recording the row subset the
+#'   model was fitted on, so the same subset can be reproduced on
+#'   unknown data. NULL when no filter narrowed the training data.
 #' @return Named list (the bundle)
 #' @export
 create_pca_bundle <- function(pca_result, raw_data,
                               used_data, numeric_cols,
                               meta_cols,
                               transform_params = list(),
-                              settings = list()) {
+                              settings = list(),
+                              filter_spec = NULL) {
   bundle <- list(
     analysis_type = pca_result$analysis_type,
     model = pca_result$model,
@@ -144,6 +149,7 @@ create_pca_bundle <- function(pca_result, raw_data,
     group_col = NULL,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
+    filter_spec = filter_spec,
     transform_params = transform_params,
     scale_params = list(
       center = pca_result$center,
