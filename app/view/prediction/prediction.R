@@ -28,6 +28,7 @@ box::use(
     validate_unknown_data
   ],
   app/logic/shared/error_handling,
+  app/logic/shared/filter_spec,
   app/view/components/sidebar_tabs,
   app/view/prediction/plotting_controls,
   app/view/prediction/results_display[
@@ -69,8 +70,30 @@ server <- function(id) {
 
     last_error <- shiny$reactiveVal(NULL)
     bundle <- shiny$reactiveVal(NULL)
-    unknown_data <- shiny$reactiveVal(NULL)
+    # Exactly what the user uploaded, before the model's training
+    # filter is applied. Validation runs against this.
+    unknown_data_raw <- shiny$reactiveVal(NULL)
     validation_result <- shiny$reactiveVal(NULL)
+
+    # The rows prediction actually runs on.
+    #
+    # When the bundle records a training filter, the unknown data is
+    # narrowed to the same subset here -- once, at the single point
+    # every consumer reads from. The results table, the diagnostics
+    # table and the Excel export all index this frame positionally, so
+    # filtering later (inside preprocess_unknown, say) would
+    # desynchronise them.
+    unknown_data <- shiny$reactive({
+      raw <- unknown_data_raw()
+      if (is.null(raw)) {
+        return(NULL)
+      }
+      bdl <- bundle()
+      if (is.null(bdl) || is.null(bdl$filter_spec)) {
+        return(raw)
+      }
+      filter_spec$apply_filter_spec(bdl$filter_spec, raw)
+    })
     prediction_result <- shiny$reactiveVal(NULL)
     diagnostics_result <- shiny$reactiveVal(NULL)
     last_plot <- shiny$reactiveVal(NULL)
@@ -115,8 +138,10 @@ server <- function(id) {
 
       bundle(bundle_res$result)
 
-      # Re-validate unknown data if already loaded
-      unknown <- unknown_data()
+      # Re-validate unknown data if already loaded. Validation runs
+      # against the raw upload: it is what decides whether the
+      # training filter can be applied at all.
+      unknown <- unknown_data_raw()
       if (!is.null(unknown)) {
         val <- validate_unknown_data(
           unknown, bundle_res$result
@@ -132,7 +157,7 @@ server <- function(id) {
     # Handle unknown data file upload
     shiny$observeEvent(input$unknown_file, {
       last_error(NULL)
-      unknown_data(NULL)
+      unknown_data_raw(NULL)
       validation_result(NULL)
       prediction_result(NULL)
       diagnostics_result(NULL)
@@ -177,7 +202,7 @@ server <- function(id) {
         return()
       }
 
-      unknown_data(read_res$data)
+      unknown_data_raw(read_res$data)
 
       # Validate against bundle if loaded
       bdl <- bundle()
@@ -229,7 +254,10 @@ server <- function(id) {
       # Validate
       val <- validation_result()
       if (is.null(val)) {
-        val <- validate_unknown_data(unknown, bdl)
+        # Against the raw upload: validation decides whether the
+        # training filter can be applied, so it must see the rows
+        # that filter would remove.
+        val <- validate_unknown_data(unknown_data_raw(), bdl)
         validation_result(val)
       }
       if (!val$valid) {
