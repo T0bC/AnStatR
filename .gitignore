@@ -6,6 +6,8 @@
 .Renviron
 node_modules/
 
+# lint 
+flir/
 
 # Log files
 logs/
@@ -20,3 +22,4 @@ logs/
 .claude/settings.local.json
 
 docs/forPublication/
+HANDOVER.md
