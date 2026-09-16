@@ -219,3 +219,55 @@ describe("default_palette", {
     expect_true(all(grepl("^#", result)))
   })
 })
+
+# =============================================================================
+# filter_signature
+# =============================================================================
+
+describe("filter_signature", {
+  it("returns a sentinel for an empty filter set", {
+    expect_equal(data_utils$filter_signature(list()), "nofilter")
+  })
+
+  it("encodes a single column", {
+    result <- data_utils$filter_signature(list(TOOTH = c("M1", "M2")))
+    expect_equal(result, "TOOTH=M1,M2")
+  })
+
+  it("is independent of column order", {
+    a <- data_utils$filter_signature(list(TOOTH = "M1", JAW = "upper"))
+    b <- data_utils$filter_signature(list(JAW = "upper", TOOTH = "M1"))
+    expect_equal(a, b)
+  })
+
+  it("is independent of value order", {
+    a <- data_utils$filter_signature(list(TOOTH = c("M1", "M2")))
+    b <- data_utils$filter_signature(list(TOOTH = c("M2", "M1")))
+    expect_equal(a, b)
+  })
+
+  it("maps an empty or NULL selection to the no-constraint marker", {
+    # Mirrors filter_data(), which skips such a column rather than
+    # dropping every row
+    expect_equal(
+      data_utils$filter_signature(list(TOOTH = character(0))),
+      "TOOTH=*"
+    )
+    expect_equal(
+      data_utils$filter_signature(list(TOOTH = NULL)),
+      "TOOTH=*"
+    )
+  })
+
+  it("distinguishes different selections of the same size", {
+    a <- data_utils$filter_signature(list(TOOTH = "M1"))
+    b <- data_utils$filter_signature(list(TOOTH = "M2"))
+    expect_false(identical(a, b))
+  })
+
+  it("distinguishes a constrained column from an unconstrained one", {
+    a <- data_utils$filter_signature(list(TOOTH = "M1"))
+    b <- data_utils$filter_signature(list(TOOTH = character(0)))
+    expect_false(identical(a, b))
+  })
+})
