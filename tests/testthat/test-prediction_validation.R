@@ -130,3 +130,91 @@ test_that("validate_unknown_data still flags missing columns for a cluster bundl
   expect_false(result$valid)
   expect_true(any(grepl("Missing", result$errors)))
 })
+
+# =============================================================================
+# Training filter (filter_spec) enforcement
+#
+# A model fitted on one tooth must not be applied to unknown data from
+# a different tooth, so unlike the metadata check these are blocking.
+# =============================================================================
+
+# Helper: a bundle whose model was fitted on TOOTH == "M1" only
+make_filtered_bundle <- function() {
+  bundle <- make_bundle()
+  bundle$raw_data$TOOTH <- c("M1", "M1", "M1", "M1", "M1")
+  bundle$meta_cols <- c("group", "TOOTH")
+  bundle$filter_spec <- list(
+    version = 1L,
+    reapply = list(TOOTH = "M1"),
+    training_only = list(),
+    n_rows_before = 15L,
+    n_rows_after = 5L
+  )
+  bundle
+}
+
+test_that("a bundle without a filter_spec is unaffected", {
+  # Backwards compatibility: bundles saved before training filters
+  # existed must behave exactly as they did before.
+  bundle <- make_bundle()
+  unknown <- data.frame(x = c(2, 3), y = c(15, 25))
+
+  result <- validate_unknown_data(unknown, bundle)
+  expect_true(result$valid)
+  expect_length(result$errors, 0)
+  expect_true(result$n_matching == 2)
+  expect_true(result$n_uploaded == 2)
+})
+
+test_that("training filter passes and counts matching rows", {
+  bundle <- make_filtered_bundle()
+  unknown <- data.frame(
+    x = c(2, 3, 4),
+    y = c(15, 25, 35),
+    TOOTH = c("M1", "M2", "M1")
+  )
+
+  result <- validate_unknown_data(unknown, bundle)
+  expect_true(result$valid)
+  expect_length(result$errors, 0)
+  expect_true(result$n_matching == 2)
+  expect_true(result$n_uploaded == 3)
+})
+
+test_that("missing filter column blocks prediction", {
+  bundle <- make_filtered_bundle()
+  unknown <- data.frame(x = c(2, 3), y = c(15, 25))
+
+  result <- validate_unknown_data(unknown, bundle)
+  expect_false(result$valid)
+  expect_true(any(grepl("TOOTH", result$errors, fixed = TRUE)))
+})
+
+test_that("case-mismatched filter levels block prediction", {
+  # The most likely real-world failure: "M1" vs "m1". Without this it
+  # would look like a legitimately empty dataset.
+  bundle <- make_filtered_bundle()
+  unknown <- data.frame(
+    x = c(2, 3),
+    y = c(15, 25),
+    TOOTH = c("m1", "m1")
+  )
+
+  result <- validate_unknown_data(unknown, bundle)
+  expect_false(result$valid)
+  expect_true(any(grepl("Required: M1", result$errors, fixed = TRUE)))
+  expect_true(any(grepl("m1", result$errors, fixed = TRUE)))
+})
+
+test_that("a filter matching no rows blocks prediction", {
+  bundle <- make_filtered_bundle()
+  unknown <- data.frame(
+    x = c(2, 3),
+    y = c(15, 25),
+    TOOTH = c("M2", "P4")
+  )
+
+  result <- validate_unknown_data(unknown, bundle)
+  expect_false(result$valid)
+  expect_length(result$errors, 1)
+})
