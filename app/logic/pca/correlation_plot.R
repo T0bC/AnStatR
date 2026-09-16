@@ -108,16 +108,16 @@ create_correlation_ggplot <- function(cor_data) {
       limits = c(-1, 1),
       name = "Correlation"
     ) + {
-      if (show_labels) {
-        ggplot2$geom_text(
-          ggplot2$aes(label = sprintf("%.2f", correlation)),
-          color = ifelse(
-            abs(cor_long$correlation) > 0.5, "white", "black"
-          ),
-          size = cell_text_size
-        )
-      }
-    } +
+    if (show_labels) {
+      ggplot2$geom_text(
+        ggplot2$aes(label = sprintf("%.2f", correlation)),
+        color = ifelse(
+          abs(cor_long$correlation) > 0.5, "white", "black"
+        ),
+        size = cell_text_size
+      )
+    }
+  } +
     ggplot2$theme_minimal() +
     ggplot2$theme(
       axis.text.x = ggplot2$element_text(

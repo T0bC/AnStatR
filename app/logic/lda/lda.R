@@ -1514,7 +1514,6 @@ build_mda_cv_result <- function(data, numeric_data,
   for (i in seq_len(n)) {
     train_data <- numeric_data[-i, , drop = FALSE]
     train_g <- grouping[-i]
-    test_obs <- numeric_data[i, , drop = FALSE] # nolint
 
     fit_data <- cbind(
       train_data,
@@ -1531,10 +1530,10 @@ build_mda_cv_result <- function(data, numeric_data,
 
     if (!is.null(fold_fit)) {
       fold_pred <- stats::predict(
-        fold_fit, test_obs
+        fold_fit, numeric_data[i, , drop = FALSE]
       )
       fold_post <- stats::predict(
-        fold_fit, test_obs,
+        fold_fit, numeric_data[i, , drop = FALSE],
         type = "posterior"
       )
       predicted[i] <- as.character(fold_pred)
