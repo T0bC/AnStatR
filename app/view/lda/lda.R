@@ -30,13 +30,17 @@ box::use(
     detect_skewness,
     transform_skewed
   ],
+  app/logic/shared/column_utils,
   app/logic/shared/error_handling,
+  app/logic/shared/filter_spec,
+  app/view/components/filter_spec_modal,
   app/view/components/sidebar_tabs,
   app/view/lda/analysis_settings,
   app/view/lda/data_selection,
   app/view/lda/plotting_controls,
   app/view/lda/results_display,
   app/view/lda/var_contrib_jitter,
+  app/view/shared/data_filter,
   app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
   app/view/shared/tuning_controls[parse_keepx_grid],
@@ -51,11 +55,13 @@ ui <- function(id) {
     sidebar_id = "sidebar_tabs",
     tabs = list(
       data_selection$tab_ui(ns),
+      data_filter$tab_ui(ns),
       analysis_settings$tab_ui(ns),
       plotting_controls$tab_ui(ns)
     ),
     main_content = shiny$uiOutput(ns("main_content")),
     action_button = shiny$tagList(
+      shiny$uiOutput(ns("run_stale_notice")),
       shiny$actionButton(
         inputId = ns("compute_lda_button"),
         label = "Compute Discriminant Analysis",
@@ -88,6 +94,10 @@ server <- function(id, input_data, data_version,
     # untuned (or hand-edited) selection is never presented as
     # cross-validated. NULL = tuning never ran for this session.
     keepx_tuned <- shiny$reactiveVal(NULL)
+    # Filter selection and data source that produced the results
+    # currently on screen, compared live so a change made after
+    # computing is flagged rather than silently presented as current.
+    computed_run_signature <- shiny$reactiveVal(NULL)
 
     # Reset state when new data is loaded
     shiny$observeEvent(data_version(),
@@ -102,6 +112,10 @@ server <- function(id, input_data, data_version,
         bundle_data(NULL)
         perf_result(NULL)
         perf_error(NULL)
+        computed_run_signature(NULL)
+        # Tuning is a property of the previous data/filter, so it must
+        # not survive into a run on a different row set.
+        keepx_tuned(NULL)
         rhino$log$info("LDA: state reset for new data")
       },
       ignoreInit = TRUE
@@ -122,10 +136,66 @@ server <- function(id, input_data, data_version,
       pca_result = pca_result,
       recommended_parameters = recommended_parameters
     )
+    filter_result <- data_filter$tab_server(
+      input, output, session,
+      input_data = input_data,
+      data_version = data_version,
+      candidate_cols = shiny$reactive(
+        column_utils$get_descriptive_cols(input_data())
+      ),
+      # Filtering by metadata level is only meaningful on raw data;
+      # PCA scores carry their own already-reduced rows.
+      enabled = shiny$reactive(
+        identical(input$data_source %||% "raw", "raw")
+      ),
+      log_prefix = "LDA filter"
+    )
+
+    # Signature of the filter selection and data source behind a
+    # result. In pca_scores mode the filter is disabled, so it
+    # contributes nothing and no unactionable banner can appear.
+    run_signature <- shiny$reactive({
+      src <- input$data_source %||% "raw"
+      if (identical(src, "raw")) {
+        paste0(src, "|", filter_result$filter_signature())
+      } else {
+        paste0(src, "|nofilter")
+      }
+    })
+
+    # A reactive, not an observer: evaluated only when the banner
+    # renders, so a checkbox click costs one string comparison rather
+    # than re-filtering the whole data frame.
+    run_stale <- shiny$reactive({
+      previous <- computed_run_signature()
+      if (is.null(previous) || is.null(result())) {
+        return(FALSE)
+      }
+      !identical(previous, run_signature())
+    })
+
+    output$run_stale_notice <- shiny$renderUI({
+      if (!run_stale()) {
+        return(NULL)
+      }
+      error_display$error_alert(
+        shiny$tags$span(
+          shiny$tags$strong("Data selection changed. "),
+          "The results shown were computed on the previous row",
+          " selection. Press ",
+          shiny$tags$strong("Compute Discriminant Analysis"),
+          " to update them."
+        ),
+        type = "warning",
+        icon_name = "exclamation-triangle-fill",
+        extra_class = "py-2 px-2 small mb-2"
+      )
+    })
+
     analysis_settings$tab_server(
       input, output, session,
       data_version = data_version,
-      input_data = input_data,
+      input_data = filter_result$filtered_data,
       pca_scores_data = pca_scores_data
     )
     plotting_controls$tab_server(
@@ -164,8 +234,9 @@ server <- function(id, input_data, data_version,
       data <- if (data_source == "pca_scores") {
         pca_scores_data()
       } else {
-        input_data()
+        filter_result$filtered_data()
       }
+      computed_run_signature(run_signature())
 
       if (is.null(data)) {
         last_error(error_handling$simple_error(
@@ -483,6 +554,33 @@ server <- function(id, input_data, data_version,
         transform_params = t_params,
         scale_params = s_params,
         data_source = data_source,
+        # Row subset the model was actually fitted on. Only recorded
+        # for raw data -- in pca_scores mode the filter is disabled.
+        # analyze_filter() needs the *unfiltered* frame to tell a
+        # narrowed column from an untouched one, but only its small
+        # character-vector output is retained. The grouping column is
+        # the outcome being predicted, so it is never suggested for
+        # reapplying to unknown data.
+        filter_state = if (data_source == "raw") {
+          filter_result$filter_state()
+        } else {
+          list()
+        },
+        filter_analysis = if (data_source == "raw") {
+          filter_spec$analyze_filter(
+            filter_result$filter_state(),
+            input_data(),
+            exclude_cols = grouping_col %||% character(0)
+          )
+        } else {
+          NULL
+        },
+        filter_rows_before = if (data_source == "raw") {
+          nrow(input_data())
+        } else {
+          NULL
+        },
+        filter_rows_after = nrow(data),
         settings = list(
           skewness_correction = (
             data_source == "raw" &&
@@ -608,7 +706,7 @@ server <- function(id, input_data, data_version,
       data <- if (data_source == "pca_scores") {
         pca_scores_data()
       } else {
-        input_data()
+        filter_result$filtered_data()
       }
       if (is.null(data) || length(measure_cols) == 0 ||
             is.null(grouping_col) || grouping_col == "") {
@@ -1019,6 +1117,51 @@ server <- function(id, input_data, data_version,
     )
 
     # Download handler: RDS export
+    # Columns the training filter genuinely narrowed. When empty the
+    # bundle carries no filter and the download needs no confirmation.
+    constrained_filter_cols <- shiny$reactive({
+      bd <- bundle_data()
+      if (is.null(bd) || is.null(bd$filter_analysis)) {
+        return(character(0))
+      }
+      bd$filter_analysis$constrained
+    })
+
+    output$lda_rds_control <- shiny$renderUI({
+      label <- "Download RDS (LDA/QDA Object)"
+      if (length(constrained_filter_cols()) == 0) {
+        return(filter_spec_modal$download_link(
+          ns, "download_lda_rds", label
+        ))
+      }
+      # A downloadHandler cannot open a modal mid-download, so the
+      # visible control becomes a button and the real download link
+      # moves into the modal footer.
+      shiny$actionButton(
+        inputId = ns("open_filter_spec_modal"),
+        label = label,
+        class = "btn btn-outline-secondary",
+        icon = bsicons$bs_icon("file-earmark-code")
+      )
+    })
+
+    shiny$observeEvent(input$open_filter_spec_modal, {
+      bd <- bundle_data()
+      shiny$req(bd, bd$filter_analysis)
+      shiny$showModal(filter_spec_modal$create_modal(
+        constrained = bd$filter_analysis$constrained,
+        suggested = bd$filter_analysis$suggested,
+        filter_state = bd$filter_state,
+        level_counts = bd$filter_analysis$level_counts,
+        ns = ns,
+        checkbox_id = "filter_spec_reapply",
+        download_button = filter_spec_modal$download_link(
+          ns, "download_lda_rds", "Save bundle",
+          class = "btn btn-primary"
+        )
+      ))
+    })
+
     output$download_lda_rds <- shiny$downloadHandler(
       filename = function() {
         res <- result()
@@ -1038,6 +1181,17 @@ server <- function(id, input_data, data_version,
         shiny$req(res)
         bd <- bundle_data()
         shiny$req(bd)
+        spec <- if (is.null(bd$filter_analysis)) {
+          NULL
+        } else {
+          filter_spec$build_filter_spec(
+            filter_state = bd$filter_state,
+            constrained = bd$filter_analysis$constrained,
+            reapply_cols = input$filter_spec_reapply %||% character(0),
+            n_rows_before = bd$filter_rows_before,
+            n_rows_after = bd$filter_rows_after
+          )
+        }
         bundle <- create_lda_bundle(
           lda_result = res,
           raw_data = bd$raw_data,
@@ -1048,9 +1202,11 @@ server <- function(id, input_data, data_version,
           scale_params = bd$scale_params,
           settings = bd$settings,
           data_source = bd$data_source,
-          test_result = test_result()
+          test_result = test_result(),
+          filter_spec = spec
         )
         saveRDS(bundle, file)
+        shiny$removeModal()
       }
     )
 
