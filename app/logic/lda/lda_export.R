@@ -404,6 +404,10 @@ get_best_confusion <- function(lda_result,
 #' @param test_result Optional prediction result from run_predict() for
 #'   train/test split mode -- used to compute $confusion via the same
 #'   priority as create_lda_excel() (CV > held-out test > resubstitution)
+#' @param filter_spec Optional training filter spec (from
+#'   filter_spec$build_filter_spec) recording the row subset the
+#'   model was fitted on, so the same subset can be reproduced on
+#'   unknown data. NULL when no filter narrowed the training data.
 #' @return Named list (the bundle)
 #' @export
 create_lda_bundle <- function(lda_result, raw_data,
@@ -413,7 +417,8 @@ create_lda_bundle <- function(lda_result, raw_data,
                               scale_params = NULL,
                               settings = list(),
                               data_source = "raw",
-                              test_result = NULL) {
+                              test_result = NULL,
+                              filter_spec = NULL) {
   analysis_type <- lda_result$analysis_type
   group_col <- lda_result$grouping_col
 
@@ -425,6 +430,7 @@ create_lda_bundle <- function(lda_result, raw_data,
     group_col = group_col,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
+    filter_spec = filter_spec,
     transform_params = transform_params,
     scale_params = scale_params,
     settings = settings,
