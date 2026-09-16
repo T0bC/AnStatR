@@ -17,8 +17,31 @@ The bundle file must be an `.rds` object exported directly from the PCA, LDA, QD
 | `transform_params` | Stored skewness transformation parameters or empty list |
 | `app_version` | Version of AnStatR that created the bundle |
 | `created` | Timestamp of bundle creation |
+| `meta_cols` | Character vector of descriptive column names (optional) |
+| `group_col` | Grouping column for the LDA family; `NULL` for PCA and Cluster |
+| `settings` | Record of the analysis settings used (display only) |
+| `data_source` | `raw` or `pca_scores` |
+| `filter_spec` | Training filter, when the model was fitted on a filtered subset (optional — see below) |
 
 Cluster bundles additionally store `variant` (`kmeans` or `pam`), `cluster_metric` (`euclidean` or `manhattan`), `n_clusters`, and `cluster_labels` (the training-set cluster assignments, needed to redraw the training biplot since clustering has no `predict()` to recompute them from).
+
+**Training filter (`filter_spec`)**
+
+If the model was fitted on a filtered subset of the training data — for example only first molars, or only buccal facets — that subset is part of the model's contract. Projecting unknown data from a different tooth or facet onto it is not a weaker comparison, it is the wrong one. The bundle therefore records the filter and the Prediction tab reapplies it.
+
+Not every filtered column can be reapplied, because the columns play different roles:
+
+| Role | Examples | Shares levels with unknown data? | Reapplied? |
+| --- | --- | --- | --- |
+| **Structural / protocol** | `TOOTH`, `FACET`, `JAW` | Yes — the same vocabulary by definition | **Yes** |
+| **Identity** | `SAMPLE_ID`, `SPECIES`, `SITE` | No — unknown specimens are new | No |
+| **Outcome / label** | the LDA grouping column | Not present in unknown data | No |
+
+Reapplying an identity filter would match zero rows, so the split is decided when the bundle is saved rather than guessed at prediction time. Exporting a bundle from a filtered model opens a dialog listing each narrowed column with a checkbox; structural-looking columns (few levels, each recurring across many rows) are pre-ticked, and you can override. Columns you leave unticked are recorded as provenance only and never applied to unknown data. If no filter narrowed the training data, no dialog appears and no `filter_spec` is written.
+
+When a filter-aware bundle is loaded, the sidebar's bundle card shows the requirement (for example `Training filter: TOOTH = M1`), and the unknown-data card reports how many uploaded rows match it. Prediction then runs on the matching rows only.
+
+**Bundles created before this feature existed have no `filter_spec` and behave exactly as before** — no filter is applied and no filter messaging appears.
 
 Bundles exported from external R sessions or other tools will not be accepted unless they conform to this structure. Bundles exported in cross-validation (CV) mode do not include a fitted model object and cannot be used for prediction. Cluster bundles are only exportable for **K-Means or PAM fit on raw measurement data** — see the Cluster module's Details tab for why Hierarchical, DBSCAN, and score-sourced clusters are excluded.
 
@@ -123,8 +146,11 @@ Validation runs automatically when both the bundle and unknown data are loaded. 
 | Present measurement columns are numeric | **Error** (blocking) | Column with measurement name contains text/factor |
 | Optional metadata columns present | **Warning** (non-blocking) | A metadata column from the bundle is absent in unknown data |
 | Value ranges within 20% margin of training range | **Warning** (non-blocking) | `unknown_range` exceeds `training_range ± 0.2 × training_span` for any column |
+| Training filter column present | **Error** (blocking) | The bundle's `filter_spec` requires a column the unknown data does not have |
+| Training filter levels present | **Error** (blocking) | The column exists but none of the required values occur in it — most often a spelling or upper/lower case difference such as `M1` vs `m1` |
+| Training filter matches at least one row | **Error** (blocking) | Each filtered column matches on its own, but no row satisfies all of them together |
 
-Errors prevent prediction; warnings are displayed as an alert banner above the results but do not block the run. Range warnings indicate that one or more columns have unknown values outside the distribution the model was trained on — these samples are extrapolation points and their predictions should be interpreted with additional caution.
+Errors prevent prediction; warnings are displayed as an alert banner above the results but do not block the run. The training-filter checks are deliberately blocking rather than advisory: silently predicting on rows the model was never fitted for would produce results that look valid but compare different things. Error messages list the required values alongside those actually found, so a case or spelling mismatch is visible immediately. Range warnings indicate that one or more columns have unknown values outside the distribution the model was trained on — these samples are extrapolation points and their predictions should be interpreted with additional caution.
 
 </details>
 
