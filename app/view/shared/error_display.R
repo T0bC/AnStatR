@@ -125,17 +125,23 @@ render_app_error <- function(error_obj, show_icon = TRUE,
 #' Creates a Bootstrap alert with an error message. For quick error display
 #' without the full structured error format.
 #'
-#' @param message Character, the error message to display
+#' @param message Character or shiny tags, the message to display
 #' @param type Character, alert type: "danger", "warning", "info"
 #' @param dismissible Logical, whether the alert can be dismissed
 #' @param icon_name Character, Bootstrap icon name (NULL for no icon)
+#' @param extra_class Character, additional CSS classes. Use
+#'   "py-2 px-2 small mb-2" for the compact form that fits a sidebar.
 #' @return Shiny tags object with alert
 #' @export
 error_alert <- function(message, type = "danger", dismissible = FALSE,
-                        icon_name = "exclamation-triangle-fill") {
+                        icon_name = "exclamation-triangle-fill",
+                        extra_class = NULL) {
   alert_class <- paste0("alert alert-", type)
   if (dismissible) {
     alert_class <- paste0(alert_class, " alert-dismissible fade show")
+  }
+  if (!is.null(extra_class)) {
+    alert_class <- paste(alert_class, extra_class)
   }
 
   icon_element <- if (!is.null(icon_name)) {
