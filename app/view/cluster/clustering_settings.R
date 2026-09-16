@@ -137,9 +137,14 @@ tab_ui <- function(ns) {
 #' @param session Shiny session object from parent module
 #' @param input_data Reactive returning the current data frame
 #' @param data_version Reactive returning the data version counter
+#' @param set_updating_k Optional reactiveVal setter used to mark a
+#'   programmatic change to n_clusters, so the parent's user-vs-
+#'   programmatic tracker does not mistake the automatic re-cap for a
+#'   manual edit
 #' @export
 tab_server <- function(input, output, session,
-                       input_data, data_version) {
+                       input_data, data_version,
+                       set_updating_k = NULL) {
   # Reset clustering settings when new data is loaded
   shiny$observeEvent(data_version(),
     {
@@ -179,6 +184,9 @@ tab_server <- function(input, output, session,
       if (!is.null(current_clusters) &&
             !is.na(current_clusters) &&
             current_clusters > max_clusters) {
+        if (!is.null(set_updating_k)) {
+          set_updating_k(TRUE)
+        }
         shiny$updateNumericInput(
           session, "n_clusters",
           value = max_clusters,
