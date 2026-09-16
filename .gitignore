@@ -6,9 +6,6 @@
 .Renviron
 node_modules/
 
-# lint 
-flir/
-
 # Log files
 logs/
 
