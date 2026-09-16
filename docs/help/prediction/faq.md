@@ -140,9 +140,33 @@ Check the **overlay plot** — do the unknown triangles cluster in one region? A
 <details>
 <summary>Can I predict with a bundle if my unknown data is missing some metadata columns?</summary>
 
-Yes. Metadata columns (non-measurement columns stored in the bundle as `meta_cols`) are not required for prediction. Missing metadata columns trigger a **non-blocking warning** in the validation panel — prediction proceeds normally. The only columns that are required are the `numeric_cols` listed in the bundle.
+Usually yes. Metadata columns (non-measurement columns stored in the bundle as `meta_cols`) are not required for prediction. Missing metadata columns trigger a **non-blocking warning** in the validation panel — prediction proceeds normally.
+
+**The exception is a training filter.** If the model was fitted on a filtered subset and you confirmed at save time that a column must hold for unknown data, that column becomes required: its absence is a **blocking error**, not a warning. A model fitted on first molars only cannot be applied to data that does not say which tooth each row came from. See the Details tab for how the training filter works and which columns it covers.
+
+So the required columns are the `numeric_cols` listed in the bundle, plus any column named in the bundle's `filter_spec`.
 
 However, if the label column you selected in **Plot Settings** is absent from the unknown data, specimens will be labelled `Unknown_1`, `Unknown_2`, … in results and plots. This does not affect the prediction but makes specimen identification more difficult.
+
+</details>
+
+<details>
+<summary>Why does my prediction fail with "No rows match the model's training filter"?</summary>
+
+The model was fitted on a subset of the training data — for example `TOOTH = M1` — and none of your unknown rows carry that value. The error message lists what the model requires alongside what was actually found in your file.
+
+The most common cause is not a genuinely absent category but a **spelling or upper/lower case difference**: `M1` vs `m1` vs `M1 ` with a trailing space. Matching is exact and case-sensitive. Compare the two lists in the error message character by character, correct your file, and re-upload.
+
+If the categories genuinely differ, the model is not applicable to that data: it was never fitted on those rows. Either train a model on the relevant subset, or re-export the existing bundle with that column left unticked in the save dialog if the filter was training-set scoping rather than a real requirement.
+
+</details>
+
+<details>
+<summary>Why did my prediction run on fewer rows than I uploaded?</summary>
+
+The bundle carries a training filter and only the matching rows were used. The unknown-data card in the sidebar reports this as `N of M rows match the training filter`, and the bundle card above it shows the requirement.
+
+This is intended: it is what keeps the comparison like-for-like. If the drop is larger than you expect, check the bundle card for which columns and values the model requires.
 
 </details>
 
