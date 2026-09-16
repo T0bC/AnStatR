@@ -239,7 +239,7 @@ build_raw_3d_plot <- function(data, measure_cols,
   # Validate columns exist
   for (col in c(dim_x, dim_y, dim_z)) {
     if (!col %in% names(data)) {
-      stop(paste0("Column '", col, "' not found in data."))
+      stop("Column '", col, "' not found in data.")
     }
   }
 

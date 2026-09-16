@@ -162,10 +162,7 @@ run_clustering <- function(data, columns, n_clusters,
           num_data, n_clusters, metric, method
         ),
         dbscan = run_dbscan(num_data, metric),
-        stop(paste0(
-          "Unknown algorithm: '", algorithm, "'. ",
-          "Supported: kmeans, hierarchical, dbscan."
-        ))
+        stop("Unknown algorithm: '", algorithm, "'. ", "Supported: kmeans, hierarchical, dbscan.")
       )
 
       actual_k <- length(unique(

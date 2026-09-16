@@ -222,16 +222,10 @@ build_raw_biplot <- function(data, measure_cols,
                              show_title) {
   # Validate that dim_x and dim_y are actual columns
   if (!dim_x %in% names(data)) {
-    stop(paste0(
-      "Column '", dim_x,
-      "' not found in the data."
-    ))
+    stop("Column '", dim_x, "' not found in the data.")
   }
   if (!dim_y %in% names(data)) {
-    stop(paste0(
-      "Column '", dim_y,
-      "' not found in the data."
-    ))
+    stop("Column '", dim_y, "' not found in the data.")
   }
 
   # Build plot data frame
