@@ -2,6 +2,10 @@ box::use(
   rhino,
 )
 
+box::use(
+  app/logic/shared/filter_spec,
+)
+
 # =============================================================================
 # Validation logic for unknown data against a bundle
 # No Shiny dependencies allowed in this file.
@@ -16,7 +20,8 @@ box::use(
 #' @param unknown_data Data frame of unknown observations
 #' @param bundle The prediction bundle (from load_bundle)
 #' @return List with $valid (logical), $errors (character
-#'   vector), $warnings (character vector)
+#'   vector), $warnings (character vector), $n_matching (rows
+#'   surviving the bundle's training filter) and $n_uploaded
 #' @export
 validate_unknown_data <- function(unknown_data, bundle) {
   errors <- character(0)
@@ -67,6 +72,23 @@ validate_unknown_data <- function(unknown_data, bundle) {
     }
   }
 
+  # Check the training filter, when the bundle records one.
+  #
+  # Unlike the metadata check above these are blocking: if the model
+  # was fitted on one tooth only, projecting unknown data from a
+  # different tooth is not a weaker comparison, it is the wrong one.
+  # Bundles saved before training filters existed have no filter_spec
+  # and are unaffected.
+  n_matching <- nrow(unknown_data)
+  if (!is.null(bundle$filter_spec)) {
+    filter_check <- filter_spec$check_filter_spec(
+      bundle$filter_spec, unknown_data
+    )
+    errors <- c(errors, filter_check$errors)
+    warnings <- c(warnings, filter_check$warnings)
+    n_matching <- filter_check$n_matching
+  }
+
   # Check value ranges for plausibility
   if (
     length(errors) == 0 &&
@@ -95,7 +117,11 @@ validate_unknown_data <- function(unknown_data, bundle) {
   list(
     valid = valid,
     errors = errors,
-    warnings = warnings
+    warnings = warnings,
+    # Rows surviving the model's training filter. Equals nrow() when
+    # the bundle records no filter.
+    n_matching = n_matching,
+    n_uploaded = nrow(unknown_data)
   )
 }
 
