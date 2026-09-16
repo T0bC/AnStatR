@@ -31,6 +31,21 @@ When the **Statistics** tab has computed a parameter screening ranking (see the 
 
 K-Means and PAM clusters fit on **raw measurement data** can be exported as an `.rds` bundle (**Download RDS (for Prediction)** in the Cluster Results panel) and loaded into the **Prediction** module to assign new/unknown samples to the nearest centroid (K-Means) or medoid (PAM) — see "Prediction Export Scope" below and the **Prediction** module's Details tab for the out-of-sample assignment rule.
 
+
+**Filter Data tab**
+
+The sidebar's funnel icon opens a **Filter Data** tab that narrows the rows this analysis runs on, without leaving the tab. This exists for feature hunting: when you do not yet know which tooth or facet carries the signal, you can change the subset and re-run here instead of going back to the Median or Plotting tab each time.
+
+- **Available columns** — every descriptive column present in the incoming data, whether or not it is selected as a metadata column above. So `TOOTH` can be filtered on without also being selected for labelling.
+- **Which columns appear** — only those that survived median calculation. See the **Median** module's Details tab: a descriptive column that varies within a group is dropped, so you can only filter on columns you grouped by.
+- **Matching** — within a column, any ticked value matches (OR); across columns, all filters must hold (AND). Missing values appear as a selectable `NA` level. Unticking every value in a column is treated as "no constraint" rather than "no rows".
+- **Row counter** — the tab reports `kept / total rows selected`, so an over-narrow filter is visible before you run the analysis and get an unexplained failure.
+- **All / None** — each column's label carries a toggle link to select or clear all of its levels.
+- **Raw data only** — when the data source is set to PCA or LDA scores, filtering is disabled and the tab explains why: those rows have already been reduced and no longer carry the original metadata levels.
+
+- **Results do not update automatically.** Changing a filter after computing leaves the existing results on screen and shows an amber **Data selection changed** notice above the **Run Clustering** button. This is deliberate: results are kept so you can compare, and are never silently relabelled. Press **Run Clustering** again to recompute.
+- **Saving a model** — if a filter narrowed the training data, exporting the `.rds` bundle asks which filtered columns must also hold for unknown data. See the **Prediction** module's Details tab.
+
 ##### Technical Specifications
 
 <details>
