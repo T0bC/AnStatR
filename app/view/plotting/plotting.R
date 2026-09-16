@@ -18,9 +18,9 @@ box::use(
   app/view/components/sidebar_tabs,
   app/view/plotting/data_selection,
   app/view/plotting/diagnostics_ui,
-  app/view/plotting/filter,
   app/view/plotting/processing,
   app/view/plotting/style,
+  app/view/shared/data_filter,
   app/view/shared/error_display,
 )
 
@@ -65,7 +65,7 @@ ui <- function(id) {
       sidebar_id = "sidebar_tabs",
       tabs = list(
         data_selection$tab_ui(ns),
-        filter$tab_ui(ns),
+        data_filter$tab_ui(ns),
         processing$tab_ui(ns),
         style$tab_ui(ns)
       ),
@@ -145,8 +145,10 @@ server <- function(id, input_data, data_version) {
     data_selection$tab_server(
       input, output, session, input_data, data_version
     )
-    filter_result <- filter$tab_server(
-      input, output, session, input_data, data_version
+    filter_result <- data_filter$tab_server(
+      input, output, session, input_data, data_version,
+      candidate_cols = shiny$reactive(input$metaData),
+      log_prefix = "Plotting filter"
     )
     processing$tab_server(
       input, output, session, data_version
@@ -321,6 +323,10 @@ server <- function(id, input_data, data_version) {
         params$violin_style$show_outliers %||% FALSE,
         params$black_points %||% FALSE,
         data_nrow, data_ncol,
+        # Row subset identity: nrow/ncol alone collide when two
+        # different filter selections retain the same row count,
+        # which would serve one subset's cached plot for another.
+        filter_result$filter_signature(),
         sep = "|"
       )
     }
