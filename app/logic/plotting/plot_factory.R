@@ -221,6 +221,9 @@ create_plot <- function(plot_type = "scatter",
     )
   )
 
+  # --- Pin x-axis order (layers may cover disjoint subsets of the x factor) ---
+  p <- plot_helpers$apply_x_scale(p, data, x_var)
+
   # --- Apply color scales ---
   p <- plot_helpers$apply_color_scales(p, color_map, color_legend_title, skip_color_scale)
 
