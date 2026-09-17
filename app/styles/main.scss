@@ -645,12 +645,62 @@ details.app-error-details.mt-2 {
 }
 
 // Leaf items (innermost level with color pickers)
+//
+// The fixed height is load-bearing: SortableJS swaps on hover overlap, so
+// items of differing heights make a list oscillate endlessly during a drag.
 .leaf-item {
+  min-height: 32px;
   transition: background-color 0.15s ease;
 
   &:hover {
     background-color: #f0f0f0 !important;
   }
+}
+
+// Nested headers need the same treatment as leaf items
+.nested-header,
+.inner-group-header {
+  min-height: 32px;
+}
+
+// Levels with no observations for this branch (e.g. Gentoo x Torgersen).
+// Kept in the list so the drag order stays complete, but visually muted and
+// stripped of their colour / shape controls.
+.level-unavailable {
+  > .nested-header,
+  > .inner-group-header,
+  &.leaf-item {
+    opacity: 0.45;
+  }
+
+  > .nested-header > span.flex-grow-1,
+  > .inner-group-header > span.fw-medium,
+  &.leaf-item > span.flex-grow-1 {
+    font-style: italic;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+}
+
+.level-unavailable-tag {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-style: italic;
+  line-height: 24px;
+  color: var(--bs-secondary);
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+// Placeholders keeping an empty leaf exactly as tall and wide as a full one
+.shape-select-wrapper.is-empty,
+.color-picker-wrapper.is-empty {
+  display: flex;
+  align-items: center;
+  height: 26px;
 }
 
 // Shape select wrapper for consistent sizing
