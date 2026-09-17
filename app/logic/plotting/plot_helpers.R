@@ -440,6 +440,36 @@ apply_theme <- function(p, x_cols, gl, ax) {
   p
 }
 
+#' Pin the discrete x-axis order to the prepared factor levels
+#'
+#' Point layers are split by shape family (fillable vs. non-fillable), so a
+#' single panel can hold layers whose data cover disjoint subsets of the x
+#' factor.  ggplot2 trains a discrete scale layer by layer and falls back to
+#' `sort()` as soon as a later layer introduces a level the earlier ones did
+#' not carry, which silently alphabetises the user's custom order.  Setting
+#' explicit limits keeps the order defined in "Colors & Order".
+#'
+#' @param p ggplot object
+#' @param data Prepared data frame (all layers)
+#' @param x_var Name of the x-axis variable
+#' @return ggplot object with x-axis limits pinned, unchanged if x is not a factor
+#' @export
+apply_x_scale <- function(p, data, x_var) {
+  if (length(x_var) != 1 || !x_var %in% names(data)) {
+    return(p)
+  }
+  x_values <- data[[x_var]]
+  if (!is.factor(x_values)) {
+    return(p)
+  }
+  x_levels <- levels(droplevels(x_values))
+  if (length(x_levels) == 0) {
+    return(p)
+  }
+  p + ggplot2$scale_x_discrete(limits = x_levels)
+}
+
+
 #' Apply color scales to plot
 #' @param p ggplot object
 #' @param color_map Named character vector of colors
