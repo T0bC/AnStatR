@@ -126,6 +126,24 @@ tab_server <- function(input, output, session,
           shiny$tags$strong("Training filter: "),
           filter_line
         )
+      },
+      # Imputed training values change what the model was fitted on, so
+      # this belongs next to the filter requirement rather than buried
+      # in the bundle. Absent entirely when the training data was
+      # complete (build_impute_spec() returns NULL in that case).
+      if (!is.null(bundle$impute_spec)) {
+        spec <- bundle$impute_spec
+        shiny$tags$div(
+          class = "mt-1",
+          bsicons$bs_icon("magic", class = "me-1"),
+          shiny$tags$strong("Imputed training data: "),
+          paste0(
+            spec$n_imputed, " values (",
+            spec$percent_missing, "% of measurements) across ",
+            spec$rows_affected, " rows, NIPALS with ",
+            spec$ncomp_used, " components"
+          )
+        )
       }
     )
   })
