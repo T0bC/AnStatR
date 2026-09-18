@@ -226,45 +226,59 @@ prepare_color_group <- function(data, color_cols, x_cols, factor_order = NULL) {
   )
 }
 
-#' Prepare shape mapping
+#' Prepare shape grouping column
+#'
+#' Mirrors `prepare_color_group()`: "Shape by" defines the grouping when the
+#' user picked columns there, otherwise shapes vary over the X-axis columns.
+#' The two groupings are independent -- colouring by SPECIES while shaping by
+#' ISLAND is a valid combination.
+#'
 #' @param data Data frame
-#' @param shape_cols Character vector of shape column names
-#' @return List with data, use_shape flag, and legend_title
+#' @param shape_cols Character vector from "Shape by" (may be empty)
+#' @param x_cols Character vector of X-axis column names (fallback)
+#' @param factor_order Optional named list of custom factor level orderings
+#' @return List with data, explicit flag, and legend_title
 #' @export
-prepare_shape <- function(data, shape_cols) {
-  if (is.null(shape_cols) || length(shape_cols) == 0) {
-    return(list(data = data, use_shape = FALSE, legend_title = NULL))
-  }
-  valid <- shape_cols[shape_cols %in% names(data)]
+prepare_shape_group <- function(data, shape_cols, x_cols,
+                                factor_order = NULL) {
+  explicit <- !is.null(shape_cols) && length(shape_cols) > 0
+  cols <- if (explicit) shape_cols else x_cols
+  valid <- cols[cols %in% names(data)]
   if (length(valid) == 0) {
-    return(list(data = data, use_shape = FALSE, legend_title = NULL))
+    data$.shape_group <- ""
+    return(list(data = data, explicit = FALSE, legend_title = NULL))
   }
+
   data$.shape_group <- as.character(
-    data_utils$create_interaction(data, valid)
+    data_utils$create_interaction(data, valid, factor_order)
   )
-  n_shapes <- length(unique(data$.shape_group))
-  if (n_shapes > 6) {
-    rhino$log$warn(
-      "Plot: shape mapping has {n_shapes} groups ",
-      "(>6 may reduce readability)"
-    )
+
+  if (explicit) {
+    n_shapes <- length(unique(data$.shape_group))
+    if (n_shapes > 6) {
+      rhino$log$warn(
+        "Plot: shape mapping has {n_shapes} groups ",
+        "(>6 may reduce readability)"
+      )
+    }
   }
+
   list(
     data = data,
-    use_shape = TRUE,
-    legend_title = paste(valid, collapse = " | ")
+    explicit = explicit,
+    legend_title = if (explicit) paste(valid, collapse = " | ") else NULL
   )
 }
 
 #' Prepare custom shape mapping from shape_map
-#' @param data Data frame with .color_group column
-#' @param shape_map Named integer vector mapping group names to shape values
+#' @param data Data frame with .shape_group column
+#' @param shape_map Named integer vector mapping shape groups to pch values
 #' @return Data frame with .point_shape column added
 #' @export
 prepare_custom_shapes <- function(data, shape_map) {
   data$.point_shape <- vapply(
-    data$.color_group,
-    function(g) if (g %in% names(shape_map)) shape_map[[g]] else 19L,
+    data$.shape_group,
+    function(g) if (g %in% names(shape_map)) shape_map[[g]] else 21L,
     integer(1)
   )
   data
@@ -525,14 +539,29 @@ all_fillable_shapes <- function(shapes) {
 #' @param p ggplot object
 #' @param data Data frame with .shape_group column
 #' @param shape_legend_title Title for shape legend
+#' @param shape_map Named integer vector of user-chosen pch values
 #' @return ggplot object with shape scale applied
 #' @export
-apply_shape_scale <- function(p, data, shape_legend_title) {
-  n <- length(unique(data$.shape_group)) # nolint: unused_declared_object_linter.
-  fillable <- c(21, 22, 23, 24, 25, 3)
-  vals <- fillable[base::seq_len(min(n, length(fillable)))]
+apply_shape_scale <- function(p, data, shape_legend_title, shape_map = NULL) {
+  groups <- unique(as.character(data$.shape_group))
+  vals <- if (!is.null(shape_map) && length(shape_map) > 0) {
+    # Shapes the user picked in "Colors & Order", in the plotted group order
+    stats::setNames(
+      vapply(
+        groups,
+        function(g) if (g %in% names(shape_map)) shape_map[[g]] else 21L,
+        integer(1)
+      ),
+      groups
+    )
+  } else {
+    fillable <- c(21, 22, 23, 24, 25, 3)
+    fillable[base::seq_len(min(length(groups), length(fillable)))]
+  }
+
   p + ggplot2$scale_shape_manual(
     values = vals,
+    limits = groups,
     name = shape_legend_title,
     guide = ggplot2$guide_legend(
       override.aes = list(
