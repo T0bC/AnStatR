@@ -293,20 +293,19 @@ server <- function(id) {
           )
         )
       } else {
-        shiny$tagList(
-          quality_banner$create_banner(
-            data_overview$detect_quality_flags(loaded_data())
-          ),
-          bslib$accordion(
-            id = ns("data_panels_accordion"),
-            open = c("overview", "missing_values"),
-            multiple = TRUE,
-            bslib$accordion_panel(
-              title = "Overview",
-              value = "overview",
-              icon = bsicons$bs_icon("speedometer2"),
-              shiny$uiOutput(ns("overview_boxes"))
-            ),
+        has_missing <- any(is.na(loaded_data()))
+
+        panels <- list(
+          bslib$accordion_panel(
+            title = "Overview",
+            value = "overview",
+            icon = bsicons$bs_icon("speedometer2"),
+            shiny$uiOutput(ns("overview_boxes"))
+          )
+        )
+
+        if (has_missing) {
+          panels <- c(panels, list(
             bslib$accordion_panel(
               title = "Missing Values",
               value = "missing_values",
@@ -326,21 +325,43 @@ server <- function(id) {
                   shiny$plotOutput(ns("missing_patterns_plot"), height = "480px")
                 )
               )
-            ),
-            bslib$accordion_panel(
-              title = "Data Summary",
-              value = "data_summary",
-              icon = bsicons$bs_icon("list-ul"),
-              shiny$uiOutput(ns("data_summary"))
-            ),
-            bslib$accordion_panel(
-              title = "Data Preview",
-              value = "data_preview",
-              icon = bsicons$bs_icon("table"),
-              shiny$tags$div(
-                class = "table-responsive",
-                DT$dataTableOutput(ns("data_preview"))
-              )
+            )
+          ))
+        }
+
+        panels <- c(panels, list(
+          bslib$accordion_panel(
+            title = "Data Summary",
+            value = "data_summary",
+            icon = bsicons$bs_icon("list-ul"),
+            shiny$uiOutput(ns("data_summary"))
+          ),
+          bslib$accordion_panel(
+            title = "Data Preview",
+            value = "data_preview",
+            icon = bsicons$bs_icon("table"),
+            shiny$tags$div(
+              class = "table-responsive",
+              DT$dataTableOutput(ns("data_preview"))
+            )
+          )
+        ))
+
+        open_panels <- if (has_missing) {
+          c("overview", "missing_values")
+        } else {
+          c("overview", "data_summary")
+        }
+
+        shiny$tagList(
+          quality_banner$create_banner(
+            data_overview$detect_quality_flags(loaded_data())
+          ),
+          do.call(
+            bslib$accordion,
+            c(
+              list(id = ns("data_panels_accordion"), open = open_panels, multiple = TRUE),
+              panels
             )
           )
         )
