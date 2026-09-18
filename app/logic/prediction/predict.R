@@ -13,6 +13,75 @@ box::use(
 # No Shiny dependencies allowed in this file.
 # =============================================================================
 
+#' Remove unknown rows that cannot be predicted
+#'
+#' Every engine fails differently on a missing measurement, and none of
+#' them fail loudly:
+#'   - the manual PCA/sPCA/IPCA projection is a matrix multiply, so the
+#'     row's scores all become NA and it silently vanishes from the plots
+#'   - MASS::predict.lda() returns NA as the predicted class
+#'   - the nearest-centroid cluster assignment computes an all-NA distance
+#'     vector, and which.min() on it returns integer(0), which apply()
+#'     turns into a list and paste0() renders as the literal cluster label
+#'     "Cluster integer(0)"
+#'
+#' Rather than let each engine improvise, incomplete rows are removed up
+#' front and reported. Imputing them is not offered: a single unknown row
+#' carries nothing to reconstruct from, and borrowing the training set's
+#' structure would quietly invent the very values the prediction is
+#' supposed to be testing.
+#'
+#' @param unknown_data Data frame of unknown observations
+#' @param bundle The prediction bundle
+#' @return List with $data (complete rows only), $rows_before,
+#'   $rows_after, $rows_dropped and $dropped_labels (row names of the
+#'   removed rows, capped at 10 for messaging)
+#' @export
+drop_incomplete_unknowns <- function(unknown_data, bundle) {
+  numeric_cols <- intersect(
+    bundle$numeric_cols, names(unknown_data)
+  )
+  rows_before <- nrow(unknown_data)
+
+  if (length(numeric_cols) == 0) {
+    return(list(
+      data = unknown_data,
+      rows_before = rows_before,
+      rows_after = rows_before,
+      rows_dropped = 0L,
+      dropped_labels = character(0)
+    ))
+  }
+
+  complete <- stats$complete.cases(
+    unknown_data[, numeric_cols, drop = FALSE]
+  )
+  dropped_labels <- rownames(unknown_data)[!complete]
+  if (is.null(dropped_labels)) {
+    dropped_labels <- as.character(which(!complete))
+  }
+
+  result <- unknown_data[complete, , drop = FALSE]
+  rows_dropped <- rows_before - nrow(result)
+
+  if (rows_dropped > 0) {
+    rhino$log$warn(
+      "Prediction: dropped {rows_dropped} of {rows_before}",
+      " unknown row(s) with missing measurements"
+    )
+  }
+
+  list(
+    data = result,
+    rows_before = rows_before,
+    rows_after = nrow(result),
+    rows_dropped = as.integer(rows_dropped),
+    dropped_labels = dropped_labels[
+      seq_len(min(10, length(dropped_labels)))
+    ]
+  )
+}
+
 #' Preprocess unknown data using stored bundle params
 #'
 #' Applies stored skewness transforms and scaling params
