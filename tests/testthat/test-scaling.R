@@ -34,6 +34,26 @@ describe("scale_data", {
     )
   })
 
+  it("confines a missing value to its own row", {
+    # Regression: ave()'s default mean() returns NA for any group
+    # holding an NA, which zeroed out every row of that group for
+    # the column rather than just the missing cell.
+    data <- data.frame(
+      site = c("A", "A", "A", "B", "B", "B"),
+      x = c(10, NA, 14, 100, 102, 104)
+    )
+    result <- scaling$residualize_data(data, "x", "site")
+    expect_true(result$success)
+
+    resid <- result$result$x
+    expect_true(is.na(resid[2]))
+    # The other two group-A rows survive, centred on the mean of
+    # the observed values (12): 10 - 12 and 14 - 12
+    expect_equal(resid[1], -2)
+    expect_equal(resid[3], 2)
+    expect_false(any(is.na(resid[4:6])))
+  })
+
   it("preserves metadata columns unchanged", {
     data <- data.frame(
       meta = c("a", "b", "c"),
