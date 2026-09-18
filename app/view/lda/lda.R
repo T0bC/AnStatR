@@ -25,6 +25,10 @@ box::use(
   app/logic/lda/perf_plot[create_perf_error_plot],
   app/logic/pca/pca[extract_pca_scores],
   app/logic/pca/scaling[residualize_data, scale_data],
+  app/logic/preprocessing/impute[
+    build_impute_spec,
+    impute_missing
+  ],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
     detect_skewness
@@ -87,6 +91,7 @@ server <- function(id, input_data, data_version,
     na_info <- shiny$reactiveVal(NULL)
     transform_info <- shiny$reactiveVal(NULL)
     skewness_info <- shiny$reactiveVal(NULL)
+    impute_info <- shiny$reactiveVal(NULL)
     validation_warnings <- shiny$reactiveVal(character(0))
     bundle_data <- shiny$reactiveVal(NULL)
     perf_result <- shiny$reactiveVal(NULL)
@@ -109,6 +114,7 @@ server <- function(id, input_data, data_version,
         last_error(NULL)
         na_info(NULL)
         transform_info(NULL)
+        impute_info(NULL)
         skewness_info(NULL)
         validation_warnings(character(0))
         bundle_data(NULL)
@@ -221,6 +227,7 @@ server <- function(id, input_data, data_version,
       test_result(NULL)
       na_info(NULL)
       transform_info(NULL)
+      impute_info(NULL)
       validation_warnings(character(0))
       bundle_data(NULL)
       perf_result(NULL)
@@ -298,9 +305,11 @@ server <- function(id, input_data, data_version,
       # Clean NAs in measurement columns and grouping column
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
+      do_impute <- isTRUE(input$impute_missing)
       na_result <- clean_na_rows(
         data, measure_cols, meta_cols,
-        grouping_col = grouping_col
+        grouping_col = grouping_col,
+        remove_measurement_na = !do_impute
       )
       na_info(na_result)
       cleaned_data <- na_result$data
@@ -347,6 +356,20 @@ server <- function(id, input_data, data_version,
             }
           }
         }
+      }
+
+      # Impute after the skewness transform: NIPALS is a linear
+      # reconstruction, so it is fitted on the near-normal scale
+      # rather than on raw skewed columns. bestNormalize passes
+      # NAs through untouched, which makes that order possible.
+      if (do_impute) {
+        imp_res <- impute_missing(cleaned_data, measure_cols)
+        if (!imp_res$success) {
+          last_error(imp_res$error)
+          return()
+        }
+        cleaned_data <- imp_res$result$data
+        impute_info(imp_res$result)
       }
 
       # Residualize by a confound column, before scaling
@@ -555,6 +578,7 @@ server <- function(id, input_data, data_version,
         meta_cols = meta_cols,
         transform_params = t_params,
         scale_params = s_params,
+        impute_spec = build_impute_spec(impute_info()),
         data_source = data_source,
         # Row subset the model was actually fitted on. Only recorded
         # for raw data -- in pca_scores mode the filter is disabled.
@@ -740,11 +764,24 @@ server <- function(id, input_data, data_version,
 
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
+      # Same NA policy as the compute path, so tuning and fitting
+      # never see different row sets.
+      tune_impute <- isTRUE(input$impute_missing)
       na_result <- clean_na_rows(
         data, measure_cols, meta_cols,
-        grouping_col = grouping_col
+        grouping_col = grouping_col,
+        remove_measurement_na = !tune_impute
       )
       tune_data <- na_result$data
+
+      if (tune_impute) {
+        tune_imp <- impute_missing(tune_data, measure_cols)
+        if (!tune_imp$success) {
+          last_error(tune_imp$error)
+          return()
+        }
+        tune_data <- tune_imp$result$data
+      }
 
       if (
         data_source == "raw" &&
@@ -938,7 +975,8 @@ server <- function(id, input_data, data_version,
       preprocess_banner <- preprocessing_summary$render_na_summary(
         na_res,
         transform_result = tf_res,
-        n_measure_cols = n_measure_cols
+        n_measure_cols = n_measure_cols,
+        impute_result = impute_info()
       )
 
       # Skewness warning (when normalization disabled but skewed cols exist)
@@ -1205,7 +1243,8 @@ server <- function(id, input_data, data_version,
           settings = bd$settings,
           data_source = bd$data_source,
           test_result = test_result(),
-          filter_spec = spec
+          filter_spec = spec,
+          impute_spec = bd$impute_spec
         )
         saveRDS(bundle, file)
         shiny$removeModal()
