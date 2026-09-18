@@ -723,17 +723,6 @@ details.app-error-details.mt-2 {
   }
 }
 
-// Disabled state for shape selects when "Shape by" is active
-.shape-disabled .shape-select-wrapper {
-  opacity: 0.5;
-  pointer-events: none;
-
-  select {
-    background-color: #e9ecef !important;
-    cursor: not-allowed !important;
-  }
-}
-
 // Color picker wrapper for consistent sizing
 .color-picker-wrapper {
   width: 120px;
