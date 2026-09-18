@@ -9,7 +9,7 @@
 | **Min. observations** | ≥ k + 1 (must exceed cluster count) | Same | Same |
 | **Min. measurement columns** | ≥ 1 numeric | All Dim.X columns | All LD columns |
 | **Data type** | Numeric only | Numeric only | Numeric only |
-| **Missing values** | Rows with NAs in measurement columns excluded automatically | NAs not expected (PCA already cleaned) | NAs not expected |
+| **Missing values** | Rows with NAs excluded, or imputed (opt-in) | NAs not expected (PCA already cleaned) | NAs not expected |
 | **Max. clusters (k)** | min(n − 1, 10) | same | same |
 
 Where n = number of observations after NA removal.
@@ -266,6 +266,25 @@ When using **PCA scores** or **LDA scores** as input, scaling is automatically s
 | **Residualize only** | Removes group-mean differences; raw variable magnitudes still dominate distances |
 | **Residualize + Scale & Center** | Removes group-mean differences, then standardises variance — the recommended combination when a confound is suspected in mixed-unit data |
 | **Scale & Center only (no residualize)** | Standardises variance, but any confound-driven mean shift remains and can still dominate the resulting clusters |
+
+</details>
+
+<details>
+<summary><strong>Missing Values</strong></summary>
+
+By default a row is removed if **any** selected measurement column is missing. With 40+ variables this is costly: one gap in one column discards that observation's other 39 values. Only *selected* measurement columns count, so deselecting a column with many gaps often returns a large number of rows. Descriptive columns are reported but never trigger removal.
+
+**Impute missing values** (checkbox, Data tab) offers the alternative. Gaps are reconstructed from the other measurement columns using the NIPALS algorithm (`mixOmics::impute.nipals`), and the row is kept. Observed values are never altered — only the gaps are filled.
+
+**Guard rails**
+
+- Columns missing more than **20%** of their values are refused rather than imputed, and named in the error. Above that threshold the column would rest largely on invented values. The cap is applied per column, not to overall missingness — a dataset at 5% overall can still hide one column at 60%.
+- Rows with **no** observed measurement at all are dropped; there is nothing to reconstruct them from.
+- Imputation runs **after** skewness correction, so the linear reconstruction is fitted on the near-normal scale rather than on raw skewed columns.
+
+**Why it matters here**: k-means and DBSCAN cannot accept a missing value at all, so without imputation every affected row is removed. Note that cluster assignments for imputed rows rest partly on reconstructed distances — check the imputed count against your cluster sizes before drawing conclusions about a small cluster.
+
+**When to use it**: imputation is appropriate for scattered, incidental gaps. It is not a repair for systematic missingness — if a variable is missing precisely for one group or one period, the reconstruction will invent values that hide exactly the pattern you are looking for. Imputed values are estimates, not observations; the count appears in the results summary and in any exported model bundle.
 
 </details>
 
