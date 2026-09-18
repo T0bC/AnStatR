@@ -133,6 +133,11 @@ create_pca_excel <- function(pca_result, file) {
 #'   filter_spec$build_filter_spec) recording the row subset the
 #'   model was fitted on, so the same subset can be reproduced on
 #'   unknown data. NULL when no filter narrowed the training data.
+#' @param impute_spec Optional list recording NIPALS imputation of the
+#'   training data (from impute_missing()$result, minus $data): keeps
+#'   $n_imputed, $rows_affected, $rows_dropped, $ncomp_used and
+#'   $percent_missing. NULL when the training rows were complete or
+#'   were removed rather than imputed.
 #' @return Named list (the bundle)
 #' @export
 create_pca_bundle <- function(pca_result, raw_data,
@@ -140,7 +145,8 @@ create_pca_bundle <- function(pca_result, raw_data,
                               meta_cols,
                               transform_params = list(),
                               settings = list(),
-                              filter_spec = NULL) {
+                              filter_spec = NULL,
+                              impute_spec = NULL) {
   bundle <- list(
     analysis_type = pca_result$analysis_type,
     model = pca_result$model,
@@ -150,6 +156,7 @@ create_pca_bundle <- function(pca_result, raw_data,
     numeric_cols = numeric_cols,
     meta_cols = meta_cols,
     filter_spec = filter_spec,
+    impute_spec = impute_spec,
     transform_params = transform_params,
     scale_params = list(
       center = pca_result$center,
