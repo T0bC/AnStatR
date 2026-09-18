@@ -234,14 +234,13 @@ validate_biplot3d_inputs <- function(pca_result,
     ))
   }
 
+  # Duplicate axis selections are allowed: the user may pick
+  # the same component twice (transiently, or on purpose to
+  # collapse an axis). Only unknown dimensions are an error.
   for (d in c(dim_x, dim_y, dim_z)) {
     if (!d %in% available_dims) {
       stop(paste("Dimension not found:", d))
     }
-  }
-
-  if (length(unique(c(dim_x, dim_y, dim_z))) < 3) {
-    stop("All three dimensions must be different.")
   }
 }
 
@@ -251,8 +250,10 @@ build_ind_data <- function(pca_result, dims,
   coord <- pca_result$scores
   meta <- pca_result$ind_meta
 
+  # unique(): duplicate axis selections would otherwise be
+  # renamed by make.unique() and break lookups by dim name.
   df <- as.data.frame(
-    coord[, dims, drop = FALSE]
+    coord[, unique(dims), drop = FALSE]
   )
 
   # Group column
@@ -289,12 +290,12 @@ build_var_data <- function(pca_result, dims,
     pca_result$loadings, pca_result$scores
   )
   df <- as.data.frame(
-    var_coord[, dims, drop = FALSE]
+    var_coord[, unique(dims), drop = FALSE]
   )
 
   # Scale: max_ind / max_var so arrows fit the data
   max_ind <- max(
-    abs(unlist(ind_data[, dims])),
+    abs(unlist(ind_data[, unique(dims)])),
     na.rm = TRUE
   )
   max_var <- max(
@@ -313,6 +314,7 @@ build_var_data <- function(pca_result, dims,
 compute_axis_ranges <- function(ind_data, var_data,
                                 dims) {
   buffer <- 0.1
+  dims <- unique(dims)
   ranges <- lapply(dims, function(d) {
     all_vals <- c(ind_data[[d]], var_data[[d]], 0)
     r <- range(all_vals, na.rm = TRUE)
@@ -351,8 +353,9 @@ build_hover_text <- function(pca_result, ind_data,
           ))
         }
       }
-      # Dimension values
-      for (d in dims) {
+      # Dimension values (unique: a component picked for two
+      # axes should still be listed once in the tooltip)
+      for (d in unique(dims)) {
         parts <- c(parts, paste0(
           d, ": ",
           sprintf("%.3f", ind_data[i, d])
