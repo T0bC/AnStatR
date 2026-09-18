@@ -160,25 +160,37 @@ create_plot <- function(plot_type = "scatter",
   color_legend_title <- color_prep$color_legend_title
 
   # --- Prepare shape grouping ---
+  #
+  # Shapes group by "Shape by" when set, otherwise by the X-axis columns --
+  # independently of the colour grouping.  The user's shape_map applies in
+  # both cases; "Shape by" additionally puts a shape legend on the plot.
   use_shape <- FALSE
   use_custom_shape <- FALSE
-  # Default path renders shape 21 (fill only); skip color scale unless non-fillable custom shapes present
+  # Default path renders shape 21 (fill only); keep the color scale only when
+  # a non-fillable shape (pch 0-14) is in play
   skip_color_scale <- shows_points(plot_type)
   shape_legend_title <- NULL
+  fillable_shapes <- TRUE
 
   if (shows_points(plot_type)) {
+    shape_prep <- plot_helpers$prepare_shape_group(
+      data, ps$shape_cols, x_cols, factor_order
+    )
+    data <- shape_prep$data
+    shape_legend_title <- shape_prep$legend_title
+
     if (!is.null(shape_map) && length(shape_map) > 0) {
-      # Custom shapes: map each row's .color_group to its shape value
       data <- plot_helpers$prepare_custom_shapes(data, shape_map)
-      use_custom_shape <- TRUE
-      # Keep color scale only when at least one non-fillable shape (0-14) is present
-      skip_color_scale <- plot_helpers$all_fillable_shapes(shape_map)
+      fillable_shapes <- plot_helpers$all_fillable_shapes(
+        data$.point_shape
+      )
+      skip_color_scale <- fillable_shapes
+      # "Shape by" renders through the aesthetic so the legend shows up;
+      # otherwise the per-row shape vector is enough
+      use_shape <- shape_prep$explicit
+      use_custom_shape <- !shape_prep$explicit
     } else {
-      shape_prep <- plot_helpers$prepare_shape(data, ps$shape_cols)
-      data <- shape_prep$data
-      use_shape <- shape_prep$use_shape
-      shape_legend_title <- shape_prep$legend_title
-      # apply_shape_scale() always uses 21-25: fill aesthetic only, skip color scale
+      use_shape <- shape_prep$explicit
       skip_color_scale <- TRUE
     }
   }
@@ -201,23 +213,27 @@ create_plot <- function(plot_type = "scatter",
   # --- Dispatch to appropriate builder ---
   p <- switch(plot_type,
     "scatter" = scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points,
+      fillable_shapes
     ),
     "boxplot" = boxplot_builder$build_boxplot_layers(
       p, data, bp, ps, gl
     ),
     "boxplot_points" = boxplot_builder$build_boxplot_points_layers(
-      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, bp, ps, gl, sls, use_shape, use_custom_shape, black_points,
+      fillable_shapes
     ),
     "violin" = violin_builder$build_violin_layers(
       p, data, vp, ps, gl
     ),
     "violin_points" = violin_builder$build_violin_points_layers(
-      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, vp, ps, gl, sls, use_shape, use_custom_shape, black_points,
+      fillable_shapes
     ),
     # Default to scatter
     scatter_builder$build_scatter_layers(
-      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points
+      p, data, ps, gl, sls, use_shape, use_custom_shape, black_points,
+      fillable_shapes
     )
   )
 
@@ -229,7 +245,9 @@ create_plot <- function(plot_type = "scatter",
 
   # --- Apply shape scale if using shape aesthetic ---
   if (use_shape) {
-    p <- plot_helpers$apply_shape_scale(p, data, shape_legend_title)
+    p <- plot_helpers$apply_shape_scale(
+      p, data, shape_legend_title, shape_map
+    )
   }
 
   # --- Labels ---
