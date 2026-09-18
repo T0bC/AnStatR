@@ -1,20 +1,21 @@
 box::use(
   DT,
-  DataExplorer,
   bsicons,
   bslib,
-  ggplot2,
   rhino,
   shiny,
   summarytools,
 )
 
 box::use(
+  app/logic/load_data/data_overview,
   app/logic/load_data/example_data,
   app/logic/load_data/load_data,
+  app/logic/load_data/missing_plots,
   app/logic/shared/column_utils,
   app/logic/shared/error_handling,
   app/view/components/column_validation_modal,
+  app/view/components/quality_banner,
   app/view/components/sidebar_tabs,
   app/view/shared/error_display,
 )
@@ -292,33 +293,66 @@ server <- function(id) {
           )
         )
       } else {
-        bslib$accordion(
-          id = ns("data_panels_accordion"),
-          open = "data_preview",
-          multiple = TRUE,
-          bslib$accordion_panel(
-            title = "Data Preview",
-            value = "data_preview",
-            icon = bsicons$bs_icon("table"),
-            shiny$tags$div(
-              class = "table-responsive",
-              DT$dataTableOutput(ns("data_preview"))
+        shiny$tagList(
+          quality_banner$create_banner(
+            data_overview$detect_quality_flags(loaded_data())
+          ),
+          bslib$accordion(
+            id = ns("data_panels_accordion"),
+            open = c("overview", "missing_values"),
+            multiple = TRUE,
+            bslib$accordion_panel(
+              title = "Overview",
+              value = "overview",
+              icon = bsicons$bs_icon("speedometer2"),
+              shiny$uiOutput(ns("overview_boxes"))
+            ),
+            bslib$accordion_panel(
+              title = "Missing Values",
+              value = "missing_values",
+              icon = bsicons$bs_icon("bar-chart"),
+              bslib$navset_card_tab(
+                id = ns("missing_tabs"),
+                bslib$nav_panel(
+                  title = "By column",
+                  shiny$plotOutput(ns("missing_by_column_plot"), height = "480px")
+                ),
+                bslib$nav_panel(
+                  title = "By row",
+                  shiny$plotOutput(ns("missing_raster_plot"), height = "480px")
+                ),
+                bslib$nav_panel(
+                  title = "Co-occurrence",
+                  shiny$plotOutput(ns("missing_patterns_plot"), height = "480px")
+                )
+              )
+            ),
+            bslib$accordion_panel(
+              title = "Data Summary",
+              value = "data_summary",
+              icon = bsicons$bs_icon("list-ul"),
+              shiny$uiOutput(ns("data_summary"))
+            ),
+            bslib$accordion_panel(
+              title = "Data Preview",
+              value = "data_preview",
+              icon = bsicons$bs_icon("table"),
+              shiny$tags$div(
+                class = "table-responsive",
+                DT$dataTableOutput(ns("data_preview"))
+              )
             )
-          ),
-          bslib$accordion_panel(
-            title = "Missing Values",
-            value = "missing_values",
-            icon = bsicons$bs_icon("bar-chart"),
-            shiny$plotOutput(ns("missing_values_plot"))
-          ),
-          bslib$accordion_panel(
-            title = "Data Summary",
-            value = "data_summary",
-            icon = bsicons$bs_icon("list-ul"),
-            shiny$uiOutput(ns("data_summary"))
           )
         )
       }
+    })
+
+    # Overview KPI boxes
+    output$overview_boxes <- shiny$renderUI({
+      shiny$req(loaded_data())
+      quality_banner$create_kpi_boxes(
+        data_overview$compute_overview_stats(loaded_data())
+      )
     })
 
     # Data preview table
@@ -340,13 +374,34 @@ server <- function(id) {
       )
     })
 
-    # Missing values plot
-    output$missing_values_plot <- shiny$renderPlot({
+    # Missing values: one analysis per sub-tab. Each renderer is driven
+    # by its own cached reactive so switching tabs never recomputes work
+    # that was already done for the current data set.
+    missing_column_summary <- shiny$reactive({
       shiny$req(loaded_data())
-      DataExplorer$plot_missing(
-        loaded_data(),
-        ggtheme = ggplot2$theme_classic(base_size = 16)
-      )
+      data_overview$missing_by_column(loaded_data())
+    })
+
+    missing_raster_summary <- shiny$reactive({
+      shiny$req(loaded_data())
+      data_overview$missing_raster_data(loaded_data())
+    })
+
+    missing_pattern_summary <- shiny$reactive({
+      shiny$req(loaded_data())
+      data_overview$missing_patterns(loaded_data())
+    })
+
+    output$missing_by_column_plot <- shiny$renderPlot({
+      missing_plots$plot_missing_by_column(missing_column_summary())
+    })
+
+    output$missing_raster_plot <- shiny$renderPlot({
+      missing_plots$plot_missing_raster(missing_raster_summary())
+    })
+
+    output$missing_patterns_plot <- shiny$renderPlot({
+      missing_plots$plot_missing_patterns(missing_pattern_summary())
     })
 
     # Data summary (summarytools::dfSummary rendered as HTML)
