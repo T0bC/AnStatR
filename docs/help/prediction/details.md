@@ -82,6 +82,30 @@ This design ensures that the preprocessing pipeline is fully reproducible and th
 </details>
 
 <details>
+<summary><strong>Missing Values in Unknown Data</strong></summary>
+
+**Rows with a missing value in any of the model's measurement columns are skipped.** The count and the affected row labels are reported in a banner above the results, so a prediction covering fewer rows than were uploaded is always visible. If *every* row is incomplete, prediction stops with an error rather than returning an empty result.
+
+NAs in descriptive columns never cost a row its prediction — only the bundle's measurement columns are checked.
+
+**Why rows are skipped rather than imputed.** A single unknown observation carries nothing to reconstruct from, and reconstructing it from the *training* set would borrow the very structure the prediction is meant to test — the model would partly be scoring its own training data. Fill the gaps before upload, or deselect the affected columns when training the model.
+
+Without this check each engine would fail differently and silently: a manual PCA projection returns all-NA scores (the row vanishes from the plots), `MASS::predict.lda()` returns `NA` as the predicted class, and the nearest-centroid cluster assignment produces a meaningless label.
+
+</details>
+
+<details>
+<summary><strong>Models Trained on Imputed Data</strong></summary>
+
+If NIPALS imputation was enabled when the model was fitted, the bundle records it (`impute_spec`) and the bundle card states it on load:
+
+> **Imputed training data:** 412 values (3.1% of measurements) across 88 rows, NIPALS with 5 components
+
+Only the counts are stored, never the imputed frame itself. Treat predictions from such a model with the same caution as the training result: the decision boundaries were partly fitted on reconstructed values. A bundle trained on complete data carries no imputation field and shows no such line.
+
+</details>
+
+<details>
 <summary><strong>Prediction Methods by Analysis Type</strong></summary>
 
 LDA/MDA/QDA/PLS-DA/sPLS-DA dispatch through R's generic `stats::predict()` applied to the stored model object. PCA/sPCA/IPCA have no `predict()` S3 method in mixOmics and are projected manually via matrix multiplication instead.
