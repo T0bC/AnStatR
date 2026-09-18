@@ -9,7 +9,7 @@
 | **Minimum variables** | 2 numeric columns | More variables recommended for meaningful dimensionality reduction |
 | **Minimum observations** | 3 rows | At least n > p for full rank covariance matrix |
 | **Data type** | Numeric only | Categorical data must be encoded or used as metadata |
-| **Missing values** | Rows with NAs excluded | Automatic removal; ensure sufficient data remains |
+| **Missing values** | Rows with NAs excluded, or imputed | Removal is the default; NIPALS imputation is opt-in (see Missing Values) |
 
 **Metadata Columns**
 
@@ -126,6 +126,29 @@ Scaling decisions fundamentally change the PCA solution and interpretation:
 | **Residualize only** | Removes group-mean differences; measurement units and relative variable magnitudes are unchanged |
 | **Residualize + Scale & Center** | Removes group-mean differences, then standardizes variance — the recommended combination for mixed-unit data with a known confound |
 | **Scale & Center only (no residualize)** | Standardizes variance, but any confound-driven mean shift remains and can still dominate the leading components |
+
+</details>
+
+<details>
+<summary><strong>Missing Values</strong></summary>
+
+By default a row is removed if **any** selected measurement column is missing. With 40+ variables this is costly: one gap in one column discards that observation's other 39 values. Only *selected* measurement columns count, so deselecting a column with many gaps often returns a large number of rows. Descriptive columns are reported but never trigger removal.
+
+**Impute missing values** (checkbox, Data tab) offers the alternative. Gaps are reconstructed from the other measurement columns using the NIPALS algorithm (`mixOmics::impute.nipals`), and the row is kept.
+
+| | Rows removed (default) | Imputation enabled |
+|---|---|---|
+| **Rows with a gap** | Discarded entirely | Kept, gap reconstructed |
+| **Observed values** | Unchanged | Unchanged — only gaps are filled |
+| **Reported as** | "N of M rows removed" | "N missing values imputed" |
+
+**Guard rails**
+
+- Columns missing more than **20%** of their values are refused rather than imputed, and named in the error. Above that threshold the column would rest largely on invented values, which then drive the loadings. The cap is applied per column, not to overall missingness — a dataset at 5% overall can still hide one column at 60%.
+- Rows with **no** observed measurement at all are dropped; there is nothing to reconstruct them from.
+- Imputation runs **after** skewness correction, so the linear reconstruction is fitted on the near-normal scale rather than on raw skewed columns.
+
+**When to use it**: imputation is appropriate for scattered, incidental gaps. It is not a repair for systematic missingness — if a variable is missing precisely for one group or one period, the reconstruction will invent values that hide exactly the pattern you are looking for. Imputed values are estimates, not observations, and the count is recorded in the results summary and in any exported model bundle.
 
 </details>
 
