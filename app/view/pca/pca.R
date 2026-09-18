@@ -20,6 +20,10 @@ box::use(
   app/logic/pca/pca_export[create_pca_bundle, create_pca_excel],
   app/logic/pca/scaling[residualize_data],
   app/logic/pca/tune_plot[create_tune_spca_plot],
+  app/logic/preprocessing/impute[
+    build_impute_spec,
+    impute_missing
+  ],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
     detect_skewness
@@ -90,6 +94,7 @@ server <- function(id, input_data, data_version,
     na_info <- shiny$reactiveVal(NULL)
     transform_info <- shiny$reactiveVal(NULL)
     skewness_info <- shiny$reactiveVal(NULL)
+    impute_info <- shiny$reactiveVal(NULL)
     bundle_data <- shiny$reactiveVal(NULL)
     # Filter selection that produced the results currently on screen.
     # Compared live against the active selection so a filter change made
@@ -109,6 +114,7 @@ server <- function(id, input_data, data_version,
         na_info(NULL)
         transform_info(NULL)
         skewness_info(NULL)
+        impute_info(NULL)
         bundle_data(NULL)
         rhino$log$info("PCA: state reset for new data")
       },
@@ -254,6 +260,7 @@ server <- function(id, input_data, data_version,
       pca_result(NULL)
       na_info(NULL)
       transform_info(NULL)
+      impute_info(NULL)
       bundle_data(NULL)
 
       data <- filter_result$filtered_data()
@@ -270,8 +277,10 @@ server <- function(id, input_data, data_version,
       # Clean NAs in measurement columns
       meta_cols <- input$metaData
       if (is.null(meta_cols)) meta_cols <- character(0)
+      do_impute <- isTRUE(input$impute_missing)
       na_result <- clean_na_rows(
-        data, measure_cols, meta_cols
+        data, measure_cols, meta_cols,
+        remove_measurement_na = !do_impute
       )
       na_info(na_result)
       cleaned_data <- na_result$data
@@ -316,6 +325,20 @@ server <- function(id, input_data, data_version,
             )
           }
         }
+      }
+
+      # Impute after the skewness transform: NIPALS is a linear
+      # reconstruction, so it is fitted on the near-normal scale
+      # rather than on raw skewed columns. bestNormalize passes
+      # NAs through untouched, which makes that order possible.
+      if (do_impute) {
+        imp_res <- impute_missing(cleaned_data, measure_cols)
+        if (!imp_res$success) {
+          last_error(imp_res$error)
+          return()
+        }
+        cleaned_data <- imp_res$result$data
+        impute_info(imp_res$result)
       }
 
       # Residualize by a confound column, before scaling
@@ -455,6 +478,7 @@ server <- function(id, input_data, data_version,
           numeric_cols = measure_cols,
           meta_cols = meta_cols,
           transform_params = t_params,
+          impute_spec = build_impute_spec(impute_info()),
           # Row subset the model was actually fitted on, captured here
           # rather than at download time so it reflects the filter that
           # produced this result, not whatever is selected later.
@@ -579,7 +603,8 @@ server <- function(id, input_data, data_version,
       preprocess_banner <- preprocessing_summary$render_na_summary(
         na_res,
         transform_result = tf_res,
-        n_measure_cols = length(input$measureVar)
+        n_measure_cols = length(input$measureVar),
+        impute_result = impute_info()
       )
 
       # Skewness warning (when normalization disabled but skewed cols exist)
@@ -1115,7 +1140,8 @@ server <- function(id, input_data, data_version,
           meta_cols = bd$meta_cols,
           transform_params = bd$transform_params,
           settings = bd$settings,
-          filter_spec = spec
+          filter_spec = spec,
+          impute_spec = bd$impute_spec
         )
         saveRDS(bundle, file)
         shiny$removeModal()
