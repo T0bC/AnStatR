@@ -176,3 +176,67 @@ describe("clean_na_rows", {
     expect_equal(result$meta_na_summary$na_count, 3L)
   })
 })
+
+
+# =============================================================================
+# clean_na_rows — remove_measurement_na = FALSE (imputation path)
+# =============================================================================
+
+describe("clean_na_rows without measurement removal", {
+  it("keeps rows holding measurement NAs", {
+    data <- data.frame(
+      x = c(1, NA, 3, 4),
+      y = c(1, 2, NA, 4)
+    )
+    result <- na_handling$clean_na_rows(
+      data, c("x", "y"),
+      remove_measurement_na = FALSE
+    )
+    expect_equal(nrow(result$data), 4)
+    expect_equal(result$rows_removed, 0)
+  })
+
+  it("still reports the same NA summary", {
+    # The user sees an identical breakdown either way; only the
+    # removal changes.
+    data <- data.frame(
+      x = c(1, NA, 3, 4),
+      y = c(1, 2, NA, 4)
+    )
+    kept <- na_handling$clean_na_rows(
+      data, c("x", "y"),
+      remove_measurement_na = FALSE
+    )
+    removed <- na_handling$clean_na_rows(data, c("x", "y"))
+    expect_equal(kept$na_summary, removed$na_summary)
+  })
+
+  it("still removes rows with a missing grouping value", {
+    # A class label cannot be reconstructed from the measurements,
+    # so those rows go regardless of the imputation setting.
+    data <- data.frame(
+      x = c(1, NA, 3, 4),
+      y = c(1, 2, 3, 4),
+      grp = c("A", "B", NA, "B"),
+      stringsAsFactors = FALSE
+    )
+    result <- na_handling$clean_na_rows(
+      data, c("x", "y"),
+      grouping_col = "grp",
+      remove_measurement_na = FALSE
+    )
+    expect_equal(nrow(result$data), 3)
+    expect_true(all(!is.na(result$data$grp)))
+    # The measurement NA survived
+    expect_true(anyNA(result$data$x))
+  })
+
+  it("defaults to removing rows", {
+    data <- data.frame(
+      x = c(1, NA, 3, 4),
+      y = c(1, 2, 3, 4)
+    )
+    result <- na_handling$clean_na_rows(data, c("x", "y"))
+    expect_equal(nrow(result$data), 3)
+  })
+})
