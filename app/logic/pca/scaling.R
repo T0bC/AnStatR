@@ -126,8 +126,14 @@ residualize_data <- function(data, measurement_cols, group_col) {
 
       subset_df <- data[, measurement_cols, drop = FALSE]
       residualized <- subset_df
+      # na.rm: ave()'s default mean() would return NA for any
+      # group containing a missing value, zeroing out that whole
+      # group's rows for the column rather than just the gap.
       for (col in measurement_cols) {
-        group_means <- stats::ave(subset_df[[col]], groups)
+        group_means <- stats::ave(
+          subset_df[[col]], groups,
+          FUN = function(v) mean(v, na.rm = TRUE)
+        )
         residualized[[col]] <- subset_df[[col]] - group_means
       }
 
