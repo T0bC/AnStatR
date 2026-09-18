@@ -19,10 +19,12 @@ box::use(
 #' @param use_shape Whether to use shape aesthetic from .shape_group
 #' @param use_custom_shape Whether to use custom shapes from .point_shape
 #' @param black_points Whether to force points to be black
+#' @param fillable_shapes Whether every shape in play is fillable (pch 21-25)
 #' @return ggplot object with scatter layers added
 #' @export
 add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
-                               use_custom_shape = FALSE, black_points = FALSE) {
+                               use_custom_shape = FALSE, black_points = FALSE,
+                               fillable_shapes = TRUE) {
   is_trimmed <- data[[".is_trimmed"]]
   is_outlier <- data[[".is_outlier"]]
   retained_idx <- which(!is_trimmed & !is_outlier)
@@ -51,8 +53,8 @@ add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
           ),
           alpha = ps$alpha, size = ps$size, color = "black", fill = "black"
         )
-      } else {
-        # apply_shape_scale() always assigns shapes 21-25: fill = color group, border = white
+      } else if (fillable_shapes) {
+        # Shapes 21-25: fill = color group, border = white
         aes_map <- ggplot2$aes(
           tooltip = .data[[".tooltip"]],
           data_id = .data[[".data_id"]],
