@@ -104,6 +104,11 @@ detect_skewness <- function(data, measurement_cols,
 #' @param method Character, kept for API compatibility.
 #'   "none" skips transformation, any other value uses
 #'   bestNormalize auto-selection.
+#' @param progress Optional callback invoked once per column
+#'   *before* it is fitted, as `progress(i, n, col_name)` where
+#'   `i` is the 1-based index and `n` the total column count.
+#'   Used by the view layer to drive a progress bar; NULL keeps
+#'   this file free of any Shiny dependency.
 #' @return List with $success, $result or $error.
 #'   $result contains $data, $transformed_cols (data frame),
 #'   $transform_params (list of fitted bestNormalize objects),
@@ -111,7 +116,8 @@ detect_skewness <- function(data, measurement_cols,
 #' @export
 transform_skewed <- function(data, measurement_cols,
                              skew_result,
-                             method = "auto") {
+                             method = "auto",
+                             progress = NULL) {
   error_handling$safe_execute(
     expr = {
       skewed <- skew_result[skew_result$is_skewed, ]
@@ -141,11 +147,20 @@ transform_skewed <- function(data, measurement_cols,
       transform_params <- list()
       skipped <- character(0)
 
-      for (i in seq_len(nrow(skewed))) {
+      n_to_fit <- nrow(skewed)
+
+      for (i in seq_len(n_to_fit)) {
         col_name <- skewed$column[i]
         direction <- skewed$direction[i]
         skew_before <- skewed$skewness[i]
         x <- result_data[[col_name]]
+
+        # Report before fitting: bestNormalize is the slow part,
+        # so the label must name the column being worked on, not
+        # the one just finished.
+        if (is.function(progress)) {
+          progress(i, n_to_fit, col_name)
+        }
 
         transform_res <- suppressWarnings(fit_bestnormalize_column(x))
 
