@@ -22,8 +22,7 @@ box::use(
   app/logic/pca/tune_plot[create_tune_spca_plot],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
-    detect_skewness,
-    transform_skewed
+    detect_skewness
   ],
   app/logic/shared/column_utils,
   app/logic/shared/error_handling,
@@ -45,6 +44,9 @@ box::use(
   app/view/shared/data_filter,
   app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
+  app/view/shared/skewness_progress[
+    transform_skewed_with_progress
+  ],
 )
 
 #' @export
@@ -301,7 +303,7 @@ server <- function(id, input_data, data_version,
       # Apply normalization only if enabled
       if (isTRUE(input$correct_skewness)) {
         if (any(skew_result$is_skewed)) {
-          transform_res <- transform_skewed(
+          transform_res <- transform_skewed_with_progress(
             cleaned_data, measure_cols, skew_result
           )
           if (transform_res$success) {
@@ -778,22 +780,33 @@ server <- function(id, input_data, data_version,
       }
 
       # 3D Biplot panel content
+      # The plotlyOutput must stay in the DOM even while an
+      # error is shown: removing it suspends the renderer, and
+      # a suspended renderer can never clear its own error.
       biplot3d_err <- biplot3d_state$error()
       biplot3d_content <- if (
+        !is.null(pca_res) &&
+          isTRUE(pca_res$success) &&
+          ncol(pca_res$result$loadings) >= 3
+      ) {
+        shiny$tagList(
+          if (error_handling$is_app_error(biplot3d_err)) {
+            error_display$error_alert_structured(
+              biplot3d_err,
+              type = "danger"
+            )
+          },
+          plotly$plotlyOutput(
+            ns("biplot3d"),
+            height = "600px"
+          )
+        )
+      } else if (
         error_handling$is_app_error(biplot3d_err)
       ) {
         error_display$error_alert_structured(
           biplot3d_err,
           type = "danger"
-        )
-      } else if (
-        !is.null(pca_res) &&
-          isTRUE(pca_res$success) &&
-          ncol(pca_res$result$loadings) >= 3
-      ) {
-        plotly$plotlyOutput(
-          ns("biplot3d"),
-          height = "600px"
         )
       }
 
