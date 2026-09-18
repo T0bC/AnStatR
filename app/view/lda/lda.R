@@ -27,8 +27,7 @@ box::use(
   app/logic/pca/scaling[residualize_data, scale_data],
   app/logic/preprocessing/na_handling[clean_na_rows],
   app/logic/preprocessing/skewness_transform[
-    detect_skewness,
-    transform_skewed
+    detect_skewness
   ],
   app/logic/shared/column_utils,
   app/logic/shared/error_handling,
@@ -43,6 +42,9 @@ box::use(
   app/view/shared/data_filter,
   app/view/shared/error_display,
   app/view/shared/preprocessing_summary,
+  app/view/shared/skewness_progress[
+    transform_skewed_with_progress
+  ],
   app/view/shared/tuning_controls[parse_keepx_grid],
 )
 
@@ -331,7 +333,7 @@ server <- function(id, input_data, data_version,
         # Apply normalization only if enabled
         if (isTRUE(input$correct_skewness)) {
           if (any(skew_result$is_skewed)) {
-            transform_res <- transform_skewed(
+            transform_res <- transform_skewed_with_progress(
               cleaned_data, measure_cols, skew_result
             )
             if (transform_res$success) {
