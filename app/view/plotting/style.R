@@ -167,6 +167,21 @@ tab_server <- function(input, output, session, input_data,
     xa
   })
 
+  # Shape columns: pointShape if the user picked any, otherwise all xAxis
+  # columns.  Independent of color_cols -- colouring by SPECIES while shaping
+  # by ISLAND is a legitimate combination.
+  shape_cols <- shiny$reactive({
+    ps <- input$pointShape
+    if (!is.null(ps) && length(ps) > 0) {
+      return(ps)
+    }
+    xa <- input$xAxis
+    if (is.null(xa) || length(xa) == 0) {
+      return(character(0))
+    }
+    xa
+  })
+
   # Factor levels per X-axis column (for ordering UI)
   x_axis_levels <- shiny$reactive({
     data <- input_data()
@@ -202,12 +217,13 @@ tab_server <- function(input, output, session, input_data,
     result
   })
 
-  # Unique color groups from interaction of color columns (with ordering)
-  color_groups <- shiny$reactive({
-    data <- input_data()
-    cols <- color_cols()
-    fo <- factor_order()
+  # Unique groups from the interaction of a set of columns (with ordering)
+  groups_for <- function(data, cols, fo) {
     if (is.null(data) || nrow(data) == 0 || length(cols) == 0) {
+      return(character(0))
+    }
+    cols <- cols[cols %in% names(data)]
+    if (length(cols) == 0) {
       return(character(0))
     }
     interaction_factor <- data_utils$create_interaction(data, cols, fo)
@@ -215,8 +231,17 @@ tab_server <- function(input, output, session, input_data,
     if (is.null(groups)) {
       groups <- sort(as.character(unique(interaction_factor)))
     }
+    groups
+  }
+
+  color_groups <- shiny$reactive({
+    groups <- groups_for(input_data(), color_cols(), factor_order())
     rhino$log$info("Plotting style: {length(groups)} color group(s)")
     groups
+  })
+
+  shape_groups <- shiny$reactive({
+    groups_for(input_data(), shape_cols(), factor_order())
   })
 
   # X-axis level combinations that actually occur in the data.  Used to mark
@@ -236,6 +261,7 @@ tab_server <- function(input, output, session, input_data,
     xa <- input$xAxis
     fo <- factor_order()
     groups <- color_groups()
+    sgroups <- shape_groups()
 
     if (length(xa) == 0 || length(groups) == 0) {
       return(shiny$tags$p(
@@ -246,16 +272,19 @@ tab_server <- function(input, output, session, input_data,
 
     # Get existing colors and shapes (isolate to avoid re-render loop)
     existing_colors <- shiny$isolate(collect_colors(input, groups))
-    existing_shapes <- shiny$isolate(collect_shapes(input, groups))
-    defaults <- data_utils$default_palette(length(groups))
-
-    # Check if "Shape by" is active (disables custom shape selection)
-    shape_by_active <- !is.null(input$pointShape) && length(input$pointShape) > 0
+    existing_shapes <- shiny$isolate(collect_shapes(input, sgroups))
 
     # Build nested tree UI
     build_nested_color_tree(
-      ns, xa, fo, groups, existing_colors, existing_shapes,
-      defaults, shape_by_active, present_combos(), color_cols()
+      ns, xa, fo,
+      color_groups = groups,
+      shape_groups = sgroups,
+      existing_colors = existing_colors,
+      existing_shapes = existing_shapes,
+      defaults = data_utils$default_palette(length(groups)),
+      present = present_combos(),
+      color_cols = color_cols(),
+      shape_cols = shape_cols()
     )
   })
 
@@ -329,13 +358,10 @@ tab_server <- function(input, output, session, input_data,
     collect_colors(input, groups)
   })
 
-  # Custom shape map reactive (only active when Shape by is not used)
+  # Custom shape map, keyed by the shape grouping ("Shape by", or the X-axis
+  # columns when that is empty).  Always user-editable.
   shape_map <- shiny$reactive({
-    # If "Shape by" is active, return NULL (shapes driven by column mapping)
-    if (!is.null(input$pointShape) && length(input$pointShape) > 0) {
-      return(NULL)
-    }
-    groups <- color_groups()
+    groups <- shape_groups()
     if (length(groups) == 0) {
       return(NULL)
     }
@@ -346,6 +372,7 @@ tab_server <- function(input, output, session, input_data,
     color_map = color_map,
     shape_map = shape_map,
     color_groups = color_groups,
+    shape_groups = shape_groups,
     factor_order = factor_order
   )
 }
@@ -402,21 +429,6 @@ no_data_marker <- function() {
     class = "level-unavailable-tag small",
     title = "No observations for this combination",
     "no data"
-  )
-}
-
-# Stand-ins for the shape select and colour picker of an empty leaf.
-#
-# They keep the wrapper boxes at their normal width and height: SortableJS
-# swaps on hover overlap, so a short item next to a tall one makes the list
-# oscillate endlessly while dragging.  Every leaf must be the same size.
-no_data_controls <- function() {
-  shiny$tagList(
-    shiny$tags$div(class = "shape-select-wrapper is-empty"),
-    shiny$tags$div(
-      class = "color-picker-wrapper is-empty",
-      no_data_marker()
-    )
   )
 }
 
@@ -490,50 +502,80 @@ shape_choices <- function() {
   stats::setNames(as.character(pch_values), symbols)
 }
 
-# Depth at which the colour groups are fully determined
+# Depth at which a grouping is fully determined by the tree path
 #
-# Colour groups come from "Color by" (`color_cols`), the tree nests by X-axis
-# columns (`x_cols`).  When the colour columns are exactly the first `k`
-# X-axis columns, every group corresponds to one tree node at depth `k` and
-# the controls can live there.  Any other selection (e.g. colouring by an
-# inner column only) maps one group onto several tree positions, so the
-# controls have to be rendered as a separate flat list instead.
-color_group_depth <- function(x_cols, color_cols) {
-  if (length(color_cols) == 0 || !all(color_cols %in% x_cols)) {
+# Colour groups come from "Color by", shape groups from "Shape by", while the
+# tree nests by X-axis columns (`x_cols`).  When a grouping's columns are
+# exactly the first `k` X-axis columns, each of its groups corresponds to one
+# tree node at depth `k` and its control can live there.  Any other selection
+# (an inner column only, or a column that is not on the X axis at all) maps
+# one group onto several tree positions, so it gets a flat list instead.
+grouping_depth <- function(x_cols, cols) {
+  if (length(cols) == 0 || !all(cols %in% x_cols)) {
     return(NA_integer_)
   }
-  k <- length(color_cols)
-  if (setequal(color_cols, x_cols[seq_len(k)])) k else NA_integer_
+  k <- length(cols)
+  if (setequal(cols, x_cols[seq_len(k)])) k else NA_integer_
 }
 
 # Shared state for every node of the tree
-tree_context <- function(ns, groups, existing_colors, existing_shapes,
-                         defaults, shape_by_active, present,
-                         color_cols, color_depth) {
+tree_context <- function(ns, color_groups, shape_groups, existing_colors,
+                         existing_shapes, defaults, present,
+                         color_cols, shape_cols, color_depth, shape_depth) {
   list(
     ns = ns,
-    groups = groups,
+    color_groups = color_groups,
+    shape_groups = shape_groups,
     existing_colors = existing_colors,
     existing_shapes = existing_shapes,
     defaults = defaults,
-    shape_by_active = shape_by_active,
     present = present,
     color_cols = color_cols,
-    color_depth = color_depth
+    shape_cols = shape_cols,
+    color_depth = color_depth,
+    shape_depth = shape_depth
   )
 }
 
-# Colour group a node stands for, given the X-axis values on its path
-node_group <- function(ctx, path) {
-  if (!all(ctx$color_cols %in% names(path))) {
+# Group a node stands for under `cols`, given the X-axis values on its path
+node_group <- function(cols, path) {
+  if (length(cols) == 0 || !all(cols %in% names(path))) {
     return(NA_character_)
   }
-  paste(path[ctx$color_cols], collapse = ".")
+  paste(path[cols], collapse = ".")
 }
 
-# Shape select + colour picker for one colour group
-group_controls <- function(ctx, group) {
-  group_idx <- which(ctx$groups == group)
+# Shape dropdown for one shape group
+shape_control <- function(ctx, group) {
+  shape <- if (!is.na(group) && group %in% names(ctx$existing_shapes)) {
+    ctx$existing_shapes[[group]]
+  } else {
+    21L
+  }
+
+  if (is.na(group)) {
+    return(shiny$tags$div(class = "shape-select-wrapper is-empty"))
+  }
+
+  shiny$tags$div(
+    class = "shape-select-wrapper",
+    shiny$selectInput(
+      inputId = ctx$ns(shape_input_id(group)),
+      label = NULL,
+      choices = shape_choices(),
+      selected = as.character(shape),
+      width = "100%"
+    )
+  )
+}
+
+# Colour picker for one colour group
+color_control <- function(ctx, group) {
+  if (is.na(group)) {
+    return(shiny$tags$div(class = "color-picker-wrapper is-empty"))
+  }
+
+  group_idx <- which(ctx$color_groups == group)
   color <- if (group %in% names(ctx$existing_colors)) {
     ctx$existing_colors[[group]]
   } else if (length(group_idx) > 0) {
@@ -541,71 +583,72 @@ group_controls <- function(ctx, group) {
   } else {
     "#808080"
   }
-  shape <- if (group %in% names(ctx$existing_shapes)) {
-    ctx$existing_shapes[[group]]
-  } else {
-    21L
-  }
 
-  shiny$tagList(
-    shiny$tags$div(
-      class = "shape-select-wrapper",
-      title = if (ctx$shape_by_active) {
-        "Disabled: 'Shape by' is active"
-      } else {
-        NULL
-      },
-      shiny$selectInput(
-        inputId = ctx$ns(shape_input_id(group)),
-        label = NULL,
-        choices = shape_choices(),
-        selected = as.character(shape),
-        width = "100%"
-      )
-    ),
-    shiny$tags$div(
-      class = "color-picker-wrapper",
-      colourpicker$colourInput(
-        inputId = ctx$ns(color_input_id(group)),
-        label = NULL,
-        value = color,
-        showColour = "both",
-        allowTransparent = FALSE,
-        closeOnClick = TRUE
-      )
+  shiny$tags$div(
+    class = "color-picker-wrapper",
+    colourpicker$colourInput(
+      inputId = ctx$ns(color_input_id(group)),
+      label = NULL,
+      value = color,
+      showColour = "both",
+      allowTransparent = FALSE,
+      closeOnClick = TRUE
     )
   )
 }
 
-# Controls for a node, or size-preserving placeholders when it has no data
+# Controls for a node, with size-preserving placeholders when it has no data
 #
 # `depth` is the number of X-axis columns resolved on the path to this node.
+# Colour and shape are placed independently: "Color by = SPECIES" with
+# "Shape by" empty puts the picker on the species header and the dropdown on
+# each leaf.  Every node of one list is at the same depth, so all its items
+# stay the same size -- which SortableJS needs to drag without oscillating.
 node_controls <- function(ctx, path, depth, has_data) {
-  if (is.na(ctx$color_depth) || depth != ctx$color_depth) {
+  wants_shape <- !is.na(ctx$shape_depth) && depth == ctx$shape_depth
+  wants_color <- !is.na(ctx$color_depth) && depth == ctx$color_depth
+  if (!wants_shape && !wants_color) {
     return(NULL)
   }
-  if (!has_data) {
-    return(no_data_controls())
+
+  shape_group <- if (wants_shape && has_data) {
+    node_group(ctx$shape_cols, path)
+  } else {
+    NA_character_
   }
-  group <- node_group(ctx, path)
-  if (is.na(group)) {
-    return(NULL)
+  color_group <- if (wants_color && has_data) {
+    node_group(ctx$color_cols, path)
+  } else {
+    NA_character_
   }
-  group_controls(ctx, group)
+
+  shiny$tagList(
+    if (wants_shape) shape_control(ctx, shape_group) else NULL,
+    if (wants_color) color_control(ctx, color_group) else NULL
+  )
 }
 
 # Build nested sortable tree with colour / shape controls at the colour depth
 # For single X-axis column: simple sortable list
 # For multiple columns: nested structure with a sortable at each level
-build_nested_color_tree <- function(ns, x_cols, factor_order, groups,
-                                    existing_colors, existing_shapes,
-                                    defaults, shape_by_active,
+build_nested_color_tree <- function(ns, x_cols, factor_order, color_groups,
+                                    shape_groups, existing_colors,
+                                    existing_shapes, defaults,
                                     present = character(0),
-                                    color_cols = x_cols) {
+                                    color_cols = x_cols,
+                                    shape_cols = x_cols) {
   ctx <- tree_context(
-    ns, groups, existing_colors, existing_shapes, defaults,
-    shape_by_active, present, color_cols,
-    color_group_depth(x_cols, color_cols)
+    ns = ns,
+    color_groups = color_groups,
+    shape_groups = shape_groups,
+    existing_colors = existing_colors,
+    existing_shapes = existing_shapes,
+    defaults = defaults,
+    present = present,
+    color_cols = color_cols,
+    shape_cols = shape_cols,
+    color_depth = grouping_depth(x_cols, color_cols),
+    shape_depth = grouping_depth(x_cols, shape_cols)
   )
 
   tree <- if (length(x_cols) == 1) {
@@ -614,11 +657,12 @@ build_nested_color_tree <- function(ns, x_cols, factor_order, groups,
     build_multi_level_tree(ctx, x_cols, factor_order)
   }
 
-  # "Color by" that does not line up with the nesting gets its own list
-  if (is.na(ctx$color_depth)) {
-    return(shiny$tagList(tree, build_flat_color_list(ctx)))
-  }
-  tree
+  # Groupings that do not line up with the nesting get their own list
+  shiny$tagList(
+    tree,
+    if (is.na(ctx$color_depth)) build_flat_list(ctx, "color") else NULL,
+    if (is.na(ctx$shape_depth)) build_flat_list(ctx, "shape") else NULL
+  )
 }
 
 # Build sortable list for a single X-axis column
@@ -646,7 +690,7 @@ build_single_level_sortable <- function(ctx, col, levels) {
   names(labels) <- levels
 
   shiny$tags$div(
-    class = paste("mb-2", if (ctx$shape_by_active) "shape-disabled" else ""),
+    class = "mb-2",
     shiny$tags$label(class = "form-label small fw-semibold", col),
     sortable$rank_list(
       text = NULL,
@@ -689,10 +733,7 @@ build_multi_level_tree <- function(ctx, x_cols, factor_order) {
         "margin: 4px 0; background: #fff;"
       ),
       shiny$tags$div(
-        class = paste(
-          "d-flex align-items-center gap-2 nested-header",
-          if (ctx$shape_by_active) "shape-disabled" else ""
-        ),
+        class = "d-flex align-items-center gap-2 nested-header",
         style = paste(
           "padding: 6px 8px; background: #e9ecef;",
           "border-radius: 4px 4px 0 0;"
@@ -704,10 +745,10 @@ build_multi_level_tree <- function(ctx, x_cols, factor_order) {
         ),
         shiny$tags$span(
           class = "fw-semibold small flex-grow-1",
-          outer_val
+          outer_val,
+          if (has_data) NULL else no_data_marker()
         ),
-        controls,
-        if (has_data || !is.null(controls)) NULL else no_data_marker()
+        controls
       ),
       shiny$tags$div(
         class = "nested-content",
@@ -771,7 +812,6 @@ build_inner_levels <- function(ctx, cols, factor_order, parent_prefix,
       shiny$tags$div(
         class = paste(
           "d-flex align-items-center gap-2 leaf-item",
-          if (ctx$shape_by_active) "shape-disabled" else "",
           if (has_data) "" else "level-unavailable"
         ),
         style = paste(
@@ -783,9 +823,12 @@ build_inner_levels <- function(ctx, cols, factor_order, parent_prefix,
           style = "cursor: grab; font-size: 0.8em;",
           bsicons$bs_icon("grip-vertical")
         ),
-        shiny$tags$span(class = "flex-grow-1 small", level),
-        controls,
-        if (has_data || !is.null(controls)) NULL else no_data_marker()
+        shiny$tags$span(
+          class = "flex-grow-1 small",
+          level,
+          if (has_data) NULL else no_data_marker()
+        ),
+        controls
       )
     } else {
       inner_content <- build_inner_levels(
@@ -807,9 +850,12 @@ build_inner_levels <- function(ctx, cols, factor_order, parent_prefix,
             style = "cursor: grab; font-size: 0.8em;",
             bsicons$bs_icon("grip-vertical")
           ),
-          shiny$tags$span(class = "small fw-medium", level),
-          controls,
-          if (has_data || !is.null(controls)) NULL else no_data_marker()
+          shiny$tags$span(
+            class = "small fw-medium flex-grow-1",
+            level,
+            if (has_data) NULL else no_data_marker()
+          ),
+          controls
         ),
         inner_content
       )
@@ -842,13 +888,15 @@ build_inner_levels <- function(ctx, cols, factor_order, parent_prefix,
   )
 }
 
-# Flat colour / shape list for colour groups that do not map onto the tree
-build_flat_color_list <- function(ctx) {
-  if (length(ctx$groups) == 0) {
+# Flat list for a grouping that does not map onto the tree nesting
+build_flat_list <- function(ctx, kind) {
+  groups <- if (kind == "color") ctx$color_groups else ctx$shape_groups
+  cols <- if (kind == "color") ctx$color_cols else ctx$shape_cols
+  if (length(groups) == 0) {
     return(NULL)
   }
 
-  rows <- lapply(ctx$groups, function(group) {
+  rows <- lapply(groups, function(group) {
     shiny$tags$div(
       class = "d-flex align-items-center gap-2 leaf-item",
       style = paste(
@@ -856,15 +904,19 @@ build_flat_color_list <- function(ctx) {
         "border-radius: 4px; margin: 2px 0;"
       ),
       shiny$tags$span(class = "flex-grow-1 small", group),
-      group_controls(ctx, group)
+      if (kind == "shape") shape_control(ctx, group) else NULL,
+      if (kind == "color") color_control(ctx, group) else NULL
     )
   })
 
   shiny$tags$div(
-    class = paste("mt-3", if (ctx$shape_by_active) "shape-disabled" else ""),
+    class = "mt-3",
     shiny$tags$label(
       class = "form-label small fw-semibold mb-1",
-      paste("Colors:", paste(ctx$color_cols, collapse = " | "))
+      paste(
+        if (kind == "color") "Colors:" else "Shapes:",
+        paste(cols, collapse = " | ")
+      )
     ),
     rows
   )
