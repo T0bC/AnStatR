@@ -18,6 +18,8 @@ box::use(
   app/logic/preprocessing/skewness_transform,
 )
 
+impl <- attr(skewness_transform, "namespace")
+
 # =============================================================================
 # detect_skewness
 # =============================================================================
@@ -128,6 +130,76 @@ describe("detect_skewness", {
     expect_gte(result$abs_skewness[1], result$abs_skewness[2])
   })
 })
+
+# =============================================================================
+# compute_skewness — NA handling
+# =============================================================================
+
+describe("compute_skewness with missing values", {
+  it("ignores NAs instead of returning NA", {
+    set.seed(42)
+    x <- rexp(200, rate = 0.5) ^ 2
+    with_na <- c(x, NA, NA)
+    expect_equal(
+      impl$compute_skewness(with_na),
+      impl$compute_skewness(x)
+    )
+  })
+
+  it("returns NA when too few values are observed", {
+    expect_true(is.na(
+      impl$compute_skewness(c(1, 2, NA, NA))
+    ))
+    expect_true(is.na(
+      impl$compute_skewness(c(NA_real_, NA_real_))
+    ))
+  })
+
+  it("returns NA below the 20-observation floor", {
+    set.seed(42)
+    x <- rexp(19, rate = 0.5) ^ 2
+    expect_true(is.na(impl$compute_skewness(x)))
+    expect_false(is.na(
+      impl$compute_skewness(c(x, rexp(1, rate = 0.5) ^ 2))
+    ))
+  })
+
+  it("counts observed values, not row count, against the floor", {
+    set.seed(42)
+    x <- c(rexp(19, rate = 0.5) ^ 2, rep(NA_real_, 50))
+    expect_true(is.na(impl$compute_skewness(x)))
+  })
+
+  it("honours a caller-supplied floor", {
+    set.seed(42)
+    x <- rexp(10, rate = 0.5) ^ 2
+    expect_true(is.na(impl$compute_skewness(x)))
+    expect_false(is.na(impl$compute_skewness(x, min_n = 5)))
+  })
+
+  it("leaves a short column untransformed via detect_skewness", {
+    set.seed(42)
+    data <- data.frame(x = rexp(12, rate = 0.5) ^ 2)
+    result <- skewness_transform$detect_skewness(data, "x")
+    expect_true(is.na(result$skewness[1]))
+    expect_false(result$is_skewed[1])
+    expect_equal(result$direction[1], "symmetric")
+  })
+
+  it("flags an NA-bearing column as skewed", {
+    # Regression: a single NA used to make skewness NA, which
+    # detect_skewness() reads as "symmetric" — the column was
+    # then silently exempted from correction.
+    set.seed(42)
+    data <- data.frame(x = rexp(200, rate = 0.5) ^ 2)
+    data$x[c(5, 50)] <- NA
+    result <- skewness_transform$detect_skewness(data, "x")
+    expect_false(is.na(result$skewness[1]))
+    expect_true(result$is_skewed[1])
+    expect_equal(result$direction[1], "right")
+  })
+})
+
 
 # =============================================================================
 # transform_skewed
