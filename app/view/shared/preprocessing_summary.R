@@ -18,11 +18,15 @@ box::use(
 #' @param n_measure_cols Integer, total number of measurement
 #'   columns (used for transform header). Only needed when
 #'   transform_result is non-NULL.
+#' @param impute_result List from impute_missing()$result with
+#'   $n_imputed, $rows_affected, $rows_dropped, $ncomp_used and
+#'   $percent_missing. May be NULL (no imputation performed).
 #' @return Shiny tags object or NULL
 #' @export
 render_na_summary <- function(na_result,
                               transform_result = NULL,
-                              n_measure_cols = NULL) {
+                              n_measure_cols = NULL,
+                              impute_result = NULL) {
   # --- NA flags ---
   has_meas_na <- !is.null(na_result) &&
     nrow(na_result$na_summary) > 0
@@ -39,7 +43,11 @@ render_na_summary <- function(na_result,
     length(transform_result$skipped_cols) > 0
   has_transform <- has_transformed || has_skipped
 
-  if (!has_na && !has_transform) {
+  # --- Imputation flag ---
+  has_impute <- !is.null(impute_result) &&
+    isTRUE(impute_result$n_imputed > 0)
+
+  if (!has_na && !has_transform && !has_impute) {
     return(NULL)
   }
 
@@ -109,13 +117,22 @@ render_na_summary <- function(na_result,
         na_table(na_result$na_summary),
         shiny$tags$p(
           class = "text-muted small mt-2 mb-0",
-          paste(
-            "Rows with NAs in measurement columns",
-            "are removed before analysis.",
-            "Columns with high NA percentages reduce",
-            "your dataset significantly.",
-            "Consider deselecting them."
-          )
+          if (has_impute) {
+            paste(
+              "Gaps in these columns were reconstructed",
+              "rather than removed. Columns with high NA",
+              "percentages rest largely on estimated",
+              "values — consider deselecting them."
+            )
+          } else {
+            paste(
+              "Rows with NAs in measurement columns",
+              "are removed before analysis.",
+              "Columns with high NA percentages reduce",
+              "your dataset significantly.",
+              "Consider deselecting them."
+            )
+          }
         )
       )
     }
@@ -235,10 +252,47 @@ render_na_summary <- function(na_result,
     shiny$tags$hr(class = "my-2")
   }
 
+  # Imputation line: states plainly how many values are estimates
+  # rather than observations, since nothing downstream distinguishes
+  # them once they are in the matrix.
+  impute_header <- if (has_impute) {
+    shiny$tags$div(
+      class = "d-flex align-items-center mt-2 mb-1",
+      bsicons$bs_icon(
+        "magic",
+        class = "me-2"
+      ),
+      shiny$tags$strong(
+        paste0(
+          impute_result$n_imputed,
+          " missing values imputed (",
+          impute_result$percent_missing, "% of measurements)"
+        )
+      ),
+      shiny$tags$span(
+        class = "text-muted ms-2",
+        paste0(
+          "across ", impute_result$rows_affected,
+          " rows, NIPALS with ",
+          impute_result$ncomp_used, " components",
+          if (isTRUE(impute_result$rows_dropped > 0)) {
+            paste0(
+              "; ", impute_result$rows_dropped,
+              " row(s) dropped with no measurements at all"
+            )
+          } else {
+            ""
+          }
+        )
+      )
+    )
+  }
+
   shiny$tags$div(
     class = "alert alert-info",
     role = "alert",
     na_header,
+    impute_header,
     meas_section,
     meta_section,
     divider,
