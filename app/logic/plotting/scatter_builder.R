@@ -69,6 +69,24 @@ add_scatter_layers <- function(p, data, ps, use_shape = FALSE,
           ),
           alpha = ps$alpha, size = ps$size, color = "white"
         )
+      } else {
+        # At least one non-fillable shape (pch 0-14) is in use: those have no
+        # interior, so the colour group has to drive the stroke as well
+        aes_map <- ggplot2$aes(
+          tooltip = .data[[".tooltip"]],
+          data_id = .data[[".data_id"]],
+          fill    = .data[[".color_group"]],
+          color   = .data[[".color_group"]],
+          shape   = .data[[".shape_group"]]
+        )
+        p <- p + ggiraph$geom_jitter_interactive(
+          data = rd, mapping = aes_map,
+          hover_nearest = TRUE,
+          position = ggplot2$position_jitter(
+            width = ps$spread, height = 0, seed = 42L
+          ),
+          alpha = ps$alpha, size = ps$size
+        )
       }
     } else if (use_custom_shape) {
       # Custom shapes per group: pass shape as a vector (not aesthetic).
