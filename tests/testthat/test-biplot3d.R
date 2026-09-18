@@ -96,15 +96,33 @@ describe("create_biplot3d", {
     expect_false(result$success)
   })
 
-  it("returns error for duplicate dimensions", {
+  # Regression: duplicate axis selections used to stop() with
+  # "All three dimensions must be different.", which surfaced as
+  # "Invalid dimension selection" and locked the panel. Picking
+  # the same component twice is legal now.
+  it("succeeds when two dimensions are the same", {
     pca_res <- make_pca_result()
     result <- biplot3d$create_biplot3d(
       pca_result = pca_res,
       dim_x = "Dim.1",
-      dim_y = "Dim.1",
+      dim_y = "Dim.3",
       dim_z = "Dim.3"
     )
-    expect_false(result$success)
+    expect_true(result$success)
+    expect_s3_class(result$result, "plotly")
+  })
+
+  it("succeeds when all three dimensions are the same", {
+    pca_res <- make_pca_result()
+    result <- biplot3d$create_biplot3d(
+      pca_result = pca_res,
+      dim_x = "Dim.2",
+      dim_y = "Dim.2",
+      dim_z = "Dim.2",
+      group_cols = "G1"
+    )
+    expect_true(result$success)
+    expect_s3_class(result$result, "plotly")
   })
 })
 
@@ -119,6 +137,16 @@ describe("validate_biplot3d_inputs", {
     expect_true({
       impl$validate_biplot3d_inputs(
         pca_res, "Dim.1", "Dim.2", "Dim.3"
+      )
+      TRUE
+    })
+  })
+
+  it("passes for repeated dimensions", {
+    pca_res <- make_pca_result()
+    expect_true({
+      impl$validate_biplot3d_inputs(
+        pca_res, "Dim.1", "Dim.3", "Dim.3"
       )
       TRUE
     })
@@ -140,6 +168,16 @@ describe("build_ind_data", {
     expect_true("group" %in% names(df))
     expect_equal(nrow(df), 20)
     expect_true(all(dims %in% names(df)))
+  })
+
+  it("keeps dim columns addressable when dims repeat", {
+    pca_res <- make_pca_result()
+    dims <- c("Dim.1", "Dim.3", "Dim.3")
+    df <- impl$build_ind_data(
+      pca_res, dims, "G1"
+    )
+    expect_true(all(unique(dims) %in% names(df)))
+    expect_false("Dim.3.1" %in% names(df))
   })
 
   it("uses 'No Grouping' when no group_cols", {
