@@ -53,6 +53,46 @@ For XLSX files:
 - Empty rows at the top are automatically skipped
 - Column types are auto-detected
 
+#### Overview Panel
+
+The **Overview** panel summarises the shape and completeness of the dataset in four figures:
+
+| Figure | Meaning | What to check |
+|--------|---------|---------------|
+| **Rows** | Total observations imported | Matches the row count of your source file |
+| **Columns** | Total columns, with the metadata / measurement / ambiguous split shown as badges | The split matches your naming intent — see *Column Naming Conventions* above |
+| **Cells missing** | Share of all cells that are empty, with the absolute count | A high figure warrants inspecting the **Missing Values** panel before analysis |
+| **Complete rows** | Rows with no gaps in any column | A low figure is normal for wide tables where optional metadata is sparse |
+
+The metadata and measurement counts need not add up to the total: ambiguous names (uppercase with digits) are counted separately.
+
+#### Data Checks
+
+A banner above the panels reports structural problems that the summary statistics do not surface. It lists only the checks that actually triggered, and is absent when the data is clean.
+
+| Check | Trigger | Why it matters |
+|-------|---------|----------------|
+| **Capitalisation collision** | Two or more column names identical apart from case, e.g. `FDI` and `fdi` | Column selections downstream may pick the wrong one |
+| **Mostly missing** | Column missing **≥50%** of its values | Groups relying on the column may be lost in downstream models |
+| **Single value throughout** | Column has one distinct non-missing value | Cannot be used for grouping or comparison |
+| **Entirely empty** | Column has no values at all | Carries no information and can be dropped |
+
+A column flagged as mostly missing is not listed again as single-valued — the more informative check wins.
+
+#### Missing Values Panel
+
+Three sub-tabs answer three different questions. All of them consider **only the columns that actually contain gaps**, so a dataset with 60 columns and 20 affected ones charts 20, not 60.
+
+| Sub-tab | Shows | Use it to answer |
+|---------|-------|------------------|
+| **By column** | Ranked bar chart of missing count and percentage per affected column, captioned with how many columns are complete | *Which variables are incomplete, and how badly?* |
+| **By row** | Raster of every observation against every affected column, rows sorted by their missingness pattern | *Are the gaps scattered, or do whole blocks of rows share them?* |
+| **Co-occurrence** | The most frequent distinct missingness patterns, each labelled with the columns involved and the number of rows sharing it | *Which columns go missing together?* |
+
+**Reading the By row raster**: contiguous bands of missing cells indicate that gaps arrive in blocks — typically whole batches, runs, or collection episodes. Scattered speckle indicates gaps arising independently per measurement. The distinction matters because block-wise missingness removes entire groups from a model, while scattered missingness merely thins them.
+
+**Reading Co-occurrence**: when every pattern affects only a single row, the panel says so directly instead of charting a misleading ranking. Large datasets often have more patterns than fit on screen; the caption reports how many are not shown.
+
 #### Data Summary Interpretation
 
 The **Data Summary** panel provides a statistical overview of your dataset using `summarytools::dfSummary()`:
@@ -71,19 +111,23 @@ The **Data Summary** panel provides a statistical overview of your dataset using
 
 #### Data Quality and Visualization
 
-The visualization panels serve a critical quality control function. Missing data patterns directly impact analysis reliability — if a column exceeds a threshold of missing values (typically >20-30%), results may be statistically unreliable. The visualizations help identify:
+The panels serve a critical quality control function. Missing data patterns directly impact analysis reliability — if a column exceeds a threshold of missing values (typically **>20-30%**), results may be statistically unreliable. Working from the top of the tab downwards, the panels help identify:
 
+- **Structural faults** flagged in the data checks banner, such as duplicate column names or columns with no variation
 - **Columns with excessive missing data** that may need exclusion before analysis
+- **Systematic gaps** where whole blocks of rows share the same missing columns
 - **Data import errors** such as wrong delimiters causing merged columns or misaligned data
 - **Unexpected value distributions** indicating formatting issues or outliers
 - **Type mismatches** where numeric data was interpreted as text
 
-Review these panels systematically before proceeding to downstream analysis modules.
+Review these panels systematically before proceeding to downstream analysis modules. See the FAQ for guidance on acceptable missingness levels.
 
 #### Best Practices
 
+- **Resolve banner flags first**: They point at faults that silently distort later results
 - **Verify import settings**: If numbers appear as text or columns merge, check delimiter/quote settings
 - **Check missing data thresholds**: Consider excluding columns with >20-30% missing values
+- **Establish whether gaps are structured**: Use **By row** and **Co-occurrence** before deciding how to handle them
 - **Validate column naming**: Use consistent UPPERCASE for metadata, mixed-case for measurements
 - **Review factor levels**: Ensure categorical groupings are clean and consistent
 - **Inspect distributions**: Look for impossible values (e.g., negative measurements) indicating import errors
