@@ -52,7 +52,14 @@ echo "$IMAGES" | while read -r IMG; do
         echo "Keeping: $IMG"
     else
         echo "Removing: $IMG"
-        docker rmi "$IMG"
+        # ShinyProxy sometimes leaves behind stale "Created" containers from
+        # sessions that never fully launched; these block image removal.
+        STALE=$(docker ps -a --filter "ancestor=$IMG" --filter "status=created" -q)
+        if [ -n "$STALE" ]; then
+            echo "  Removing stale (never-started) containers first..."
+            docker rm $STALE
+        fi
+        docker rmi "$IMG" || echo "  (skipped: still in use by a running container)"
     fi
 done
 
