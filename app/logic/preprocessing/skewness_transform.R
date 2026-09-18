@@ -17,11 +17,28 @@ box::use(
 #' Uses the adjusted Fisher-Pearson formula:
 #' g1 = (n / ((n-1)(n-2))) * sum(((x - mean) / sd)^3)
 #'
-#' @param x Numeric vector (NAs removed upstream)
+#' Missing values are dropped and `n` counts only the observed
+#' values, matching how bestNormalize sizes its own fits (its
+#' `n` is `length(x) - sum(is.na(x))`). Without this, a single
+#' NA would make the whole column's skewness NA, which
+#' detect_skewness() reads as "symmetric" — silently exempting
+#' that column from correction.
+#'
+#' Requires `min_n` observed values. The formula is defined from
+#' n = 3, but its sampling variance is so large on a handful of
+#' points that the estimate is noise — a symmetric sample of 6
+#' can easily read as |g1| > 2 and trigger a transformation that
+#' the data does not support. Columns below the floor are
+#' reported as NA and left untransformed.
+#'
+#' @param x Numeric vector; NAs are ignored
+#' @param min_n Integer, minimum observed values required.
+#'   Default 20.
 #' @return Numeric scalar, skewness value
-compute_skewness <- function(x) {
+compute_skewness <- function(x, min_n = 20) {
+  x <- x[!is.na(x)]
   n <- length(x)
-  if (n < 3) {
+  if (n < max(min_n, 3)) {
     return(NA_real_)
   }
   m <- mean(x)
@@ -44,12 +61,16 @@ compute_skewness <- function(x) {
 #' @param measurement_cols Character vector of measurement column names
 #' @param threshold Numeric, absolute skewness above which a column
 #'   is flagged as highly skewed. Default 2.0 (conservative).
+#' @param min_n Integer, minimum observed (non-NA) values a column
+#'   needs before its skewness is trusted. Default 20; columns
+#'   below this are reported as symmetric and left untransformed.
 #' @return Data frame with columns: column, skewness, abs_skewness,
 #'   direction ("left", "right", "symmetric"), is_skewed (logical).
 #'   Sorted by abs_skewness descending.
 #' @export
 detect_skewness <- function(data, measurement_cols,
-                            threshold = 2.0) {
+                            threshold = 2.0,
+                            min_n = 20) {
   if (length(measurement_cols) == 0) {
     return(data.frame(
       column = character(0),
@@ -63,7 +84,7 @@ detect_skewness <- function(data, measurement_cols,
 
   skew_vals <- vapply(
     measurement_cols,
-    function(col) compute_skewness(data[[col]]),
+    function(col) compute_skewness(data[[col]], min_n = min_n),
     numeric(1)
   )
 
