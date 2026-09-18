@@ -9,7 +9,7 @@
 | **Min. observations per group** | > p (warning if violated) | ≥ p + 1 (hard error) | ≥ max(subclasses, p + 1) | none — designed for n < p |
 | **Min. groups** | 2 | 2 | 2 | 2 |
 | **Data type** | Numeric only | Numeric only | Numeric only | Numeric only |
-| **Missing values** | Rows with NAs excluded automatically | same | same | same |
+| **Missing values** | Rows with NAs excluded, or imputed (opt-in) | same | same | same |
 | **Max. discriminant axes / components** | min(p, G − 1) | none (classification only) | min(p, G − 1) | user-set (up to min(n − 1, p)) |
 | **Handles collinear variables** | No (may fail with singular matrix) | No | No | Yes — built into the algorithm |
 | **Built-in variable selection** | No | No | No | sPLS-DA only (via keepX) |
@@ -214,6 +214,25 @@ Scaling decisions directly affect the within-group and between-group scatter mat
 **When to use it**: a *different* metadata variable — a confound not related to your grouping of interest, such as site, batch, or collection date — is expected to dominate the measurements and interfere with discriminant separation. Run PCA on the same measurement columns first and check its **Eigencorrelation** plot for which metadata column correlates most strongly with the top components; that is usually the column to residualize by here.
 
 **What it does not do**: residualizing removes average level differences for the chosen confound only, and does not equalize variance between measurement columns — Scale & Center still has a role afterward. It also cannot separate a confound from your grouping variable if the two are perfectly correlated in the sample (e.g. every specimen of one species came from a single site).
+
+</details>
+
+<details>
+<summary><strong>Missing Values</strong></summary>
+
+By default a row is removed if **any** selected measurement column is missing. With 40+ variables this is costly: one gap in one column discards that observation's other 39 values. Only *selected* measurement columns count, so deselecting a column with many gaps often returns a large number of rows. Descriptive columns are reported but never trigger removal.
+
+**Impute missing values** (checkbox, Data tab) offers the alternative. Gaps are reconstructed from the other measurement columns using the NIPALS algorithm (`mixOmics::impute.nipals`), and the row is kept. Observed values are never altered — only the gaps are filled.
+
+**Guard rails**
+
+- Columns missing more than **20%** of their values are refused rather than imputed, and named in the error. Above that threshold the column would rest largely on invented values. The cap is applied per column, not to overall missingness — a dataset at 5% overall can still hide one column at 60%.
+- Rows with **no** observed measurement at all are dropped; there is nothing to reconstruct them from.
+- Imputation runs **after** skewness correction, so the linear reconstruction is fitted on the near-normal scale rather than on raw skewed columns.
+
+**Why it matters here**: PLS-DA and sPLS-DA run on NIPALS and tolerate gaps natively, but `MASS::lda()` and `MASS::qda()` cannot accept a missing value at all. For those two, imputation is the only way to keep an affected row — without it, the row is removed.
+
+**When to use it**: imputation is appropriate for scattered, incidental gaps. It is not a repair for systematic missingness — if a variable is missing precisely for one group or one period, the reconstruction will invent values that hide exactly the pattern you are looking for. Imputed values are estimates, not observations; the count appears in the results summary and in any exported model bundle.
 
 </details>
 
