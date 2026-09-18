@@ -178,6 +178,53 @@ describe("transform_skewed", {
     expect_equal(result$result$data$meta, data$meta)
   })
 
+  it("reports progress once per column, before fitting", {
+    set.seed(42)
+    data <- data.frame(
+      x = rexp(200, rate = 0.5) ^ 2,
+      y = rexp(200, rate = 0.5) ^ 2
+    )
+    skew_result <- skewness_transform$detect_skewness(
+      data, c("x", "y")
+    )
+    calls <- list()
+    result <- skewness_transform$transform_skewed(
+      data, c("x", "y"), skew_result,
+      progress = function(i, n, col_name) {
+        calls[[length(calls) + 1]] <<- list(
+          i = i, n = n, col = col_name
+        )
+      }
+    )
+    expect_true(result$success)
+    expect_length(calls, 2)
+    expect_equal(calls[[1]]$i, 1)
+    expect_equal(calls[[2]]$i, 2)
+    expect_equal(calls[[1]]$n, 2)
+    # Names the column about to be fitted, in fitting order
+    expect_equal(
+      vapply(calls, function(x) x$col, character(1)),
+      skew_result$column[skew_result$is_skewed]
+    )
+  })
+
+  it("does not call progress when nothing is skewed", {
+    set.seed(42)
+    data <- data.frame(x = rnorm(100))
+    skew_result <- skewness_transform$detect_skewness(
+      data, "x"
+    )
+    n_calls <- 0
+    result <- skewness_transform$transform_skewed(
+      data, "x", skew_result,
+      progress = function(i, n, col_name) {
+        n_calls <<- n_calls + 1
+      }
+    )
+    expect_true(result$success)
+    expect_equal(n_calls, 0)
+  })
+
   it("transforms left-skewed columns", {
     set.seed(42)
     raw <- rexp(200, rate = 0.5) ^ 2
