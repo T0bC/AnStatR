@@ -5,6 +5,7 @@ box::use(
     validate_bundle
   ],
   app/logic/prediction/predict[
+    drop_incomplete_unknowns,
     predict_unknown,
     preprocess_unknown
   ],
