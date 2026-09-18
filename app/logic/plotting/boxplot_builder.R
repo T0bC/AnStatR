@@ -127,16 +127,18 @@ build_boxplot_layers <- function(p, data, bp, ps, gl = list()) {
 #' @param use_shape Whether to use shape aesthetic
 #' @param use_custom_shape Whether to use custom shapes
 #' @param black_points Whether to force points to be black
+#' @param fillable_shapes Whether every shape in play is fillable (pch 21-25)
 #' @return ggplot object with boxplot and scatter layers
 #' @export
 build_boxplot_points_layers <- function(p, data, bp, ps, gl = list(),
                                         sls = list(),
                                         use_shape = FALSE,
                                         use_custom_shape = FALSE,
-                                        black_points = FALSE) {
+                                        black_points = FALSE,
+                                        fillable_shapes = TRUE) {
   # First add scatter points underneath
   p <- scatter_builder$add_scatter_layers(
-    p, data, ps, use_shape, use_custom_shape, black_points
+    p, data, ps, use_shape, use_custom_shape, black_points, fillable_shapes
   )
 
   # Then add boxplot on top (without outliers since we'll show all points)
