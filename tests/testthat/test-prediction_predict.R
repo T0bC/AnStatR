@@ -15,6 +15,7 @@ box::use(
   app/logic/pca/pca[run_pca],
   app/logic/pca/pca_export[create_pca_bundle],
   app/logic/prediction/predict[
+    drop_incomplete_unknowns,
     predict_unknown,
     preprocess_unknown
   ],
@@ -596,4 +597,87 @@ test_that("stored transform params reproduce training transform", {
     expect_true(all(is.finite(transformed_new)))
     expect_true(is.numeric(transformed_new))
   }
+})
+
+
+# =============================================================================
+# drop_incomplete_unknowns
+# =============================================================================
+
+test_that("complete unknown data passes through untouched", {
+  bundle <- list(numeric_cols = c("V1", "V2", "V3"))
+  df <- data.frame(V1 = 1:4, V2 = 5:8, V3 = 9:12)
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_dropped, 0L)
+  expect_equal(res$rows_after, 4)
+  expect_equal(res$data, df)
+  expect_length(res$dropped_labels, 0)
+})
+
+test_that("rows with a missing measurement are removed", {
+  bundle <- list(numeric_cols = c("V1", "V2", "V3"))
+  df <- data.frame(
+    V1 = c(1, NA, 3, 4),
+    V2 = c(5, 6, NA, 8),
+    V3 = c(9, 10, 11, 12)
+  )
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_dropped, 2L)
+  expect_equal(res$rows_after, 2)
+  expect_false(anyNA(res$data[, c("V1", "V2", "V3")]))
+})
+
+test_that("NAs outside the measurement columns are kept", {
+  # A missing label or note must not cost the row its prediction.
+  bundle <- list(numeric_cols = c("V1", "V2"))
+  df <- data.frame(
+    V1 = c(1, 2),
+    V2 = c(3, 4),
+    note = c(NA, "ok"),
+    stringsAsFactors = FALSE
+  )
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_dropped, 0L)
+  expect_equal(nrow(res$data), 2)
+})
+
+test_that("dropped rows are identified by row name", {
+  bundle <- list(numeric_cols = c("V1", "V2"))
+  df <- data.frame(
+    V1 = c(1, NA, 3),
+    V2 = c(4, 5, 6)
+  )
+  rownames(df) <- c("sampleA", "sampleB", "sampleC")
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$dropped_labels, "sampleB")
+})
+
+test_that("the dropped-label list is capped at 10", {
+  bundle <- list(numeric_cols = c("V1", "V2"))
+  df <- data.frame(
+    V1 = rep(NA_real_, 25),
+    V2 = seq_len(25)
+  )
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_dropped, 25L)
+  expect_length(res$dropped_labels, 10)
+})
+
+test_that("all-incomplete data yields zero remaining rows", {
+  # The view turns this into a blocking error rather than calling
+  # predict on an empty frame.
+  bundle <- list(numeric_cols = c("V1", "V2"))
+  df <- data.frame(V1 = c(NA, NA), V2 = c(1, NA))
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_after, 0)
+  expect_equal(res$rows_dropped, 2L)
+})
+
+test_that("missing measurement columns are ignored, not assumed", {
+  # Column presence is validate_unknown_data()'s job; this function
+  # must not error on a column that is not there at all.
+  bundle <- list(numeric_cols = c("V1", "V99"))
+  df <- data.frame(V1 = c(1, NA, 3))
+  res <- drop_incomplete_unknowns(df, bundle)
+  expect_equal(res$rows_dropped, 1L)
 })
