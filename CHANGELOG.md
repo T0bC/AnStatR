@@ -1,5 +1,23 @@
 # Changelog
 
+## [2026.18] - 2026-09-18
+
+### Added
+
+- **Optional NIPALS imputation of missing values in PCA, LDA and Cluster**: A new *Impute missing values* checkbox in each module's Data tab reconstructs gaps from the other measurement columns (`mixOmics::impute.nipals`) instead of removing the row. Previously a single missing cell discarded the whole observation — with 40+ variables that meant losing 39 recorded values to recover nothing. Observed values are never altered; only the gaps are filled. The number of imputed cells, the share of measurements affected, the rows touched and the component count are reported in the preprocessing banner and recorded in exported model bundles as `impute_spec`, which the Prediction tab displays on the bundle card. Refused, with the offending columns named, for any column missing more than 20% of its values — applied per column rather than to overall missingness, since a dataset at 5% overall can still hide one column at 60%. Imputation runs *after* skewness correction so the linear reconstruction is fitted on the near-normal scale rather than on raw skewed columns
+- **Progress reporting for skewness correction**: `bestNormalize` fits one column at a time at roughly a second per column, so a 20-column run left the app silent for half a minute after the Compute button was pressed. A determinate progress bar now names the column being fitted. Shared by PCA, LDA and Cluster
+- **Missing-value handling for unknown data in Prediction**: Rows missing any of the model's measurement columns are now skipped explicitly and reported in a banner above the results, naming the affected rows and stating how many of the uploaded rows were predicted. Prediction stops with an error when no complete row remains. Previously each engine improvised: the manual PCA projection returned all-NA scores and the row silently vanished from the plots, `MASS::predict.lda()` returned `NA` as the predicted class, and the nearest-centroid cluster assignment produced the literal label `"Cluster integer(0)"`. Imputation is deliberately not offered here — a single unknown row has nothing to reconstruct from, and borrowing the training set's structure would have the model partly scoring its own training data
+
+### Fixed
+
+- **3D Biplot crashed when two axes shared a component**: Selecting the same dimension for two axes (e.g. Dim.Y and Dim.Z both set to Dim.3, which happens routinely while changing one axis at a time) aborted with "Invalid dimension selection", a message that pointed at the dimension *names* rather than the real cause. Duplicate selections are now valid and render a flattened plot. The panel also locked permanently: the error alert replaced the plot output in the DOM, Shiny suspended the suspended renderer, and the code that would clear the error lived inside it — so reverting the selection could not recover without restarting the app. The plot output now stays mounted with the alert above it
+- **Skewness was never detected in columns containing NAs**: `compute_skewness()` called `mean()` and `sd()` without `na.rm`, so one missing value made the whole column's skewness `NA`, which was read as "symmetric" and silently exempted the column from correction. Latent until now because NA rows were always removed first; it would have become live with imputation enabled
+- **Residualization could zero out an entire group**: `ave()`'s default `mean()` returns `NA` for any group containing a missing value, replacing every row of that group with `NA` rather than just the gap. The grouping column was already guarded against NAs; the measurement values were not
+
+### Changed
+
+- **Skewness detection now requires at least 20 observed values per column**: The Fisher-Pearson formula is defined from n = 3, but its sampling variance on a handful of points is large enough that a symmetric sample of six can read as |g1| > 2 and trigger a transformation the data does not support. Columns below the floor are reported as symmetric and left untransformed. The count is of *observed* values, so a column with 19 real values and 50 NAs stays below it
+
 ## [2026.17] - 2026-09-16
 
 ### Added
