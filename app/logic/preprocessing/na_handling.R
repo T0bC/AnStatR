@@ -61,6 +61,12 @@ analyse_na <- function(data, measurement_cols) {
 #'   trigger row removal.
 #' @param grouping_col Character, name of the grouping column (optional).
 #'   If provided, rows with NA in this column are also removed.
+#' @param remove_measurement_na Logical, whether NAs in the measurement
+#'   columns trigger row removal. Default TRUE (listwise deletion). Set
+#'   FALSE when the caller intends to impute instead — the NA summaries
+#'   are still computed and returned, so the user sees the same report
+#'   either way. A missing grouping value always removes the row: a
+#'   class label cannot be reconstructed from the measurements.
 #' @return List with:
 #'   - $data: cleaned data frame (all columns preserved)
 #'   - $rows_before: integer, original row count
@@ -71,7 +77,8 @@ analyse_na <- function(data, measurement_cols) {
 #' @export
 clean_na_rows <- function(data, measurement_cols,
                           meta_cols = character(0),
-                          grouping_col = NULL) {
+                          grouping_col = NULL,
+                          remove_measurement_na = TRUE) {
   rows_before <- nrow(data)
   na_summary <- analyse_na(data, measurement_cols)
 
@@ -88,14 +95,21 @@ clean_na_rows <- function(data, measurement_cols,
   }
 
   # Include grouping column in completeness check if provided
-  cols_for_complete <- measurement_cols
+  cols_for_complete <- if (remove_measurement_na) {
+    measurement_cols
+  } else {
+    character(0)
+  }
   if (!is.null(grouping_col) && grouping_col %in% names(data)) {
     cols_for_complete <- c(cols_for_complete, grouping_col)
   }
 
-  subset <- data[, cols_for_complete, drop = FALSE]
-  complete <- stats$complete.cases(subset)
-  cleaned <- data[complete, , drop = FALSE]
+  cleaned <- if (length(cols_for_complete) == 0) {
+    data
+  } else {
+    subset <- data[, cols_for_complete, drop = FALSE]
+    data[stats$complete.cases(subset), , drop = FALSE]
+  }
 
   rows_after <- nrow(cleaned)
   rows_removed <- rows_before - rows_after
