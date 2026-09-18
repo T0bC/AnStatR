@@ -9,6 +9,7 @@ box::use(
   app/logic/pca/pca[extract_variance_explained],
   app/logic/shared/column_utils,
   app/view/components/sidebar_tabs,
+  app/view/shared/impute_control[impute_checkbox],
   app/view/shared/recommendation_banner,
 )
 
@@ -252,7 +253,8 @@ tab_ui <- function(ns) {
           )
         ),
         value = FALSE
-      )
+      ),
+      impute_checkbox(ns)
     )
   )
 }
