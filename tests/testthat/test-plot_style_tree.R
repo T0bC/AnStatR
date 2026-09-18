@@ -27,6 +27,7 @@ fixture <- data.frame(
     rep("Biscoe", 3),
     rep("Dream", 3)
   ),
+  SEX = rep(c("f", "m"), 6),
   Val = 1:12,
   stringsAsFactors = FALSE
 )
@@ -208,9 +209,22 @@ describe("nested Colors & Order tree", {
       )
 
       # ... and edits there actually reach the maps handed to the plot
-      session$setInputs(color_Adelie = "#123456", shape_Adelie = "22")
+      session$setInputs(color_Adelie = "#123456")
       expect_equal(captured()$color_map()[["Adelie"]], "#123456")
-      expect_equal(captured()$shape_map()[["Adelie"]], 22L)
+
+      # "Shape by" is still empty, so shapes stay at the finest grouping
+      expect_equal(
+        control_ids(html, "shape_"),
+        c(
+          "mock-session-shape_Adelie_Biscoe",
+          "mock-session-shape_Adelie_Dream",
+          "mock-session-shape_Adelie_Torgersen",
+          "mock-session-shape_Gentoo_Biscoe",
+          "mock-session-shape_Chinstrap_Dream"
+        )
+      )
+      session$setInputs(shape_Adelie_Biscoe = "22")
+      expect_equal(captured()$shape_map()[["Adelie.Biscoe"]], 22L)
     })
   })
 
@@ -358,6 +372,99 @@ describe("dragging settles without flicker", {
 
       expect_false(is.na(settled$rounds))
       expect_equal(order_of()[["SPECIES"]], species)
+    })
+  })
+})
+
+# =============================================================================
+# Color by / Shape by are independent groupings
+# =============================================================================
+
+# Group keys the colour and shape controls are rendered for
+control_groups <- function(html, prefix) {
+  gsub(
+    paste0("^mock-session-", prefix), "",
+    control_ids(html, prefix)
+  )
+}
+
+describe("Color by and Shape by place controls independently", {
+  it("puts both at the leaf when neither is set", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      html <- tree_html(output)
+      leaves <- c(
+        "Adelie_Biscoe", "Adelie_Dream", "Adelie_Torgersen",
+        "Gentoo_Biscoe", "Chinstrap_Dream"
+      )
+      expect_equal(control_groups(html, "color_"), leaves)
+      expect_equal(control_groups(html, "shape_"), leaves)
+    })
+  })
+
+  it("keeps shapes at the leaf when only Color by is set", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      session$setInputs(pointColor = "SPECIES")
+      html <- tree_html(output)
+      expect_equal(
+        control_groups(html, "color_"),
+        c("Adelie", "Gentoo", "Chinstrap")
+      )
+      expect_equal(length(control_groups(html, "shape_")), 5L)
+    })
+  })
+
+  it("keeps colours at the leaf when only Shape by is set", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      session$setInputs(pointShape = "SPECIES")
+      html <- tree_html(output)
+      expect_equal(
+        control_groups(html, "shape_"),
+        c("Adelie", "Gentoo", "Chinstrap")
+      )
+      expect_equal(length(control_groups(html, "color_")), 5L)
+    })
+  })
+
+  it("behaves like neither being set when both name every X column", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      session$setInputs(
+        pointColor = c("SPECIES", "ISLAND"),
+        pointShape = c("SPECIES", "ISLAND")
+      )
+      html <- tree_html(output)
+      leaves <- c(
+        "Adelie_Biscoe", "Adelie_Dream", "Adelie_Torgersen",
+        "Gentoo_Biscoe", "Chinstrap_Dream"
+      )
+      expect_equal(control_groups(html, "color_"), leaves)
+      expect_equal(control_groups(html, "shape_"), leaves)
+    })
+  })
+
+  it("gives Shape by a flat list when it is not an X-axis column", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      session$setInputs(pointColor = "SPECIES", pointShape = "SEX")
+      html <- tree_html(output)
+
+      expect_false(any(duplicated(dom_ids(html))))
+      expect_equal(control_groups(html, "shape_"), c("f", "m"))
+      expect_true(grepl("Shapes: SEX", html, fixed = TRUE))
+
+      session$setInputs(shape_f = "24")
+      expect_equal(captured()$shape_map()[["f"]], 24L)
+    })
+  })
+
+  it("never disables the shape dropdowns", {
+    testServer(style_server, {
+      session$setInputs(xAxis = c("SPECIES", "ISLAND"), plotType = "scatter")
+      session$setInputs(pointShape = "SPECIES")
+      expect_false(grepl("shape-disabled", tree_html(output), fixed = TRUE))
     })
   })
 })
