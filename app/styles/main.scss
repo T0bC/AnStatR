@@ -770,3 +770,31 @@ details.app-error-details.mt-2 {
 .rank-list-container {
   min-height: auto !important;
 }
+
+// =============================================================================
+// Load tab: Overview KPI boxes
+// =============================================================================
+// bslib's value box reserves a generous padding band above and below its
+// content. These cards are meant to read as a compact header strip, not
+// as a dashboard centrepiece, so the vertical spacing is tightened.
+// min-height alone cannot do this: a card can never shrink below its
+// content plus padding.
+.kpi-box {
+  .card-body {
+    padding: 0.4rem 0.75rem !important;
+  }
+
+  // A small uniform gap rather than none: the subtitle would otherwise
+  // sit flush against the figure.
+  .value-box-area {
+    gap: 0.15rem !important;
+    padding: 0 !important;
+  }
+
+  .value-box-title,
+  .value-box-value,
+  p {
+    margin-bottom: 0 !important;
+    line-height: 1.2 !important;
+  }
+}
