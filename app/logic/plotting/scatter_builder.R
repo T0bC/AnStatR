@@ -323,14 +323,18 @@ add_stat_point_overlays <- function(p, data, gl) {
 #' @param use_shape Whether to use shape aesthetic
 #' @param use_custom_shape Whether to use custom shapes
 #' @param black_points Whether to force points to be black
+#' @param fillable_shapes Whether every shape in play is fillable (pch 21-25)
 #' @return ggplot object with all scatter layers
 #' @export
 build_scatter_layers <- function(p, data, ps, gl, sls,
                                  use_shape = FALSE,
                                  use_custom_shape = FALSE,
-                                 black_points = FALSE) {
+                                 black_points = FALSE,
+                                 fillable_shapes = TRUE) {
   # Add scatter points
-  p <- add_scatter_layers(p, data, ps, use_shape, use_custom_shape, black_points)
+  p <- add_scatter_layers(
+    p, data, ps, use_shape, use_custom_shape, black_points, fillable_shapes
+  )
 
   # Add stat overlays (median/SD lines)
   p <- add_stat_overlays(p, data, gl, sls)
