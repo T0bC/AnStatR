@@ -1,6 +1,31 @@
 #### Frequently Asked Questions
 
 <details>
+<summary>A third of my rows were removed for missing values — can I keep them?</summary>
+
+Yes, in most cases. Two things to check, in order.
+
+**First, find out which columns are responsible.** The NA panel lists per-column counts. Row removal is driven only by the measurement columns you have *selected*, so the loss is usually concentrated in one or two columns. Deselecting a single column that is missing 30% of its values often returns most of the rows at once — and costs you less information than discarding a third of your observations.
+
+**Second, tick "Impute missing values".** Instead of removing the row, the gaps are reconstructed from the other measurement columns using NIPALS (`mixOmics::impute.nipals`). Observed values are never altered; only the gaps are filled. The number of imputed values is reported in the results summary and stored in any exported model bundle.
+
+Imputation is refused for any column missing more than 20% of its values, with the column named. That is deliberate: above that level the column would consist mostly of invented values, which would then drive the result.
+
+</details>
+
+<details>
+<summary>Should I impute, or remove the rows?</summary>
+
+**Impute** when the gaps are scattered and incidental — an occasional unreadable measurement, no pattern to which rows are affected. You keep the sample size, and the reconstruction draws on the correlations between your variables.
+
+**Remove** when the missingness is systematic. If a variable is absent precisely for one group, one site, or one period, the reconstruction will fill those gaps from the *other* groups and quietly erase the very difference you are testing for. No imputation method can recover information that was never recorded; it can only make its absence invisible.
+
+If you are unsure, run it both ways. A conclusion that holds under listwise deletion and under imputation is a conclusion you can defend; one that appears only with imputation is an artefact of the reconstruction.
+
+</details>
+
+
+<details>
 <summary>What does the "Apply recommended parameters" banner do?</summary>
 
 It appears when the **Statistics** tab has computed a parameter screening ranking (enabled via the Plotting tab's **Disable plots (parameter screening mode)** checkbox, followed by **Compute Statistics**). Clicking it replaces the current measurement-column selection with the parameters that ranked among the top group separators. You can still add or remove columns manually afterward — the applied selection is not locked.
