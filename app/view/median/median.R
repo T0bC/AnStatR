@@ -1,5 +1,7 @@
 box::use(
   DT,
+  bsicons,
+  bslib,
   openxlsx,
   rhino,
   shiny,
@@ -7,6 +9,8 @@ box::use(
 
 box::use(
   app/logic/median/compute,
+  app/logic/median/design_balance,
+  app/logic/median/design_plots,
   app/logic/median/quality_analysis,
   app/logic/median/quality_filter,
   app/logic/shared/column_utils,
@@ -440,6 +444,67 @@ server <- function(id, input_data, data_version) {
         shiny$tags$div(
           class = "table-responsive",
           DT$dataTableOutput(ns("median_table"))
+        ),
+        bslib$layout_column_wrap(
+          width = 1,
+          fill = FALSE,
+          class = "mt-3",
+          bslib$card(
+            bslib$card_header(
+              bsicons$bs_icon("bar-chart-steps"),
+              " Design Balance"
+            ),
+            shiny$plotOutput(ns("design_balance_plot"), height = "380px")
+          ),
+          bslib$card(
+            bslib$card_header(
+              bsicons$bs_icon("grid-3x3-gap"),
+              " Missing by Group"
+            ),
+            shiny$plotOutput(ns("group_missing_plot"), height = "380px")
+          )
+        )
+      )
+    })
+
+    # --- Design feedback plots -------------------------------------------
+    # Both read cached_params() rather than input$grouping_columns so they
+    # inherit the existing 800 ms debounce and fingerprint check. That
+    # keeps them in lockstep with the median table: clicking quickly
+    # through metadata columns triggers exactly one recompute of all three.
+    design_inputs <- shiny$reactive({
+      params <- cached_params()
+      shiny$req(params)
+      list(
+        data = shiny$isolate(input_data()),
+        grouping_cols = params$grouping_cols
+      )
+    })
+
+    output$design_balance_plot <- shiny$renderPlot({
+      inputs <- design_inputs()
+      shiny$req(inputs$data)
+      shiny$validate(shiny$need(
+        length(inputs$grouping_cols) > 0,
+        "Select grouping columns to see the design balance."
+      ))
+      design_plots$plot_group_balance(
+        design_balance$compute_group_balance(
+          inputs$data, inputs$grouping_cols
+        )
+      )
+    })
+
+    output$group_missing_plot <- shiny$renderPlot({
+      inputs <- design_inputs()
+      shiny$req(inputs$data)
+      shiny$validate(shiny$need(
+        length(inputs$grouping_cols) > 0,
+        "Select grouping columns to see missingness per group."
+      ))
+      design_plots$plot_group_missingness(
+        design_balance$compute_group_missingness(
+          inputs$data, inputs$grouping_cols
         )
       )
     })
@@ -469,7 +534,7 @@ server <- function(id, input_data, data_version) {
           settings = list(select = list(maxOptions = 2000))
         ),
         options = list(
-          pageLength = 25,
+          pageLength = 10,
           lengthMenu = list(
             c(10, 25, 50, 100, -1),
             c("10", "25", "50", "100", "All")
