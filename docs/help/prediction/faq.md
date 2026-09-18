@@ -1,6 +1,27 @@
 #### Frequently Asked Questions — Prediction
 
 <details>
+<summary>Why were some of my unknown rows skipped?</summary>
+
+A row is skipped when any of the model's measurement columns is missing for it. The banner above the results names the affected rows and states how many of the uploaded rows were actually predicted.
+
+Gaps in descriptive columns do not matter — only the measurement columns the model was trained on are checked.
+
+They are skipped rather than imputed on purpose. A single unknown row has nothing to reconstruct from, and filling it in from the training set would mean the model was partly scoring its own training data and reporting that as a prediction. Fill the gaps in the source data before uploading, or train a model that does not use the affected columns.
+
+</details>
+
+<details>
+<summary>The bundle card says the training data was imputed — what does that mean?</summary>
+
+The model was fitted with NIPALS imputation enabled, so some of the training measurements were reconstructed rather than observed. The line reports how many values, what share of the measurements that was, how many rows were affected, and how many components the reconstruction used.
+
+Predictions from such a model are still valid, but the decision boundaries were partly fitted on estimated values. Weigh the reported percentage: a model at 1% imputed is barely distinguishable from one trained on complete data; at 15% the boundaries rest substantially on reconstruction. Bundles trained on complete data show no such line.
+
+</details>
+
+
+<details>
 <summary>Does prediction work differently if the PCA/LDA model was built from the Statistics tab's recommended parameters instead of a manual selection?</summary>
 
 No. The bundle stores the measurement columns that were selected in the PCA or LDA tab at the time of export (`numeric_cols`), regardless of whether those columns were chosen manually or applied via the **Apply recommended parameters** banner (surfaced by the Statistics tab's parameter screening mode). Prediction always aligns the uploaded unknown data to `numeric_cols` from the bundle — there is no separate code path for a "recommended" parameter set, so this workflow requires no special handling on the Prediction side.
