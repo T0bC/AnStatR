@@ -18,6 +18,7 @@ box::use(
   app/logic/prediction/bundle_io[load_bundle],
   app/logic/prediction/diagnostics[compute_diagnostics],
   app/logic/prediction/predict[
+    drop_incomplete_unknowns,
     predict_unknown,
     preprocess_unknown
   ],
@@ -95,6 +96,10 @@ server <- function(id) {
       filter_spec$apply_filter_spec(bdl$filter_spec, raw)
     })
     prediction_result <- shiny$reactiveVal(NULL)
+    # Rows skipped because a measurement was missing; kept so the
+    # results view can state the predicted count against the uploaded
+    # count rather than quietly reporting a smaller number.
+    incomplete_info <- shiny$reactiveVal(NULL)
     diagnostics_result <- shiny$reactiveVal(NULL)
     last_plot <- shiny$reactiveVal(NULL)
 
@@ -119,6 +124,7 @@ server <- function(id) {
       bundle(NULL)
       validation_result(NULL)
       prediction_result(NULL)
+      incomplete_info(NULL)
       diagnostics_result(NULL)
       last_plot(NULL)
 
@@ -160,6 +166,7 @@ server <- function(id) {
       unknown_data_raw(NULL)
       validation_result(NULL)
       prediction_result(NULL)
+      incomplete_info(NULL)
       diagnostics_result(NULL)
       last_plot(NULL)
 
@@ -223,6 +230,7 @@ server <- function(id) {
     shiny$observeEvent(input$predict_button, {
       last_error(NULL)
       prediction_result(NULL)
+      incomplete_info(NULL)
       diagnostics_result(NULL)
       last_plot(NULL)
 
@@ -270,6 +278,46 @@ server <- function(id) {
         ))
         return()
       }
+
+      # Drop rows that cannot be predicted, before anything downstream
+      # gets a chance to improvise on them (see the function's comment
+      # for what each engine does with an NA).
+      na_drop <- drop_incomplete_unknowns(unknown, bdl)
+      if (na_drop$rows_after == 0) {
+        last_error(error_handling$simple_error(
+          message = paste(
+            "Every unknown row has at least one missing",
+            "measurement, so none can be predicted.",
+            "Fill the gaps or deselect the affected columns",
+            "before uploading."
+          ),
+          operation_name = "Prediction",
+          context = list(
+            rows_before = na_drop$rows_before,
+            measurement_cols = length(bdl$numeric_cols)
+          )
+        ))
+        return()
+      }
+      if (na_drop$rows_dropped > 0) {
+        shiny$showNotification(
+          paste0(
+            na_drop$rows_dropped, " of ", na_drop$rows_before,
+            " rows skipped: missing measurements (",
+            paste(na_drop$dropped_labels, collapse = ", "),
+            if (na_drop$rows_dropped > length(na_drop$dropped_labels)) {
+              ", ..."
+            } else {
+              ""
+            },
+            ")"
+          ),
+          type = "warning",
+          duration = 10
+        )
+      }
+      unknown <- na_drop$data
+      incomplete_info(na_drop)
 
       # Preprocess
       rhino$log$info("Prediction: preprocessing")
@@ -324,6 +372,41 @@ server <- function(id) {
       bdl <- bundle()
       unknown <- unknown_data()
       val <- validation_result()
+
+      # Skipped-rows banner. The toast that fired at predict time is
+      # gone by now, and nothing else on screen would reveal that the
+      # result covers fewer rows than were uploaded.
+      skipped <- incomplete_info()
+      skipped_banner <- if (
+        !is.null(skipped) && skipped$rows_dropped > 0
+      ) {
+        shiny$tags$div(
+          class = "alert alert-warning",
+          role = "alert",
+          bsicons$bs_icon("exclamation-triangle-fill", class = "me-2"),
+          shiny$tags$strong(
+            paste0(
+              skipped$rows_dropped, " of ", skipped$rows_before,
+              " rows skipped"
+            )
+          ),
+          shiny$tags$span(
+            class = "ms-2",
+            paste0(
+              "missing measurements; ", skipped$rows_after,
+              " rows predicted. Skipped: ",
+              paste(skipped$dropped_labels, collapse = ", "),
+              if (
+                skipped$rows_dropped > length(skipped$dropped_labels)
+              ) {
+                ", ..."
+              } else {
+                ""
+              }
+            )
+          )
+        )
+      }
 
       # Warnings banner
       warn_banner <- NULL
@@ -438,6 +521,7 @@ server <- function(id) {
       }
 
       shiny$tagList(
+        skipped_banner,
         warn_banner,
         bslib$accordion(
           id = ns("results_accordion"),
